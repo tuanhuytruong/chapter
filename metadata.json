@@ -1,0 +1,6 @@
+{
+  "name": "Book Reading Tracker & Community",
+  "description": "Track your daily reading progress, write book summaries, and share them with an active, supportive community of fellow book lovers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
