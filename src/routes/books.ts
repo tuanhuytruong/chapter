@@ -3,6 +3,7 @@ import { query, withClient } from "../db.js";
 import { extractRange } from "../extractor.js";
 import { callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
+import { config } from "../config.js";
 
 export const booksRouter = Router();
 
@@ -18,6 +19,17 @@ const today = () => {
 function progressPct(b: any): number {
   if (!b.total_pages) return 0;
   return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
+}
+
+// Resolve a book file path. If the user supplies an absolute path (starts with
+// "/") we keep it as-is (backward compatible). Otherwise we treat the value as
+// a filename/relative path inside CHAPTER_BOOKS_DIR so the user only has to
+// type e.g. "atomic-habits.pdf".
+function resolveBookPath(input: string): string {
+  const p = input.trim();
+  if (p.startsWith("/")) return p;
+  const dir = config.booksDir.replace(/\/+$/, "");
+  return `${dir}/${p}`;
 }
 
 // ── B7: CRUD ──────────────────────────────────────────────
@@ -40,11 +52,12 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   if (!["pdf", "epub"].includes(file_type)) {
     return res.status(400).json({ error: "file_type must be 'pdf' or 'epub'" });
   }
+  const resolvedPath = resolveBookPath(file_path);
   try {
     const { rows } = await query(
       `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [title, author || "Unknown", file_path, file_type, total_pages || 0, daily_pages || 20, cover_url || null]
+      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null]
     );
     res.status(201).json(rows[0]);
   } catch (e: any) {

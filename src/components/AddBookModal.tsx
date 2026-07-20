@@ -77,9 +77,10 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="James Clear" />
           </div>
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">File path *</label>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">File name *</label>
             <input value={filePath} onChange={e => setFilePath(e.target.value)} required
-              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="/opt/chapter/workspace/books/atomic-habits.pdf" />
+              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="atomic-habits.pdf" />
+            <p className="text-[10px] text-natural-stone mt-1">File inside <span className="font-mono">/opt/chapter/workspace/books/</span> — just type the name. Full path also accepted.</p>
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
