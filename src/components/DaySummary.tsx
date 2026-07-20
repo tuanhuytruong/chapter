@@ -4,17 +4,14 @@ import type { LogRow } from '../types';
 
 const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
   const [open, setOpen] = useState(false);
-  // Normalize the date: pg returns DATE columns as JS Date objects (serialized
-  // to an ISO string with a time suffix by res.json). Strip to YYYY-MM-DD so
-  // `new Date(...)` parses cleanly in local time.
-  const rawDate =
-    log.date instanceof Date
-      ? log.date.toISOString().slice(0, 10)
-      : String(log.date).slice(0, 10);
-  const date = new Date(rawDate + "T00:00:00").toLocaleDateString("en-US", {
+  // log.date is already a 'YYYY-MM-DD' string (Asia/Bangkok / UTC+7 app tz).
+  // Format it for display in the same timezone so it never appears off-by-one.
+  const rawStr = log.date instanceof Date ? log.date.toISOString().slice(0, 10) : String(log.date);
+  const date = new Date(rawStr + "T00:00:00").toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "Asia/Bangkok",
   });
 
   return (

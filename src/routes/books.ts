@@ -9,12 +9,12 @@ import path from "path";
 
 export const booksRouter = Router();
 
+// App timezone is Asia/Bangkok (UTC+7) — all "today" logic and daily-summary
+// grouping use this, independent of where the server physically runs.
+const APP_TZ = "Asia/Bangkok";
 const today = () => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  // Returns YYYY-MM-DD for the current date in Asia/Bangkok (UTC+7).
+  return new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
 };
 
 // ── Helpers ───────────────────────────────────────────────

@@ -2,7 +2,7 @@
   "name": "Chapter — Daily Reading Summary",
   "nodes": [
     {
-      "parameters": { "rule": { "interval": [{ "field": "hours", "triggerAtHour": 7 }] } },
+      "parameters": { "rule": { "interval": [{ "field": "hours", "triggerAtHour": 7, "triggerTimezone": "Asia/Bangkok" }] } },
       "id": "schedule",
       "name": "Schedule 07:00",
       "type": "n8n-nodes-base.scheduleTrigger",
