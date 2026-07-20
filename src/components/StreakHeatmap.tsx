@@ -1,6 +1,14 @@
 import React from 'react';
 import type { LogRow } from '../types';
 
+// App timezone is Asia/Bangkok (UTC+7) — heatmap "today" aligns with the app's
+// calendar day, not the browser/viewer's local timezone.
+const APP_TZ = "Asia/Bangkok";
+function todayInAppTz(): Date {
+  const parts = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ }).split("-");
+  // Interpret as local midnight so date math (getDate/-1) is stable.
+  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+}
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -9,7 +17,6 @@ function localDateStr(d: Date): string {
 }
 
 // GitHub-style contribution heatmap from reading_log dates.
-// Uses LOCAL date strings so cells align with the user's calendar day (not UTC).
 export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   const byDay = new Map<string, number>();
   for (const l of logs) {
@@ -18,8 +25,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   }
 
   const weeks: Date[][] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = todayInAppTz();
   // start 18 weeks ago, aligned to Sunday
   const start = new Date(today);
   start.setDate(start.getDate() - (18 * 7 + today.getDay()));

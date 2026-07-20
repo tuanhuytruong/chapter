@@ -2,11 +2,26 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Quote, FileText } from 'lucide-react';
 import type { LogRow } from '../types';
 
+// Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
+// whitespace, drop blank lines, and keep paragraph breaks so the preview is
+// readable. We don't alter wording — this only normalizes spacing.
+function formatRawText(raw: string): string {
+  return raw
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter((line, i, arr) => !(line === "" && (i === 0 || arr[i - 1] === "")))
+    .join("\n")
+    .trim();
+}
+
 const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
   const [open, setOpen] = useState(false);
-  // log.date is already a 'YYYY-MM-DD' string (Asia/Bangkok / UTC+7 app tz).
-  // Format it for display in the same timezone so it never appears off-by-one.
-  const rawStr = log.date instanceof Date ? log.date.toISOString().slice(0, 10) : String(log.date);
+  // log.date is a 'YYYY-MM-DD' string (Asia/Bangkok / UTC+7 app tz). Normalize
+  // defensively: some server builds serialize DATE as an ISO datetime string or
+  // a JS Date, so always take the first 10 chars. Format in Asia/Bangkok so it
+  // never shows off-by-one or "Invalid Date".
+  const rawStr = String(log.date).slice(0, 10);
   const date = new Date(rawStr + "T00:00:00").toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -50,7 +65,7 @@ const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
       {open && log.raw_text && (
         <div className="pt-2 border-t border-natural-border">
           <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans mb-1"><FileText className="w-3 h-3" /> Raw extracted text</p>
-          <pre className="text-[10px] text-natural-muted font-sans whitespace-pre-wrap max-h-48 overflow-y-auto bg-natural-cream rounded-xl p-3">{log.raw_text}</pre>
+          <pre className="text-[11px] leading-relaxed text-natural-muted font-sans whitespace-pre-wrap break-words max-h-56 overflow-y-auto bg-natural-cream rounded-xl p-3">{formatRawText(log.raw_text)}</pre>
         </div>
       )}
     </div>

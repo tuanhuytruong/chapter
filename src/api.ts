@@ -99,7 +99,9 @@ export function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const days = new Set(dates.map((d) => d.slice(0, 10)));
   let streak = 0;
-  const cur = new Date();
+  // "Today" in the app timezone (Asia/Bangkok / UTC+7), not the viewer's local tz.
+  const parts = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }).split("-");
+  const cur = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
   cur.setHours(0, 0, 0, 0);
   // if today not read yet, start counting from yesterday
   if (!days.has(toLocalDateStr(cur))) cur.setDate(cur.getDate() - 1);
