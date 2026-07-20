@@ -59,19 +59,28 @@ export function progressPct(b: BookRow): number {
   return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
 }
 
-/** Compute current streak (consecutive days up to today) from log dates. */
+/** Compute current streak (consecutive days up to today) from log dates.
+ *  Uses LOCAL date (not UTC) so streaks align with the user's calendar day. */
 export function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const days = new Set(dates.map((d) => d.slice(0, 10)));
   let streak = 0;
   const cur = new Date();
-  // if today not read yet, start from yesterday
-  if (!days.has(cur.toISOString().slice(0, 10))) cur.setDate(cur.getDate() - 1);
-  while (days.has(cur.toISOString().slice(0, 10))) {
+  cur.setHours(0, 0, 0, 0);
+  // if today not read yet, start counting from yesterday
+  if (!days.has(toLocalDateStr(cur))) cur.setDate(cur.getDate() - 1);
+  while (days.has(toLocalDateStr(cur))) {
     streak++;
     cur.setDate(cur.getDate() - 1);
   }
   return streak;
+}
+
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /** Fetch a cover image URL from Open Library by book title. */

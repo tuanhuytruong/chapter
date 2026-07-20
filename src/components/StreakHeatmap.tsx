@@ -1,11 +1,25 @@
 import React from 'react';
 import type { LogRow } from '../types';
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // GitHub-style contribution heatmap from reading_log dates.
+// Uses LOCAL date strings so cells align with the user's calendar day (not UTC).
 export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
-  const days = new Set(logs.map(l => l.date.slice(0, 10)));
+  const byDay = new Map<string, number>();
+  for (const l of logs) {
+    const k = l.date.slice(0, 10);
+    byDay.set(k, (byDay.get(k) || 0) + 1);
+  }
+
   const weeks: Date[][] = [];
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   // start 18 weeks ago, aligned to Sunday
   const start = new Date(today);
   start.setDate(start.getDate() - (18 * 7 + today.getDay()));
@@ -21,12 +35,12 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   }
 
   const level = (dt: Date) => {
-    const key = dt.toISOString().slice(0, 10);
-    if (!days.has(key)) return 0;
-    const count = logs.filter(l => l.date.slice(0, 10) === key).length;
+    const key = localDateStr(dt);
+    const count = byDay.get(key) || 0;
     return Math.min(4, count);
   };
-  const color = (lv: number) => ['bg-natural-cream', 'bg-natural-sage/30', 'bg-natural-sage/60', 'bg-natural-sage/80', 'bg-natural-sage'][lv];
+  const color = (lv: number) =>
+    ["bg-natural-cream", "bg-natural-sage/30", "bg-natural-sage/60", "bg-natural-sage/80", "bg-natural-sage"][lv];
 
   return (
     <div className="flex gap-1 overflow-x-auto pb-1">
@@ -35,8 +49,11 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
           {week.map((day, di) => {
             const future = day > today;
             return (
-              <div key={di} title={day.toISOString().slice(0, 10)}
-                className={`w-3 h-3 rounded-sm ${future ? 'bg-transparent' : color(level(day))} border border-natural-border/40`} />
+              <div
+                key={di}
+                title={localDateStr(day)}
+                className={`w-3 h-3 rounded-sm ${future ? "bg-transparent" : color(level(day))} border border-natural-border/40`}
+              />
             );
           })}
         </div>

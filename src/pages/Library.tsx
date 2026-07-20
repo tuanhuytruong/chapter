@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Flame, Loader2, BookOpen, Zap, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, Loader2, BookOpen, Zap, Search, ArrowUpDown } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';

@@ -20,3 +20,8 @@ body {
   background-color: var(--color-natural-bg);
   color: var(--color-natural-dark);
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

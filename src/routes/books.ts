@@ -6,7 +6,13 @@ import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../t
 
 export const booksRouter = Router();
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
 
 // ── Helpers ───────────────────────────────────────────────
 function progressPct(b: any): number {
