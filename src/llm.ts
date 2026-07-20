@@ -72,6 +72,7 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
           { role: "user", content: buildUserPrompt(input) },
         ],
         temperature: 0.7,
+        stream: false,
       }),
     });
     if (!resp.ok) {
