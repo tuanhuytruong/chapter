@@ -42,17 +42,31 @@ export async function extractPdfRange(
   const buffer = fs.readFileSync(filePath);
   const pageTexts: string[] = [];
 
-  await pdfParse(buffer, {
-    // Called once per rendered page with that page's text.
-    pagerender: (pageData: any) => {
-      return pageData.getTextContent().then((content: any) => {
-        const strings = content.items.map((it: any) => it.str).join(" ");
-        const pNum = pageData.pageIndex + 1;
-        pageTexts[pNum] = strings;
-        return strings;
-      });
-    },
-  });
+  // pdf-parse (via pdfjs/fontkit) emits a harmless "Required 'glyf' table is
+  // not found -- trying to recover" warning for PDFs whose fonts lack a TrueType
+  // glyph table (scanned/bitmap/Type3 fonts). Text extraction still works fine,
+  // so we suppress just that noisy warning to keep logs clean.
+  const origWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    const msg = String(args[0] ?? "");
+    if (/glyf.+table.+not found|trying to recover/i.test(msg)) return;
+    origWarn.apply(console, args as any);
+  };
+  try {
+    await pdfParse(buffer, {
+      // Called once per rendered page with that page's text.
+      pagerender: (pageData: any) => {
+        return pageData.getTextContent().then((content: any) => {
+          const strings = content.items.map((it: any) => it.str).join(" ");
+          const pNum = pageData.pageIndex + 1;
+          pageTexts[pNum] = strings;
+          return strings;
+        });
+      },
+    });
+  } finally {
+    console.warn = origWarn;
+  }
 
   const totalUnits = pageTexts.length - 1; // index 0 unused
   const lo = Math.max(1, startPage);
