@@ -26,13 +26,9 @@ if [ -f .env.local ]; then
   set -a; source .env.local; set +a
 fi
 
-echo "==> Ensuring DB schema (creates chapter.books / chapter.reading_log if missing)"
-# ensureSchema() also runs on server boot; this is an explicit pre-check.
-NODE_ENV=production node -e "
-const { ensureSchema } = require('./dist/server.cjs') || {};
-" 2>/dev/null || echo "   (schema will be ensured on server boot)"
+echo "==> DB schema will be ensured automatically on server boot (ensureSchema)"
 
-echo "==> (Re)starting with PM2"
+echo "==> (Re)Starting with PM2"
 if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
   pm2 reload "$APP_NAME" --update-env
 else

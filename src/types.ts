@@ -44,6 +44,20 @@ export interface BookRow {
   progress?: number;
 }
 
+export interface LogRow {
+  id: string;
+  book_id: string;
+  date: string;
+  page_start: number;
+  page_end: number;
+  raw_text: string | null;
+  summary: string | null;
+  key_insights: string[] | null;
+  quote: string | null;
+  telegram_sent: boolean;
+  created_at: string;
+}
+
 export interface Comment {
   id: string;
   authorName: string;

@@ -11,13 +11,17 @@ import fs from "fs";
 import { createRequire } from "module";
 import { resolve as pathResolve } from "path";
 
-// pdf-parse v1.1.1 blocks ALL subpath imports (even package.json) via its
-// "exports" map. Load the lib entry by absolute filesystem path, constructed
-// from process.cwd() so it works regardless of the resolving package.
-const require = createRequire(import.meta.url);
+// pdf-parse v1.1.1 blocks ALL subpath imports via its "exports" map. Load the
+// lib entry by absolute filesystem path. In ESM/tsx use createRequire(import.meta.url);
+// in the CJS build (dist/server.cjs) import.meta is empty so fall back to the
+// global require and a cwd-relative path.
+const req: NodeRequire =
+  typeof import.meta !== "undefined" && import.meta.url
+    ? createRequire(import.meta.url)
+    : (require as NodeRequire);
 const pdfParseLibPath = pathResolve(process.cwd(), "node_modules/pdf-parse/lib/pdf-parse.js");
 // @ts-ignore - no types for the internal entry
-const pdfParse = require(pdfParseLibPath);
+const pdfParse = req(pdfParseLibPath);
 
 export interface ExtractResult {
   text: string;

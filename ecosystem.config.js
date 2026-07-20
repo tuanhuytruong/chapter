@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "chapter",
-      script: "dist/server.cjs",
+      script: "dist/server.mjs",
       instances: 1,
       autorestart: true,
       watch: false,
