@@ -104,6 +104,18 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/books/:id — single book
+booksRouter.get("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await query("SELECT * FROM books WHERE id = $1", [id]);
+    if (!rows.length) return res.status(404).json({ error: "book not found" });
+    res.json(rows[0]);
+  } catch (e: any) {
+    res.status(503).json({ error: "DB unavailable", detail: e.message });
+  }
+});
+
 // GET /api/books/:id/log — full history
 booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -175,29 +187,36 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     }
 
     const start = book.current_page + 1;
-    const end = Math.min(book.current_page + book.daily_pages, book.total_pages || start + book.daily_pages);
+    const end = Math.min(
+      book.current_page + book.daily_pages,
+      book.total_pages || start + book.daily_pages
+    );
     if (start > (book.total_pages || Infinity)) {
       return { bookId, skipped: true, reason: "book finished" };
     }
 
     const { text, totalUnits } = await extractRange(book.file_path, book.file_type, start, end);
 
+    // If total_pages wasn't set when the book was added, derive it from the
+    // actual file (PDF page count / EPUB chapter count) on first advance.
+    const totalPages = book.total_pages || totalUnits;
+
     const raw = await callNineRouter({
       title: book.title,
       author: book.author,
       start,
       end,
-      total: book.total_pages,
+      total: totalPages,
       extractedText: text,
     });
     const parsed = parseSummary(raw);
 
     // Update book cursor + status
     const newCurrent = end;
-    const finished = newCurrent >= (book.total_pages || newCurrent);
+    const finished = newCurrent >= (totalPages || newCurrent);
     await client.query(
-      `UPDATE books SET current_page=$1, status=CASE WHEN $2 THEN 'finished' ELSE status END WHERE id=$3`,
-      [newCurrent, finished, bookId]
+      `UPDATE books SET current_page=$1, total_pages=$2, status=CASE WHEN $3 THEN 'finished' ELSE status END WHERE id=$4`,
+      [newCurrent, totalPages, finished, bookId]
     );
 
     const ins = await client.query(
