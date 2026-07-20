@@ -4,7 +4,18 @@ import type { LogRow } from '../types';
 
 const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
   const [open, setOpen] = useState(false);
-  const date = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  // Normalize the date: pg returns DATE columns as JS Date objects (serialized
+  // to an ISO string with a time suffix by res.json). Strip to YYYY-MM-DD so
+  // `new Date(...)` parses cleanly in local time.
+  const rawDate =
+    log.date instanceof Date
+      ? log.date.toISOString().slice(0, 10)
+      : String(log.date).slice(0, 10);
+  const date = new Date(rawDate + "T00:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <div className="bg-white border border-natural-border rounded-2xl p-4 shadow-sm space-y-2">

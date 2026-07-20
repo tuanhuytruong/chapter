@@ -1,5 +1,12 @@
 import { Pool } from "pg";
 
+// Keep Postgres DATE columns as plain 'YYYY-MM-DD' strings instead of JS Date
+// objects. The default JS Date parsing shifts to UTC and, once JSON-serialized
+// by Express, produces an ISO string with a time suffix that breaks client-side
+// `new Date(...)` parsing ("Invalid Date"). Returning the raw string avoids that.
+const pgTypes = (require("pg") as any).types;
+pgTypes.setTypeParser(1082, (val: string) => val); // 1082 = DATE oid
+
 /**
  * PostgreSQL connection for the Chapter app.
  *
