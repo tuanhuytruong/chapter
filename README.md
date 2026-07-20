@@ -48,7 +48,7 @@ chapter/
 ├── scripts/                  # verify-phase1 / verify-9router / verify-telegram
 ├── ecosystem.config.cjs       # PM2 config (CommonJS — required because package.json has "type": "module")
 ├── deploy.sh                 # Deploy helper
-├── .env.local.example        # Env template
+├── .env.example               # Env template (copy to .env.local)
 └── package.json
 ```
 
@@ -81,10 +81,10 @@ npm run build        # builds frontend (dist/) + backend (dist/server.mjs)
 
 ### 3. Configure environment
 ```bash
-cp .env.local.example .env.local
+cp .env.example .env.local
 nano .env.local
 ```
-Fill in (see `.env.local.example` for all keys):
+Fill in (see `.env.example` for all keys):
 ```env
 DATABASE_URL=postgresql://<user>:<pass>@localhost:5432/dwh
 NINE_ROUTER_URL=https://9router-ubt.mrl.asia/v1/chat/completions
