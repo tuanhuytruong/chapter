@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { upload } from "../upload.js";
 import { config } from "../config.js";
+import fs from "fs";
+import path from "path";
 
 export const uploadRouter = Router();
 
@@ -20,4 +22,27 @@ uploadRouter.post("/", upload.single("file"), (req: Request, res: Response) => {
     size: req.file.size,
     books_dir: config.booksDir,
   });
+});
+
+// DELETE /api/upload?path=... — remove an uploaded-but-not-saved file.
+// Only deletes files that live inside CHAPTER_BOOKS_DIR (prevents path
+// traversal / deleting arbitrary server files).
+uploadRouter.delete("/", (req: Request, res: Response) => {
+  const p = String(req.query.path || "");
+  if (!p) return res.status(400).json({ error: "path required" });
+  const dir = config.booksDir.replace(/\/+$/, "");
+  const abs = path.resolve(p);
+  // Must be inside booksDir and not equal to it.
+  if (abs !== dir && !abs.startsWith(dir + path.sep)) {
+    return res.status(400).json({ error: "path not inside books dir" });
+  }
+  try {
+    if (fs.existsSync(abs)) {
+      fs.unlinkSync(abs);
+      return res.json({ ok: true, deleted: abs });
+    }
+    return res.json({ ok: true, deleted: null });
+  } catch (e: any) {
+    return res.status(500).json({ error: "delete failed", detail: e.message });
+  }
 });

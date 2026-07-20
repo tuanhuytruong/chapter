@@ -61,6 +61,11 @@ export interface UploadResult {
   books_dir: string;
 }
 
+/** Delete an uploaded-but-not-saved file by its stored path. */
+export async function deleteUpload(filePath: string): Promise<void> {
+  await fetch(`/api/upload?path=${encodeURIComponent(filePath)}`, { method: "DELETE" });
+}
+
 /** Upload a book file (max 100MB) to the server. Returns stored path. */
 export async function uploadBook(file: File, onProgress?: (pct: number) => void): Promise<UploadResult> {
   const form = new FormData();

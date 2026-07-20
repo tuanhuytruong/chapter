@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, ImageIcon } from 'lucide-react';
-import { api, fetchCover, uploadBook } from '../api';
+import { api, fetchCover, uploadBook, deleteUpload } from '../api';
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -19,6 +19,10 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const debounce = useRef<ReturnType<typeof setTimeout>>();
+  // Path of a file we uploaded but haven't saved yet — delete it if the user
+  // closes the modal without saving.
+  const uploadedPathRef = useRef<string | null>(null);
+  const submittedRef = useRef(false);
 
   // Auto-fetch cover from Open Library when title changes (debounced)
   useEffect(() => {
@@ -32,6 +36,16 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
     }, 600);
     return () => clearTimeout(debounce.current);
   }, [title, autoCover]);
+
+  // On unmount, if a file was uploaded but never saved, clean it up.
+  useEffect(() => {
+    return () => {
+      if (!submittedRef.current && uploadedPathRef.current) {
+        deleteUpload(uploadedPathRef.current).catch(() => {});
+        uploadedPathRef.current = null;
+      }
+    };
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +63,8 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         daily_pages: dailyPages,
         cover_url: coverUrl || undefined,
       });
+      submittedRef.current = true; // keep the uploaded file
+      uploadedPathRef.current = null;
       onToast({ type: 'ok', msg: `Added "${title}"` });
       onAdded();
       onClose();
@@ -89,6 +105,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
                 const r = await uploadBook(f, setUploadPct);
                 setFilePath(r.file_path);
                 setFileType(r.file_type);
+                uploadedPathRef.current = r.file_path; // mark for cleanup if not saved
                 onToast({ type: 'ok', msg: `Uploaded ${r.filename}` });
               } catch (err: any) {
                 onToast({ type: 'err', msg: err.message });
