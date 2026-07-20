@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { query, withClient } from "../db.js";
 import { extractRange } from "../extractor.js";
 import { callNineRouter, parseSummary } from "../llm.js";
+import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 
 export const booksRouter = Router();
 
@@ -253,3 +254,57 @@ booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
     res.status(500).json({ error: "retry failed", detail: e.message });
   }
 });
+
+// POST /api/books/all/notify — push today's logs to Telegram + mark sent.
+// Called by n8n AFTER /all/advance. Returns per-book delivery status.
+booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
+  const cfg = getTelegramConfig();
+  if (!cfg) return res.status(500).json({ error: "Telegram not configured (TELEGRAM_BOT_TOKEN/CHAT_ID)" });
+  try {
+    const { rows: books } = await query(
+      "SELECT * FROM books WHERE status='active'"
+    );
+    const results: any[] = [];
+    for (const b of books) {
+      const { rows } = await query(
+        "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
+        [b.id, today()]
+      );
+      const log = rows[0];
+      if (!log || !log.summary) {
+        results.push({ book: b.title, delivered: false, reason: "no summary today" });
+        continue;
+      }
+      const text = formatDailyMessage(b.title, b.author, log);
+      const sent = await sendTelegramMessage(cfg, text);
+      if (sent.ok) {
+        await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [log.id]);
+        results.push({ book: b.title, delivered: true });
+      } else {
+        results.push({ book: b.title, delivered: false, error: sent.error });
+      }
+    }
+    res.json({ delivered: results.filter((r) => r.delivered).length, results });
+  } catch (e: any) {
+    res.status(500).json({ error: "notify failed", detail: e.message });
+  }
+});
+
+// GET /api/books/all/log/today — convenience for n8n: today's entries for all active books.
+booksRouter.get("/all/log/today", async (_req: Request, res: Response) => {
+  try {
+    const { rows: books } = await query("SELECT * FROM books WHERE status='active'");
+    const out: any[] = [];
+    for (const b of books) {
+      const { rows } = await query(
+        "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
+        [b.id, today()]
+      );
+      if (rows[0]) out.push({ book: b, log: rows[0] });
+    }
+    res.json(out);
+  } catch (e: any) {
+    res.status(503).json({ error: "DB unavailable", detail: e.message });
+  }
+});
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft } from 'lucide-react';
-import { api, computeStreak, progressPct } from '../api';
+import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon } from 'lucide-react';
+import { api, computeStreak, progressPct, fetchCover } from '../api';
 import type { BookRow, LogRow } from '../types';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
@@ -17,6 +17,11 @@ export default function BookDetail() {
   const [editing, setEditing] = useState(false);
   const [dailyPages, setDailyPages] = useState(20);
   const [status, setStatus] = useState<'active' | 'paused' | 'finished'>('active');
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
+  const [searchingCover, setSearchingCover] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -27,6 +32,9 @@ export default function BookDetail() {
       setBook(b);
       setDailyPages(b.daily_pages);
       setStatus(b.status);
+      setTitle(b.title);
+      setAuthor(b.author);
+      setCoverUrl(b.cover_url || '');
       setLogs([...l].sort((a, b) => b.date.localeCompare(a.date)));
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
@@ -54,12 +62,40 @@ export default function BookDetail() {
   const saveSettings = async () => {
     if (!id) return;
     try {
-      await api.updateBook(id, { daily_pages: dailyPages, status });
-      setToast({ type: 'ok', msg: 'Settings saved' });
+      await api.updateBook(id, {
+        daily_pages: dailyPages,
+        status,
+        title: title.trim(),
+        author: author.trim(),
+        cover_url: coverUrl || undefined,
+      });
+      setToast({ type: 'ok', msg: 'Saved' });
       setEditing(false);
       await load();
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
+    }
+  };
+
+  const reFetchCover = async () => {
+    if (!title.trim()) return;
+    setSearchingCover(true);
+    const url = await fetchCover(title);
+    if (url) setCoverUrl(url);
+    setSearchingCover(false);
+  };
+
+  const deleteBook = async () => {
+    if (!id) return;
+    if (!confirm(`Delete "${book?.title}"? Reading log is kept.`)) return;
+    setDeleting(true);
+    try {
+      await api.deleteBook(id);
+      setToast({ type: 'ok', msg: 'Book deleted' });
+      navigate('/');
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+      setDeleting(false);
     }
   };
 
@@ -75,12 +111,16 @@ export default function BookDetail() {
 
   return (
     <div className="space-y-6 font-sans">
-      <button onClick={() => navigate('/')} className="flex items-center gap-1 text-xs text-natural-stone hover:text-natural-dark"><ArrowLeft className="w-4 h-4" /> Library</button>
+      <div className="flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="flex items-center gap-1 text-xs text-natural-stone hover:text-natural-dark"><ArrowLeft className="w-4 h-4" /> Library</button>
+        <button onClick={deleteBook} disabled={deleting}
+          className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+      </div>
 
       {/* Header */}
       <div className="flex gap-5 bg-white border border-natural-border rounded-[28px] p-5 shadow-sm">
         <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden bg-natural-cream border border-natural-border flex items-center justify-center">
-          {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
+          {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="font-bold text-xl text-natural-dark leading-tight">{book.title}</h1>
@@ -110,14 +150,27 @@ export default function BookDetail() {
           {editing ? (
             <div className="space-y-3">
               <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Title</label>
+                <input value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Author</label>
+                <input value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Cover URL</label>
+                <div className="flex gap-2 mt-1">
+                  <input value={coverUrl} onChange={e => setCoverUrl(e.target.value)} disabled={searchingCover} className="flex-1 px-3 py-1.5 bg-natural-cream/50 border border-natural-border rounded-xl text-xs disabled:opacity-50" />
+                  <button onClick={reFetchCover} disabled={searchingCover} className="px-2 py-1.5 bg-natural-cream border border-natural-border rounded-xl text-[10px] font-bold">Auto</button>
+                </div>
+              </div>
+              <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Pages / day</label>
-                <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
               </div>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
-                <select value={status} onChange={e => setStatus(e.target.value as any)}
-                  className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs">
+                <select value={status} onChange={e => setStatus(e.target.value as any)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs">
                   <option value="active">Active</option>
                   <option value="paused">Paused</option>
                   <option value="finished">Finished</option>

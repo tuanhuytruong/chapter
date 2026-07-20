@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Flame, Loader2, BookOpen, Zap } from 'lucide-react';
-import { api, computeStreak } from '../api';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Flame, Loader2, BookOpen, Zap, Search, ArrowUpDown } from 'lucide-react';
+import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';
 import AddBookModal from '../components/AddBookModal';
@@ -14,11 +14,21 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'paused', label: 'Paused' },
 ];
 
+type Sort = 'recent' | 'title' | 'progress' | 'streak';
+const SORTS: { id: Sort; label: string }[] = [
+  { id: 'recent', label: 'Recent' },
+  { id: 'title', label: 'Title A-Z' },
+  { id: 'progress', label: 'Progress ↑' },
+  { id: 'streak', label: 'Streak ↓' },
+];
+
 export default function Library() {
   const [books, setBooks] = useState<BookRow[]>([]);
   const [streaks, setStreaks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<Sort>('recent');
+  const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
@@ -28,7 +38,6 @@ export default function Library() {
     try {
       const list = await api.listBooks();
       setBooks(list);
-      // fetch each book's log to compute streak
       const s: Record<string, number> = {};
       await Promise.all(list.map(async (b) => {
         try {
@@ -59,7 +68,17 @@ export default function Library() {
     }
   };
 
-  const filtered = books.filter(b => filter === 'all' || b.status === filter);
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = books.filter(b => (filter === 'all' || b.status === filter));
+    if (q) list = list.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+    const sorted = [...list];
+    if (sort === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sort === 'progress') sorted.sort((a, b) => progressPct(a) - progressPct(b));
+    else if (sort === 'streak') sorted.sort((a, b) => (streaks[b.id] || 0) - (streaks[a.id] || 0));
+    // 'recent' keeps server order (created_at desc assumed)
+    return sorted;
+  }, [books, filter, search, sort, streaks]);
 
   return (
     <div className="space-y-6">
@@ -80,21 +99,37 @@ export default function Library() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-natural-border">
-        {FILTERS.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)}
-            className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
-              filter === f.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
-            {f.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex gap-2 border-b border-natural-border">
+          {FILTERS.map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)}
+              className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
+                filter === f.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-natural-border rounded-full">
+            <Search className="w-3.5 h-3.5 text-natural-stone" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title/author"
+              className="text-xs bg-transparent outline-none w-32 font-sans" />
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-natural-border rounded-full">
+            <ArrowUpDown className="w-3.5 h-3.5 text-natural-stone" />
+            <select value={sort} onChange={e => setSort(e.target.value as Sort)}
+              className="text-xs bg-transparent outline-none font-sans cursor-pointer">
+              {SORTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0,1,2,3,4,5].map(i => <div key={i} className="h-36 bg-white border border-natural-border rounded-[24px] animate-pulse" />)}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : visible.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-16 bg-white rounded-[32px] border border-natural-border text-center space-y-3">
           <BookOpen className="w-10 h-10 text-natural-stone" />
           <p className="text-sm font-bold text-natural-dark font-sans">No books yet</p>
@@ -105,7 +140,7 @@ export default function Library() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(b => <BookCard key={b.id} book={b} streak={streaks[b.id]} />)}
+          {visible.map(b => <BookCard key={b.id} book={b} streak={streaks[b.id]} />)}
         </div>
       )}
 

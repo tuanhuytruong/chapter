@@ -26,9 +26,11 @@ const BookCard: React.FC<{ book: BookRow; streak?: number }> = ({ book, streak }
     >
       <div className="flex gap-4">
         <div className="w-16 h-22 shrink-0 rounded-xl overflow-hidden bg-natural-cream border border-natural-border flex items-center justify-center">
-          {book.cover_url
-            ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-            : <BookOpen className="w-6 h-6 text-natural-stone" />}
+          {book.cover_url ? (
+            <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} className="w-full h-full object-cover" />
+          ) : (
+            <BookOpen className="w-6 h-6 text-natural-stone" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-bold text-natural-dark font-sans text-sm leading-tight line-clamp-2">{book.title}</h3>
