@@ -5,6 +5,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { CommunityPost, Comment } from "./src/types.js";
 import { booksRouter } from "./src/routes/books.js";
+import { uploadRouter } from "./src/routes/upload.js";
 import { ensureSchema } from "./src/db.js";
 
 // Ensure the port is 3000
@@ -29,6 +30,9 @@ app.use(express.json());
 
 // ── Book reading companion routes (Phase 1) ──
 app.use("/api/books", booksRouter);
+
+// ── Book file upload (Phase 3) ──
+app.use("/api/upload", uploadRouter);
 
 // In-Memory Database for Community Posts & Comments
 let communityPosts: CommunityPost[] = [

@@ -53,6 +53,35 @@ export const api = {
     req<LogRow>(`${BASE}/${id}/retry/${date}`, { method: "POST" }),
 };
 
+export interface UploadResult {
+  file_path: string;
+  file_type: "pdf" | "epub";
+  filename: string;
+  size: number;
+  books_dir: string;
+}
+
+/** Upload a book file (max 100MB) to the server. Returns stored path. */
+export async function uploadBook(file: File, onProgress?: (pct: number) => void): Promise<UploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const xhr = new XMLHttpRequest();
+  return new Promise<UploadResult>((resolve, reject) => {
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      let body: any = {};
+      try { body = JSON.parse(xhr.responseText); } catch { /* ignore */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body as UploadResult);
+      else reject(new Error(`${xhr.status}: ${body?.error || xhr.statusText}`));
+    };
+    xhr.onerror = () => reject(new Error("upload network error"));
+    xhr.open("POST", "/api/upload");
+    xhr.send(form);
+  });
+}
+
 // ── Derived helpers ──────────────────────────────────────────────
 export function progressPct(b: BookRow): number {
   if (!b.total_pages) return 0;

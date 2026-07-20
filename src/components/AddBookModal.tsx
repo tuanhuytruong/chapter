@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, ImageIcon } from 'lucide-react';
-import { api, fetchCover } from '../api';
+import { api, fetchCover, uploadBook } from '../api';
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -16,6 +16,8 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [autoCover, setAutoCover] = useState(false);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
   const debounce = useRef<ReturnType<typeof setTimeout>>();
 
   // Auto-fetch cover from Open Library when title changes (debounced)
@@ -77,10 +79,38 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="James Clear" />
           </div>
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">File name *</label>
-            <input value={filePath} onChange={e => setFilePath(e.target.value)} required
-              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="atomic-habits.pdf" />
-            <p className="text-[10px] text-natural-stone mt-1">File inside <span className="font-mono">/opt/chapter/workspace/books/</span> — just type the name. Full path also accepted.</p>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">File *</label>
+            <input type="file" accept=".pdf,.epub" onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setUploading(true);
+              setUploadPct(0);
+              try {
+                const r = await uploadBook(f, setUploadPct);
+                setFilePath(r.file_path);
+                setFileType(r.file_type);
+                onToast({ type: 'ok', msg: `Uploaded ${r.filename}` });
+              } catch (err: any) {
+                onToast({ type: 'err', msg: err.message });
+              } finally {
+                setUploading(false);
+              }
+            }} disabled={uploading}
+              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-natural-sage file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-natural-sage file:text-white file:text-xs" />
+            {uploading && (
+              <div className="mt-1 flex items-center gap-2">
+                <div className="flex-1 h-1.5 bg-natural-border rounded-full overflow-hidden">
+                  <div className="h-full bg-natural-sage transition-all" style={{ width: `${uploadPct}%` }} />
+                </div>
+                <span className="text-[10px] text-natural-stone">{uploadPct}%</span>
+              </div>
+            )}
+            <p className="text-[10px] text-natural-stone mt-1">
+              Max 100MB · PDF or EPUB. File saves to <span className="font-mono">/opt/chapter/workspace/books/</span>.
+              Or type a filename below if it already exists there.
+            </p>
+            <input value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="atomic-habits.pdf (if already in books dir)"
+              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
