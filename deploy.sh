@@ -4,7 +4,7 @@
 set -euo pipefail
 
 APP_NAME="chapter"
-APP_DIR="${CHAPTER_APP_DIR:-/opt/chapter/workspace/chapter}"
+APP_DIR="${CHAPTER_APP_DIR:-/opt/chapter}"
 BRANCH="${BRANCH:-dev}"
 PORT="${PORT:-3000}"
 
