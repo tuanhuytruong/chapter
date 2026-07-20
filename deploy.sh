@@ -32,7 +32,7 @@ echo "==> (Re)Starting with PM2"
 if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
   pm2 reload "$APP_NAME" --update-env
 else
-  pm2 start ecosystem.config.js --env production
+  pm2 start ecosystem.config.cjs --env production
 fi
 pm2 save
 

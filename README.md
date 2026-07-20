@@ -46,7 +46,7 @@ chapter/
 │   └── types.ts              # BookRow, LogRow types
 ├── n8n/chapter-daily-summary.json   # n8n workflow to import
 ├── scripts/                  # verify-phase1 / verify-9router / verify-telegram
-├── ecosystem.config.js       # PM2 config
+├── ecosystem.config.cjs       # PM2 config (CommonJS — required because package.json has "type": "module")
 ├── deploy.sh                 # Deploy helper
 ├── .env.local.example        # Env template
 └── package.json
@@ -100,7 +100,7 @@ PORT=3000
 
 ### 4. Start with PM2
 ```bash
-pm2 start ecosystem.config.js --env production
+pm2 start ecosystem.config.cjs --env production
 pm2 save
 ```
 Or use the helper:
