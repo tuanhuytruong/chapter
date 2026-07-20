@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import CommunityFeed from '../components/CommunityFeed';
-import AIAnalyzer from '../components/AIAnalyzer';
-import DiscussionRoom from '../components/DiscussionRoom';
 import { CommunityPost, Comment } from '../types';
-import { Loader2, Sparkles, MessageSquare, BookOpen } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-// Community page — keeps the base community feed + AI critique + journal club
-// (per plan: keep-as-is, do not extend).
+// Community page — keeps the base community feed only.
+// (AI Critique / Journal Club removed per project scope.)
 export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
-  const [subTab, setSubTab] = useState<'feed' | 'critique' | 'discussions'>('feed');
 
   const fetchPosts = async () => {
     setLoadingPosts(true);
@@ -66,34 +63,17 @@ export default function Community() {
     return null;
   };
 
-  const tabs = [
-    { id: 'feed', label: 'Feed', icon: BookOpen },
-    { id: 'critique', label: 'AI Critique', icon: Sparkles },
-    { id: 'discussions', label: 'Journal Club', icon: MessageSquare },
-  ] as const;
-
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 border-b border-natural-border">
-        {tabs.map(t => {
-          const Icon = t.icon;
-          return (
-            <button key={t.id} onClick={() => setSubTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
-                subTab === t.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
-              <Icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          );
-        })}
+      <div>
+        <h1 className="font-bold text-2xl text-natural-dark font-sans">Community</h1>
+        <p className="text-xs text-natural-stone font-sans">Shared reading logs from the club</p>
       </div>
 
-      {subTab === 'feed' && (
-        loadingPosts
-          ? <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-natural-border"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /><p className="text-xs text-natural-stone font-sans mt-3">Assembling community logs...</p></div>
-          : <CommunityFeed posts={posts} onLikePost={handleLikePost} onAddComment={handleAddComment} onTriggerAIComment={handleTriggerAIComment} />
-      )}
-      {subTab === 'critique' && <AIAnalyzer />}
-      {subTab === 'discussions' && <DiscussionRoom />}
+      {loadingPosts
+        ? <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-natural-border"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /><p className="text-xs text-natural-stone font-sans mt-3">Assembling community logs...</p></div>
+        : <CommunityFeed posts={posts} onLikePost={handleLikePost} onAddComment={handleAddComment} onTriggerAIComment={handleTriggerAIComment} />
+      }
     </div>
   );
 }
