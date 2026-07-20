@@ -1,0 +1,43 @@
+-- Chapter — AI Daily Book Reading Companion
+-- PostgreSQL schema for the `chapter` database.
+-- Run with: psql "$DATABASE_URL" -f src/db/schema.sql
+-- Requires PostgreSQL 13+ (uses built-in gen_random_uuid(), no uuid-ossp needed).
+
+-- ───────────────────────────────────────────────────────────
+-- books
+-- ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS books (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title         TEXT NOT NULL,
+  author        TEXT NOT NULL DEFAULT 'Unknown',
+  file_path     TEXT NOT NULL,
+  file_type     TEXT NOT NULL CHECK (file_type IN ('pdf', 'epub')),
+  total_pages   INT  NOT NULL DEFAULT 0,
+  daily_pages   INT  NOT NULL DEFAULT 20,
+  current_page  INT  NOT NULL DEFAULT 0,
+  status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished')),
+  cover_url     TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_books_status ON books (status);
+
+-- ───────────────────────────────────────────────────────────
+-- reading_log
+-- ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS reading_log (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id       UUID NOT NULL REFERENCES books (id) ON DELETE CASCADE,
+  date          DATE NOT NULL DEFAULT CURRENT_DATE,
+  page_start    INT  NOT NULL DEFAULT 0,
+  page_end      INT  NOT NULL DEFAULT 0,
+  raw_text      TEXT,
+  summary       TEXT,
+  key_insights  TEXT[] NOT NULL DEFAULT '{}',
+  quote         TEXT,
+  telegram_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (book_id, date)   -- idempotency guard for daily cron
+);
+
+CREATE INDEX IF NOT EXISTS idx_reading_log_book_date ON reading_log (book_id, date DESC);

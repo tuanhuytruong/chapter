@@ -19,6 +19,29 @@ export interface ReadingLog {
   date: string;
   pagesRead: number;
   summary?: string;
+  // Extended for AI Daily Book Reading Companion
+  pageStart?: number;
+  pageEnd?: number;
+  rawText?: string;
+  keyInsights?: string[];
+  quote?: string | null;
+  telegramSent?: boolean;
+}
+
+// New server-side DB row shapes (snake_case from Postgres)
+export interface BookRow {
+  id: string;
+  title: string;
+  author: string;
+  file_path: string;
+  file_type: "pdf" | "epub";
+  total_pages: number;
+  daily_pages: number;
+  current_page: number;
+  status: "active" | "paused" | "finished";
+  cover_url?: string;
+  created_at: string;
+  progress?: number;
 }
 
 export interface Comment {

@@ -3,9 +3,9 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import { CommunityPost, Comment } from "./src/types.js"; // note: .js extension for TS building under some ESM configurations, or just import from typescript paths
-
-dotenv.config();
+import { CommunityPost, Comment } from "./src/types.js";
+import { booksRouter } from "./src/routes/books.js";
+import { ensureSchema } from "./src/db.js";
 
 // Ensure the port is 3000
 const PORT = 3000;
@@ -26,6 +26,9 @@ if (apiKey) {
 
 const app = express();
 app.use(express.json());
+
+// ── Book reading companion routes (Phase 1) ──
+app.use("/api/books", booksRouter);
 
 // In-Memory Database for Community Posts & Comments
 let communityPosts: CommunityPost[] = [
@@ -418,6 +421,17 @@ app.post("/api/gemini/chat", async (req: Request, res: Response) => {
 
 // Serve frontend assets in production / development
 async function startServer() {
+  // Ensure DB schema on boot if a database is configured.
+  if (process.env.DATABASE_URL) {
+    try {
+      await ensureSchema();
+    } catch (e: any) {
+      console.error("[db] schema ensure failed:", e.message);
+    }
+  } else {
+    console.warn("[db] DATABASE_URL not set — /api/books routes will be unavailable");
+  }
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
