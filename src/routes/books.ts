@@ -4,6 +4,8 @@ import { extractRange } from "../extractor.js";
 import { callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
+import fs from "fs";
+import path from "path";
 
 export const booksRouter = Router();
 
@@ -93,13 +95,32 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/books/:id — remove book, keep reading_log (FK cascade only on book)
+// DELETE /api/books/:id — remove book + its reading_log (FK ON DELETE CASCADE)
+// and delete the uploaded file from disk so nothing is left behind.
 booksRouter.delete("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    // Fetch the file path first so we can clean up the physical file.
+    const found = await query("SELECT file_path FROM books WHERE id = $1", [id]);
+    if (!found.rows.length) return res.status(404).json({ error: "book not found" });
+    const filePath = found.rows[0].file_path as string;
+
     const { rowCount } = await query("DELETE FROM books WHERE id = $1", [id]);
-    if (!rowCount) return res.status(404).json({ error: "book not found" });
-    res.json({ ok: true });
+
+    // Best-effort physical file cleanup (only inside the books dir).
+    if (filePath) {
+      try {
+        const booksDir = config.booksDir;
+        const abs = path.resolve(booksDir, path.basename(filePath));
+        if (abs.startsWith(path.resolve(booksDir) + path.sep) || abs === path.resolve(booksDir, path.basename(filePath))) {
+          if (fs.existsSync(abs)) fs.unlinkSync(abs);
+        }
+      } catch {
+        // ignore file-delete errors — DB record is already gone
+      }
+    }
+
+    res.json({ ok: true, deletedFile: filePath || null });
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
