@@ -5,12 +5,12 @@
 -- Schema option A: tables live under the `chapter` schema (search_path set in db.ts).
 --
 -- NOTE: the `chapter` schema must be created ONCE by a role with CREATE SCHEMA
--- privilege (e.g. the DB owner / superuser). The app's runtime role (dwh) only
+-- privilege (e.g. the DB owner / superuser). The apps runtime role (dwh) only
 -- needs CREATE TABLE inside the existing schema. If you hit
 -- "permission denied for database dwh" on the CREATE SCHEMA line, create the
 -- schema manually first:
 --   psql "$DATABASE_URL" -c "CREATE SCHEMA IF NOT EXISTS chapter;"
--- The app's ensureSchema() tolerates this error and continues to CREATE TABLEs.
+-- The apps ensureSchema() tolerates this error and continues to CREATE TABLEs.
 
 CREATE SCHEMA IF NOT EXISTS chapter;
 

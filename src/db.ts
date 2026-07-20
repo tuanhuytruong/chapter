@@ -4,8 +4,11 @@ import { Pool } from "pg";
 // objects. The default JS Date parsing shifts to UTC and, once JSON-serialized
 // by Express, produces an ISO string with a time suffix that breaks client-side
 // `new Date(...)` parsing ("Invalid Date"). Returning the raw string avoids that.
-const pgTypes = (require("pg") as any).types;
-pgTypes.setTypeParser(1082, (val: string) => val); // 1082 = DATE oid
+// Use the pg module imported above (dynamic require() is unsupported in the ESM build).
+const pgTypes = (Pool as any).types;
+if (pgTypes && typeof pgTypes.setTypeParser === "function") {
+  pgTypes.setTypeParser(1082, (val: string) => val); // 1082 = DATE oid
+}
 
 /**
  * PostgreSQL connection for the Chapter app.
@@ -75,7 +78,7 @@ export async function ensureSchema(): Promise<void> {
   // smart-quote characters inside comments).
   const stripped = sql
     .replace(/\/\*[\s\S]*?\*\//g, " ") // block comments
-    .replace(/--[^\n]*/g, " "); // line comments
+    .replace(/--[^\r\n]*/g, " "); // line comments (also strip \r for CRLF files)
   const statements = stripped
     .split(";")
     .map((s) => s.trim())
