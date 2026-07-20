@@ -45,19 +45,20 @@ booksRouter.get("/", async (_req: Request, res: Response) => {
 
 // POST /api/books — register a new book
 booksRouter.post("/", async (req: Request, res: Response) => {
-  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url } = req.body;
+  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang } = req.body;
   if (!title || !file_path || !file_type) {
     return res.status(400).json({ error: "title, file_path, file_type required" });
   }
   if (!["pdf", "epub"].includes(file_type)) {
     return res.status(400).json({ error: "file_type must be 'pdf' or 'epub'" });
   }
+  const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
   const resolvedPath = resolveBookPath(file_path);
   try {
     const { rows } = await query(
-      `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null]
+      `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null, lang]
     );
     res.status(201).json(rows[0]);
   } catch (e: any) {
@@ -68,7 +69,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
 // PATCH /api/books/:id — update settings
 booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages"];
+  const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang"];
   const sets: string[] = [];
   const vals: any[] = [];
   let i = 1;
@@ -208,6 +209,7 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       end,
       total: totalPages,
       extractedText: text,
+      lang: (book.summary_lang as "auto" | "vi" | "en") || "auto",
     });
     const parsed = parseSummary(raw);
 

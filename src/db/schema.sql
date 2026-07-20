@@ -27,11 +27,17 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   daily_pages   INT NOT NULL DEFAULT 20,
   current_page  INT NOT NULL DEFAULT 0,
   status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished')),
+  summary_lang  TEXT NOT NULL DEFAULT 'auto' CHECK (summary_lang IN ('auto', 'vi', 'en')),
   cover_url     TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
+
+-- Migration: add summary_lang to existing tables (idempotent; safe to re-run).
+ALTER TABLE chapter.books
+  ADD COLUMN IF NOT EXISTS summary_lang TEXT NOT NULL DEFAULT 'auto'
+  CHECK (summary_lang IN ('auto', 'vi', 'en'));
 
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_log

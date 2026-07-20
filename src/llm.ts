@@ -19,13 +19,32 @@ export interface AdvanceLLMInput {
   end: number;
   total: number;
   extractedText: string;
+  lang?: "auto" | "vi" | "en";
 }
 
-const SYSTEM_PROMPT = `You are a reading companion. Given a passage from a book, produce:
+// Build the system prompt based on the requested summary language.
+// - auto: respond in the same language as the book passage (detect from text)
+// - vi:   always respond in Vietnamese
+// - en:   always respond in English
+function buildSystemPrompt(lang: "auto" | "vi" | "en" = "auto"): string {
+  const base = `You are a reading companion. Given a passage from a book, produce:
 1. A concise 3-5 sentence narrative summary
 2. Exactly 3 key insights as bullet points
 3. One memorable quote from the passage (if any)
-Keep language clear and engaging. No spoilers beyond the given text.
+Keep language clear and engaging. No spoilers beyond the given text.`;
+
+  let langRule: string;
+  if (lang === "vi") {
+    langRule = "Respond entirely in Vietnamese (Tiếng Việt).";
+  } else if (lang === "en") {
+    langRule = "Respond entirely in English.";
+  } else {
+    langRule =
+      "Respond in the SAME language as the book passage (auto-detect: if the passage is Vietnamese, answer in Vietnamese; if English, answer in English; otherwise match the passage's language).";
+  }
+
+  return `${base}
+${langRule}
 
 Format your response EXACTLY as:
 
@@ -39,6 +58,7 @@ Format your response EXACTLY as:
 
 ## Quote
 <the quote, or "N/A" if none>`;
+}
 
 function buildUserPrompt(input: AdvanceLLMInput): string {
   return `Book: ${input.title} by ${input.author}
@@ -68,7 +88,7 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: buildSystemPrompt(input.lang) },
           { role: "user", content: buildUserPrompt(input) },
         ],
         temperature: 0.7,

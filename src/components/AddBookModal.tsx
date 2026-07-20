@@ -13,6 +13,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [fileType, setFileType] = useState<'pdf' | 'epub'>('pdf');
   const [dailyPages, setDailyPages] = useState(20);
   const [coverUrl, setCoverUrl] = useState('');
+  const [summaryLang, setSummaryLang] = useState<'auto' | 'vi' | 'en'>('auto');
   const [autoCover, setAutoCover] = useState(false);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -62,6 +63,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         file_type: fileType,
         daily_pages: dailyPages,
         cover_url: coverUrl || undefined,
+        summary_lang: summaryLang,
       });
       submittedRef.current = true; // keep the uploaded file
       uploadedPathRef.current = null;
@@ -143,6 +145,16 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))}
                 className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" />
             </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary language</label>
+            <select value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
+              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+              <option value="auto">Auto (book's language)</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="en">English</option>
+            </select>
+            <p className="text-[10px] text-natural-stone mt-1">Language used for the AI daily summary. Can be changed later in book settings.</p>
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1.5">

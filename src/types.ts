@@ -39,6 +39,7 @@ export interface BookRow {
   daily_pages: number;
   current_page: number;
   status: "active" | "paused" | "finished";
+  summary_lang: "auto" | "vi" | "en";
   cover_url?: string;
   created_at: string;
   progress?: number;

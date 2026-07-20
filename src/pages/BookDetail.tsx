@@ -20,6 +20,7 @@ export default function BookDetail() {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
+  const [summaryLang, setSummaryLang] = useState<'auto' | 'vi' | 'en'>('auto');
   const [searchingCover, setSearchingCover] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
@@ -35,6 +36,7 @@ export default function BookDetail() {
       setTitle(b.title);
       setAuthor(b.author);
       setCoverUrl(b.cover_url || '');
+      setSummaryLang(b.summary_lang || 'auto');
       setLogs([...l].sort((a, b) => b.date.localeCompare(a.date)));
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
@@ -68,6 +70,7 @@ export default function BookDetail() {
         title: title.trim(),
         author: author.trim(),
         cover_url: coverUrl || undefined,
+        summary_lang: summaryLang,
       });
       setToast({ type: 'ok', msg: 'Saved' });
       setEditing(false);
@@ -169,8 +172,18 @@ export default function BookDetail() {
                 <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
               </div>
               <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>
+                <select value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
+                  className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+                  <option value="auto">Auto (book's language)</option>
+                  <option value="vi">Tiếng Việt</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+              <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
-                <select value={status} onChange={e => setStatus(e.target.value as any)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs">
+                <select value={status} onChange={e => setStatus(e.target.value as any)}
+                  className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
                   <option value="active">Active</option>
                   <option value="paused">Paused</option>
                   <option value="finished">Finished</option>
