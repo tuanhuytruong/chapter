@@ -62,7 +62,14 @@ export async function ensureSchema(): Promise<void> {
   // SCHEMA denied because the app role lacks privileges) does not abort the
   // rest. The `chapter` schema is expected to be created once by an admin
   // role; the app role only needs CREATE TABLE inside it.
-  const statements = sql
+  //
+  // Strip SQL comments first (-- line comments and /* */ blocks) so commented
+  // text is not sent to the driver as a statement (which would also break on
+  // smart-quote characters inside comments).
+  const stripped = sql
+    .replace(/\/\*[\s\S]*?\*\//g, " ") // block comments
+    .replace(/--[^\n]*/g, " "); // line comments
+  const statements = stripped
     .split(";")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
