@@ -22,10 +22,18 @@ try {
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, booksDir),
   filename: (_req, file, cb) => {
-    // Keep a safe extension derived from the original name; prefix with a UUID
-    // so concurrent uploads of the same filename don't collide.
+    // Keep the original base name (sanitized) + a short UUID suffix so
+    // concurrent uploads of the same filename don't collide, e.g.
+    // "atomic-habits-20bc5940.pdf". Extension is derived from the original.
     const ext = path.extname(file.originalname).toLowerCase().slice(0, 12);
-    cb(null, `${randomUUID()}${ext}`);
+    const base = path
+      .basename(file.originalname, ext)
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]+/g, "-") // sanitize unsafe chars
+      .replace(/^-+|-+$/g, "") // trim leading/trailing dashes
+      .slice(0, 120) || "book";
+    const suffix = randomUUID().slice(0, 8);
+    cb(null, `${base}-${suffix}${ext}`);
   },
 });
 
