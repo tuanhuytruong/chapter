@@ -57,6 +57,36 @@ export async function ensureSchema(): Promise<void> {
   const fs = await import("fs");
   const path = await import("path");
   const sql = fs.readFileSync(path.join(process.cwd(), "src/db/schema.sql"), "utf8");
-  await getPool().query(sql);
+
+  // Split into individual statements so one failing statement (e.g. CREATE
+  // SCHEMA denied because the app role lacks privileges) does not abort the
+  // rest. The `chapter` schema is expected to be created once by an admin
+  // role; the app role only needs CREATE TABLE inside it.
+  const statements = sql
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  const pool = getPool();
+  for (const stmt of statements) {
+    try {
+      await pool.query(stmt);
+    } catch (err: any) {
+      // Ignore "CREATE SCHEMA" permission errors — schema already exists or
+      // was created by an admin. Any other error is fatal.
+      const isSchemaPermErr =
+        /create schema/i.test(stmt) &&
+        /permission denied/i.test(err.message);
+      if (isSchemaPermErr) {
+        console.warn(
+          "[db] skipping CREATE SCHEMA (permission denied) — assuming schema 'chapter' already exists"
+        );
+        continue;
+      }
+      console.error("[db] schema statement failed:", err.message);
+      console.error("[db] statement:", stmt.slice(0, 80));
+      throw err;
+    }
+  }
   console.log("[db] schema ensured");
 }
