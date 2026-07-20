@@ -11,11 +11,11 @@ let pool: Pool;
 
 function createDefaultPool(): Pool {
   const connectionString = process.env.DATABASE_URL ?? "";
-  return new Pool(
-    connectionString
-      ? { connectionString, max: 10, idleTimeoutMillis: 30000 }
-      : { host: "localhost", port: 5432, database: "chapter", user: "postgres", password: "", max: 1 }
-  );
+  // Schema option A: all queries target the `chapter` schema.
+  const base = connectionString
+    ? { connectionString, max: 10, idleTimeoutMillis: 30000 }
+    : { host: "localhost", port: 5432, database: "chapter", user: "postgres", password: "", max: 1 };
+  return new Pool({ ...base, options: "-c search_path=chapter" });
 }
 
 export function getPool(): Pool {

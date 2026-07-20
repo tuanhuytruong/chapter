@@ -58,9 +58,13 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
   }
 
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const apiKey = process.env.NINE_ROUTER_API_KEY;
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
     const resp = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         model,
         messages: [
@@ -71,7 +75,8 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
       }),
     });
     if (!resp.ok) {
-      throw new Error(`9router HTTP ${resp.status}`);
+      const body = await resp.text().catch(() => "");
+      throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
     }
     const data = await resp.json();
     const text: string | undefined = data?.choices?.[0]?.message?.content;

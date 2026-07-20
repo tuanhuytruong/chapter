@@ -23,8 +23,13 @@ db.public.registerFunction({ name: "round", implementation: (n) => Math.round(n)
 db.public.registerFunction({ name: "least", implementation: (...args) => Math.min(...args), impure: true });
 db.public.registerFunction({ name: "now", implementation: () => new Date(), impure: true });
 
-// 2) Mount the real schema.sql
-const schema = readFileSync(resolve(process.cwd(), "src/db/schema.sql"), "utf8");
+// 2) Mount the real schema.sql (test uses default `public` schema for pg-mem;
+//    the `chapter.` prefix + CREATE SCHEMA are stripped so searches work without
+//    a persistent search_path across pg-mem's per-query connections).
+let schema = readFileSync(resolve(process.cwd(), "src/db/schema.sql"), "utf8");
+schema = schema
+  .replace(/CREATE SCHEMA IF NOT EXISTS chapter;/g, "")
+  .replace(/chapter\./g, "");
 db.public.query(schema);
 
 // 4) Expose a pg-compatible Pool to our db layer
