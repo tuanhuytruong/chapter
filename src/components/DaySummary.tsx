@@ -50,8 +50,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
     setTelegramSending(true);
     setTelegramMsg(null);
     try {
-      const dateStr = String(log.date).slice(0, 10);
-      await api.sendLogToTelegram(log.book_id, dateStr);
+      await api.sendLogToTelegram(log.book_id, log.id);
       setTelegramSent(true);
       setTelegramMsg('✅ Sent!');
     } catch (e: any) {
@@ -60,7 +59,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       setTelegramSending(false);
       setTimeout(() => setTelegramMsg(null), 4000);
     }
-  }, [log.book_id, log.id, log.date]);
+  }, [log.book_id, log.id]);
 
   // log.date is a YYYY-MM-DD string or ISO datetime (e.g. "2026-07-20T17:00:00.000Z"
   // when pg serializes a DATE as a UTC timestamp). Pass the raw string to Date()

@@ -54,8 +54,8 @@ export const api = {
     req<LogRow>(`${BASE}/${id}/retry/${date}`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
-  sendLogToTelegram: (bookId: string, date: string) =>
-    req<LogRow>(`${BASE}/${bookId}/log/${date}/telegram`, { method: "POST" }),
+  sendLogToTelegram: (bookId: string, logId: string) =>
+    req<LogRow>(`${BASE}/${bookId}/logs/${logId}/telegram`, { method: "POST" }),
 };
 
 export interface UploadResult {
