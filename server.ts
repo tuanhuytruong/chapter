@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 import { CommunityPost, Comment } from "./src/types.js";
 import { booksRouter } from "./src/routes/books.js";
 import { uploadRouter } from "./src/routes/upload.js";

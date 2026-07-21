@@ -386,9 +386,9 @@ booksRouter.post("/:id/logs/:logId/telegram", async (req: Request, res: Response
     if (!sent.ok) return res.status(502).json({ error: sent.error || "telegram send failed" });
 
     await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [entry.id]);
-    entry.telegram_sent = true;
-    res.json(entry);
+    res.json({ ok: true });
   } catch (e: any) {
+    console.error("[telegram] send error:", e);
     res.status(500).json({ error: "telegram resend failed", detail: e.message });
   }
 });
