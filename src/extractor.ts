@@ -125,6 +125,41 @@ export async function extractEpubRange(
   return { text: slice.join("\n\n"), totalUnits };
 }
 
+export async function getChapterTitle(
+  filePath: string,
+  fileType: "pdf" | "epub",
+  start: number,
+  end: number,
+  rawText?: string
+): Promise<string | null> {
+  if (fileType === "epub") {
+    try {
+      const Epub = (await import("epub")).default;
+      const epub: any = new Epub(filePath) as any;
+      await new Promise<void>((resolve, reject) => {
+        epub.on("end", () => resolve());
+        epub.on("error", (e: any) => reject(e));
+      });
+      const flow: any[] = epub.flow;
+      for (let i = start - 1; i <= end - 1 && i < flow.length; i++) {
+        if (flow[i]?.title) return flow[i].title;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  if (fileType === "pdf" && rawText) {
+    const lines = rawText.split("\n");
+    for (const line of lines) {
+      const t = line.trim();
+      if (/^(Chapter|Part|Section|Lesson|Unit)\s+\w+/i.test(t)) return t;
+      if (/^[A-Z][A-Z\s\d]{10,}$/.test(t)) return t;
+    }
+  }
+  return null;
+}
+
 /**
  * Generic dispatcher. `start`/`end` are "pages" in the book model; for EPUB
  * we treat each chapter as one page unit.

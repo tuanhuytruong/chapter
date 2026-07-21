@@ -57,6 +57,7 @@ export interface LogRow {
   quote: string | null;
   telegram_sent: boolean;
   notes: string | null;
+  chapter_title: string | null;
   created_at: string;
 }
 

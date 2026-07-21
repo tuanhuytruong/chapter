@@ -74,7 +74,13 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>
-          <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
+          {log.chapter_title ? (
+            <span className="text-[10px] text-natural-sage font-sans bg-natural-cream px-2 py-0.5 rounded-full max-w-[200px] truncate" title={log.chapter_title}>
+              📑 {log.chapter_title}
+            </span>
+          ) : (
+            <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
+          )}
           {telegramSent && <span className="text-[10px] text-blue-600 font-sans">📨 Sent</span>}
         </div>
         <div className="flex items-center gap-1">

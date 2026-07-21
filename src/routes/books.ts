@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { query, withClient } from "../db.js";
-import { extractRange } from "../extractor.js";
+import { extractRange, getChapterTitle } from "../extractor.js";
 import { callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
@@ -218,6 +218,7 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     }
 
     const { text, totalUnits } = await extractRange(book.file_path, book.file_type, start, end);
+    const chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
 
     // If total_pages wasn't set when the book was added, derive it from the
     // actual file (PDF page count / EPUB chapter count) on first advance.
@@ -243,14 +244,14 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     );
 
     const ins = await client.query(
-      `INSERT INTO reading_log (book_id, date, page_start, page_end, raw_text, summary, key_insights, quote)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      `INSERT INTO reading_log (book_id, date, page_start, page_end, raw_text, summary, key_insights, quote, chapter_title)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        ON CONFLICT (book_id, date) DO UPDATE SET
-         page_start=EXCLUDED.page_start, page_end=EXCLUDED.page_end,
-         raw_text=EXCLUDED.raw_text, summary=EXCLUDED.summary,
-         key_insights=EXCLUDED.key_insights, quote=EXCLUDED.quote
+        page_start=EXCLUDED.page_start, page_end=EXCLUDED.page_end,
+        raw_text=EXCLUDED.raw_text, summary=EXCLUDED.summary,
+        key_insights=EXCLUDED.key_insights, quote=EXCLUDED.quote, chapter_title=EXCLUDED.chapter_title
        RETURNING *`,
-      [bookId, dateStr, start, end, text, parsed.summary, parsed.key_insights, parsed.quote]
+      [bookId, dateStr, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
     );
 
     return {
