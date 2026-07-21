@@ -1,0 +1,66 @@
+{
+  "name": "Chapter — Daily Reading Summary",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "triggerAtHour": 7, "triggerTimezone": "Asia/Bangkok" }] } },
+      "id": "schedule",
+      "name": "Schedule 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/books/all/advance",
+        "sendBody": false
+      },
+      "id": "advance",
+      "name": "Advance All Books",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3000/api/books/all/log/today"
+      },
+      "id": "fetchlogs",
+      "name": "Fetch Today's Logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst out = [];\nfor (const it of items) {\n  const arr = it.json;\n  if (!Array.isArray(arr)) continue;\n  for (const entry of arr) {\n    const b = entry.book;\n    const l = entry.log;\n    let msg = '📖 *' + b.title + '* \\\\- _' + b.author + '_\\n';\n    msg += '🗓 ' + l.date + ' \\\\| Trang ' + l.page_start + '\\–' + l.page_end + '\\n\\n';\n    if (l.summary) msg += l.summary + '\\n\\n';\n    if (l.key_insights && l.key_insights.length) {\n      msg += '💡 *Key insights:*\\n';\n      for (const ins of l.key_insights) msg += '• ' + ins + '\\n';\n      msg += '\\n';\n    }\n    if (l.quote) msg += '✦ _' + l.quote + '_\\n';\n    out.push({ json: { text: msg.trim() } });\n  }\n}\nreturn out;"
+      },
+      "id": "format",
+      "name": "Format Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/books/all/notify",
+        "sendBody": false
+      },
+      "id": "notify",
+      "name": "Mark Sent (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1160, 300]
+    }
+  ],
+  "connections": {
+    "Schedule 07:00": { "main": [[{ "node": "Advance All Books", "type": "main", "index": 0 }]] },
+    "Advance All Books": { "main": [[{ "node": "Fetch Today's Logs", "type": "main", "index": 0 }]] },
+    "Fetch Today's Logs": { "main": [[{ "node": "Format Messages", "type": "main", "index": 0 }]] },
+    "Format Messages": { "main": [[{ "node": "Mark Sent (backend)", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "versionId": "chapter-daily-v1"
+}

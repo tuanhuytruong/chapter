@@ -1,0 +1,51 @@
+import { useCallback, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const ROUTES = ['/', '/community', '/insights'];
+const MIN_SWIPE = 50;
+
+export default function useSwipeNav(containerRef: React.RefObject<HTMLElement | null>) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const startX = useRef(0);
+  const startY = useRef(0);
+
+  const onPointerDown = useCallback((e: PointerEvent) => {
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+  }, []);
+
+  const onPointerUp = useCallback((e: PointerEvent) => {
+    const dx = e.clientX - startX.current;
+    const dy = e.clientY - startY.current;
+    if (Math.abs(dx) < MIN_SWIPE || Math.abs(dx) < Math.abs(dy)) return;
+
+    const idx = ROUTES.indexOf(location.pathname);
+    if (idx === -1) return;
+
+    if (dx < 0 && idx < ROUTES.length - 1) {
+      // swipe left → next route
+      navigate(ROUTES[idx + 1]);
+    } else if (dx > 0 && idx > 0) {
+      // swipe right → previous route
+      navigate(ROUTES[idx - 1]);
+    }
+  }, [navigate, location.pathname]);
+
+  // Attach/cleanup pointer events
+  const attach = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointerup', onPointerUp);
+  }, [containerRef, onPointerDown, onPointerUp]);
+
+  const detach = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.removeEventListener('pointerdown', onPointerDown);
+    el.removeEventListener('pointerup', onPointerUp);
+  }, [containerRef, onPointerDown, onPointerUp]);
+
+  return { attach, detach };
+}

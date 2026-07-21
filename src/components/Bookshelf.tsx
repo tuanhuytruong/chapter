@@ -218,7 +218,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
 
       {/* Add Book Form */}
       {showAddForm && (
-        <form id="form-add-book" onSubmit={handleAddBook} className="p-6 bg-white border border-natural-border rounded-[32px] shadow-sm space-y-4">
+        <form id="form-add-book" onSubmit={handleAddBook} className="p-6 bg-natural-cream border border-natural-border rounded-[32px] shadow-sm space-y-4">
           <h3 className="font-serif italic text-lg text-natural-dark">Add a Book to your Shelf</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -230,7 +230,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                 placeholder="e.g., Dune or Atomic Habits"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white text-natural-dark font-sans"
+                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg text-natural-dark font-sans"
               />
             </div>
             <div>
@@ -242,7 +242,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                 placeholder="e.g., Frank Herbert"
                 value={newAuthor}
                 onChange={(e) => setNewAuthor(e.target.value)}
-                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white text-natural-dark font-sans"
+                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg text-natural-dark font-sans"
               />
             </div>
             <div>
@@ -254,7 +254,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                 required
                 value={newTotalPages}
                 onChange={(e) => setNewTotalPages(Number(e.target.value))}
-                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white text-natural-dark font-sans"
+                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg text-natural-dark font-sans"
               />
             </div>
             <div>
@@ -266,7 +266,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                 required
                 value={newDailyTarget}
                 onChange={(e) => setNewDailyTarget(Number(e.target.value))}
-                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white text-natural-dark font-sans"
+                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg text-natural-dark font-sans"
               />
             </div>
             <div className="md:col-span-2">
@@ -277,7 +277,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white resize-none text-natural-dark font-sans"
+                className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg resize-none text-natural-dark font-sans"
               />
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
             onClick={() => setFilter(tab)}
             className={`px-4 py-1.5 text-xs font-bold font-sans uppercase tracking-wider rounded-full transition duration-150 cursor-pointer ${
               filter === tab
-                ? 'bg-white text-natural-dark shadow-sm'
+                ? 'bg-natural-cream text-natural-dark shadow-sm'
                 : 'text-natural-stone hover:text-natural-dark'
             }`}
           >
@@ -321,7 +321,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
 
       {/* Book Grid */}
       {filteredBooks.length === 0 ? (
-        <div id="empty-shelf-view" className="flex flex-col items-center justify-center p-12 bg-white border border-dashed border-natural-border rounded-[32px] text-center shadow-sm">
+        <div id="empty-shelf-view" className="flex flex-col items-center justify-center p-12 bg-natural-cream border border-dashed border-natural-border rounded-[32px] text-center shadow-sm">
           <BookOpen className="w-12 h-12 text-natural-stone/40 mb-3" />
           <h3 className="font-serif italic text-lg text-natural-dark">No books found</h3>
           <p className="text-xs text-natural-stone font-sans mt-1 mb-4 max-w-xs">You don't have any books listed under '{filter}'. Add a new book to start tracking your reading logs.</p>
@@ -341,7 +341,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
               <div
                 id={`book-card-${book.id}`}
                 key={book.id}
-                className="group relative flex gap-5 p-6 bg-white border border-natural-border rounded-[32px] shadow-sm hover:shadow-md transition duration-200 overflow-hidden"
+                className="group relative flex gap-5 p-6 bg-natural-cream border border-natural-border rounded-[32px] shadow-sm hover:shadow-md transition duration-200 overflow-hidden"
               >
                 {/* Book Cover */}
                 <div className="w-20 sm:w-24 h-28 sm:h-32 rounded-xl bg-natural-cream border border-natural-border overflow-hidden flex-shrink-0 shadow-sm relative">
@@ -428,7 +428,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
       {/* Reading Log and Share Modal */}
       {selectedBookForLog && (
         <div id="modal-log-reading" className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-[32px] border border-natural-border w-full max-w-lg p-6 sm:p-8 shadow-2xl relative max-h-[90vh] flex flex-col">
+          <div className="bg-natural-cream rounded-[32px] border border-natural-border w-full max-w-lg p-6 sm:p-8 shadow-2xl relative max-h-[90vh] flex flex-col">
             <h3 className="text-xl font-bold text-natural-dark border-b border-natural-border pb-3 font-serif italic flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-natural-clay" />
               Log Reading - {selectedBookForLog.title}
@@ -460,7 +460,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                     required
                     value={pagesReadToday}
                     onChange={(e) => setPagesReadToday(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white text-natural-dark font-sans"
+                    className="w-full px-4 py-2.5 bg-natural-cream/50 border border-natural-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg text-natural-dark font-sans"
                   />
                 </div>
 
@@ -483,7 +483,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                         placeholder="e.g., A deep dive into the 4 laws of habit building."
                         value={summaryText}
                         onChange={(e) => setSummaryText(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage text-natural-dark font-sans"
+                        className="w-full px-3.5 py-2 bg-natural-cream border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage text-natural-dark font-sans"
                       />
                     </div>
                     <div>
@@ -494,7 +494,7 @@ export default function Bookshelf({ onShareSummary }: BookshelfProps) {
                         rows={3}
                         value={reflectionText}
                         onChange={(e) => setReflectionText(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage resize-none text-natural-dark font-sans"
+                        className="w-full px-3.5 py-2 bg-natural-cream border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage resize-none text-natural-dark font-sans"
                       />
                     </div>
                   </div>

@@ -14,9 +14,34 @@
   --color-natural-sage-dark: #4A4A35;
   --color-natural-border: #E8E4D9;
   --color-natural-cream: #F5F5F0;
+  --color-heatmap-empty: #E8E4D9;
 }
 
 body {
+  background-color: var(--color-natural-bg);
+  color: var(--color-natural-dark);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Dark mode — warm lamplight theme ── */
+.dark {
+  --color-natural-bg:        #1C1A14;
+  --color-natural-dark:      #EDE8DC;
+  --color-natural-stone:     #9A9080;
+  --color-natural-muted:     #B8B09E;
+  --color-natural-clay:      #D48166;
+  --color-natural-sage:      #6B7A5A;
+  --color-natural-sage-dark: #5A6649;
+  --color-natural-border:    #2E2A22;
+  --color-natural-cream:     #252118;
+  --color-heatmap-empty:     #2E2A22;
+}
+
+.dark body {
   background-color: var(--color-natural-bg);
   color: var(--color-natural-dark);
 }
