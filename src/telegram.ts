@@ -25,6 +25,8 @@ export async function sendTelegramMessage(
   text: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10_000);
     const res = await fetch(`${TG_API}/bot${cfg.botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -34,7 +36,9 @@ export async function sendTelegramMessage(
         parse_mode: "MarkdownV2",
         disable_web_page_preview: true,
       }),
+      signal: ac.signal,
     });
+    clearTimeout(timer);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
       return { ok: false, error: data.description || `HTTP ${res.status}` };
