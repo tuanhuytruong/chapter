@@ -29,8 +29,9 @@ function computeStreakLen(logDates: Set<string>, today: Date): number {
 }
 
 // Hardcoded color ramp (not opacity variants) so levels are clearly distinct.
+// Empty cells use the CSS variable --color-heatmap-empty (light and dark aware).
 const COLORS = [
-  'bg-[#E8E4D9]',    // 0 — empty border colour
+  'bg-heatmap-empty',  // 0 — empty (faint border-like bg)
   'bg-[#A8BF8A]',    // 1 — light sage
   'bg-[#7A9E6A]',    // 2 — medium sage
   'bg-[#4E7A52]',    // 3 — deep sage

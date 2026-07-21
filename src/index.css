@@ -14,6 +14,7 @@
   --color-natural-sage-dark: #4A4A35;
   --color-natural-border: #E8E4D9;
   --color-natural-cream: #F5F5F0;
+  --color-heatmap-empty: #E8E4D9;
 }
 
 body {
@@ -37,6 +38,7 @@ body {
   --color-natural-sage-dark: #5A6649;
   --color-natural-border:    #2E2A22;
   --color-natural-cream:     #252118;
+  --color-heatmap-empty:     #2E2A22;
 }
 
 .dark body {
