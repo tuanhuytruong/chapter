@@ -1,28 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import CommunityFeed from '../components/CommunityFeed';
 import { CommunityPost, Comment } from '../types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BookOpen } from 'lucide-react';
 
 // Community page — keeps the base community feed only.
 // (AI Critique / Journal Club removed per project scope.)
 export default function Community() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [library, setLibrary] = useState<Set<string>>(new Set());
 
-  const fetchPosts = async () => {
+  useEffect(() => {
+    // Fetch community posts
     setLoadingPosts(true);
-    try {
-      const response = await fetch('/api/community/posts');
-      const data = await response.json();
-      if (response.ok) setPosts(data);
-    } catch (e) {
-      console.error('Failed to load community posts:', e);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
-
-  useEffect(() => { fetchPosts(); }, []);
+    fetch('/api/community/posts')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { setPosts(data); setLoadingPosts(false); })
+      .catch(() => setLoadingPosts(false));
+    // Fetch user's library for badge matching
+    fetch('/api/books')
+      .then(r => r.ok && r.json())
+      .then(books => {
+        if (Array.isArray(books)) setLibrary(new Set(books.map((b: any) => b.id)));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleShareSummary = async (bookTitle: string, bookAuthor: string, summary: string, content: string): Promise<CommunityPost | null> => {
     try {
@@ -72,7 +74,7 @@ export default function Community() {
 
       {loadingPosts
         ? <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-natural-border"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /><p className="text-xs text-natural-stone font-sans mt-3">Assembling community logs...</p></div>
-        : <CommunityFeed posts={posts} onLikePost={handleLikePost} onAddComment={handleAddComment} onTriggerAIComment={handleTriggerAIComment} />
+        : <CommunityFeed posts={posts} library={library} onLikePost={handleLikePost} onAddComment={handleAddComment} onTriggerAIComment={handleTriggerAIComment} />
       }
     </div>
   );

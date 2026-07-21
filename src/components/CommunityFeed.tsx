@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { CommunityPost, Comment } from '../types';
-import { MessageSquare, Heart, Sparkles, Send, RefreshCw, UserCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Heart, Sparkles, Send, RefreshCw, UserCheck, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CommunityFeedProps {
   posts: CommunityPost[];
+  library: Set<string>;
   onLikePost: (postId: string) => Promise<void>;
   onAddComment: (postId: string, content: string) => Promise<void>;
   onTriggerAIComment: (postId: string, personaId: string) => Promise<Comment | null>;
@@ -11,6 +12,7 @@ interface CommunityFeedProps {
 
 export default function CommunityFeed({
   posts,
+  library,
   onLikePost,
   onAddComment,
   onTriggerAIComment
@@ -120,6 +122,11 @@ export default function CommunityFeed({
                 <div className="bg-natural-cream border border-natural-border/50 rounded-2xl px-5 py-3.5 flex justify-between items-center text-xs">
                   <div>
                     <span className="text-[10px] font-bold text-natural-clay uppercase tracking-wider block mb-0.5 font-sans">Reading Log</span>
+                    {post.book_id && library.has(post.book_id) && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] text-natural-sage font-bold font-sans ml-1">
+                        <BookOpen className="w-2.5 h-2.5" /> In your library
+                      </span>
+                    )}
                     <span className="font-bold text-natural-dark font-serif">{post.bookTitle}</span>
                     <span className="text-natural-stone ml-1.5 font-sans italic">by {post.bookAuthor}</span>
                   </div>
