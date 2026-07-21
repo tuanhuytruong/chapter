@@ -23,6 +23,7 @@ export default function Insights() {
   if (!stats) return <div className="text-center p-16 text-natural-stone font-sans">Could not load stats.</div>;
 
   const { globalStats, bookCounts, velocity, insights } = stats;
+  const maxFreq = Math.max(...insights.map(i => i.freq));
 
   return (
     <div className="space-y-6 font-sans">
@@ -75,12 +76,22 @@ export default function Insights() {
           <p className="text-xs text-natural-stone">No insights recorded yet.</p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {insights.map((ins, i) => (
-              <div key={i} className="flex items-center justify-between py-1.5 border-b border-natural-cream last:border-0">
-                <span className="text-xs text-natural-dark truncate pr-2">{ins.insight}</span>
-                <span className="shrink-0 text-[10px] font-bold text-natural-stone bg-natural-cream px-2 py-0.5 rounded-full">{ins.freq}x</span>
-              </div>
-            ))}
+            {(() => {
+              const maxFreq = Math.max(...insights.map(i => i.freq));
+              return insights.map((ins, i) => {
+                const fontSize = maxFreq > 1
+                  ? `${Math.round(10 + (ins.freq / maxFreq) * 8)}px`
+                  : '12px';
+                return (
+                  <div key={i} className="flex items-center py-1 border-b border-natural-cream last:border-0">
+                    <span className="text-xs text-natural-dark truncate pr-2" style={{ fontSize }}>{ins.insight}</span>
+                    {maxFreq > 1 && ins.freq > 1 && (
+                      <span className="shrink-0 text-[9px] font-bold text-natural-stone ml-auto">{ins.freq}x</span>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
       </div>
