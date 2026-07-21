@@ -28,10 +28,10 @@ const BookCard: React.FC<{ book: BookRow; streak?: number }> = ({ book, streak }
       className="group bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm hover:shadow-md transition text-left flex flex-col gap-3 cursor-pointer"
     >
       <div className="flex gap-4">
-        <div className="relative shrink-0 w-16 h-16">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r={RADIUS} fill="none" stroke="var(--color-natural-border)" strokeWidth="3" />
-            <circle cx="32" cy="32" r={RADIUS} fill="none" stroke="var(--color-natural-sage)" strokeWidth="3" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset} strokeLinecap="round" />
+        <div className="relative shrink-0 w-12 h-16">
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 48 64">
+            <circle cx="24" cy="32" r={RADIUS} fill="none" stroke="var(--color-natural-border)" strokeWidth="3" />
+            <circle cx="24" cy="32" r={RADIUS} fill="none" stroke="var(--color-natural-sage)" strokeWidth="3" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset} strokeLinecap="round" />
           </svg>
           <div className="absolute inset-1.5 rounded-lg overflow-hidden bg-natural-cream flex items-center justify-center">
             {book.cover_url ? (
