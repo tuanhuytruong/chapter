@@ -1,73 +1,149 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { LogRow } from '../types';
 
-// App timezone is Asia/Bangkok (UTC+7) — heatmap "today" aligns with the app's
-// calendar day, not the browser/viewer's local timezone.
-const APP_TZ = "Asia/Bangkok";
+const APP_TZ = 'Asia/Bangkok';
+
 function todayInAppTz(): Date {
-  const parts = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ }).split("-");
-  // Interpret as local midnight so date math (getDate/-1) is stable.
+  const parts = new Date().toLocaleDateString('en-CA', { timeZone: APP_TZ }).split('-');
   return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
 }
+
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
-// GitHub-style contribution heatmap from reading_log dates.
+/** Walk backwards from today to find the length of the current streak. */
+function computeStreakLen(logDates: Set<string>, today: Date): number {
+  let streak = 0;
+  const cursor = new Date(today);
+  while (logDates.has(localDateStr(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+    // safety — cap at 365 to avoid infinite loops on dense data
+    if (streak > 365) break;
+  }
+  return streak;
+}
+
+// Hardcoded color ramp (not opacity variants) so levels are clearly distinct.
+const COLORS = [
+  'bg-[#E8E4D9]',    // 0 — empty border colour
+  'bg-[#A8BF8A]',    // 1 — light sage
+  'bg-[#7A9E6A]',    // 2 — medium sage
+  'bg-[#4E7A52]',    // 3 — deep sage
+  'bg-[#2E5C38]',    // 4 — forest green (power reader)
+] as const;
+
 export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
-  const byDay = new Map<string, number>();
-  for (const l of logs) {
-    // Normalize date: ISO strings (e.g. "2026-07-20T17:00:00.000Z") must be
-    // converted to the app's Asia/Bangkok calendar date, not UTC.
-    const k = String(l.date).includes("T")
-      ? new Date(l.date).toLocaleDateString("en-CA", { timeZone: APP_TZ })
-      : l.date.slice(0, 10);
-    byDay.set(k, (byDay.get(k) || 0) + 1);
-  }
-
-  const weeks: Date[][] = [];
   const today = todayInAppTz();
-  // start 18 weeks ago, aligned to Sunday
-  const start = new Date(today);
-  start.setDate(start.getDate() - (18 * 7 + today.getDay()));
 
-  for (let w = 0; w < 19; w++) {
-    const week: Date[] = [];
-    for (let d = 0; d < 7; d++) {
-      const day = new Date(start);
-      day.setDate(start.getDate() + w * 7 + d);
-      week.push(day);
+  // Build day → session-count map
+  const byDay = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of logs) {
+      const k = String(l.date).includes('T')
+        ? new Date(l.date).toLocaleDateString('en-CA', { timeZone: APP_TZ })
+        : l.date.slice(0, 10);
+      m.set(k, (m.get(k) || 0) + 1);
     }
-    weeks.push(week);
-  }
+    return m;
+  }, [logs]);
 
-  const level = (dt: Date) => {
+  // Compute grid weeks anchored to first reading day
+  const { weeks, streakLen, totalReadDays } = useMemo(() => {
+    const logSet = new Set(byDay.keys());
+    const totalReadDays = logSet.size;
+
+    const firstLog = logs.length
+      ? new Date(Math.min(...logs.map(l => {
+          const raw = String(l.date).includes('T')
+            ? new Date(l.date).toLocaleDateString('en-CA', { timeZone: APP_TZ })
+            : l.date.slice(0, 10);
+          return new Date(raw).getTime();
+        })))
+      : today;
+
+    // Align to the Sunday of that week
+    const gridStart = new Date(firstLog);
+    gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+    // Weeks from gridStart to today + 1 future week for context
+    const diffMs = today.getTime() - gridStart.getTime();
+    const weeksNeeded = Math.ceil(diffMs / (7 * 86400000)) + 1;
+    const totalWeeks = Math.max(weeksNeeded, 4);
+
+    const w: Date[][] = [];
+    for (let wi = 0; wi < totalWeeks; wi++) {
+      const week: Date[] = [];
+      for (let di = 0; di < 7; di++) {
+        const d = new Date(gridStart);
+        d.setDate(gridStart.getDate() + wi * 7 + di);
+        week.push(d);
+      }
+      w.push(week);
+    }
+
+    const streakLen = computeStreakLen(logSet, today);
+
+    return { weeks: w, streakLen, totalReadDays };
+  }, [logs, byDay, today]);
+
+  const level = (dt: Date): number => {
     const key = localDateStr(dt);
     const count = byDay.get(key) || 0;
     return Math.min(4, count);
   };
-  const color = (lv: number) =>
-    ["bg-natural-cream", "bg-natural-sage/30", "bg-natural-sage/60", "bg-natural-sage/80", "bg-natural-sage"][lv];
+
+  /** Detect if a day is part of the current active streak. */
+  const isStreakDay = (dt: Date): boolean => {
+    const cursor = new Date(today);
+    for (let i = 0; i < streakLen; i++) {
+      if (localDateStr(cursor) === localDateStr(dt)) return true;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return false;
+  };
+
+  // Milestone labels
+  const milestoneLabel =
+    streakLen >= 30 ? '🔥 30-day streak — On fire!' :
+    streakLen >= 14 ? '🔥 14-day streak — Unstoppable!' :
+    streakLen >= 7  ? '🔥 7-day streak — Keep it up!' :
+    streakLen >= 3  ? '🔥 3-day streak — Nice!' :
+    streakLen > 0   ? `🔥 ${streakLen}-day streak`  : '';
 
   return (
-    <div className="flex gap-1 overflow-x-auto pb-1">
-      {weeks.map((week, wi) => (
-        <div key={wi} className="flex flex-col gap-1">
-          {week.map((day, di) => {
-            const future = day > today;
-            return (
-              <div
-                key={di}
-                title={localDateStr(day)}
-                className={`w-3 h-3 rounded-sm ${future ? "bg-transparent" : color(level(day))} border border-natural-border/40`}
-              />
-            );
-          })}
-        </div>
-      ))}
+    <div className="space-y-3">
+      {/* Streak + stats bar */}
+      <div className="flex items-center gap-2 text-xs text-natural-stone flex-wrap">
+        {milestoneLabel && (
+          <span className="font-bold text-natural-dark">{milestoneLabel}</span>
+        )}
+        <span>· {totalReadDays} days read total</span>
+      </div>
+
+      {/* Grid */}
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-1">
+            {week.map((day, di) => {
+              const future = day > today;
+              const lv = future ? 0 : level(day);
+              const streak = isStreakDay(day);
+              return (
+                <div
+                  key={di}
+                  title={localDateStr(day)}
+                  className={`w-3 h-3 rounded-sm ${future ? 'bg-transparent' : COLORS[lv]} ${streak ? 'ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream' : ''}`}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
