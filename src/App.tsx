@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
 import Community from './pages/Community';
-import { BookMarked, Users, Pencil } from 'lucide-react';
+import Insights from './pages/Insights';
+import { BookMarked, Users, Pencil, BarChart3, Moon, Sun } from 'lucide-react';
 import NicknamePrompt from './components/NicknamePrompt';
+import useSwipeNav from './hooks/useSwipeNav';
 
 const NICKNAME_KEY = 'chapter_nickname';
 function getNickname() { return localStorage.getItem(NICKNAME_KEY) || ''; }
@@ -14,10 +16,20 @@ function Layout() {
   const location = useLocation();
   const [nicknameOpen, setNicknameOpen] = useState(false);
   const [nickname, setNickname] = useState(getNickname);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('chapter_dark') === 'true');
+  const contentRef = useRef<HTMLDivElement>(null);
+  const swipeNav = useSwipeNav(contentRef);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('chapter_dark', String(isDark));
+  }, [isDark]);
 
   useEffect(() => {
     setNickname(getNickname());
   }, [nicknameOpen]);
+
+  useEffect(() => { swipeNav.attach(); return swipeNav.detach; }, [swipeNav]);
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-serif">
@@ -41,9 +53,17 @@ function Layout() {
               <NavLink to="/community" className={({isActive}) => isActive ? 'text-natural-dark border-b-2 border-natural-dark pb-0.5 font-bold flex items-center gap-1.5' : 'hover:text-natural-dark flex items-center gap-1.5'}>
                 <Users className="w-3.5 h-3.5" /><span className="hidden sm:inline">Community</span>
               </NavLink>
+              <NavLink to="/insights" className={({isActive}) => isActive ? 'text-natural-dark border-b-2 border-natural-dark pb-0.5 font-bold flex items-center gap-1.5' : 'hover:text-natural-dark flex items-center gap-1.5'}>
+                <BarChart3 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Insights</span>
+              </NavLink>
             </nav>
 
-            <button onClick={() => setNicknameOpen(true)} className="flex items-center gap-1.5 hover:opacity-70 cursor-pointer">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setIsDark(prev => !prev)}
+                className="w-7 h-7 rounded-full bg-natural-cream border border-natural-border flex items-center justify-center text-natural-stone hover:text-natural-dark cursor-pointer" title="Toggle dark mode">
+                {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              </button>
+              <button onClick={() => setNicknameOpen(true)} className="flex items-center gap-1.5 hover:opacity-70 cursor-pointer">
               <div className="w-7 h-7 rounded-full bg-natural-sage/20 flex items-center justify-center">
                 <span className="text-[10px] font-bold text-natural-sage font-sans">{nickname ? nickname[0].toUpperCase() : '?'}</span>
               </div>
@@ -51,10 +71,11 @@ function Layout() {
               <Pencil className="w-3 h-3 text-natural-stone" />
             </button>
           </div>
+          </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+      <div ref={contentRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         <Outlet />
       </div>
       <NicknamePrompt open={nicknameOpen} onDone={() => setNicknameOpen(false)} />
@@ -70,6 +91,7 @@ export default function App() {
           <Route path="/" element={<Library />} />
           <Route path="/books/:id" element={<BookDetail />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/insights" element={<Insights />} />
           <Route path="*" element={<Library />} />
         </Route>
       </Routes>

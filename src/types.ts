@@ -35,10 +35,11 @@ export interface BookRow {
   author: string;
   file_path: string;
   file_type: "pdf" | "epub";
+  status: "active" | "paused" | "finished" | "queued";
+  current_page: number;
   total_pages: number;
   daily_pages: number;
-  current_page: number;
-  status: "active" | "paused" | "finished";
+  queue_order?: number;
   summary_lang: "auto" | "vi" | "en";
   cover_url?: string;
   created_at: string;

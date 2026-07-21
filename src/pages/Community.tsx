@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import CommunityFeed from '../components/CommunityFeed';
-import { CommunityPost, Comment } from '../types';
-import { Loader2, BookOpen } from 'lucide-react';
+import { CommunityPost } from '../types';
+import { Loader2 } from 'lucide-react';
 
 // Community page — keeps the base community feed only.
 // (AI Critique / Journal Club removed per project scope.)
@@ -35,16 +35,30 @@ export default function Community() {
         body: JSON.stringify({ authorName: nick, authorAvatar: avatar, bookTitle, bookAuthor, summary, content })
       });
       const data = await response.json();
-      if (response.ok) { setPosts(prev => [data, ...prev]); return data; }
+      if (response.ok) {
+        setPosts(prev => [data, ...prev]);
+        // Poll for AI comments over next 10 seconds
+        pollForComments(data.id);
+        return data;
+      }
     } catch (e) { console.error('Error sharing summary:', e); }
     return null;
   };
-  const handleLikePost = async (postId: string) => {
-    try {
-      const r = await fetch(`/api/community/posts/${postId}/like`, { method: 'POST' });
-      const data = await r.json();
-      if (r.ok) setPosts(prev => prev.map(p => p.id === postId ? data : p));
-    } catch (e) { console.error(e); }
+
+  const pollForComments = (postId: string) => {
+    let attempts = 0;
+    const maxAttempts = 5; // 5 × 2s = 10s
+    const iv = setInterval(async () => {
+      attempts++;
+      try {
+        const r = await fetch(`/api/community/posts/${postId}`);
+        if (r.ok) {
+          const updated = await r.json();
+          setPosts(prev => prev.map(p => p.id === postId ? updated : p));
+        }
+      } catch (_) { /* ignore */ }
+      if (attempts >= maxAttempts) clearInterval(iv);
+    }, 2000);
   };
   const handleAddComment = async (postId: string, content: string) => {
     const nick = localStorage.getItem('chapter_nickname') || 'Fellow Reader';
@@ -58,16 +72,6 @@ export default function Community() {
       if (r.ok) setPosts(prev => prev.map(p => p.id === postId ? data : p));
     } catch (e) { console.error(e); }
   };
-  const handleTriggerAIComment = async (postId: string, personaId: string): Promise<Comment | null> => {
-    try {
-      const r = await fetch(`/api/community/posts/${postId}/trigger-ai-reaction`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personaId })
-      });
-      const data = await r.json();
-      if (r.ok) { setPosts(prev => prev.map(p => p.id === postId ? data.post : p)); return data.comment; }
-    } catch (e) { console.error(e); }
-    return null;
-  };
 
   return (
     <div className="space-y-6">
@@ -78,7 +82,7 @@ export default function Community() {
 
       {loadingPosts
         ? <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-natural-border"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /><p className="text-xs text-natural-stone font-sans mt-3">Assembling community logs...</p></div>
-        : <CommunityFeed posts={posts} library={library} onLikePost={handleLikePost} onAddComment={handleAddComment} onTriggerAIComment={handleTriggerAIComment} />
+        : <CommunityFeed posts={posts} library={library} onAddComment={handleAddComment} />
       }
     </div>
   );

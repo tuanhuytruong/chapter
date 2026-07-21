@@ -5,6 +5,7 @@ import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';
 import AddBookModal from '../components/AddBookModal';
 import Toast from '../components/Toast';
+import QuoteWall from '../components/QuoteWall';
 
 type Filter = 'all' | 'active' | 'paused' | 'finished';
 const FILTERS: { id: Filter; label: string }[] = [
@@ -70,7 +71,7 @@ export default function Library() {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let list = books.filter(b => (filter === 'all' || b.status === filter));
+    let list = books.filter(b => (filter === 'all' || b.status === filter) && b.status !== 'queued');
     if (q) list = list.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
     const sorted = [...list];
     if (sort === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title));
@@ -79,6 +80,22 @@ export default function Library() {
     // 'recent' keeps server order (created_at desc assumed)
     return sorted;
   }, [books, filter, search, sort, streaks]);
+
+  const queued = useMemo(() => {
+    return books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999));
+  }, [books]);
+
+  const startQueuedBook = async (book: BookRow) => {
+    try {
+      await api.updateBook(book.id, { status: 'active' } as any);
+      setToast({ type: 'ok', msg: `Started "${book.title}"!` });
+      // reload books list
+      const list = await api.listBooks();
+      setBooks(list);
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -143,6 +160,35 @@ export default function Library() {
           {visible.map(b => <BookCard key={b.id} book={b} streak={streaks[b.id]} />)}
         </div>
       )}
+
+      {/* ── Up Next (queue) ── */}
+      {[...queued].length > 0 && (
+        <div className="bg-white rounded-[32px] border border-natural-border shadow-xs p-6">
+          <h3 className="text-sm font-bold text-natural-dark font-sans uppercase tracking-wider mb-4">
+            Up Next ({queued.length})
+          </h3>
+          <div className="space-y-3">
+            {queued.map(b => (
+              <div key={b.id} className="flex items-center justify-between py-3 px-4 border border-natural-border rounded-2xl hover:bg-natural-cream/30 transition">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-natural-dark font-sans truncate">{b.title}</p>
+                  <p className="text-xs text-natural-stone font-sans truncate">{b.author}</p>
+                </div>
+                <button
+                  onClick={() => startQueuedBook(b)}
+                  className="shrink-0 ml-3 px-4 py-2 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer"
+                >
+                  Start Reading
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="pt-10 border-t border-natural-border">
+        <QuoteWall />
+      </div>
 
       {showAdd && <AddBookModal onClose={() => setShowAdd(false)} onAdded={load} onToast={setToast} />}
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}

@@ -24,6 +24,7 @@ export default function BookDetail() {
   const [searchingCover, setSearchingCover] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const [finishModal, setFinishModal] = useState<BookRow | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -51,7 +52,13 @@ export default function BookDetail() {
     if (!id) return;
     setAdvancing(true);
     try {
-      await api.advance(id);
+      const result = await api.advance(id);
+      if (result.finished) {
+        // Fetch next queued book
+        const books = await api.listBooks();
+        const nextQueued = books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999))[0];
+        if (nextQueued) setFinishModal(nextQueued);
+      }
       setToast({
         type: 'ok',
         msg: hasReadToday
@@ -63,6 +70,19 @@ export default function BookDetail() {
       setToast({ type: 'err', msg: e.message });
     } finally {
       setAdvancing(false);
+    }
+  };
+
+  const startFromModal = async () => {
+    if (!finishModal) return;
+    try {
+      await api.updateBook(finishModal.id, { status: 'active' } as any);
+      setToast({ type: 'ok', msg: `Started "${finishModal.title}"!` });
+      setFinishModal(null);
+      navigate(`/books/${finishModal.id}`);
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+      setFinishModal(null);
     }
   };
 
@@ -238,6 +258,31 @@ export default function BookDetail() {
       </div>
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
+
+      {/* Finish queue modal */}
+      {finishModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setFinishModal(null)}>
+          <div className="bg-white rounded-[28px] border border-natural-border shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="text-center space-y-2">
+              <p className="text-2xl">🎉</p>
+              <h3 className="font-bold text-lg text-natural-dark font-sans">You finished &ldquo;{book?.title}&rdquo;!</h3>
+              <p className="text-xs text-natural-stone font-sans">
+                Next in your queue: <b className="text-natural-dark">{finishModal.title}</b> by {finishModal.author}
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setFinishModal(null)}
+                className="flex-1 py-2.5 border border-natural-border rounded-full text-xs font-bold font-sans uppercase tracking-wider text-natural-stone hover:text-natural-dark cursor-pointer">
+                Not yet
+              </button>
+              <button onClick={startFromModal}
+                className="flex-1 py-2.5 bg-natural-sage text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
+                Start Reading
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

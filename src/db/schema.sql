@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   total_pages   INT NOT NULL DEFAULT 0,
   daily_pages   INT NOT NULL DEFAULT 20,
   current_page  INT NOT NULL DEFAULT 0,
-  status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished')),
+  status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished', 'queued')),
   summary_lang  TEXT NOT NULL DEFAULT 'auto' CHECK (summary_lang IN ('auto', 'vi', 'en')),
   cover_url     TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -38,6 +38,14 @@ CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
 ALTER TABLE chapter.books
   ADD COLUMN IF NOT EXISTS summary_lang TEXT NOT NULL DEFAULT 'auto'
   CHECK (summary_lang IN ('auto', 'vi', 'en'));
+
+-- Migration: reading queue columns (idempotent).
+ALTER TABLE chapter.books
+  ADD COLUMN IF NOT EXISTS queue_order INT;
+ALTER TABLE chapter.books DROP CONSTRAINT IF EXISTS books_status_check;
+ALTER TABLE chapter.books ADD CONSTRAINT books_status_check
+  CHECK (status IN ('active', 'paused', 'finished', 'queued'));
+CREATE INDEX IF NOT EXISTS idx_books_queue ON chapter.books (queue_order ASC NULLS LAST);
 
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_log
@@ -79,3 +87,33 @@ ALTER TABLE chapter.reading_log
 DROP INDEX IF EXISTS idx_reading_log_book_date;
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
+
+-- ───────────────────────────────────────────────────────────
+-- chapter.community_posts (persistent book club)
+-- ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS chapter.community_posts (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  author_name   TEXT NOT NULL,
+  author_avatar TEXT NOT NULL,
+  author_bio    TEXT NOT NULL DEFAULT 'Book Enthusiast',
+  book_title    TEXT NOT NULL,
+  book_author   TEXT NOT NULL,
+  book_id       UUID REFERENCES chapter.books(id) ON DELETE SET NULL,
+  summary       TEXT NOT NULL,
+  content       TEXT NOT NULL,
+  likes         INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS chapter.community_comments (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id       UUID NOT NULL REFERENCES chapter.community_posts(id) ON DELETE CASCADE,
+  author_name   TEXT NOT NULL,
+  author_avatar TEXT NOT NULL,
+  author_bio    TEXT NOT NULL DEFAULT '',
+  content       TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_posts_created ON chapter.community_posts (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_community_comments_post ON chapter.community_comments (post_id, created_at ASC);

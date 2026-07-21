@@ -25,3 +25,16 @@ body {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Dark mode (Tailwind v4 uses .dark on <html>) ── */
+.dark {
+  --color-natural-bg: #1A1A1A;
+  --color-natural-dark: #E8E4D9;
+  --color-natural-stone: #9C9484;
+  --color-natural-muted: #B4AC9C;
+  --color-natural-clay: #E8A88A;
+  --color-natural-sage: #7A7A58;
+  --color-natural-sage-dark: #6A6A48;
+  --color-natural-border: #33302A;
+  --color-natural-cream: #242220;
+}

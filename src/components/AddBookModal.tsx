@@ -14,6 +14,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [dailyPages, setDailyPages] = useState(20);
   const [coverUrl, setCoverUrl] = useState('');
   const [summaryLang, setSummaryLang] = useState<'auto' | 'vi' | 'en'>('auto');
+  const [addToQueue, setAddToQueue] = useState(false);
   const [autoCover, setAutoCover] = useState(false);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -64,7 +65,8 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         daily_pages: dailyPages,
         cover_url: coverUrl || undefined,
         summary_lang: summaryLang,
-      });
+        status: addToQueue ? 'queued' : 'active',
+      } as any);
       submittedRef.current = true; // keep the uploaded file
       uploadedPathRef.current = null;
       onToast({ type: 'ok', msg: `Added "${title}"` });
@@ -145,6 +147,13 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))}
                 className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" />
             </div>
+          </div>
+          <div className="flex items-center gap-2 py-1">
+            <input id="addToQueue" type="checkbox" checked={addToQueue} onChange={e => setAddToQueue(e.target.checked)}
+              className="accent-natural-sage cursor-pointer" />
+            <label htmlFor="addToQueue" className="text-[11px] text-natural-stone font-sans cursor-pointer">
+              Add to reading queue instead of starting now
+            </label>
           </div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary language</label>

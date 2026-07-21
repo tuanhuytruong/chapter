@@ -46,7 +46,7 @@ export const api = {
   getLog: (id: string) => req<LogRow[]>(`${BASE}/${id}/log`),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
-    req<LogRow>(`${BASE}/${id}/advance`, { method: "POST" }),
+    req<LogRow & { finished?: boolean }>(`${BASE}/${id}/advance`, { method: "POST" }),
   advanceAll: () =>
     req<{ advanced: number; skipped: number; errors: any[] }>(`${BASE}/all/advance`, {
       method: "POST",
@@ -55,6 +55,13 @@ export const api = {
     req<LogRow>(`${BASE}/${id}/retry/${date}`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
+  getAllQuotes: () => req<QuoteCard[]>("/api/quotes"),
+  getStats: () => req<{
+    velocity: { date: string; pages_read: number }[];
+    insights: { insight: string; freq: number }[];
+    bookCounts: { active: number; finished: number; paused: number; queued: number };
+    globalStats: { total_days_read: number; last_read: string };
+  }>("/api/stats"),
 };
 
 export interface UploadResult {
@@ -92,6 +99,14 @@ export async function uploadBook(file: File, onProgress?: (pct: number) => void)
 }
 
 // ── Derived helpers ──────────────────────────────────────────────
+export interface QuoteCard {
+  quote: string;
+  date: string;
+  book_id: string;
+  title: string;
+  author: string;
+}
+
 export function progressPct(b: BookRow): number {
   if (!b.total_pages) return 0;
   return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
