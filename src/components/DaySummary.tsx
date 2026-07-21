@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2, Send } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2 } from 'lucide-react';
 import type { LogRow } from '../types';
 import { api } from '../api';
 import ShareSummaryModal from './ShareSummaryModal';
@@ -30,9 +30,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [notesText, setNotesText] = useState(() => log.notes || '');
   const [saving, setSaving] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [telegramSending, setTelegramSending] = useState(false);
-  const [telegramSent, setTelegramSent] = useState(() => log.telegram_sent);
-  const [telegramMsg, setTelegramMsg] = useState<string | null>(null);
 
   // Auto-save on blur
   const saveNotes = useCallback(async (text: string) => {
@@ -43,21 +40,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       // silent — the toast system could show this but we keep it subtle
     } finally {
       setSaving(false);
-    }
-  }, [log.book_id, log.id]);
-
-  const handleSendTelegram = useCallback(async () => {
-    setTelegramSending(true);
-    setTelegramMsg(null);
-    try {
-      await api.sendLogToTelegram(log.book_id, log.id);
-      setTelegramSent(true);
-      setTelegramMsg('✅ Sent!');
-    } catch (e: any) {
-      setTelegramMsg('❌ ' + (e.message || 'Send failed'));
-    } finally {
-      setTelegramSending(false);
-      setTimeout(() => setTelegramMsg(null), 4000);
     }
   }, [log.book_id, log.id]);
 
@@ -84,7 +66,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           ) : (
             <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
           )}
-          {telegramSent && <span className="text-[10px] text-blue-600 font-sans">📨 Sent</span>}
         </div>
         <div className="flex items-center gap-1">
           {bookTitle && bookId && log.summary && (
@@ -92,12 +73,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
               <Share2 className="w-3.5 h-3.5" />
             </button>
           )}
-          {log.summary && (
-            <button onClick={handleSendTelegram} disabled={telegramSending} className="text-natural-stone hover:text-blue-500 cursor-pointer disabled:opacity-40" title="Send to Telegram">
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          )}
-          {telegramMsg && <span className="text-[9px] font-sans whitespace-nowrap">{telegramMsg}</span>}
           {log.raw_text && (
             <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

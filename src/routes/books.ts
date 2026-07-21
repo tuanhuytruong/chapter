@@ -334,65 +334,6 @@ booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/books/:id/log/:date/telegram — re-send a specific day's summary to Telegram
-booksRouter.post("/:id/log/:date/telegram", async (req: Request, res: Response) => {
-  const { id, date } = req.params;
-  try {
-    const logRes = await query(
-      "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
-      [id, date]
-    );
-    const entry = logRes.rows[0];
-    if (!entry) return res.status(404).json({ error: "log not found" });
-    if (!entry.summary) return res.status(400).json({ error: "no summary to send" });
-
-    const bookRes = await query("SELECT * FROM books WHERE id=$1", [id]);
-    const book = bookRes.rows[0];
-    if (!book) return res.status(404).json({ error: "book not found" });
-
-    const cfg = getTelegramConfig();
-    if (!cfg) return res.status(500).json({ error: "Telegram not configured (TELEGRAM_BOT_TOKEN/CHAT_ID)" });
-
-    const text = formatDailyMessage(book.title, book.author, entry);
-    const sent = await sendTelegramMessage(cfg, text);
-    if (!sent.ok) return res.status(502).json({ error: sent.error || "telegram send failed" });
-
-    await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [entry.id]);
-    entry.telegram_sent = true;
-    res.json(entry);
-  } catch (e: any) {
-    res.status(500).json({ error: "telegram resend failed", detail: e.message });
-  }
-});
-
-// POST /api/books/:id/logs/:logId/telegram — send Telegram using log ID (avoids date-format issues)
-booksRouter.post("/:id/logs/:logId/telegram", async (req: Request, res: Response) => {
-  const { id: bookId, logId } = req.params;
-  try {
-    const logRes = await query("SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, bookId]);
-    const entry = logRes.rows[0];
-    if (!entry) return res.status(404).json({ error: "log not found" });
-    if (!entry.summary) return res.status(400).json({ error: "no summary to send" });
-
-    const bookRes = await query("SELECT * FROM books WHERE id=$1", [bookId]);
-    const book = bookRes.rows[0];
-    if (!book) return res.status(404).json({ error: "book not found" });
-
-    const cfg = getTelegramConfig();
-    if (!cfg) return res.status(500).json({ error: "Telegram not configured (TELEGRAM_BOT_TOKEN/CHAT_ID)" });
-
-    const text = formatDailyMessage(book.title, book.author, entry);
-    const sent = await sendTelegramMessage(cfg, text);
-    if (!sent.ok) return res.status(502).json({ error: sent.error || "telegram send failed" });
-
-    await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [entry.id]);
-    res.json({ ok: true });
-  } catch (e: any) {
-    console.error("[telegram] send error:", e);
-    res.status(500).json({ error: "telegram resend failed", detail: e.message });
-  }
-});
-
 // POST /api/books/all/notify — push today's logs to Telegram + mark sent.
 // Called by n8n AFTER /all/advance. Returns per-book delivery status.
 booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
