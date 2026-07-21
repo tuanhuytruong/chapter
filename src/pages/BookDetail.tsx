@@ -223,7 +223,7 @@ export default function BookDetail() {
           </div>
         ) : (
           <div className="space-y-3">
-            {logs.map(l => <DaySummary key={l.id} log={l} />)}
+            {logs.map(l => <DaySummary key={l.id} log={l} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} />)}
           </div>
         )}
       </div>

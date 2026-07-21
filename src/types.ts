@@ -76,8 +76,9 @@ export interface CommunityPost {
   authorBio: string;
   bookTitle: string;
   bookAuthor: string;
-  summary: string; // The short summary
-  content: string; // The thoughts/reflection
+  book_id?: string;       // link back to the reading log's book
+  summary: string;        // The short summary
+  content: string;        // The thoughts/reflection
   likes: number;
   comments: Comment[];
   timestamp: string;

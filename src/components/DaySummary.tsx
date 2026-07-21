@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2 } from 'lucide-react';
 import type { LogRow } from '../types';
 import { api } from '../api';
+import ShareSummaryModal from './ShareSummaryModal';
 
 // Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
 // whitespace, drop blank lines, and keep paragraph breaks so the preview is
@@ -16,11 +17,19 @@ function formatRawText(raw: string): string {
     .trim();
 }
 
-const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
+interface DaySummaryProps {
+  log: LogRow;
+  bookTitle?: string;
+  bookAuthor?: string;
+  bookId?: string;
+}
+
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
   const [saving, setSaving] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   // Auto-save on blur
   const saveNotes = useCallback(async (text: string) => {
@@ -52,11 +61,18 @@ const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
           <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
           {log.telegram_sent && <span className="text-[10px] text-blue-600 font-sans">📨 Sent</span>}
         </div>
-        {log.raw_text && (
-          <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
-            {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {bookTitle && bookId && log.summary && (
+            <button onClick={() => setShowShare(true)} className="text-natural-stone hover:text-natural-sage cursor-pointer" title="Share summary">
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {log.raw_text && (
+            <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
+              {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {log.summary && <p className="text-xs text-natural-dark font-sans leading-relaxed">{log.summary}</p>}
@@ -102,6 +118,17 @@ const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
           <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans mb-1"><FileText className="w-3 h-3" /> Raw extracted text</p>
           <pre className="text-[11px] leading-relaxed text-natural-muted font-sans whitespace-pre-wrap break-words max-h-56 overflow-y-auto bg-natural-cream rounded-xl p-3">{formatRawText(log.raw_text)}</pre>
         </div>
+      )}
+
+      {showShare && bookTitle && bookAuthor && bookId && (
+        <ShareSummaryModal
+          log={log}
+          bookTitle={bookTitle}
+          bookAuthor={bookAuthor}
+          bookId={bookId}
+          onClose={() => setShowShare(false)}
+          onShared={() => {}}
+        />
       )}
     </div>
   );

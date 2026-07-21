@@ -113,7 +113,7 @@ app.get("/api/community/posts", (req: Request, res: Response) => {
 
 // 2. Submit a New Community Post
 app.post("/api/community/posts", (req: Request, res: Response) => {
-  const { authorName, authorAvatar, bookTitle, bookAuthor, summary, content } = req.body;
+  const { authorName, authorAvatar, bookTitle, bookAuthor, summary, content, book_id } = req.body;
   
   if (!bookTitle || !bookAuthor || !summary || !content) {
     res.status(400).json({ error: "Missing required fields" });
@@ -127,6 +127,7 @@ app.post("/api/community/posts", (req: Request, res: Response) => {
     authorBio: "Dedicated Reader & Community Member",
     bookTitle,
     bookAuthor,
+    book_id: book_id || undefined,
     summary,
     content,
     likes: 0,
