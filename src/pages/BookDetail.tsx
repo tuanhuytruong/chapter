@@ -57,6 +57,21 @@ export default function BookDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Hooks must run before loading/not-found early returns; otherwise React crashes
+  // after the first load with a different hook count.
+  useEffect(() => {
+    const insights = logs.slice(0, 3).flatMap(l => l.key_insights || []).slice(0, 3);
+    if (insights.length < 2) return;
+    const iv = setInterval(() => setInsightIdx(i => (i + 1) % insights.length), 4000);
+    return () => clearInterval(iv);
+  }, [logs]);
+
+  useEffect(() => {
+    if (!id || logs.length === 0) return;
+    const cached = localStorage.getItem(`mindmap_${id}`);
+    if (cached) try { setMindmapData(JSON.parse(cached)); } catch {}
+  }, [id, logs.length]);
+
   const readToday = async () => {
     if (!id) return;
     setAdvancing(true);
@@ -152,12 +167,6 @@ export default function BookDetail() {
 
   // Feature 5: Highlight reel — 3 most recent insights
   const recentInsights = logs.slice(0, 3).flatMap(l => l.key_insights || []).slice(0, 3);
-
-  useEffect(() => {
-    if (recentInsights.length < 2) return;
-    const iv = setInterval(() => setInsightIdx(i => (i + 1) % recentInsights.length), 4000);
-    return () => clearInterval(iv);
-  }, [recentInsights.length]);
 
   // Feature 1: Search within book
   const filteredLogs = (() => {
