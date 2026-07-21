@@ -23,7 +23,6 @@ export default function Insights() {
   if (!stats) return <div className="text-center p-16 text-natural-stone font-sans">Could not load stats.</div>;
 
   const { globalStats, bookCounts, velocity, insights } = stats;
-  const maxFreq = Math.max(...insights.map(i => i.freq));
 
   return (
     <div className="space-y-6 font-sans">
