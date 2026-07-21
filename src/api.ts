@@ -12,6 +12,7 @@ export interface LogRow {
   key_insights: string[] | null;
   quote: string | null;
   telegram_sent: boolean;
+  notes: string | null;
   created_at: string;
 }
 
@@ -51,6 +52,8 @@ export const api = {
     }),
   retry: (id: string, date: string) =>
     req<LogRow>(`${BASE}/${id}/retry/${date}`, { method: "POST" }),
+  updateLogNotes: (bookId: string, logId: string, notes: string) =>
+    req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
 };
 
 export interface UploadResult {
@@ -91,6 +94,14 @@ export async function uploadBook(file: File, onProgress?: (pct: number) => void)
 export function progressPct(b: BookRow): number {
   if (!b.total_pages) return 0;
   return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
+}
+
+/** Estimate how many reading days remain to finish the book. */
+export function daysToFinish(b: BookRow): number | null {
+  if (!b.daily_pages || b.daily_pages <= 0) return null;
+  const remaining = b.total_pages - b.current_page;
+  if (remaining <= 0) return null; // finished or no pages left
+  return Math.ceil(remaining / b.daily_pages);
 }
 
 /** Compute current streak (consecutive days up to today) from log dates.

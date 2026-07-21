@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flame, BookOpen } from 'lucide-react';
 import type { BookRow } from '../types';
-import { progressPct } from '../api';
+import { progressPct, daysToFinish } from '../api';
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Active',
@@ -49,6 +49,9 @@ const BookCard: React.FC<{ book: BookRow; streak?: number }> = ({ book, streak }
         <div className="h-1.5 bg-natural-cream rounded-full overflow-hidden">
           <div className="h-full bg-natural-sage rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
+        {daysToFinish(book) !== null && (
+          <p className="text-[10px] text-natural-stone/70 font-sans">~{daysToFinish(book)} days to finish</p>
+        )}
       </div>
     </button>
   );

@@ -58,3 +58,7 @@ CREATE TABLE IF NOT EXISTS chapter.reading_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date ON chapter.reading_log (book_id, date DESC);
+
+-- Migration: personal notes on daily summaries (idempotent).
+ALTER TABLE chapter.reading_log
+  ADD COLUMN IF NOT EXISTS notes TEXT;

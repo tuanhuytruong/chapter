@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon } from 'lucide-react';
-import { api, computeStreak, progressPct, fetchCover } from '../api';
+import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow } from '../types';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
@@ -130,6 +130,9 @@ export default function BookDetail() {
           <p className="text-xs text-natural-stone italic mb-2">by {book.author}</p>
           <div className="flex items-center gap-3 mb-3">
             <span className="flex items-center gap-1 text-natural-clay font-bold text-sm"><Flame className="w-4 h-4 fill-natural-clay" />{streak}d streak</span>
+            {daysToFinish(book) !== null && (
+              <span className="text-[11px] text-natural-stone/70">~{daysToFinish(book)} days left</span>
+            )}
             <span className="text-[11px] text-natural-stone">{logs.length} days read</span>
           </div>
           <div className="h-2 bg-natural-cream rounded-full overflow-hidden mb-1">

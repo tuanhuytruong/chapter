@@ -56,6 +56,7 @@ export interface LogRow {
   key_insights: string[] | null;
   quote: string | null;
   telegram_sent: boolean;
+  notes: string | null;
   created_at: string;
 }
 

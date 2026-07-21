@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
 import type { LogRow } from '../types';
+import { api } from '../api';
 
 // Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
 // whitespace, drop blank lines, and keep paragraph breaks so the preview is
@@ -17,6 +18,21 @@ function formatRawText(raw: string): string {
 
 const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
   const [open, setOpen] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [notesText, setNotesText] = useState(() => log.notes || '');
+  const [saving, setSaving] = useState(false);
+
+  // Auto-save on blur
+  const saveNotes = useCallback(async (text: string) => {
+    setSaving(true);
+    try {
+      await api.updateLogNotes(log.book_id, log.id, text);
+    } catch {
+      // silent — the toast system could show this but we keep it subtle
+    } finally {
+      setSaving(false);
+    }
+  }, [log.book_id, log.id]);
   // log.date is a YYYY-MM-DD string or ISO datetime (e.g. "2026-07-20T17:00:00.000Z"
   // when pg serializes a DATE as a UTC timestamp). Pass the raw string to Date()
   // directly — toLocaleDateString with timeZone: "Asia/Bangkok" then correctly
@@ -60,6 +76,26 @@ const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
           <Quote className="w-3 h-3 shrink-0 mt-0.5" />{log.quote}
         </p>
       )}
+
+      {/* Personal notes — collapsible textarea, auto-save on blur */}
+      <div>
+        <button
+          onClick={() => setShowNotes(s => !s)}
+          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone hover:text-natural-dark font-sans"
+        >
+          <StickyNote className="w-3 h-3" /> Notes{log.notes ? ' *' : ''}{saving ? ' …' : ''}
+        </button>
+        {showNotes && (
+          <textarea
+            value={notesText}
+            onChange={e => setNotesText(e.target.value)}
+            onBlur={e => saveNotes(e.target.value)}
+            rows={3}
+            className="w-full mt-1 px-3 py-2 text-xs font-sans leading-relaxed bg-natural-cream/50 border border-natural-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-natural-sage placeholder:text-natural-stone/50"
+            placeholder="Write your own notes about today's reading…"
+          />
+        )}
+      </div>
 
       {open && log.raw_text && (
         <div className="pt-2 border-t border-natural-border">

@@ -316,6 +316,23 @@ booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /api/books/:id/logs/:logId — update personal notes on a log entry
+booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
+  const { logId } = req.params;
+  const { notes } = req.body;
+  if (notes === undefined) return res.status(400).json({ error: "notes field required" });
+  try {
+    const { rows } = await query(
+      "UPDATE reading_log SET notes=$1 WHERE id=$2 RETURNING *",
+      [notes, logId]
+    );
+    if (!rows.length) return res.status(404).json({ error: "log not found" });
+    res.json(rows[0]);
+  } catch (e: any) {
+    res.status(503).json({ error: "DB unavailable", detail: e.message });
+  }
+});
+
 // POST /api/books/all/notify — push today's logs to Telegram + mark sent.
 // Called by n8n AFTER /all/advance. Returns per-book delivery status.
 booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
