@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle } from 'lucide-react';
+import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow } from '../types';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
+import MindMap from '../components/MindMap';
+import type { MindMapData } from '../components/MindMap';
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +32,8 @@ export default function BookDetail() {
   const [insightIdx, setInsightIdx] = useState(0);
   const [logView, setLogView] = useState<'list' | 'journey'>('list');
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
+  const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
+  const [mindmapLoading, setMindmapLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -192,6 +196,36 @@ export default function BookDetail() {
     }
   };
 
+  const generateMindmap = async () => {
+    if (!id) return;
+    setMindmapLoading(true);
+    try {
+      const res = await fetch(`/api/books/${id}/mindmap`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setMindmapData(data);
+        localStorage.setItem(`mindmap_${id}`, JSON.stringify(data));
+      }
+    } catch (e) { console.error(e); }
+    finally { setMindmapLoading(false); }
+  };
+
+  // Load cached mindmap on mount
+  useEffect(() => {
+    if (!id || logs.length === 0) return;
+    const cached = localStorage.getItem(`mindmap_${id}`);
+    if (cached) try { setMindmapData(JSON.parse(cached)); } catch {}
+  }, [id, logs.length]);
+
+  const startReread = async () => {
+    if (!id) return;
+    try {
+      await fetch(`/api/books/${id}/reread`, { method: 'POST' });
+      setToast({ type: 'ok', msg: `📖 Re-reading "${book?.title}"!` });
+      await load();
+    } catch (e: any) { setToast({ type: 'err', msg: e.message }); }
+  };
+
   return (
     <div className="space-y-6 font-sans">
       <div className="flex items-center justify-between">
@@ -227,9 +261,15 @@ export default function BookDetail() {
         </div>
         <div className="self-start flex flex-col items-end gap-2">
           {book.status === 'finished' ? (
-            <span className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-border text-natural-stone rounded-full text-xs font-bold uppercase tracking-wider">
-              <CheckCircle className="w-3.5 h-3.5" /> Finished
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-border text-natural-stone rounded-full text-xs font-bold uppercase tracking-wider">
+                <CheckCircle className="w-3.5 h-3.5" /> Finished
+              </span>
+              <button onClick={startReread}
+                className="flex items-center gap-1.5 px-4 py-2.5 border border-natural-border hover:border-natural-sage text-natural-stone hover:text-natural-dark rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer">
+                <RotateCcw className="w-3.5 h-3.5" /> Re-read
+              </button>
+            </div>
           ) : (
             <>
               <button onClick={readToday} disabled={advancing || book.status === 'finished'}
@@ -384,6 +424,22 @@ export default function BookDetail() {
           </>
         )}
       </div>
+
+      {/* Knowledge Map */}
+      {book.status === 'finished' && logs.length > 0 && (
+        <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-sm text-natural-dark">Knowledge Map</h3>
+            <button onClick={generateMindmap} disabled={mindmapLoading} className="text-[10px] text-natural-stone hover:text-natural-dark flex items-center gap-1">
+              <RefreshCw className="w-3 h-3" /> Regenerate
+            </button>
+          </div>
+          {mindmapLoading
+            ? <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-natural-sage" /></div>
+            : mindmapData && <MindMap data={mindmapData} bookTitle={book.title} />
+          }
+        </div>
+      )}
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 

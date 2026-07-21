@@ -376,6 +376,70 @@ async function startServer() {
     console.warn("[db] DATABASE_URL not set — /api/books routes will be unavailable");
   }
 
+// ── Re-read support ───────────────────────────────────────────
+app.post('/api/books/:id/reread', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await query(
+      `UPDATE chapter.books SET current_page = 0, status = 'active', reading_round = reading_round + 1 WHERE id = $1`,
+      [id]
+    );
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Knowledge Mindmap ─────────────────────────────────────────
+app.post('/api/books/:id/mindmap', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const book = (await query(`SELECT * FROM chapter.books WHERE id = $1`, [id])).rows[0];
+    if (!book) return res.status(404).json({ error: 'Book not found' });
+
+    const { rows: logs } = await query(
+      `SELECT * FROM chapter.reading_log WHERE book_id = $1 ORDER BY date DESC`,
+      [id]
+    );
+
+    const allInsights = logs.flatMap((l: any) => l.key_insights || []);
+    const allSummaries = logs.map((l: any) => l.summary).filter(Boolean).join('\n\n');
+
+    if (allInsights.length === 0 && !allSummaries) {
+      return res.json(null);
+    }
+
+    const prompt = `You are helping a reader understand the key concepts in "${book.title}" by ${book.author}.
+
+Here are all the key insights collected across their reading sessions:
+${allInsights.map((i: string, n: number) => `${n + 1}. ${i}`).join('\n')}
+
+Here are the session summaries:
+${allSummaries}
+
+Return ONLY a JSON object with this exact structure:
+{
+  "root": "One sentence thesis of the whole book",
+  "branches": [
+    {
+      "theme": "Theme name (2-4 words)",
+      "color": "#hex color",
+      "nodes": ["specific insight", "specific insight", "specific insight"]
+    }
+  ]
+}
+
+Use 3-5 branches. Each branch should have 2-4 nodes. Colors should be warm and distinct.
+Return only valid JSON, no markdown, no explanation.`;
+
+    const raw = await callLLM('You are a knowledge synthesis expert.', prompt, 0.3);
+    res.json(JSON.parse(raw));
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Serve SPA ─────────────────────────────────────────────────
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
