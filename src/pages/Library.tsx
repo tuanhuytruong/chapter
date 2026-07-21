@@ -127,12 +127,12 @@ export default function Library() {
           ))}
         </div>
         <div className="flex gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-natural-border rounded-full">
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-natural-cream border border-natural-border rounded-full">
             <Search className="w-3.5 h-3.5 text-natural-stone" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title/author"
               className="text-xs bg-transparent outline-none w-32 font-sans" />
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-natural-border rounded-full">
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-natural-cream border border-natural-border rounded-full">
             <ArrowUpDown className="w-3.5 h-3.5 text-natural-stone" />
             <select value={sort} onChange={e => setSort(e.target.value as Sort)}
               className="text-xs bg-transparent outline-none font-sans cursor-pointer">
@@ -144,10 +144,10 @@ export default function Library() {
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[0,1,2,3,4,5].map(i => <div key={i} className="h-36 bg-white border border-natural-border rounded-[24px] animate-pulse" />)}
+          {[0,1,2,3,4,5].map(i => <div key={i} className="h-36 bg-natural-cream border border-natural-border rounded-[24px] animate-pulse" />)}
         </div>
       ) : visible.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-16 bg-white rounded-[32px] border border-natural-border text-center space-y-3">
+        <div className="flex flex-col items-center justify-center p-16 bg-natural-cream rounded-[32px] border border-natural-border text-center space-y-3">
           <BookOpen className="w-10 h-10 text-natural-stone" />
           <p className="text-sm font-bold text-natural-dark font-sans">No books yet</p>
           <p className="text-xs text-natural-stone font-sans">Add your first book to start the daily reading companion.</p>
@@ -163,7 +163,7 @@ export default function Library() {
 
       {/* ── Up Next (queue) ── */}
       {[...queued].length > 0 && (
-        <div className="bg-white rounded-[32px] border border-natural-border shadow-xs p-6">
+        <div className="bg-natural-cream rounded-[32px] border border-natural-border shadow-xs p-6">
           <h3 className="text-sm font-bold text-natural-dark font-sans uppercase tracking-wider mb-4">
             Up Next ({queued.length})
           </h3>

@@ -46,7 +46,7 @@ export default function NicknamePrompt({ open, onDone }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-[28px] shadow-xl w-full max-w-sm p-6 text-center space-y-4">
+      <div className="bg-natural-cream rounded-[28px] shadow-xl w-full max-w-sm p-6 text-center space-y-4">
         <div className="w-12 h-12 bg-natural-sage/20 rounded-full flex items-center justify-center mx-auto">
           <User className="w-6 h-6 text-natural-sage" />
         </div>

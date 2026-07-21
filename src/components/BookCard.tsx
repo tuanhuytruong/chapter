@@ -22,7 +22,7 @@ const BookCard: React.FC<{ book: BookRow; streak?: number }> = ({ book, streak }
   return (
     <button
       onClick={() => navigate(`/books/${book.id}`)}
-      className="group bg-white border border-natural-border rounded-[24px] p-4 shadow-sm hover:shadow-md transition text-left flex flex-col gap-3 cursor-pointer"
+      className="group bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm hover:shadow-md transition text-left flex flex-col gap-3 cursor-pointer"
     >
       <div className="flex gap-4">
         <div className="w-16 h-22 shrink-0 rounded-xl overflow-hidden bg-natural-cream border border-natural-border flex items-center justify-center">

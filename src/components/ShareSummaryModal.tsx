@@ -69,7 +69,7 @@ const ShareSummaryModal: React.FC<ShareSummaryModalProps> = ({ log, bookTitle, b
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-[28px] shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-natural-cream rounded-[28px] shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-natural-border">
           <h2 className="text-sm font-bold text-natural-dark font-sans">Share summary</h2>

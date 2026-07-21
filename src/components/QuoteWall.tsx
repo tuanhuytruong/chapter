@@ -43,7 +43,7 @@ export default function QuoteWall() {
 
   if (quotes.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-[32px] border border-natural-border shadow-xs p-8">
+      <div className="text-center py-12 bg-natural-cream rounded-[32px] border border-natural-border shadow-xs p-8">
         <Quote className="w-10 h-10 text-natural-stone mx-auto mb-3" />
         <p className="text-sm font-bold text-natural-dark font-sans mb-1">No quotes yet</p>
         <p className="text-xs text-natural-stone font-sans">Your quotes will appear here as you read.</p>
@@ -58,7 +58,7 @@ export default function QuoteWall() {
         {quotes.map((q, i) => (
           <div
             key={`${q.book_id}-${i}`}
-            className="break-inside-avoid bg-white border border-natural-border rounded-[24px] p-5 shadow-sm hover:border-natural-clay/30 transition duration-150 cursor-pointer group"
+            className="break-inside-avoid bg-natural-cream border border-natural-border rounded-[24px] p-5 shadow-sm hover:border-natural-clay/30 transition duration-150 cursor-pointer group"
             onClick={() => navigate(`/books/${q.book_id}`)}
           >
             <div className="flex items-start justify-between gap-2">

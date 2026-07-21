@@ -30,26 +30,26 @@ export default function Insights() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
+        <div className="bg-natural-cream border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-natural-sage"><Calendar className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-wider">Days Read</span></div>
           <p className="text-2xl font-bold text-natural-dark mt-1">{globalStats.total_days_read}</p>
         </div>
-        <div className="bg-white border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
+        <div className="bg-natural-cream border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-natural-clay"><Flame className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-wider">Last Read</span></div>
           <p className="text-2xl font-bold text-natural-dark mt-1">{globalStats.last_read ? new Date(globalStats.last_read).toLocaleDateString() : '—'}</p>
         </div>
-        <div className="bg-white border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
+        <div className="bg-natural-cream border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-natural-sage"><BookOpen className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-wider">Active</span></div>
           <p className="text-2xl font-bold text-natural-dark mt-1">{bookCounts.active}</p>
         </div>
-        <div className="bg-white border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
+        <div className="bg-natural-cream border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-natural-sage"><BookMarked className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-wider">Finished</span></div>
           <p className="text-2xl font-bold text-natural-dark mt-1">{bookCounts.finished}</p>
         </div>
       </div>
 
       {/* Velocity chart */}
-      <div className="bg-white border border-natural-border rounded-2xl p-4 shadow-sm">
+      <div className="bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-sm">
         <h3 className="flex items-center gap-1.5 font-bold text-sm text-natural-dark mb-3"><TrendingUp className="w-4 h-4" /> Reading Velocity (last 30 days)</h3>
         {velocity.length === 0 ? (
           <p className="text-xs text-natural-stone">No data yet.</p>
@@ -69,7 +69,7 @@ export default function Insights() {
       </div>
 
       {/* Top insights */}
-      <div className="bg-white border border-natural-border rounded-2xl p-4 shadow-sm">
+      <div className="bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-sm">
         <h3 className="flex items-center gap-1.5 font-bold text-sm text-natural-dark mb-3"><Hash className="w-4 h-4" /> Top Key Insights</h3>
         {insights.length === 0 ? (
           <p className="text-xs text-natural-stone">No insights recorded yet.</p>

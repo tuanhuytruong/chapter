@@ -55,7 +55,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   });
 
   return (
-    <div className="bg-white border border-natural-border rounded-2xl p-4 shadow-sm space-y-2">
+    <div className="bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-sm space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>

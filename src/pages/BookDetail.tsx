@@ -150,7 +150,7 @@ export default function BookDetail() {
       </div>
 
       {/* Header */}
-      <div className="flex gap-5 bg-white border border-natural-border rounded-[28px] p-5 shadow-sm">
+      <div className="flex gap-5 bg-natural-cream border border-natural-border rounded-[28px] p-5 shadow-sm">
         <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden bg-natural-cream border border-natural-border flex items-center justify-center">
           {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
@@ -177,7 +177,7 @@ export default function BookDetail() {
 
       {/* Settings + Heatmap */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 bg-white border border-natural-border rounded-[24px] p-4 shadow-sm space-y-3">
+        <div className="lg:col-span-1 bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
             {!editing && <button onClick={() => setEditing(true)} className="text-[11px] text-natural-sage font-bold">Edit</button>}
@@ -235,7 +235,7 @@ export default function BookDetail() {
           )}
         </div>
 
-        <div className="lg:col-span-2 bg-white border border-natural-border rounded-[24px] p-4 shadow-sm">
+        <div className="lg:col-span-2 bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
           <h3 className="font-bold text-sm text-natural-dark mb-3">Reading activity</h3>
           <StreakHeatmap logs={logs} />
         </div>
@@ -245,7 +245,7 @@ export default function BookDetail() {
       <div>
         <h3 className="font-bold text-sm text-natural-dark font-sans mb-3">Daily Summaries</h3>
         {logs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[28px] border border-natural-border text-center space-y-2">
+          <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
             <BookOpen className="w-8 h-8 text-natural-stone" />
             <p className="text-sm font-bold text-natural-dark">No days read yet</p>
             <p className="text-xs text-natural-stone">Tap “Read Today” to generate your first AI summary.</p>
@@ -262,7 +262,7 @@ export default function BookDetail() {
       {/* Finish queue modal */}
       {finishModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setFinishModal(null)}>
-          <div className="bg-white rounded-[28px] border border-natural-border shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-natural-cream rounded-[28px] border border-natural-border shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="text-center space-y-2">
               <p className="text-2xl">🎉</p>
               <h3 className="font-bold text-lg text-natural-dark font-sans">You finished &ldquo;{book?.title}&rdquo;!</h3>

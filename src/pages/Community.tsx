@@ -81,7 +81,7 @@ export default function Community() {
       </div>
 
       {loadingPosts
-        ? <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[32px] border border-natural-border"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /><p className="text-xs text-natural-stone font-sans mt-3">Assembling community logs...</p></div>
+        ? <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[32px] border border-natural-border"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /><p className="text-xs text-natural-stone font-sans mt-3">Assembling community logs...</p></div>
         : <CommunityFeed posts={posts} library={library} onAddComment={handleAddComment} />
       }
     </div>

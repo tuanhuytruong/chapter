@@ -41,7 +41,7 @@ export default function CommunityFeed({
       </div>
 
       {errorMessage && (
-        <div id="feed-error-banner" className="p-4 bg-white border border-natural-clay/30 rounded-2xl text-xs text-natural-clay flex items-center justify-between font-sans">
+        <div id="feed-error-banner" className="p-4 bg-natural-cream border border-natural-clay/30 rounded-2xl text-xs text-natural-clay flex items-center justify-between font-sans">
           <span>{errorMessage}</span>
           <button onClick={() => setErrorMessage(null)} className="font-bold text-natural-clay underline cursor-pointer">Dismiss</button>
         </div>
@@ -50,7 +50,7 @@ export default function CommunityFeed({
       {/* Posts List */}
       <div id="posts-list" className="space-y-6">
         {posts.length === 0 ? (
-          <div id="empty-feed-view" className="text-center py-12 bg-white rounded-[32px] border border-natural-border shadow-xs p-8">
+          <div id="empty-feed-view" className="text-center py-12 bg-natural-cream rounded-[32px] border border-natural-border shadow-xs p-8">
             <p className="text-sm font-bold text-natural-dark font-sans mb-2">No posts yet</p>
             <p className="text-xs text-natural-stone font-sans leading-relaxed">
               Share today's reading summary to start your book club discussion.
@@ -64,7 +64,7 @@ export default function CommunityFeed({
               <div
                 id={`post-card-${post.id}`}
                 key={post.id}
-                className="bg-white border border-natural-border rounded-[32px] p-6 shadow-sm space-y-4 hover:border-natural-clay/30 transition duration-150"
+                className="bg-natural-cream border border-natural-border rounded-[32px] p-6 shadow-sm space-y-4 hover:border-natural-clay/30 transition duration-150"
               >
                 {/* Author Info */}
                 <div className="flex items-center justify-between">
@@ -105,7 +105,7 @@ export default function CommunityFeed({
                     <span className="font-bold text-natural-dark font-serif">{post.bookTitle}</span>
                     <span className="text-natural-stone ml-1.5 font-sans italic">by {post.bookAuthor}</span>
                   </div>
-                  <div className="bg-white border border-natural-border px-3 py-1 rounded-full text-[10px] font-bold text-natural-stone font-sans text-center max-w-[150px] truncate shadow-2xs">
+                  <div className="bg-natural-cream border border-natural-border px-3 py-1 rounded-full text-[10px] font-bold text-natural-stone font-sans text-center max-w-[150px] truncate shadow-2xs">
                     {post.summary}
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export default function CommunityFeed({
                             className="w-8 h-8 rounded-full object-cover border border-natural-border flex-shrink-0"
                             alt={comment.authorName}
                           />
-                          <div className="space-y-1 bg-white border border-natural-border rounded-2xl p-4 shadow-2xs flex-1">
+                          <div className="space-y-1 bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-2xs flex-1">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="font-bold text-natural-dark font-sans">{comment.authorName}</span>
@@ -191,7 +191,7 @@ export default function CommunityFeed({
                         placeholder="Your reply..."
                         value={commentInputs[post.id] || ''}
                         onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                        className="flex-1 px-4 py-2 bg-natural-cream border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-white text-natural-dark font-sans"
+                        className="flex-1 px-4 py-2 bg-natural-cream border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage focus:bg-natural-bg text-natural-dark font-sans"
                       />
                       <button
                         id={`btn-submit-comment-${post.id}`}

@@ -26,15 +26,20 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Dark mode (Tailwind v4 uses .dark on <html>) ── */
+/* ── Dark mode — warm lamplight theme ── */
 .dark {
-  --color-natural-bg: #1A1A1A;
-  --color-natural-dark: #E8E4D9;
-  --color-natural-stone: #9C9484;
-  --color-natural-muted: #B4AC9C;
-  --color-natural-clay: #E8A88A;
-  --color-natural-sage: #7A7A58;
-  --color-natural-sage-dark: #6A6A48;
-  --color-natural-border: #33302A;
-  --color-natural-cream: #242220;
+  --color-natural-bg:        #1C1A14;
+  --color-natural-dark:      #EDE8DC;
+  --color-natural-stone:     #9A9080;
+  --color-natural-muted:     #B8B09E;
+  --color-natural-clay:      #D48166;
+  --color-natural-sage:      #6B7A5A;
+  --color-natural-sage-dark: #5A6649;
+  --color-natural-border:    #2E2A22;
+  --color-natural-cream:     #252118;
+}
+
+.dark body {
+  background-color: var(--color-natural-bg);
+  color: var(--color-natural-dark);
 }

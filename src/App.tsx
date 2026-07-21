@@ -16,14 +16,16 @@ function Layout() {
   const location = useLocation();
   const [nicknameOpen, setNicknameOpen] = useState(false);
   const [nickname, setNickname] = useState(getNickname);
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('chapter_dark') === 'true');
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark);
-    localStorage.setItem('chapter_dark', String(isDark));
-  }, [isDark]);
+  const toggleDark = () => {
+    const next = !isDark;
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    setIsDark(next);
+  };
 
   useEffect(() => {
     setNickname(getNickname());
@@ -33,7 +35,7 @@ function Layout() {
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-serif">
-      <header className="bg-white border-b border-natural-border sticky top-0 z-40 h-20 flex items-center">
+      <header className="bg-natural-bg border-b border-natural-border sticky top-0 z-40 h-20 flex items-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex justify-between items-center h-full">
             <NavLink to="/" className="flex items-center gap-3">
@@ -59,9 +61,9 @@ function Layout() {
             </nav>
 
             <div className="flex items-center gap-2">
-              <button onClick={() => setIsDark(prev => !prev)}
-                className="w-7 h-7 rounded-full bg-natural-cream border border-natural-border flex items-center justify-center text-natural-stone hover:text-natural-dark cursor-pointer" title="Toggle dark mode">
-                {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              <button onClick={toggleDark}
+                className="w-7 h-7 rounded-full bg-natural-cream border border-natural-border flex items-center justify-center hover:opacity-70 cursor-pointer">
+                {isDark ? <Sun className="w-3.5 h-3.5 text-natural-clay" /> : <Moon className="w-3.5 h-3.5 text-natural-stone" />}
               </button>
               <button onClick={() => setNicknameOpen(true)} className="flex items-center gap-1.5 hover:opacity-70 cursor-pointer">
               <div className="w-7 h-7 rounded-full bg-natural-sage/20 flex items-center justify-center">
