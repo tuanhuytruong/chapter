@@ -17,12 +17,11 @@ function formatRawText(raw: string): string {
 
 const DaySummary: React.FC<{ log: LogRow }> = ({ log }) => {
   const [open, setOpen] = useState(false);
-  // log.date is a 'YYYY-MM-DD' string (Asia/Bangkok / UTC+7 app tz). Normalize
-  // defensively: some server builds serialize DATE as an ISO datetime string or
-  // a JS Date, so always take the first 10 chars. Format in Asia/Bangkok so it
-  // never shows off-by-one or "Invalid Date".
-  const rawStr = String(log.date).slice(0, 10);
-  const date = new Date(rawStr + "T00:00:00").toLocaleDateString("en-US", {
+  // log.date is a YYYY-MM-DD string or ISO datetime (e.g. "2026-07-20T17:00:00.000Z"
+  // when pg serializes a DATE as a UTC timestamp). Pass the raw string to Date()
+  // directly — toLocaleDateString with timeZone: "Asia/Bangkok" then correctly
+  // converts to the app's calendar day regardless of the wire format.
+  const date = new Date(String(log.date)).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

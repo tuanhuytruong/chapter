@@ -97,7 +97,14 @@ export function progressPct(b: BookRow): number {
  *  Uses LOCAL date (not UTC) so streaks align with the user's calendar day. */
 export function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
-  const days = new Set(dates.map((d) => d.slice(0, 10)));
+  const days = new Set(dates.map((d) => {
+    // ISO datetime from server (e.g. "2026-07-20T17:00:00.000Z") needs
+    // Asia/Bangkok conversion — the plain slice(0,10) would give the UTC day.
+    const s = String(d);
+    return s.includes("T")
+      ? new Date(s).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })
+      : s.slice(0, 10);
+  }));
   let streak = 0;
   // "Today" in the app timezone (Asia/Bangkok / UTC+7), not the viewer's local tz.
   const parts = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }).split("-");

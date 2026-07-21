@@ -20,7 +20,11 @@ function localDateStr(d: Date): string {
 export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   const byDay = new Map<string, number>();
   for (const l of logs) {
-    const k = l.date.slice(0, 10);
+    // Normalize date: ISO strings (e.g. "2026-07-20T17:00:00.000Z") must be
+    // converted to the app's Asia/Bangkok calendar date, not UTC.
+    const k = String(l.date).includes("T")
+      ? new Date(l.date).toLocaleDateString("en-CA", { timeZone: APP_TZ })
+      : l.date.slice(0, 10);
     byDay.set(k, (byDay.get(k) || 0) + 1);
   }
 
