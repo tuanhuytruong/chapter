@@ -27,10 +27,12 @@ export default function Community() {
   }, []);
 
   const handleShareSummary = async (bookTitle: string, bookAuthor: string, summary: string, content: string): Promise<CommunityPost | null> => {
+    const nick = localStorage.getItem('chapter_nickname') || 'Book Lover';
+    const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nick)}`;
     try {
       const response = await fetch('/api/community/posts', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorName: 'tuanhuytruong13', authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', bookTitle, bookAuthor, summary, content })
+        body: JSON.stringify({ authorName: nick, authorAvatar: avatar, bookTitle, bookAuthor, summary, content })
       });
       const data = await response.json();
       if (response.ok) { setPosts(prev => [data, ...prev]); return data; }
@@ -45,10 +47,12 @@ export default function Community() {
     } catch (e) { console.error(e); }
   };
   const handleAddComment = async (postId: string, content: string) => {
+    const nick = localStorage.getItem('chapter_nickname') || 'Fellow Reader';
+    const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nick)}`;
     try {
       const r = await fetch(`/api/community/posts/${postId}/comments`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorName: 'tuanhuytruong13', authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', authorBio: 'Book Enthusiast', content })
+        body: JSON.stringify({ authorName: nick, authorAvatar: avatar, authorBio: 'Book Enthusiast', content })
       });
       const data = await r.json();
       if (r.ok) setPosts(prev => prev.map(p => p.id === postId ? data : p));

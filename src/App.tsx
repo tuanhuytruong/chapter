@@ -4,6 +4,7 @@ import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
 import Community from './pages/Community';
 import { BookMarked, Users, Flame } from 'lucide-react';
+import NicknamePrompt from './components/NicknamePrompt';
 
 // ── Layout (nav + outlet) ──────────────────────────────────────
 function Layout() {
@@ -43,6 +44,7 @@ function Layout() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         <Outlet />
       </div>
+      <NicknamePrompt />
     </div>
   );
 }
