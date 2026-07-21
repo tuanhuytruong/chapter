@@ -37,7 +37,7 @@ export default function BookDetail() {
       setAuthor(b.author);
       setCoverUrl(b.cover_url || '');
       setSummaryLang(b.summary_lang || 'auto');
-      setLogs([...l].sort((a, b) => b.date.localeCompare(a.date)));
+      setLogs(l);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {
@@ -52,7 +52,12 @@ export default function BookDetail() {
     setAdvancing(true);
     try {
       await api.advance(id);
-      setToast({ type: 'ok', msg: 'Read today — summary generated' });
+      setToast({
+        type: 'ok',
+        msg: hasReadToday
+          ? `Session ${sessionCount + 1} done — another summary generated`
+          : 'Read today — summary generated'
+      });
       await load();
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
@@ -111,6 +116,10 @@ export default function BookDetail() {
 
   const pct = progressPct(book);
   const streak = computeStreak(logs.map(l => l.date));
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const todaySessions = logs.filter(l => String(l.date).slice(0, 10) === todayStr);
+  const sessionCount = todaySessions.length;
+  const hasReadToday = sessionCount > 0;
 
   return (
     <div className="space-y-6 font-sans">
@@ -142,7 +151,7 @@ export default function BookDetail() {
         </div>
         <button onClick={readToday} disabled={advancing || book.status === 'finished'}
           className="self-start flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer">
-          {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Read Today
+          {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
         </button>
       </div>
 

@@ -143,7 +143,7 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { rows } = await query(
-      "SELECT * FROM reading_log WHERE book_id = $1 ORDER BY date ASC",
+      "SELECT * FROM reading_log WHERE book_id = $1 ORDER BY date DESC, session DESC",
       [id]
     );
     res.json(rows);
@@ -187,7 +187,7 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   }
 });
 
-/** Core: extract next chunk, call LLM, persist. Idempotent per (book, date). */
+/** Core: extract next chunk, call LLM, persist. Supports multi-session. */
 async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
   return withClient(async (client) => {
     const bRes = await client.query("SELECT * FROM books WHERE id = $1", [bookId]);
@@ -197,20 +197,21 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
 
     const dateStr = today();
 
-    // Idempotency: skip if today's log already exists (unless forced)
-    if (!force) {
-      const exist = await client.query(
-        "SELECT id FROM reading_log WHERE book_id=$1 AND date=$2",
-        [bookId, dateStr]
-      );
-      if (exist.rows.length) {
-        return { bookId, skipped: true, reason: "already advanced today" };
-      }
-    }
+    // Find the last session for today (if any) — supports multi-session reading
+    const lastSession = await client.query(
+      `SELECT page_end, session FROM reading_log
+       WHERE book_id=$1 AND date=$2
+       ORDER BY session DESC LIMIT 1`,
+      [bookId, dateStr]
+    );
 
-    const start = book.current_page + 1;
+    const sessionNum = lastSession.rows.length ? lastSession.rows[0].session + 1 : 1;
+    const start = lastSession.rows.length
+      ? lastSession.rows[0].page_end + 1   // continue from last session's end
+      : book.current_page + 1;             // first session: use book cursor
+
     const end = Math.min(
-      book.current_page + book.daily_pages,
+      start + book.daily_pages - 1,
       book.total_pages || start + book.daily_pages
     );
     if (start > (book.total_pages || Infinity)) {
@@ -235,7 +236,7 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     });
     const parsed = parseSummary(raw);
 
-    // Update book cursor + status
+    // Update book cursor — always advances regardless of session count
     const newCurrent = end;
     const finished = newCurrent >= (totalPages || newCurrent);
     await client.query(
@@ -244,20 +245,16 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     );
 
     const ins = await client.query(
-      `INSERT INTO reading_log (book_id, date, page_start, page_end, raw_text, summary, key_insights, quote, chapter_title)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-       ON CONFLICT (book_id, date) DO UPDATE SET
-        page_start=EXCLUDED.page_start, page_end=EXCLUDED.page_end,
-        raw_text=EXCLUDED.raw_text, summary=EXCLUDED.summary,
-        key_insights=EXCLUDED.key_insights, quote=EXCLUDED.quote, chapter_title=EXCLUDED.chapter_title
-       RETURNING *`,
-      [bookId, dateStr, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
+      `INSERT INTO reading_log (book_id, date, session, page_start, page_end, raw_text, summary, key_insights, quote, chapter_title)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [bookId, dateStr, sessionNum, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
     );
 
     return {
       bookId,
       title: book.title,
       date: dateStr,
+      session: sessionNum,
       pageStart: start,
       pageEnd: end,
       totalUnits,
@@ -267,17 +264,15 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
   });
 }
 
-// ── Phase 3 prep: today's entry for a book (for n8n) ──────
-// GET /api/books/:id/log/today
+// GET /api/books/:id/log/today — returns array of today's sessions (n8n compatibility)
 booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { rows } = await query(
-      "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
+      "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session ASC",
       [id, today()]
     );
-    if (!rows.length) return res.status(404).json({ error: "no entry for today" });
-    res.json(rows[0]);
+    res.json(rows);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
@@ -369,17 +364,17 @@ booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/books/all/log/today — convenience for n8n: today's entries for all active books.
+// GET /api/books/all/log/today — convenience for n8n: today's sessions for all active books.
 booksRouter.get("/all/log/today", async (_req: Request, res: Response) => {
   try {
     const { rows: books } = await query("SELECT * FROM books WHERE status='active'");
     const out: any[] = [];
     for (const b of books) {
       const { rows } = await query(
-        "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
+        "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session ASC",
         [b.id, today()]
       );
-      if (rows[0]) out.push({ book: b, log: rows[0] });
+      if (rows.length) out.push({ book: b, logs: rows });
     }
     res.json(out);
   } catch (e: any) {

@@ -66,3 +66,16 @@ ALTER TABLE chapter.reading_log
 -- Migration: chapter/section title for today's reading (idempotent).
 ALTER TABLE chapter.reading_log
   ADD COLUMN IF NOT EXISTS chapter_title TEXT;
+
+-- Migration: multi-session reading (idempotent).
+-- Drop old one-per-day constraint; add session column + new composite unique.
+ALTER TABLE chapter.reading_log
+  DROP CONSTRAINT IF EXISTS reading_log_book_id_date_key;
+ALTER TABLE chapter.reading_log
+  ADD COLUMN IF NOT EXISTS session INT NOT NULL DEFAULT 1;
+ALTER TABLE chapter.reading_log
+  ADD CONSTRAINT reading_log_book_id_date_session_key
+  UNIQUE (book_id, date, session);
+DROP INDEX IF EXISTS idx_reading_log_book_date;
+CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
+  ON chapter.reading_log (book_id, date DESC, session DESC);

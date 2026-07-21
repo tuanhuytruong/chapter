@@ -49,6 +49,7 @@ export interface LogRow {
   id: string;
   book_id: string;
   date: string;
+  session: number;
   page_start: number;
   page_end: number;
   raw_text: string | null;

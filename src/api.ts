@@ -5,6 +5,7 @@ export interface LogRow {
   id: string;
   book_id: string;
   date: string;
+  session: number;
   page_start: number;
   page_end: number;
   raw_text: string | null;
@@ -43,7 +44,7 @@ export const api = {
     req<{ ok: true }>(`${BASE}/${id}`, { method: "DELETE" }),
 
   getLog: (id: string) => req<LogRow[]>(`${BASE}/${id}/log`),
-  getLogToday: (id: string) => req<LogRow | { error: string }>(`${BASE}/${id}/log/today`),
+  getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
     req<LogRow>(`${BASE}/${id}/advance`, { method: "POST" }),
   advanceAll: () =>
@@ -102,6 +103,12 @@ export function daysToFinish(b: BookRow): number | null {
   const remaining = b.total_pages - b.current_page;
   if (remaining <= 0) return null; // finished or no pages left
   return Math.ceil(remaining / b.daily_pages);
+}
+
+/** Returns true if any session exists for today for this book. */
+export function hasTodaySession(logs: LogRow[]): boolean {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  return logs.some(l => String(l.date).slice(0, 10) === today);
 }
 
 /** Compute current streak (consecutive days up to today) from log dates.
