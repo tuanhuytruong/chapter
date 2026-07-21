@@ -6,6 +6,52 @@
  * verified end-to-end. On e7240ubt, point NINE_ROUTER_URL at localhost:20128.
  */
 
+/** Generic 9router call with arbitrary system + user prompts. Returns text. */
+export async function callLLM(
+  system: string,
+  user: string,
+  temperature = 0.7
+): Promise<string> {
+  const url = process.env.NINE_ROUTER_URL;
+  const model = process.env.NINE_ROUTER_MODEL || "qwen3";
+
+  if (!url) {
+    console.warn("[llm] NINE_ROUTER_URL not set — using fallback");
+    return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
+  }
+
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const apiKey = process.env.NINE_ROUTER_API_KEY;
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        temperature,
+        stream: false,
+      }),
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    const text: string | undefined = data?.choices?.[0]?.message?.content;
+    if (!text) throw new Error("9router returned empty content");
+    return text.trim();
+  } catch (err: any) {
+    console.error("[llm] generic call failed:", err.message, "— using fallback");
+    return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
+  }
+}
+
 export interface ParsedSummary {
   summary: string;
   key_insights: string[];

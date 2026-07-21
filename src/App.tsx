@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
 import Community from './pages/Community';
-import { BookMarked, Users, Flame } from 'lucide-react';
+import { BookMarked, Users, Pencil } from 'lucide-react';
 import NicknamePrompt from './components/NicknamePrompt';
+
+const NICKNAME_KEY = 'chapter_nickname';
+function getNickname() { return localStorage.getItem(NICKNAME_KEY) || ''; }
 
 // ── Layout (nav + outlet) ──────────────────────────────────────
 function Layout() {
   const location = useLocation();
+  const [nicknameOpen, setNicknameOpen] = useState(false);
+  const [nickname, setNickname] = useState(getNickname);
+
+  useEffect(() => {
+    setNickname(getNickname());
+  }, [nicknameOpen]);
+
   return (
     <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-serif">
       <header className="bg-white border-b border-natural-border sticky top-0 z-40 h-20 flex items-center">
@@ -33,10 +43,13 @@ function Layout() {
               </NavLink>
             </nav>
 
-            <div className="flex items-center gap-2">
-              <Flame className="w-4 h-4 text-natural-clay fill-natural-clay" />
-              <span className="text-sm font-bold text-natural-dark font-sans">Reading Companion</span>
-            </div>
+            <button onClick={() => setNicknameOpen(true)} className="flex items-center gap-1.5 hover:opacity-70 cursor-pointer">
+              <div className="w-7 h-7 rounded-full bg-natural-sage/20 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-natural-sage font-sans">{nickname ? nickname[0].toUpperCase() : '?'}</span>
+              </div>
+              <span className="text-xs font-medium text-natural-dark font-sans max-w-[100px] truncate">{nickname || 'Set nickname'}</span>
+              <Pencil className="w-3 h-3 text-natural-stone" />
+            </button>
           </div>
         </div>
       </header>
@@ -44,7 +57,7 @@ function Layout() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         <Outlet />
       </div>
-      <NicknamePrompt />
+      <NicknamePrompt open={nicknameOpen} onDone={() => setNicknameOpen(false)} />
     </div>
   );
 }

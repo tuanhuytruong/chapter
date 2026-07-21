@@ -32,6 +32,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [showShare, setShowShare] = useState(false);
   const [telegramSending, setTelegramSending] = useState(false);
   const [telegramSent, setTelegramSent] = useState(() => log.telegram_sent);
+  const [telegramMsg, setTelegramMsg] = useState<string | null>(null);
 
   // Auto-save on blur
   const saveNotes = useCallback(async (text: string) => {
@@ -47,14 +48,17 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
   const handleSendTelegram = useCallback(async () => {
     setTelegramSending(true);
+    setTelegramMsg(null);
     try {
       const dateStr = String(log.date).slice(0, 10);
       await api.sendLogToTelegram(log.book_id, dateStr);
       setTelegramSent(true);
-    } catch {
-      // silent
+      setTelegramMsg('✅ Sent!');
+    } catch (e: any) {
+      setTelegramMsg('❌ ' + (e.message || 'Send failed'));
     } finally {
       setTelegramSending(false);
+      setTimeout(() => setTelegramMsg(null), 4000);
     }
   }, [log.book_id, log.id, log.date]);
 
@@ -94,6 +98,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
               <Send className="w-3.5 h-3.5" />
             </button>
           )}
+          {telegramMsg && <span className="text-[9px] font-sans whitespace-nowrap">{telegramMsg}</span>}
           {log.raw_text && (
             <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
