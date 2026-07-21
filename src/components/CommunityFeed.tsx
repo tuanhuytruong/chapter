@@ -34,12 +34,6 @@ export default function CommunityFeed({
 
   return (
     <div className="space-y-6">
-      {/* Feed Header */}
-      <div className="border-b border-natural-border pb-5">
-        <h2 id="community-feed-heading" className="text-2xl font-serif italic text-natural-dark">Community Journal</h2>
-        <p className="text-sm text-natural-stone font-sans">Read daily updates, learn from summaries, and discuss with fellow book lovers and AI experts.</p>
-      </div>
-
       {errorMessage && (
         <div id="feed-error-banner" className="p-4 bg-natural-cream border border-natural-clay/30 rounded-2xl text-xs text-natural-clay flex items-center justify-between font-sans">
           <span>{errorMessage}</span>

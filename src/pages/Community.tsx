@@ -77,7 +77,7 @@ export default function Community() {
     <div className="space-y-6">
       <div>
         <h1 className="font-bold text-2xl text-natural-dark font-sans">Community</h1>
-        <p className="text-xs text-natural-stone font-sans">Shared reading logs from the club</p>
+        <p className="text-xs text-natural-stone font-sans">Read daily updates and discuss with your AI book club</p>
       </div>
 
       {loadingPosts
