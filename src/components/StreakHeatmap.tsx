@@ -127,7 +127,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
       </div>
 
       {/* Grid */}
-      <div className="flex gap-1 overflow-x-auto pb-1">
+      <div className="flex gap-1 overflow-x-auto pb-1 px-0.5">
         {weeks.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-1">
             {week.map((day, di) => {
@@ -138,7 +138,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
                 <div
                   key={di}
                   title={localDateStr(day)}
-                  className={`w-3 h-3 rounded-sm ${future ? 'bg-transparent' : COLORS[lv]} ${streak ? 'ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream' : ''}`}
+                  className={`w-3 h-3 rounded-sm ${future ? 'bg-transparent' : COLORS[lv]} ${streak ? 'ring-1 ring-natural-clay' : ''}`}
                 />
               );
             })}
