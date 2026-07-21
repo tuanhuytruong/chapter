@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMarked } from 'lucide-react';
 import { api } from '../api';
+import { useNavigate } from 'react-router-dom';
 
 export default function Insights() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.getStats>> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +25,27 @@ export default function Insights() {
   if (!stats) return <div className="text-center p-16 text-natural-stone font-sans">Could not load stats.</div>;
 
   const { globalStats, bookCounts, velocity, insights } = stats;
+
+  // Empty state — no books yet
+  const totalBooks = bookCounts.active + bookCounts.finished + bookCounts.paused + bookCounts.queued;
+  if (totalBooks === 0) {
+    return (
+      <div className="space-y-6 font-sans">
+        <h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2>
+        <div className="flex flex-col items-center justify-center p-16 bg-natural-cream rounded-[32px] border border-natural-border text-center space-y-3">
+          <BarChart3 className="w-10 h-10 text-natural-stone" />
+          <p className="font-bold text-natural-dark text-sm">No insights yet</p>
+          <p className="text-xs text-natural-stone max-w-xs">
+            Add your first book and start reading — your stats, streaks, and key themes will appear here.
+          </p>
+          <button onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 px-4 py-2 bg-natural-sage text-white rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer">
+            <BookOpen className="w-3.5 h-3.5" /> Go to Library
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 font-sans">

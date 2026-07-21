@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon } from 'lucide-react';
+import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow } from '../types';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import Toast from '../components/Toast';
+import JourneyView from '../components/JourneyView';
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,10 @@ export default function BookDetail() {
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
+  const [search, setSearch] = useState('');
+  const [insightIdx, setInsightIdx] = useState(0);
+  const [logView, setLogView] = useState<'list' | 'journey'>('list');
+  const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -141,6 +146,52 @@ export default function BookDetail() {
   const sessionCount = todaySessions.length;
   const hasReadToday = sessionCount > 0;
 
+  // Feature 5: Highlight reel — 3 most recent insights
+  const recentInsights = logs.slice(0, 3).flatMap(l => l.key_insights || []).slice(0, 3);
+
+  useEffect(() => {
+    if (recentInsights.length < 2) return;
+    const iv = setInterval(() => setInsightIdx(i => (i + 1) % recentInsights.length), 4000);
+    return () => clearInterval(iv);
+  }, [recentInsights.length]);
+
+  // Feature 1: Search within book
+  const filteredLogs = (() => {
+    if (!search.trim()) return logs;
+    const q = search.toLowerCase();
+    return logs.filter(l =>
+      l.summary?.toLowerCase().includes(q) ||
+      l.key_insights?.some(i => i.toLowerCase().includes(q)) ||
+      l.quote?.toLowerCase().includes(q) ||
+      l.chapter_title?.toLowerCase().includes(q)
+    );
+  })();
+
+  // Feature 6: Group logs by date for session separation
+  const logsByDate = (() => {
+    const map = new Map<string, typeof logs>();
+    for (const l of filteredLogs) {
+      const k = String(l.date).slice(0, 10);
+      map.set(k, [...(map.get(k) || []), l]);
+    }
+    return [...map.entries()].sort(([a], [b]) => b.localeCompare(a));
+  })();
+
+  // Feature 2: Mark as Finished handler
+  const markFinished = async () => {
+    if (!id) return;
+    try {
+      await api.updateBook(id, { status: 'finished' } as any);
+      await load();
+      const books = await api.listBooks();
+      const nextQueued = books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999))[0];
+      if (nextQueued) setFinishModal(nextQueued);
+      else setToast({ type: 'ok', msg: `🎉 Finished "${book?.title}"!` });
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+    }
+  };
+
   return (
     <div className="space-y-6 font-sans">
       <div className="flex items-center justify-between">
@@ -168,11 +219,32 @@ export default function BookDetail() {
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-[10px] text-natural-stone">{pct}% · {book.current_page}/{book.total_pages} pages</p>
+          {recentInsights.length > 0 && (
+            <p key={insightIdx} className="text-[11px] text-natural-muted italic mt-1 line-clamp-1 animate-[fadeIn_0.4s_ease]">
+              💡 {recentInsights[insightIdx]}
+            </p>
+          )}
         </div>
-        <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-          className="self-start flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer">
-          {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
-        </button>
+        <div className="self-start flex flex-col items-end gap-2">
+          {book.status === 'finished' ? (
+            <span className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-border text-natural-stone rounded-full text-xs font-bold uppercase tracking-wider">
+              <CheckCircle className="w-3.5 h-3.5" /> Finished
+            </span>
+          ) : (
+            <>
+              <button onClick={readToday} disabled={advancing || book.status === 'finished'}
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer">
+                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
+              </button>
+              {pct >= 85 && book.status === 'active' && (
+                <button onClick={markFinished}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer">
+                  <CheckCircle className="w-3.5 h-3.5" /> Mark Finished
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Settings + Heatmap */}
@@ -243,17 +315,73 @@ export default function BookDetail() {
 
       {/* Timeline */}
       <div>
-        <h3 className="font-bold text-sm text-natural-dark font-sans mb-3">Daily Summaries</h3>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="font-bold text-sm text-natural-dark font-sans flex-1">Daily Summaries</h3>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-natural-stone" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search summaries..."
+              className="pl-7 pr-3 py-1.5 text-xs bg-natural-cream border border-natural-border rounded-full focus:outline-none focus:ring-2 focus:ring-natural-sage w-44" />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-natural-stone hover:text-natural-dark">
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+        {search && (
+          <p className="text-[10px] text-natural-stone font-sans mb-2">
+            {filteredLogs.length} result{filteredLogs.length !== 1 ? 's' : ''} for "{search}"
+          </p>
+        )}
+        {/* Toggle: List / Journey */}
+        <div className="flex items-center gap-1 mb-3">
+          <button onClick={() => setLogView('list')}
+            className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'list' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            List
+          </button>
+          <button onClick={() => setLogView('journey')}
+            className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'journey' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            Journey
+          </button>
+        </div>
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
             <BookOpen className="w-8 h-8 text-natural-stone" />
             <p className="text-sm font-bold text-natural-dark">No days read yet</p>
-            <p className="text-xs text-natural-stone">Tap “Read Today” to generate your first AI summary.</p>
+            <p className="text-xs text-natural-stone">Tap "Read Today" to generate your first AI summary.</p>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
+            <Search className="w-8 h-8 text-natural-stone" />
+            <p className="text-sm font-bold text-natural-dark">No matches for "{search}"</p>
+            <p className="text-xs text-natural-stone">Try a different keyword.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {logs.map(l => <DaySummary key={l.id} log={l} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} />)}
-          </div>
+          <>
+            {logView === 'journey' ? (
+              <JourneyView logs={filteredLogs} expanded={journeyExpanded} setExpanded={setJourneyExpanded} />
+            ) : (
+              <div className="space-y-3">
+                {logsByDate.map(([date, dayLogs]) => (
+                  <div key={date} className="space-y-1">
+                    {dayLogs.map((log, si) => (
+                      <div key={log.id} className="relative">
+                        {si > 0 && (
+                          <div className="flex items-center gap-2 px-4 py-0.5">
+                            <div className="flex-1 h-px bg-natural-border" />
+                            <span className="text-[9px] text-natural-stone font-sans shrink-0">Session {si + 1} · same day</span>
+                            <div className="flex-1 h-px bg-natural-border" />
+                          </div>
+                        )}
+                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
