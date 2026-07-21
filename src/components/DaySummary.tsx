@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2, Send } from 'lucide-react';
 import type { LogRow } from '../types';
 import { api } from '../api';
 import ShareSummaryModal from './ShareSummaryModal';
@@ -30,6 +30,8 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [notesText, setNotesText] = useState(() => log.notes || '');
   const [saving, setSaving] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [telegramSending, setTelegramSending] = useState(false);
+  const [telegramSent, setTelegramSent] = useState(() => log.telegram_sent);
 
   // Auto-save on blur
   const saveNotes = useCallback(async (text: string) => {
@@ -42,6 +44,20 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       setSaving(false);
     }
   }, [log.book_id, log.id]);
+
+  const handleSendTelegram = useCallback(async () => {
+    setTelegramSending(true);
+    try {
+      const dateStr = String(log.date).slice(0, 10);
+      await api.sendLogToTelegram(log.book_id, dateStr);
+      setTelegramSent(true);
+    } catch {
+      // silent
+    } finally {
+      setTelegramSending(false);
+    }
+  }, [log.book_id, log.id, log.date]);
+
   // log.date is a YYYY-MM-DD string or ISO datetime (e.g. "2026-07-20T17:00:00.000Z"
   // when pg serializes a DATE as a UTC timestamp). Pass the raw string to Date()
   // directly — toLocaleDateString with timeZone: "Asia/Bangkok" then correctly
@@ -59,12 +75,17 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>
           <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
-          {log.telegram_sent && <span className="text-[10px] text-blue-600 font-sans">📨 Sent</span>}
+          {telegramSent && <span className="text-[10px] text-blue-600 font-sans">📨 Sent</span>}
         </div>
         <div className="flex items-center gap-1">
           {bookTitle && bookId && log.summary && (
-            <button onClick={() => setShowShare(true)} className="text-natural-stone hover:text-natural-sage cursor-pointer" title="Share summary">
+            <button onClick={() => setShowShare(true)} className="text-natural-stone hover:text-natural-sage cursor-pointer" title="Share to community">
               <Share2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {log.summary && (
+            <button onClick={handleSendTelegram} disabled={telegramSending} className="text-natural-stone hover:text-blue-500 cursor-pointer disabled:opacity-40" title="Send to Telegram">
+              <Send className="w-3.5 h-3.5" />
             </button>
           )}
           {log.raw_text && (
