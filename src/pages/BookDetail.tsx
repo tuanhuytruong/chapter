@@ -219,12 +219,6 @@ export default function BookDetail() {
     finally { setMindmapLoading(false); }
   };
 
-  // Load cached mindmap on mount
-  useEffect(() => {
-    if (!id || logs.length === 0) return;
-    const cached = localStorage.getItem(`mindmap_${id}`);
-    if (cached) try { setMindmapData(JSON.parse(cached)); } catch {}
-  }, [id, logs.length]);
 
   const startReread = async () => {
     if (!id) return;
