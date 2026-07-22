@@ -453,7 +453,7 @@ export default function BookDetail() {
                             <div className="flex-1 h-px bg-natural-border" />
                           </div>
                         )}
-                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} />
+                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} highlight={search} />
                       </div>
                     ))}
                   </div>

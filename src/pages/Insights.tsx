@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMarked, Sparkles } from 'lucide-react';
 import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
-import ReadingDNA from '../components/ReadingDNA';
 import type { BookRow, LogRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
@@ -175,11 +174,6 @@ export default function Insights() {
           </div>
         )}
       </div>
-
-      {/* Reading DNA */}
-      {totalBooks > 0 && (
-        <ReadingDNA books={books} logsByBook={logsByBook} />
-      )}
-    </div>
+      \n    </div>
   );
 }

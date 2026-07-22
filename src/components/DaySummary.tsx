@@ -22,9 +22,27 @@ interface DaySummaryProps {
   bookTitle?: string;
   bookAuthor?: string;
   bookId?: string;
+  highlight?: string;
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId }) => {
+/** Highlight search matches in text */
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase()
+          ? <mark key={i} className="bg-yellow-200 text-natural-dark rounded px-0.5">{part}</mark>
+          : part
+      )}
+    </>
+  );
+}
+
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, highlight }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
@@ -82,13 +100,13 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         </div>
       </div>
 
-      {log.summary && <p className="text-xs text-natural-dark font-sans leading-relaxed">{log.summary}</p>}
+      {log.summary && <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>}
 
       {log.key_insights && log.key_insights.length > 0 && (
         <ul className="space-y-1">
           {log.key_insights.map((ins, i) => (
             <li key={i} className="flex gap-1.5 text-[11px] text-natural-muted font-sans">
-              <span className="text-natural-sage mt-0.5">•</span>{ins}
+              <span className="text-natural-sage mt-0.5">•</span>{highlight ? <HighlightText text={ins} query={highlight} /> : ins}
             </li>
           ))}
         </ul>
@@ -96,7 +114,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
       {log.quote && (
         <p className="flex gap-1.5 text-[11px] italic text-natural-stone font-sans border-l-2 border-natural-clay pl-2">
-          <Quote className="w-3 h-3 shrink-0 mt-0.5" />{log.quote}
+          <Quote className="w-3 h-3 shrink-0 mt-0.5" />{highlight ? <HighlightText text={log.quote} query={highlight} /> : log.quote}
         </p>
       )}
 
