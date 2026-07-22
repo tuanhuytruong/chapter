@@ -122,16 +122,16 @@ export default function JourneyView({
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               {dayLogs.length > 1 && (
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-natural-sage font-sans mb-1 block">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-natural-sage font-sans mb-1.5 block">
                                   Session {si + 1} · pp. {log.page_start}–{log.page_end}
                                 </span>
                               )}
                               {dayLogs.length === 1 && (
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-natural-stone/60 font-sans mb-1 block">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-natural-stone/60 font-sans mb-1.5 block">
                                   pp. {log.page_start}–{log.page_end}
                                 </span>
                               )}
-                              <p className="text-xs text-natural-dark font-sans leading-relaxed line-clamp-2">
+                              <p className="text-sm text-natural-dark font-sans leading-relaxed">
                                 {log.summary || 'Session summary…'}
                               </p>
                             </div>

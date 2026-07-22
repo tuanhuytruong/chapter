@@ -3,6 +3,28 @@ import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMa
 import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
 
+const APP_TZ = 'Asia/Bangkok';
+
+function formatLastRead(raw: string | null | undefined): string {
+  if (!raw) return '—';
+  const s = String(raw);
+  // ISO timestamp or plain date — convert to Bangkok TZ
+  const d = s.includes('T') ? new Date(s) : new Date(s + 'T00:00:00Z');
+  return d.toLocaleDateString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: APP_TZ,
+  });
+}
+
+/** Format YYYY-MM-DD for chart label */
+function shortDate(raw: string): string {
+  const s = String(raw);
+  const d = s.includes('T') ? new Date(s) : new Date(s + 'T00:00:00Z');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
 export default function Insights() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.getStats>> | null>(null);
@@ -47,6 +69,8 @@ export default function Insights() {
     );
   }
 
+  const maxPages = velocity.length > 0 ? Math.max(...velocity.map(v => Number(v.pages_read))) : 0;
+
   return (
     <div className="space-y-6 font-sans">
       <h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2>
@@ -59,7 +83,7 @@ export default function Insights() {
         </div>
         <div className="bg-natural-cream border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-natural-clay"><Flame className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-wider">Last Read</span></div>
-          <p className="text-2xl font-bold text-natural-dark mt-1">{globalStats.last_read ? new Date(globalStats.last_read).toLocaleDateString() : '—'}</p>
+          <p className="text-2xl font-bold text-natural-dark mt-1">{formatLastRead(globalStats.last_read)}</p>
         </div>
         <div className="bg-natural-cream border border-natural-border rounded-2xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-natural-sage"><BookOpen className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-wider">Active</span></div>
@@ -72,48 +96,72 @@ export default function Insights() {
       </div>
 
       {/* Velocity chart */}
-      <div className="bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-sm">
-        <h3 className="flex items-center gap-1.5 font-bold text-sm text-natural-dark mb-3"><TrendingUp className="w-4 h-4" /> Reading Velocity (last 30 days)</h3>
+      <div className="bg-natural-cream border border-natural-border rounded-2xl p-5 shadow-sm">
+        <h3 className="flex items-center gap-1.5 font-bold text-sm text-natural-dark mb-4">
+          <TrendingUp className="w-4 h-4" /> Reading Velocity (last 30 days)
+        </h3>
         {velocity.length === 0 ? (
-          <p className="text-xs text-natural-stone">No data yet.</p>
+          <div className="flex flex-col items-center justify-center h-28 gap-2">
+            <TrendingUp className="w-6 h-6 text-natural-stone/30" />
+            <p className="text-xs text-natural-stone">No reading sessions in the last 30 days.</p>
+          </div>
         ) : (
-          <div className="flex items-end gap-[3px] h-24">
-            {velocity.map((v, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center">
-                <div
-                  className="w-full bg-natural-sage/70 hover:bg-natural-sage rounded-t"
-                  style={{ height: `${Math.max(3, (v.pages_read / Math.max(...velocity.map(x => x.pages_read))) * 100)}%` }}
-                  title={`${v.date}: ${v.pages_read}p`}
-                />
-              </div>
-            ))}
+          <div className="space-y-2">
+            {/* Bar chart */}
+            <div className="flex items-end gap-[3px] h-28">
+              {velocity.map((v, i) => {
+                const pct = maxPages > 0 ? Math.max(6, (Number(v.pages_read) / maxPages) * 100) : 6;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                    {/* Tooltip on hover */}
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-natural-dark text-natural-cream text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+                      {shortDate(v.date)}: {v.pages_read}p
+                    </div>
+                    <div
+                      className="w-full bg-natural-sage/60 hover:bg-natural-sage rounded-t transition-all duration-150"
+                      style={{ height: `${pct}%` }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            {/* X-axis labels — show first, middle, last */}
+            <div className="flex justify-between text-[9px] text-natural-stone/60 font-sans px-0.5">
+              <span>{shortDate(velocity[0].date)}</span>
+              {velocity.length > 4 && (
+                <span>{shortDate(velocity[Math.floor(velocity.length / 2)].date)}</span>
+              )}
+              <span>{shortDate(velocity[velocity.length - 1].date)}</span>
+            </div>
+            {/* Summary line */}
+            <p className="text-[10px] text-natural-stone font-sans pt-1">
+              {velocity.length} active day{velocity.length !== 1 ? 's' : ''} ·{' '}
+              <b className="text-natural-dark">{velocity.reduce((s, v) => s + Number(v.pages_read), 0)}</b> pages total
+            </p>
           </div>
         )}
       </div>
 
       {/* Top insights */}
-      <div className="bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-sm">
-        <h3 className="flex items-center gap-1.5 font-bold text-sm text-natural-dark mb-3"><Hash className="w-4 h-4" /> Top Key Insights</h3>
+      <div className="bg-natural-cream border border-natural-border rounded-2xl p-5 shadow-sm">
+        <h3 className="flex items-center gap-1.5 font-bold text-sm text-natural-dark mb-4"><Hash className="w-4 h-4" /> Top Key Insights</h3>
         {insights.length === 0 ? (
           <p className="text-xs text-natural-stone">No insights recorded yet.</p>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {(() => {
-              const maxFreq = Math.max(...insights.map(i => i.freq));
-              return insights.map((ins, i) => {
-                const fontSize = maxFreq > 1
-                  ? `${Math.round(10 + (ins.freq / maxFreq) * 8)}px`
-                  : '12px';
-                return (
-                  <div key={i} className="flex items-center py-1 border-b border-natural-cream last:border-0">
-                    <span className="text-xs text-natural-dark truncate pr-2" style={{ fontSize }}>{ins.insight}</span>
-                    {maxFreq > 1 && ins.freq > 1 && (
-                      <span className="shrink-0 text-[9px] font-bold text-natural-stone ml-auto">{ins.freq}x</span>
-                    )}
-                  </div>
-                );
-              });
-            })()}
+          <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+            {insights.map((ins, i) => (
+              <div key={i} className="flex items-start gap-3 py-2 border-b border-natural-border/50 last:border-0">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-natural-cream border border-natural-border flex items-center justify-center text-[9px] font-bold text-natural-stone mt-0.5">
+                  {i + 1}
+                </span>
+                <p className="text-sm text-natural-dark leading-relaxed flex-1">{ins.insight}</p>
+                {Number(ins.freq) > 1 && (
+                  <span className="shrink-0 text-[9px] font-bold text-natural-sage bg-natural-sage/10 px-1.5 py-0.5 rounded-full mt-0.5">
+                    {ins.freq}×
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

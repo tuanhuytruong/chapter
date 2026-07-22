@@ -42,10 +42,14 @@ app.get("/api/quotes", async (_req: Request, res: Response) => {
 app.get("/api/stats", async (_req: Request, res: Response) => {
   try {
     const [velocity, insights, bookCounts, globalStats] = await Promise.all([
-      query(`SELECT date, SUM(page_end - page_start) AS pages_read
+      query(`SELECT
+               (date AT TIME ZONE 'Asia/Bangkok')::date AS date,
+               SUM(page_end - page_start) AS pages_read
              FROM chapter.reading_log
-             WHERE date >= CURRENT_DATE - INTERVAL '30 days'
-             GROUP BY date ORDER BY date ASC`),
+             WHERE (date AT TIME ZONE 'Asia/Bangkok')::date
+                   >= (NOW() AT TIME ZONE 'Asia/Bangkok')::date - INTERVAL '30 days'
+             GROUP BY (date AT TIME ZONE 'Asia/Bangkok')::date
+             ORDER BY date ASC`),
       query(`SELECT unnest(key_insights) AS insight, COUNT(*) AS freq
              FROM chapter.reading_log
              GROUP BY insight ORDER BY freq DESC LIMIT 50`),
@@ -55,7 +59,9 @@ app.get("/api/stats", async (_req: Request, res: Response) => {
                COUNT(*) FILTER (WHERE status = 'paused') AS paused,
                COUNT(*) FILTER (WHERE status = 'queued') AS queued
              FROM chapter.books`),
-      query(`SELECT COUNT(DISTINCT date) AS total_days_read, MAX(date) AS last_read
+      query(`SELECT
+               COUNT(DISTINCT (date AT TIME ZONE 'Asia/Bangkok')::date) AS total_days_read,
+               MAX(date AT TIME ZONE 'Asia/Bangkok') AS last_read
              FROM chapter.reading_log`),
     ]);
     res.json({
