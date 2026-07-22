@@ -44,21 +44,29 @@ export default function ReadingForecast({
   const targetNeeded = Math.ceil(remaining / Math.max(book.daily_pages, 1));
   const targetFinish = addDays(now, targetNeeded);
 
-  // Actual pace: total pages in last 7 calendar days / 7
+  // Actual pace: first aggregate every session into its calendar day. A reader
+  // may finish several 20-page sessions on the same date; that date must count
+  // as 40/60/etc. pages, not only the configured single-session target.
   const sevenAgo = addDays(now, -6);
-  let totalRecentPages = 0;
+  const pagesByDate = new Map<string, number>();
   for (const l of logs) {
     const raw = String(l.date);
     const d = raw.includes('T')
       ? new Date(raw).toLocaleDateString('en-CA', { timeZone: APP_TZ })
       : raw.slice(0, 10);
     if (d >= sevenAgo && d <= now) {
-      totalRecentPages += Math.max(0, l.page_end - l.page_start + 1);
+      const pagesInSession = Math.max(0, l.page_end - l.page_start + 1);
+      pagesByDate.set(d, (pagesByDate.get(d) || 0) + pagesInSession);
     }
   }
 
-  const avgPerDay = Math.round((totalRecentPages / 7) * 10) / 10;
-  const hasRecentData = totalRecentPages > 0;
+  const totalRecentPages = [...pagesByDate.values()].reduce((sum, pages) => sum + pages, 0);
+  const readingDays = pagesByDate.size;
+  // Forecast reflects the user's pace on days they actually read. This keeps
+  // multi-session days accurate rather than diluting a 40-page day to 20 or
+  // spreading it over inactive calendar days.
+  const avgPerDay = readingDays > 0 ? Math.round((totalRecentPages / readingDays) * 10) / 10 : 0;
+  const hasRecentData = readingDays > 0;
   const actualNeeded = avgPerDay > 0 ? Math.ceil(remaining / avgPerDay) : null;
   const actualFinish = actualNeeded ? addDays(now, actualNeeded) : null;
 
@@ -111,7 +119,7 @@ export default function ReadingForecast({
                 </span>
               </p>
               <p className="text-[10px] text-natural-stone">
-                {avgPerDay} pages/day avg (7d) → ~{actualNeeded} day{actualNeeded! > 1 ? 's' : ''}
+                {avgPerDay} pages/day avg across {readingDays} reading day{readingDays > 1 ? 's' : ''} (last 7d) → ~{actualNeeded} day{actualNeeded! > 1 ? 's' : ''}
               </p>
               {behind && (
                 <p className="text-[10px] text-natural-clay mt-1 flex items-start gap-1">
