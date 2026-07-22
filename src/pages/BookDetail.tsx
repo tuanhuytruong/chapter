@@ -5,6 +5,7 @@ import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../ap
 import type { BookRow, LogRow } from '../types';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
+import ReadingForecast from '../components/ReadingForecast';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
@@ -357,6 +358,7 @@ export default function BookDetail() {
         <div className="lg:col-span-2 bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
           <h3 className="font-bold text-sm text-natural-dark mb-3">Reading activity</h3>
           <StreakHeatmap logs={logs} />
+          <ReadingForecast book={book} logs={logs} />
         </div>
       </div>
 
