@@ -143,7 +143,7 @@ export default function BookDetail() {
 
   const deleteBook = async () => {
     if (!id) return;
-    if (!confirm(`Delete "${book?.title}"? Reading log is kept.`)) return;
+    if (!confirm(`Delete "${book?.title}"? All reading data (${logs.length} sessions, summaries, insights, raw text) will be permanently removed. This cannot be undone.`)) return;
     setDeleting(true);
     try {
       await api.deleteBook(id);

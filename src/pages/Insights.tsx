@@ -174,6 +174,6 @@ export default function Insights() {
           </div>
         )}
       </div>
-      \n    </div>
+    </div>
   );
 }
