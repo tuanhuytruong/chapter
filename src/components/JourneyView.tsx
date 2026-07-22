@@ -1,27 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BookOpen, Quote, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import type { LogRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
-/** Parse a log date (ISO or YYYY-MM-DD) to YYYY-MM-DD in Bangkok TZ. */
 function logDateToAppStr(raw: string): string {
   const s = String(raw);
   return s.includes('T')
     ? new Date(s).toLocaleDateString('en-CA', { timeZone: APP_TZ })
     : s.slice(0, 10);
-}
-
-/** Format a YYYY-MM-DD string for display. */
-function formatDateStr(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  // Construct as UTC to avoid any local-TZ shift in display
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
 }
 
 function formatDateShort(dateStr: string): string {
@@ -52,6 +39,17 @@ export default function JourneyView({
   expanded: string | null;
   setExpanded: (id: string | null) => void;
 }) {
+  // Track which day entries have their insights panel open
+  const [insightsOpen, setInsightsOpen] = useState<Set<string>>(new Set());
+
+  const toggleInsights = (date: string) => {
+    setInsightsOpen(prev => {
+      const next = new Set(prev);
+      next.has(date) ? next.delete(date) : next.add(date);
+      return next;
+    });
+  };
+
   const byDate = groupByDate(logs);
   const entries = [...byDate.entries()];
   const totalPages = logs.reduce((sum, l) => sum + (l.page_end - l.page_start), 0);
@@ -76,6 +74,7 @@ export default function JourneyView({
             const dayPages = dayLogs.reduce((sum, l) => sum + (l.page_end - l.page_start), 0);
             const allQuotes = dayLogs.flatMap(l => l.quote ? [l.quote] : []);
             const allInsights = dayLogs.flatMap(l => l.key_insights || []);
+            const insightsExpanded = insightsOpen.has(date);
 
             return (
               <div key={date} className="relative pl-14">
@@ -117,25 +116,20 @@ export default function JourneyView({
                       <div key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
                         <button
                           onClick={() => setExpanded(isOpen ? null : log.id)}
-                          className="w-full text-left px-4 py-3 hover:bg-natural-cream/80 transition group"
+                          className="w-full text-left px-4 py-4 hover:bg-natural-cream/80 transition group"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              {dayLogs.length > 1 && (
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-natural-sage font-sans mb-1.5 block">
-                                  Session {si + 1} · pp. {log.page_start}–{log.page_end}
-                                </span>
-                              )}
-                              {dayLogs.length === 1 && (
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-natural-stone/60 font-sans mb-1.5 block">
-                                  pp. {log.page_start}–{log.page_end}
-                                </span>
-                              )}
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-natural-stone/50 font-sans mb-1.5 block">
+                                {dayLogs.length > 1
+                                  ? `Session ${si + 1} · `
+                                  : ''}pp. {log.page_start}–{log.page_end}
+                              </span>
                               <p className="text-sm text-natural-dark font-sans leading-relaxed">
                                 {log.summary || 'Session summary…'}
                               </p>
                             </div>
-                            <span className="shrink-0 mt-0.5 text-natural-stone group-hover:text-natural-dark transition">
+                            <span className="shrink-0 mt-1 text-natural-stone group-hover:text-natural-dark transition">
                               {isOpen
                                 ? <ChevronUp className="w-3.5 h-3.5" />
                                 : <ChevronDown className="w-3.5 h-3.5" />
@@ -144,16 +138,16 @@ export default function JourneyView({
                           </div>
                         </button>
 
-                        {/* Expanded detail */}
+                        {/* Expanded detail — full insights + quote */}
                         {isOpen && (
                           <div className="px-4 pb-4 space-y-3 border-t border-natural-border/40 pt-3 bg-natural-cream/40">
                             {log.key_insights && log.key_insights.length > 0 && (
-                              <div className="space-y-1.5">
+                              <div className="space-y-2">
                                 <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans">
                                   <Lightbulb className="w-3 h-3 text-natural-clay" /> Key Insights
                                 </p>
                                 {log.key_insights.map((ins, i) => (
-                                  <p key={i} className="text-[11px] text-natural-muted font-sans leading-relaxed pl-4 border-l border-natural-border">
+                                  <p key={i} className="text-xs text-natural-dark font-sans leading-relaxed pl-3 border-l-2 border-natural-sage/40">
                                     {ins}
                                   </p>
                                 ))}
@@ -162,7 +156,7 @@ export default function JourneyView({
                             {log.quote && (
                               <div className="flex gap-2 p-3 rounded-xl bg-natural-clay/5 border border-natural-clay/20">
                                 <Quote className="w-3.5 h-3.5 text-natural-clay shrink-0 mt-0.5" />
-                                <p className="text-[11px] italic text-natural-clay font-serif leading-relaxed">
+                                <p className="text-xs italic text-natural-clay font-serif leading-relaxed">
                                   {log.quote}
                                 </p>
                               </div>
@@ -173,32 +167,52 @@ export default function JourneyView({
                     );
                   })}
 
-                  {/* Day-level quote preview (collapsed) — only show if not all expanded */}
+                  {/* Quote preview strip — only when sessions are collapsed */}
                   {allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
                     <div className="px-4 py-2.5 border-t border-natural-border/40 flex items-start gap-2">
                       <Quote className="w-3 h-3 text-natural-clay/50 shrink-0 mt-0.5" />
-                      <p className="text-[10px] italic text-natural-stone/70 font-serif line-clamp-1">
+                      <p className="text-xs italic text-natural-stone/70 font-serif line-clamp-2">
                         {allQuotes[0]}
                       </p>
                     </div>
                   )}
-                </div>
 
-                {/* Insights pill row — peek without opening */}
-                {allInsights.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {allInsights.slice(0, 3).map((ins, i) => (
-                      <span key={i} className="text-[10px] text-natural-muted font-sans bg-natural-cream border border-natural-border px-2.5 py-1 rounded-full line-clamp-1 max-w-[200px]">
-                        💡 {ins}
-                      </span>
-                    ))}
-                    {allInsights.length > 3 && (
-                      <span className="text-[10px] text-natural-stone font-sans px-2.5 py-1">
-                        +{allInsights.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                )}
+                  {/* Insights panel — collapsible, scrollable, fully readable */}
+                  {allInsights.length > 0 && (
+                    <div className="border-t border-natural-border/40">
+                      {/* Toggle bar */}
+                      <button
+                        onClick={() => toggleInsights(date)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-natural-cream/60 transition group"
+                      >
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans">
+                          <Lightbulb className="w-3 h-3 text-natural-clay" />
+                          {allInsights.length} insight{allInsights.length !== 1 ? 's' : ''}
+                        </span>
+                        {insightsExpanded
+                          ? <ChevronUp className="w-3 h-3 text-natural-stone/50" />
+                          : <ChevronDown className="w-3 h-3 text-natural-stone/50" />
+                        }
+                      </button>
+
+                      {/* Insights list — fully readable, no truncation */}
+                      {insightsExpanded && (
+                        <div className="px-4 pb-4 space-y-2.5">
+                          {allInsights.map((ins, i) => (
+                            <div key={i} className="flex gap-2.5">
+                              <span className="shrink-0 w-4 h-4 rounded-full bg-natural-sage/15 flex items-center justify-center text-[8px] font-bold text-natural-sage mt-0.5">
+                                {i + 1}
+                              </span>
+                              <p className="text-xs text-natural-dark font-sans leading-relaxed flex-1">
+                                {ins}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
