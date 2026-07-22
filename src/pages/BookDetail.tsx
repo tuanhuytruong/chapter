@@ -7,6 +7,7 @@ import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
 import ChapterMarkers from '../components/ChapterMarkers';
+import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
@@ -258,6 +259,7 @@ export default function BookDetail() {
             )}
             <span className="text-[11px] text-natural-stone">{logs.length} days read</span>
           </div>
+          <MomentumScore book={book} logs={logs} />
           <div className="h-2 bg-natural-cream rounded-full overflow-hidden mb-1">
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
