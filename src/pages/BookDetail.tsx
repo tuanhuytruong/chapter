@@ -7,6 +7,7 @@ import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
 import ChapterMarkers from '../components/ChapterMarkers';
+import ChapterArc from '../components/ChapterArc';
 import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
@@ -363,6 +364,14 @@ export default function BookDetail() {
           <h3 className="font-bold text-sm text-natural-dark mb-3">Reading activity</h3>
           <StreakHeatmap logs={logs} />
           <ReadingForecast book={book} logs={logs} />
+          {logs.length >= 2 && (
+            <div className="mt-4 pt-4 border-t border-natural-border/60">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-natural-stone font-sans mb-2 flex items-center gap-1.5">
+                <span className="text-xs">📈</span> Reading Journey Arc
+              </h4>
+              <ChapterArc logs={logs} totalPages={book.total_pages} />
+            </div>
+          )}
         </div>
       </div>
 
