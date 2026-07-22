@@ -80,7 +80,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+    <div data-swipe-nav-ignore className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-natural-cream rounded-[28px] border border-natural-border shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg text-natural-dark font-sans">Add a Book</h2>

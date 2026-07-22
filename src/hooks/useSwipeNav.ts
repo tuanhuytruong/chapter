@@ -9,13 +9,26 @@ export default function useSwipeNav(containerRef: React.RefObject<HTMLElement | 
   const location = useLocation();
   const startX = useRef(0);
   const startY = useRef(0);
+  const ignoreGesture = useRef(false);
 
   const onPointerDown = useCallback((e: PointerEvent) => {
+    const target = e.target as HTMLElement | null;
+    // Native select/file pickers can end their pointer gesture at a different
+    // screen coordinate. Never interpret interactions inside controls or an
+    // explicitly excluded overlay as a route-changing swipe.
+    ignoreGesture.current = Boolean(target?.closest(
+      'input, select, textarea, button, a, [data-swipe-nav-ignore]'
+    ));
+    if (ignoreGesture.current) return;
     startX.current = e.clientX;
     startY.current = e.clientY;
   }, []);
 
   const onPointerUp = useCallback((e: PointerEvent) => {
+    if (ignoreGesture.current) {
+      ignoreGesture.current = false;
+      return;
+    }
     const dx = e.clientX - startX.current;
     const dy = e.clientY - startY.current;
     if (Math.abs(dx) < MIN_SWIPE || Math.abs(dx) < Math.abs(dy)) return;
