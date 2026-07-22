@@ -7,7 +7,6 @@ import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
 import ChapterMarkers from '../components/ChapterMarkers';
-import ChapterArc from '../components/ChapterArc';
 import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
@@ -38,6 +37,7 @@ export default function BookDetail() {
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -300,79 +300,96 @@ export default function BookDetail() {
         </div>
       </div>
 
-      {/* Settings + Heatmap */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
-            {!editing && <button onClick={() => setEditing(true)} className="text-[11px] text-natural-sage font-bold">Edit</button>}
-          </div>
-          {editing ? (
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Title</label>
-                <input value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Author</label>
-                <input value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Cover URL</label>
-                <div className="flex gap-2 mt-1">
-                  <input value={coverUrl} onChange={e => setCoverUrl(e.target.value)} disabled={searchingCover} className="flex-1 px-3 py-1.5 bg-natural-cream/50 border border-natural-border rounded-xl text-xs disabled:opacity-50" />
-                  <button onClick={reFetchCover} disabled={searchingCover} className="px-2 py-1.5 bg-natural-cream border border-natural-border rounded-xl text-[10px] font-bold">Auto</button>
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Pages / day</label>
-                <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>
-                <select value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
-                  className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-                  <option value="auto">Auto (book's language)</option>
-                  <option value="vi">Tiếng Việt</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
-                <select value={status} onChange={e => setStatus(e.target.value as any)}
-                  className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                  <option value="finished">Finished</option>
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setEditing(false)} className="flex-1 py-2 border border-natural-border rounded-full text-[11px] font-bold uppercase">Cancel</button>
-                <button onClick={saveSettings} className="flex-1 py-2 bg-natural-sage text-white rounded-full text-[11px] font-bold uppercase">Save</button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-xs text-natural-muted space-y-1">
-              <p>Pages/day: <b className="text-natural-dark">{book.daily_pages}</b></p>
-              <p>Status: <b className="text-natural-dark capitalize">{book.status}</b></p>
-              <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
-            </div>
-          )}
+      {/* Reading activity — tabs: Heatmap / Settings / Forecast */}
+      <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
+        {/* Pill tabs */}
+        <div className="flex items-center gap-1 mb-4">
+          <button onClick={() => setActiveTab('heatmap')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            Heatmap
+          </button>
+          <button onClick={() => setActiveTab('settings')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'settings' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            Settings
+          </button>
+          <button onClick={() => setActiveTab('forecast')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'forecast' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            Forecast
+          </button>
         </div>
 
-        <div className="lg:col-span-2 bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
-          <h3 className="font-bold text-sm text-natural-dark mb-3">Reading activity</h3>
-          <StreakHeatmap logs={logs} />
-          <ReadingForecast book={book} logs={logs} />
-          {logs.length >= 2 && (
-            <div className="mt-4 pt-4 border-t border-natural-border/60">
-              <h4 className="text-[11px] font-bold uppercase tracking-wider text-natural-stone font-sans mb-2 flex items-center gap-1.5">
-                <span className="text-xs">📈</span> Reading Journey Arc
-              </h4>
-              <ChapterArc logs={logs} totalPages={book.total_pages} />
+        {/* Tab content */}
+        {activeTab === 'heatmap' && (
+          <>
+            <StreakHeatmap logs={logs} />
+          </>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
+              {!editing && <button onClick={() => setEditing(true)} className="text-[11px] text-natural-sage font-bold">Edit</button>}
             </div>
-          )}
-        </div>
+            {editing ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Title</label>
+                  <input value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Author</label>
+                  <input value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Cover URL</label>
+                  <div className="flex gap-2 mt-1">
+                    <input value={coverUrl} onChange={e => setCoverUrl(e.target.value)} disabled={searchingCover} className="flex-1 px-3 py-1.5 bg-natural-cream/50 border border-natural-border rounded-xl text-xs disabled:opacity-50" />
+                    <button onClick={reFetchCover} disabled={searchingCover} className="px-2 py-1.5 bg-natural-cream border border-natural-border rounded-xl text-[10px] font-bold">Auto</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Pages / day</label>
+                  <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>
+                  <select value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
+                    className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+                    <option value="auto">Auto (book's language)</option>
+                    <option value="vi">Tiếng Việt</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
+                  <select value={status} onChange={e => setStatus(e.target.value as any)}
+                    className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="finished">Finished</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setEditing(false)} className="flex-1 py-2 border border-natural-border rounded-full text-[11px] font-bold uppercase">Cancel</button>
+                  <button onClick={saveSettings} className="flex-1 py-2 bg-natural-sage text-white rounded-full text-[11px] font-bold uppercase">Save</button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-natural-muted space-y-1">
+                <p>Pages/day: <b className="text-natural-dark">{book.daily_pages}</b></p>
+                <p>Status: <b className="text-natural-dark capitalize">{book.status}</b></p>
+                <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'forecast' && (
+          <div>
+            <ReadingForecast book={book} logs={logs} />
+          </div>
+        )}
       </div>
 
       {/* Timeline */}
