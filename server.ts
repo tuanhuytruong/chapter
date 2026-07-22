@@ -44,7 +44,7 @@ app.get("/api/stats", async (_req: Request, res: Response) => {
     const [velocity, insights, bookCounts, globalStats] = await Promise.all([
       query(`SELECT
                (date AT TIME ZONE 'Asia/Bangkok')::date AS date,
-               SUM(page_end - page_start) AS pages_read
+               SUM(page_end - page_start + 1) AS pages_read
              FROM chapter.reading_log
              WHERE (date AT TIME ZONE 'Asia/Bangkok')::date
                    >= (NOW() AT TIME ZONE 'Asia/Bangkok')::date - INTERVAL '30 days'

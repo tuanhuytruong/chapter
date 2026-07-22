@@ -52,7 +52,7 @@ export default function JourneyView({
 
   const byDate = groupByDate(logs);
   const entries = [...byDate.entries()];
-  const totalPages = logs.reduce((sum, l) => sum + (l.page_end - l.page_start), 0);
+  const totalPages = logs.reduce((sum, l) => sum + (l.page_end - l.page_start + 1), 0);
 
   return (
     <div className="space-y-0">
@@ -71,7 +71,7 @@ export default function JourneyView({
         <div className="space-y-8">
           {entries.map(([date, dayLogs], entryIdx) => {
             const isLatest = entryIdx === 0;
-            const dayPages = dayLogs.reduce((sum, l) => sum + (l.page_end - l.page_start), 0);
+            const dayPages = dayLogs.reduce((sum, l) => sum + (l.page_end - l.page_start + 1), 0);
             const allQuotes = dayLogs.flatMap(l => l.quote ? [l.quote] : []);
             const allInsights = dayLogs.flatMap(l => l.key_insights || []);
             const insightsExpanded = insightsOpen.has(date);

@@ -45,7 +45,7 @@ function computeMomentum(book: BookRow, logs: LogRow[]): {
   for (const l of logs) {
     const d = logDateToAppStr(String(l.date));
     const dist7 = daysBetween(d, now);
-    const pages = Math.max(0, l.page_end - l.page_start);
+    const pages = Math.max(0, l.page_end - l.page_start + 1);
 
     if (dist7 >= 0 && dist7 < 7) {
       totalPages7d += pages;
@@ -91,7 +91,7 @@ function computeMomentum(book: BookRow, logs: LogRow[]): {
   for (const l of logs) {
     const d = logDateToAppStr(String(l.date));
     const dist = daysBetween(d, now);
-    const pages = Math.max(0, l.page_end - l.page_start);
+    const pages = Math.max(0, l.page_end - l.page_start + 1);
     if (dist >= 0 && dist < 3) recent3 += pages;
     else if (dist >= 3 && dist < 6) prior3 += pages;
   }

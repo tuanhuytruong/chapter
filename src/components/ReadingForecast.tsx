@@ -53,7 +53,7 @@ export default function ReadingForecast({
       ? new Date(raw).toLocaleDateString('en-CA', { timeZone: APP_TZ })
       : raw.slice(0, 10);
     if (d >= sevenAgo && d <= now) {
-      totalRecentPages += Math.max(0, l.page_end - l.page_start);
+      totalRecentPages += Math.max(0, l.page_end - l.page_start + 1);
     }
   }
 
