@@ -3,26 +3,36 @@ import type { LogRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
-function todayInAppTz(): Date {
-  const parts = new Date().toLocaleDateString('en-CA', { timeZone: APP_TZ }).split('-');
-  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+/** Return today's date string (YYYY-MM-DD) in the app timezone. */
+function todayStrInAppTz(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: APP_TZ });
 }
 
-function localDateStr(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+/** Add/subtract days from a YYYY-MM-DD string, returning a new YYYY-MM-DD string. */
+function shiftDateStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/** Parse a log date (ISO or YYYY-MM-DD) to a YYYY-MM-DD string in Bangkok TZ. */
+function logDateToAppStr(raw: string): string {
+  const s = String(raw);
+  return s.includes('T')
+    ? new Date(s).toLocaleDateString('en-CA', { timeZone: APP_TZ })
+    : s.slice(0, 10);
 }
 
 /** Walk backwards from today to find the length of the current streak. */
-function computeStreakLen(logDates: Set<string>, today: Date): number {
+function computeStreakLen(logDates: Set<string>, todayStr: string): number {
   let streak = 0;
-  const cursor = new Date(today);
-  while (logDates.has(localDateStr(cursor))) {
+  let cursor = todayStr;
+  while (logDates.has(cursor)) {
     streak++;
-    cursor.setDate(cursor.getDate() - 1);
-    // safety — cap at 365 to avoid infinite loops on dense data
+    cursor = shiftDateStr(cursor, -1);
     if (streak > 365) break;
   }
   return streak;
@@ -39,15 +49,13 @@ const COLORS = [
 ] as const;
 
 export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
-  const today = todayInAppTz();
+  const todayStr = todayStrInAppTz(); // e.g. "2026-07-22"
 
-  // Build day → session-count map
+  // Build day → session-count map using Bangkok TZ for all dates
   const byDay = useMemo(() => {
     const m = new Map<string, number>();
     for (const l of logs) {
-      const k = String(l.date).includes('T')
-        ? new Date(l.date).toLocaleDateString('en-CA', { timeZone: APP_TZ })
-        : l.date.slice(0, 10);
+      const k = logDateToAppStr(String(l.date));
       m.set(k, (m.get(k) || 0) + 1);
     }
     return m;
@@ -55,55 +63,61 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
 
   // Compute grid weeks anchored to first reading day
   const { weeks, streakLen, totalReadDays } = useMemo(() => {
-    const logSet = new Set(byDay.keys());
+    const logSet = new Set<string>(byDay.keys());
     const totalReadDays = logSet.size;
 
-    const firstLog = logs.length
-      ? new Date(Math.min(...logs.map(l => {
-          const raw = String(l.date).includes('T')
-            ? new Date(l.date).toLocaleDateString('en-CA', { timeZone: APP_TZ })
-            : l.date.slice(0, 10);
-          return new Date(raw).getTime();
-        })))
-      : today;
+    // Find earliest log date string
+    const firstLogStr: string = logs.length
+      ? [...logSet].sort()[0] ?? todayStr
+      : todayStr;
 
-    // Align to the Sunday of that week
-    const gridStart = new Date(firstLog);
-    gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+    // Align to the Sunday of that week (work in UTC date arithmetic)
+    const [fy, fm, fd] = firstLogStr.split('-').map(Number);
+    const firstDate = new Date(Date.UTC(fy, fm - 1, fd));
+    const sundayOffset = firstDate.getUTCDay(); // 0=Sun
+    const gridStartDate = new Date(Date.UTC(fy, fm - 1, fd - sundayOffset));
 
-    // Weeks from gridStart to today + 1 future week for context
-    const diffMs = today.getTime() - gridStart.getTime();
-    const weeksNeeded = Math.ceil(diffMs / (7 * 86400000)) + 1;
+    // Count weeks needed from gridStart to today
+    const [ty, tm, td] = todayStr.split('-').map(Number);
+    const todayDate = new Date(Date.UTC(ty, tm - 1, td));
+    const diffDays = (todayDate.getTime() - gridStartDate.getTime()) / 86400000;
+    const weeksNeeded = Math.ceil(diffDays / 7) + 1;
     const totalWeeks = Math.max(weeksNeeded, 4);
 
-    const w: Date[][] = [];
+    // Build weeks as YYYY-MM-DD strings (no Date timezone issues)
+    const gridStartStr = (() => {
+      const y = gridStartDate.getUTCFullYear();
+      const m = String(gridStartDate.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(gridStartDate.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    })();
+
+    const w: string[][] = [];
     for (let wi = 0; wi < totalWeeks; wi++) {
-      const week: Date[] = [];
+      const week: string[] = [];
       for (let di = 0; di < 7; di++) {
-        const d = new Date(gridStart);
-        d.setDate(gridStart.getDate() + wi * 7 + di);
-        week.push(d);
+        week.push(shiftDateStr(gridStartStr, wi * 7 + di));
       }
       w.push(week);
     }
 
-    const streakLen = computeStreakLen(logSet, today);
+    const streakLen = computeStreakLen(logSet, todayStr);
 
     return { weeks: w, streakLen, totalReadDays };
-  }, [logs, byDay, today]);
+  }, [logs, byDay, todayStr]);
 
-  const level = (dt: Date): number => {
-    const key = localDateStr(dt);
-    const count = byDay.get(key) || 0;
+  const level = (dateStr: string): number => {
+    const count = byDay.get(dateStr) || 0;
     return Math.min(4, count);
   };
 
-  /** Detect if a day is part of the current active streak. */
-  const isStreakDay = (dt: Date): boolean => {
-    const cursor = new Date(today);
+  /** Detect if a day string is part of the current active streak. */
+  const isStreakDay = (dateStr: string): boolean => {
+    if (streakLen === 0) return false;
+    let cursor = todayStr;
     for (let i = 0; i < streakLen; i++) {
-      if (localDateStr(cursor) === localDateStr(dt)) return true;
-      cursor.setDate(cursor.getDate() - 1);
+      if (cursor === dateStr) return true;
+      cursor = shiftDateStr(cursor, -1);
     }
     return false;
   };
@@ -130,15 +144,20 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
       <div className="flex gap-1 overflow-x-auto pb-1 px-0.5">
         {weeks.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-1">
-            {week.map((day, di) => {
-              const future = day > today;
-              const lv = future ? 0 : level(day);
-              const streak = isStreakDay(day);
+            {week.map((dayStr, di) => {
+              const future = dayStr > todayStr;
+              const lv = future ? 0 : level(dayStr);
+              const streak = !future && isStreakDay(dayStr);
               return (
                 <div
                   key={di}
-                  title={localDateStr(day)}
-                  className={`w-3 h-3 rounded-sm ${future ? 'bg-transparent' : COLORS[lv]} ${streak ? 'ring-1 ring-natural-clay' : ''}`}
+                  title={dayStr}
+                  className={[
+                    'w-3 h-3 rounded-sm',
+                    future ? 'bg-transparent' : COLORS[lv],
+                    streak && lv === 0 ? 'ring-1 ring-natural-clay bg-natural-clay/20' : '',
+                    streak && lv > 0  ? 'ring-1 ring-natural-clay' : '',
+                  ].join(' ')}
                 />
               );
             })}

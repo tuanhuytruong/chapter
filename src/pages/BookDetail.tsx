@@ -180,11 +180,15 @@ export default function BookDetail() {
     );
   })();
 
-  // Feature 6: Group logs by date for session separation
+  // Feature 6: Group logs by date for session separation — use Bangkok TZ so
+  // dates match what the user sees in Journey view and the heatmap.
   const logsByDate = (() => {
     const map = new Map<string, typeof logs>();
     for (const l of filteredLogs) {
-      const k = String(l.date).slice(0, 10);
+      const raw = String(l.date);
+      const k = raw.includes('T')
+        ? new Date(raw).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' })
+        : raw.slice(0, 10);
       map.set(k, [...(map.get(k) || []), l]);
     }
     return [...map.entries()].sort(([a], [b]) => b.localeCompare(a));
