@@ -192,6 +192,36 @@ function StatBox({ label, value, subtitle }: { label: string; value: string | nu
   );
 }
 
+/** Escape raw text for safe XML injection */
+function esc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/** Split text into tspan-wrapped lines (max ~42 chars per line for the 800px canvas) */
+function wrapped(ins: { text: string; count: number }, y: number, color: string, idx: number): string {
+  const maxLen = 42;
+  const text = ins.text;
+  const label = `  ×${ins.count}`;
+  const ts: string[] = [];
+  let remaining = text;
+  let lineY = y;
+  while (remaining.length > 0 && lineY < y + 80) {
+    const chunk = remaining.slice(0, maxLen);
+    remaining = remaining.slice(maxLen);
+    const isLast = remaining.length === 0;
+    ts.push(
+      `<tspan x="180" dy="${ts.length === 0 ? 0 : 22}">${esc(chunk)}${isLast ? label : ''}</tspan>`
+    );
+    lineY += 22;
+  }
+  return `<text font-family="system-ui,sans-serif" font-size="14" fill="${color}">${ts.join('')}</text>`;
+}
+
 /** Build a rich SVG card string */
 function buildDNASvg(dna: any): string {
   const booksLabel = dna.finished.length > 0
@@ -206,24 +236,43 @@ function buildDNASvg(dna: any): string {
     '#A8A07A', // olive
   ];
 
-  const insBlock = dna.topInsights.length > 0
-    ? `<text x="400" y="320" text-anchor="middle" font-family="Georgia,serif" font-size="22" font-weight="bold" fill="#3D3028">Top Insights</text>
-       ${dna.topInsights.slice(0, 5).map((ins: any, i: number) =>
-         `<text x="400" y="${350 + i * 28}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${16 - i * 0.5}" fill="${themeColors[i % themeColors.length]}">${ins.text}  ×${ins.count}</text>`
-       ).join('')}`
+  // ── Insights block (y=215 header, y=245+ rows) ──
+  const insRows = dna.topInsights.length > 0
+    ? dna.topInsights.slice(0, 5).map((ins: any, i: number) =>
+        wrapped(ins, 245 + i * 22, themeColors[i % themeColors.length], i)
+      ).join('\n')
     : '';
 
+  const insBlock = dna.topInsights.length > 0
+    ? `<text x="180" y="215" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#3D3028">Top Insights</text>\n${insRows}`
+    : '';
+
+  // ── Quote block (y=490) ──
+  const escapedQuote = dna.topQuote ? esc(dna.topQuote.slice(0, 120)) : '';
   const quoteBlock = dna.topQuote
-    ? `<text x="400" y="510" text-anchor="middle" font-family="Georgia,serif" font-size="18" font-style="italic" fill="#C4785A">
-  <tspan>“${dna.topQuote.slice(0, 80)}”</tspan>
+    ? `<text x="180" y="490" font-family="Georgia,serif" font-size="15" font-style="italic" fill="#C4785A">
+  <tspan x="180">“${escapedQuote.slice(0, 55)}”</tspan>
+  ${escapedQuote.length > 55 ? `<tspan x="180" dy="22">“${escapedQuote.slice(55, 110)}”</tspan>` : ''}
+  ${escapedQuote.length > 110 ? `<tspan x="180" dy="22" fill="#a09890">(continued…)</tspan>` : ''}
 </text>`
     : '';
 
-  const monthBars = dna.monthCount.map(([month, count]: [string, number]) => {
+  // ── Monthly rhythm bars (y=405) ──
+  const BAR_W = 38;
+  const BAR_GAP = 6;
+  const totalW = dna.monthCount.length * (BAR_W + BAR_GAP);
+  const startX = (800 - totalW) / 2;
+  const monthBars = dna.monthCount.map(([month, count]: [string, number], i: number) => {
     const intensity = Math.min(1, count / 10);
     const alpha = 0.15 + intensity * 0.7;
-    const barH = 30 + count * 5;
-    return `<rect x="${0}" y="${0}" width="36" height="${Math.min(80, barH)}" rx="4" fill="rgba(122,158,126,${alpha})" />`;
+    const barH = Math.max(4, count * 6);
+    const x = startX + i * (BAR_W + BAR_GAP);
+    const monthLabel = month.slice(5, 7);
+    return `
+  <g>
+    <rect x="${x}" y="${405 + 80 - barH}" width="${BAR_W}" height="${barH}" rx="4" fill="rgba(122,158,126,${alpha})"/>
+    <text x="${x + BAR_W / 2}" y="${495}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#a09890">${monthLabel}</text>
+  </g>`;
   }).join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -246,44 +295,42 @@ function buildDNASvg(dna: any): string {
   <rect x="0" y="0" width="800" height="4" fill="url(#accent)"/>
 
   <!-- Title -->
-  <text x="400" y="70" text-anchor="middle" font-family="Georgia,serif" font-size="36" font-weight="bold" fill="#3D3028">My Reading DNA</text>
-  <text x="400" y="100" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" fill="#a09890">${dna.yearRange} · ${booksLabel}</text>
+  <text x="400" y="50" text-anchor="middle" font-family="Georgia,serif" font-size="32" font-weight="bold" fill="#3D3028">My Reading DNA</text>
+  <text x="400" y="78" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" fill="#a09890">${dna.yearRange} · ${booksLabel}</text>
 
   <!-- Stats row -->
-  <g transform="translate(160, 150)">
-    <rect x="0" y="0" width="100" height="60" rx="10" fill="white" opacity="0.6"/>
-    <text x="50" y="25" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="bold" fill="#3D3028">${dna.totalPages}</text>
-    <text x="50" y="45" text-anchor="middle" font-family="system-ui" font-size="10" fill="#a09890">PAGES</text>
+  <g transform="translate(160, 110)">
+    <rect x="0" y="0" width="100" height="56" rx="10" fill="white" opacity="0.6"/>
+    <text x="50" y="22" text-anchor="middle" font-family="system-ui" font-size="20" font-weight="bold" fill="#3D3028">${dna.totalPages}</text>
+    <text x="50" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="#a09890">PAGES</text>
   </g>
-  <g transform="translate(300, 150)">
-    <rect x="0" y="0" width="100" height="60" rx="10" fill="white" opacity="0.6"/>
-    <text x="50" y="25" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="bold" fill="#3D3028">${dna.totalSessions}</text>
-    <text x="50" y="45" text-anchor="middle" font-family="system-ui" font-size="10" fill="#a09890">SESSIONS</text>
+  <g transform="translate(300, 110)">
+    <rect x="0" y="0" width="100" height="56" rx="10" fill="white" opacity="0.6"/>
+    <text x="50" y="22" text-anchor="middle" font-family="system-ui" font-size="20" font-weight="bold" fill="#3D3028">${dna.totalSessions}</text>
+    <text x="50" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="#a09890">SESSIONS</text>
   </g>
-  <g transform="translate(440, 150)">
-    <rect x="0" y="0" width="100" height="60" rx="10" fill="white" opacity="0.6"/>
-    <text x="50" y="25" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="bold" fill="#3D3028">${dna.daysRead}</text>
-    <text x="50" y="45" text-anchor="middle" font-family="system-ui" font-size="10" fill="#a09890">DAYS READ</text>
+  <g transform="translate(440, 110)">
+    <rect x="0" y="0" width="100" height="56" rx="10" fill="white" opacity="0.6"/>
+    <text x="50" y="22" text-anchor="middle" font-family="system-ui" font-size="20" font-weight="bold" fill="#3D3028">${dna.daysRead}</text>
+    <text x="50" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="#a09890">DAYS READ</text>
   </g>
-  <g transform="translate(580, 150)">
-    <rect x="0" y="0" width="100" height="60" rx="10" fill="white" opacity="0.6"/>
-    <text x="50" y="25" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="bold" fill="#3D3028">${dna.finished.length}</text>
-    <text x="50" y="45" text-anchor="middle" font-family="system-ui" font-size="10" fill="#a09890">FINISHED</text>
-  </g>
-
-  <!-- Monthly activity -->
-  <text x="400" y="260" text-anchor="middle" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#3D3028">Reading Rhythm</text>
-  <g transform="translate(${120}, 280)">
-    ${monthBars}
+  <g transform="translate(580, 110)">
+    <rect x="0" y="0" width="100" height="56" rx="10" fill="white" opacity="0.6"/>
+    <text x="50" y="22" text-anchor="middle" font-family="system-ui" font-size="20" font-weight="bold" fill="#3D3028">${dna.finished.length}</text>
+    <text x="50" y="42" text-anchor="middle" font-family="system-ui" font-size="9" fill="#a09890">FINISHED</text>
   </g>
 
-  <!-- Insights -->
+  <!-- Insights header + rows (left-aligned at x=180) -->
   ${insBlock}
+
+  <!-- Monthly rhythm bars (centered) -->
+  <text x="400" y="395" text-anchor="middle" font-family="Georgia,serif" font-size="16" font-weight="bold" fill="#3D3028">Reading Rhythm</text>
+  ${monthBars}
 
   <!-- Quote -->
   ${quoteBlock}
 
   <!-- Footer -->
-  <text x="400" y="570" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#c8c2ba">Generated by Chapter — AI Reading Companion</text>
+  <text x="400" y="580" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#c8c2ba">Generated by Chapter — AI Reading Companion</text>
 </svg>`;
 }
