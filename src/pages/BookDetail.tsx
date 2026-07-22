@@ -6,6 +6,7 @@ import type { BookRow, LogRow } from '../types';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
+import ChapterMarkers from '../components/ChapterMarkers';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
@@ -260,6 +261,7 @@ export default function BookDetail() {
           <div className="h-2 bg-natural-cream rounded-full overflow-hidden mb-1">
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
+          <ChapterMarkers book={book} logs={logs} />
           <p className="text-[10px] text-natural-stone">{pct}% · {book.current_page}/{book.total_pages} pages</p>
           {recentInsights.length > 0 && (
             <p key={insightIdx} className="text-[11px] text-natural-muted italic mt-1 line-clamp-1 animate-[fadeIn_0.4s_ease]">
