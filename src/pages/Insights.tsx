@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMarked } from 'lucide-react';
+import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMarked, Sparkles } from 'lucide-react';
 import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
+import ReadingDNA from '../components/ReadingDNA';
+import type { BookRow, LogRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -29,12 +31,20 @@ export default function Insights() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.getStats>> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState<BookRow[]>([]);
+  const [logsByBook, setLogsByBook] = useState<Record<string, LogRow[]>>({});
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await api.getStats();
+        const [data, allBooks] = await Promise.all([api.getStats(), api.listBooks()]);
         setStats(data);
+        setBooks(allBooks);
+        // Fetch logs for all books in parallel
+        const logEntries = await Promise.all(
+          allBooks.map(b => api.getLog(b.id).then(logs => [b.id, logs] as const))
+        );
+        setLogsByBook(Object.fromEntries(logEntries));
       } catch (e) {
         console.error(e);
       } finally {
@@ -165,6 +175,11 @@ export default function Insights() {
           </div>
         )}
       </div>
+
+      {/* Reading DNA */}
+      {totalBooks > 0 && (
+        <ReadingDNA books={books} logsByBook={logsByBook} />
+      )}
     </div>
   );
 }
