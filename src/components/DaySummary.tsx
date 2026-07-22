@@ -27,15 +27,16 @@ interface DaySummaryProps {
 
 /** Highlight search matches in text */
 function HighlightText({ text, query }: { text: string; query: string }) {
-  if (!query.trim()) return <>{text}</>;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) return <>{text}</>;
+  const escaped = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(${escaped})`, 'gi');
   const parts = text.split(regex);
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === query.toLowerCase()
-          ? <mark key={i} className="bg-yellow-200 text-natural-dark rounded px-0.5">{part}</mark>
+        part.toLowerCase() === normalizedQuery.toLowerCase()
+          ? <mark key={i} className="bg-yellow-200 text-natural-dark rounded">{part}</mark>
           : part
       )}
     </>
