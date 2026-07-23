@@ -14,6 +14,7 @@ import { ensureSchema, query } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
 import { getPool } from "./src/db.js";
+import { dateInAppTz, progressFor, type WeeklyGoalMetric, type WeeklyGoalRow } from "./src/weekly-goal.js";
 
 // Ensure the port is 3000
 const PORT = 3000;
@@ -123,6 +124,46 @@ app.get("/api/stats", async (req: Request, res: Response) => {
   }
 });
 app.get("/api/stats/community", async (_req, res) => { try { res.json(await statsFor(null)); } catch (e: any) { res.status(500).json({ error: "Failed to fetch community stats", detail: e.message }); } });
+
+// ── Personal weekly reading goal ───────────────────────────
+app.get("/api/goals/weekly", async (req: Request, res: Response) => {
+  try {
+    const ownerId = userFrom(req).id;
+    const today = dateInAppTz();
+    const goal = (await query<WeeklyGoalRow>("SELECT * FROM weekly_reading_goals WHERE owner_id=$1", [ownerId])).rows[0] || null;
+    const { week_start: weekStart, week_end: weekEnd } = progressFor(goal, 0, today);
+    const metricExpr = goal?.metric === "units" ? "COALESCE(SUM(rl.page_end - rl.page_start + 1), 0)" : "COUNT(*)";
+    const result = await query<{ completed: string }>(
+      `SELECT ${metricExpr} AS completed
+       FROM reading_log rl JOIN books b ON b.id=rl.book_id
+       WHERE b.owner_id=$1 AND rl.date >= $2::date AND rl.date <= $3::date`,
+      [ownerId, weekStart, weekEnd]
+    );
+    res.json(progressFor(goal, Number(result.rows[0]?.completed || 0), today));
+  } catch (e: any) {
+    res.status(503).json({ error: "weekly goal unavailable", detail: e.message });
+  }
+});
+
+app.put("/api/goals/weekly", async (req: Request, res: Response) => {
+  const metric = req.body?.metric as WeeklyGoalMetric;
+  const target = Number(req.body?.target);
+  if ((metric !== "sessions" && metric !== "units") || !Number.isInteger(target) || target < 1 || target > 10000) {
+    return res.status(400).json({ error: "metric must be sessions or units and target must be an integer from 1 to 10000" });
+  }
+  try {
+    const { rows } = await query<WeeklyGoalRow>(
+      `INSERT INTO weekly_reading_goals (owner_id, metric, target)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (owner_id) DO UPDATE SET metric=EXCLUDED.metric, target=EXCLUDED.target, updated_at=now()
+       RETURNING *`,
+      [userFrom(req).id, metric, target]
+    );
+    res.json(rows[0]);
+  } catch (e: any) {
+    res.status(503).json({ error: "could not save weekly goal", detail: e.message });
+  }
+});
 
 function delay(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));

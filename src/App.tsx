@@ -6,7 +6,8 @@ import Community from './pages/Community';
 import Insights from './pages/Insights';
 import Review from './pages/Review';
 import ReadingCalendar from './pages/Calendar';
-import { BookMarked, Users, BarChart3, Brain, CalendarDays, Moon, Sun, LogOut } from 'lucide-react';
+import Momentum from './pages/Momentum';
+import { BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Moon, Sun, LogOut } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -62,6 +63,9 @@ function Layout() {
               <NavLink to="/calendar" aria-label="Reading calendar" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <CalendarDays className="w-3.5 h-3.5" /><span className="hidden sm:inline">Calendar</span>
               </NavLink>
+              <NavLink to="/momentum" aria-label="Weekly momentum" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
+                <CircleGauge className="w-3.5 h-3.5" /><span className="hidden sm:inline">Momentum</span>
+              </NavLink>
             </nav>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -99,6 +103,7 @@ function AppRoutes() {
           <Route path="/insights" element={<Insights />} />
           <Route path="/review" element={<Review />} />
           <Route path="/calendar" element={<ReadingCalendar />} />
+          <Route path="/momentum" element={<Momentum />} />
           <Route path="*" element={<Library />} />
         </Route>
       </Routes>

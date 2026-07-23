@@ -146,6 +146,18 @@ CREATE TABLE IF NOT EXISTS chapter.review_cards (
 CREATE INDEX IF NOT EXISTS idx_review_cards_due ON chapter.review_cards (due_date, book_id);
 
 -- ───────────────────────────────────────────────────────────
+-- chapter.weekly_reading_goals (one personal target per reader)
+-- ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS chapter.weekly_reading_goals (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id   UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  metric     TEXT NOT NULL CHECK (metric IN ('sessions', 'units')),
+  target     INT NOT NULL CHECK (target > 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (owner_id)
+);
+
+-- ───────────────────────────────────────────────────────────
 -- chapter.community_posts (persistent book club)
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chapter.community_posts (
