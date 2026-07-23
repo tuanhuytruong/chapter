@@ -42,6 +42,8 @@ export interface BookRow {
   queue_order?: number;
   summary_lang: "auto" | "vi" | "en";
   cover_url?: string;
+  reflection_text?: string | null;
+  reflection_at?: string | null;
   created_at: string;
   progress?: number;
   owner_id?: string | null;

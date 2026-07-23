@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { query, withClient } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
-import { callNineRouter, parseSummary } from "../llm.js";
+import { callLLM, callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
 import { requireAuth, requireOwner, userFrom } from "../auth.js";
@@ -217,6 +217,45 @@ booksRouter.post("/all/advance", async (req: Request, res: Response) => {
 });
 
 // ── B5: Core advance endpoint ─────────────────────────────
+// POST /api/books/:id/reflection — generate and persist a finished-book reflection.
+// Explicit user action keeps the final reading session responsive and allows retries.
+booksRouter.post("/:id/reflection", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const book = (await query("SELECT * FROM books WHERE id=$1", [id])).rows[0];
+    if (!book) return res.status(404).json({ error: "book not found" });
+    if (book.status !== "finished") return res.status(409).json({ error: "finish the book before creating a reflection" });
+
+    const { rows: logs } = await query(
+      `SELECT date, session, summary, key_insights FROM reading_log
+       WHERE book_id=$1 AND (summary IS NOT NULL OR cardinality(key_insights) > 0)
+       ORDER BY date ASC, session ASC`, [id]
+    );
+    if (!logs.length) return res.status(400).json({ error: "no reading summaries available for reflection" });
+
+    const journal = logs.map((log: any) => {
+      const insights = (log.key_insights || []).map((item: string) => `- ${item}`).join("\n");
+      return `Session ${log.date}${log.session > 1 ? ` (#${log.session})` : ""}\nSummary: ${log.summary || "—"}\nInsights:\n${insights || "—"}`;
+    }).join("\n\n");
+    // Bound context to keep a very long book within upstream limits, retaining its end.
+    const boundedJournal = journal.length > 100_000 ? `${journal.slice(0, 20_000)}\n\n[earlier sessions omitted]\n\n${journal.slice(-80_000)}` : journal;
+    const language = book.summary_lang === "vi" ? "Write entirely in Vietnamese." : book.summary_lang === "en" ? "Write entirely in English." : "Match the predominant language in the reading journal.";
+    const reflection = await callLLM(
+      "You are a thoughtful reading companion. Synthesize a completed reader's own journal; stay concrete and avoid inventing events, quotes, or claims not present in it.",
+      `Create a warm, lasting end-of-book reflection for \"${book.title}\" by ${book.author}.\n\n${language}\n\nUse exactly these markdown sections:\n## What stayed with you\nA concise thesis about the journey.\n\n## Five insights to carry forward\nExactly five grounded bullets (use fewer only if the journal genuinely contains fewer distinct ideas).\n\n## A letter to your future self\nA short personal, practical letter.\n\nDo not call this a passage, excerpt, or report.\n\nReading journal:\n${boundedJournal}`,
+      0.5
+    );
+    const { rows } = await query(
+      "UPDATE books SET reflection_text=$1, reflection_at=now() WHERE id=$2 RETURNING reflection_text, reflection_at",
+      [reflection, id]
+    );
+    res.json(rows[0]);
+  } catch (e: any) {
+    res.status(500).json({ error: "reflection failed", detail: e.message });
+  }
+});
+
 // POST /api/books/:id/advance
 booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -335,19 +374,18 @@ booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/books/:id/retry/:date — re-generate summary for a specific day
-booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
-  const { id, date } = req.params;
+// POST /api/books/:id/logs/:logId/retry — regenerate exactly one session.
+// UUID targeting is required because a book can have multiple sessions on a day.
+booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
   if (!await ownerCanMutate(req, res, id)) return;
   try {
-    const logRes = await query(
-      "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
-      [id, date]
-    );
-    const entry = logRes.rows[0];
+    const entry = (await query(
+      "SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, id]
+    )).rows[0];
     if (!entry) return res.status(404).json({ error: "log not found" });
-    const bookRes = await query("SELECT * FROM books WHERE id=$1", [id]);
-    const book = bookRes.rows[0];
+    if (!entry.raw_text) return res.status(400).json({ error: "session has no extracted text to retry" });
+    const book = (await query("SELECT * FROM books WHERE id=$1", [id])).rows[0];
     if (!book) return res.status(404).json({ error: "book not found" });
 
     const raw = await callNineRouter({
@@ -356,13 +394,14 @@ booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
       start: entry.page_start,
       end: entry.page_end,
       total: book.total_pages,
-      extractedText: entry.raw_text || "",
+      extractedText: entry.raw_text,
+      fileType: book.file_type,
+      lang: book.summary_lang || "auto",
     });
     const parsed = parseSummary(raw);
-
     const { rows } = await query(
-      `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 RETURNING *`,
-      [parsed.summary, parsed.key_insights, parsed.quote, entry.id]
+      `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,
+      [parsed.summary, parsed.key_insights, parsed.quote, logId, id]
     );
     res.json(rows[0]);
   } catch (e: any) {
@@ -392,10 +431,13 @@ booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
 // Called by n8n AFTER /all/advance. Returns per-book delivery status.
 booksRouter.post("/all/notify", async (req: Request, res: Response) => {
   const cfg = getTelegramConfig();
-  if (!cfg) return res.status(500).json({ error: "Telegram not configured (TELEGRAM_BOT_TOKEN/CHAT_ID)" });
+  if (!cfg) return res.status(500).json({ error: "Telegram bot is not configured" });
   try {
     const { rows: books } = await query(
-      "SELECT * FROM books WHERE status='active' AND owner_id=$1", [userFrom(req).id]
+      `SELECT b.*, u.telegram_chat_id
+       FROM books b JOIN users u ON u.id=b.owner_id
+       WHERE b.status='active' AND b.owner_id=$1`,
+      [userFrom(req).id]
     );
     const results: any[] = [];
     for (const b of books) {
@@ -408,8 +450,12 @@ booksRouter.post("/all/notify", async (req: Request, res: Response) => {
         results.push({ book: b.title, delivered: false, reason: "no summary today" });
         continue;
       }
+      if (!b.telegram_chat_id) {
+        results.push({ book: b.title, delivered: false, reason: "Telegram chat ID not configured" });
+        continue;
+      }
       const text = formatDailyMessage(b.title, b.author, log);
-      const sent = await sendTelegramMessage(cfg, text);
+      const sent = await sendTelegramMessage(cfg, b.telegram_chat_id, text);
       if (sent.ok) {
         await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [log.id]);
         results.push({ book: b.title, delivered: true });

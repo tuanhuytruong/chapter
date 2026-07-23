@@ -10,18 +10,18 @@ function escapeMd(text: string): string {
 
 export interface TelegramConfig {
   botToken: string;
-  chatId: string;
 }
 
+/** Bot credentials are server-wide; each recipient chat ID lives on users.telegram_chat_id. */
 export function getTelegramConfig(): TelegramConfig | null {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!botToken || !chatId) return null;
-  return { botToken, chatId };
+  if (!botToken) return null;
+  return { botToken };
 }
 
 export async function sendTelegramMessage(
   cfg: TelegramConfig,
+  chatId: string,
   text: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -31,7 +31,7 @@ export async function sendTelegramMessage(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: cfg.chatId,
+        chat_id: chatId,
         text,
         parse_mode: "MarkdownV2",
         disable_web_page_preview: true,

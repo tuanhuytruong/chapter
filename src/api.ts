@@ -51,10 +51,12 @@ export const api = {
     req<{ advanced: number; skipped: number; errors: any[] }>(`${BASE}/all/advance`, {
       method: "POST",
     }),
-  retry: (id: string, date: string) =>
-    req<LogRow>(`${BASE}/${id}/retry/${date}`, { method: "POST" }),
+  retryLog: (bookId: string, logId: string) =>
+    req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
+  generateReflection: (bookId: string) =>
+    req<Pick<BookRow, 'reflection_text' | 'reflection_at'>>(`${BASE}/${bookId}/reflection`, { method: "POST" }),
   getAllQuotes: () => req<QuoteCard[]>("/api/quotes"),
   getStats: () => req<{
     velocity: { date: string; pages_read: number }[];

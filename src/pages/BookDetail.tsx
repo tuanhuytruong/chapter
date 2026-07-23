@@ -38,6 +38,7 @@ export default function BookDetail() {
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
+  const [reflectionLoading, setReflectionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
 
   const load = useCallback(async () => {
@@ -214,6 +215,20 @@ export default function BookDetail() {
     }
   };
 
+  const generateReflection = async () => {
+    if (!id) return;
+    setReflectionLoading(true);
+    try {
+      await api.generateReflection(id);
+      await load();
+      setToast({ type: 'ok', msg: 'Your book reflection is ready' });
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+    } finally {
+      setReflectionLoading(false);
+    }
+  };
+
   const generateMindmap = async () => {
     if (!id) return;
     setMindmapLoading(true);
@@ -300,6 +315,24 @@ export default function BookDetail() {
           )}
         </div>
       </div>
+
+      {book.status === 'finished' && (
+        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">End-of-book reflection</p>
+              <h2 className="mt-1 text-base font-bold text-natural-dark">What will stay with you?</h2>
+              {!book.reflection_text && <p className="mt-1 text-xs leading-relaxed text-natural-stone">Turn your reading journal into a personal takeaway you can revisit later.</p>}
+            </div>
+            {book.can_edit && (
+              <button onClick={generateReflection} disabled={reflectionLoading} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">
+                {reflectionLoading ? 'Reflecting…' : book.reflection_text ? 'Generate again' : 'Create reflection'}
+              </button>
+            )}
+          </div>
+          {book.reflection_text && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{book.reflection_text}</article>}
+        </section>
+      )}
 
       {/* Reading activity — tabs: Heatmap / Settings / Forecast */}
       <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
@@ -454,7 +487,7 @@ export default function BookDetail() {
                             <div className="flex-1 h-px bg-natural-border" />
                           </div>
                         )}
-                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} />
+                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
                       </div>
                     ))}
                   </div>

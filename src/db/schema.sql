@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished', 'queued')),
   summary_lang  TEXT NOT NULL DEFAULT 'auto' CHECK (summary_lang IN ('auto', 'vi', 'en')),
   cover_url     TEXT,
+  reflection_text TEXT,
+  reflection_at TIMESTAMPTZ,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -52,6 +54,10 @@ CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
 ALTER TABLE chapter.books
   ADD COLUMN IF NOT EXISTS summary_lang TEXT NOT NULL DEFAULT 'auto'
   CHECK (summary_lang IN ('auto', 'vi', 'en'));
+
+-- Migration: one persisted end-of-book reflection per book (idempotent).
+ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reflection_text TEXT;
+ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reflection_at TIMESTAMPTZ;
 
 -- Migration: reading queue columns (idempotent).
 ALTER TABLE chapter.books

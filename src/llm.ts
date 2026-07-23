@@ -24,20 +24,27 @@ export async function callLLM(
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-
-    const resp = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        temperature,
-        stream: false,
-      }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    let resp: Response;
+    try {
+      resp = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          temperature,
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
       throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);

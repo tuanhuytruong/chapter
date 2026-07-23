@@ -25,6 +25,7 @@ interface DaySummaryProps {
   canEdit?: boolean;
   highlight?: string;
   fileType?: 'pdf' | 'epub';
+  onRetryComplete?: () => void;
 }
 
 /** Highlight search matches in text */
@@ -45,11 +46,13 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf' }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', onRetryComplete }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
   const [saving, setSaving] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
 
   // Auto-save on blur
@@ -63,6 +66,19 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       setSaving(false);
     }
   }, [log.book_id, log.id]);
+
+  const retrySummary = useCallback(async () => {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      await api.retryLog(log.book_id, log.id);
+      onRetryComplete?.();
+    } catch (e: any) {
+      setRetryError(e.message || 'Could not retry this session');
+    } finally {
+      setRetrying(false);
+    }
+  }, [log.book_id, log.id, onRetryComplete]);
 
   // log.date is a YYYY-MM-DD string or ISO datetime (e.g. "2026-07-20T17:00:00.000Z"
   // when pg serializes a DATE as a UTC timestamp). Pass the raw string to Date()
@@ -104,6 +120,16 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       </div>
 
       {log.summary && <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>}
+
+      {canEdit && !log.summary && log.raw_text && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">
+          <span className="flex-1 text-[11px] text-natural-stone">Summary unavailable for this session.</span>
+          <button onClick={retrySummary} disabled={retrying} className="min-h-9 rounded-full bg-natural-sage px-3 text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-50">
+            {retrying ? 'Retrying…' : 'Retry summary'}
+          </button>
+          {retryError && <p className="w-full text-[10px] text-red-600">{retryError}</p>}
+        </div>
+      )}
 
       {log.key_insights && log.key_insights.length > 0 && (
         <ul className="space-y-1">
