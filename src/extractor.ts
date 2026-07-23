@@ -29,6 +29,14 @@ export interface ExtractResult {
   totalUnits: number;
 }
 
+/** Load an EPUB using the current promise-based `epub` package API. */
+async function loadEpub(filePath: string): Promise<any> {
+  const { EPub } = await import("epub");
+  const epub = new EPub(filePath) as any;
+  await epub.parse();
+  return epub;
+}
+
 /**
  * Extract text from a PDF between [startPage, endPage] (1-indexed, inclusive).
  * Uses pdf-parse's page-render callback to build a per-page text map, which is
@@ -84,14 +92,7 @@ export async function extractEpubRange(
   startUnit: number,
   endUnit: number
 ): Promise<ExtractResult> {
-  // dynamic import so the dep is only loaded when needed
-  const Epub = (await import("epub")).default;
-  const epub: any = new Epub(filePath) as any;
-
-  await new Promise<void>((resolve, reject) => {
-    epub.on("end", () => resolve());
-    epub.on("error", (e: any) => reject(e));
-  });
+  const epub = await loadEpub(filePath);
 
   // spine is the linear reading order
   const flow: any[] = epub.flow; // array of { id, href, ... }
@@ -102,23 +103,22 @@ export async function extractEpubRange(
   const hi = Math.min(totalUnits - 1, endUnit);
 
   await Promise.all(
-    flow.map(
-      (item: any, idx: number) =>
-        new Promise<void>((res) => {
-          if (idx < lo || idx > hi) return res();
-          epub.getChapter(item.id, (err: any, txt: string) => {
-            if (err || !txt) return res();
-            // strip HTML tags
-            const plain = txt
-              .replace(/<[^>]+>/g, " ")
-              .replace(/&nbsp;/g, " ")
-              .replace(/\s+/g, " ")
-              .trim();
-            chapterTexts[idx] = plain;
-            res();
-          });
-        })
-    )
+    flow.map(async (item: any, idx: number) => {
+      if (idx < lo || idx > hi) return;
+      try {
+        const txt = await epub.getChapter(item.id);
+        if (!txt) return;
+        // strip HTML tags
+        const plain = txt
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        chapterTexts[idx] = plain;
+      } catch {
+        // A malformed individual chapter should not make the whole book unreadable.
+      }
+    })
   );
 
   const slice = chapterTexts.slice(lo, hi + 1).filter(Boolean);
@@ -134,12 +134,7 @@ export async function getChapterTitle(
 ): Promise<string | null> {
   if (fileType === "epub") {
     try {
-      const Epub = (await import("epub")).default;
-      const epub: any = new Epub(filePath) as any;
-      await new Promise<void>((resolve, reject) => {
-        epub.on("end", () => resolve());
-        epub.on("error", (e: any) => reject(e));
-      });
+      const epub = await loadEpub(filePath);
       const flow: any[] = epub.flow;
       for (let i = start - 1; i <= end - 1 && i < flow.length; i++) {
         if (flow[i]?.title) return flow[i].title;

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy.sh — Chapter app deploy on e7240ubt (PM2)
+# update.sh — Chapter app deploy on e7240ubt (PM2)
 # Run on the server after `git clone` / first time, and on every update.
 set -euo pipefail
 

@@ -126,10 +126,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
                 <span className="text-[10px] text-natural-stone">{uploadPct}%</span>
               </div>
             )}
-            <p className="text-[10px] text-natural-stone mt-1">
-              Max 100MB · PDF or EPUB. File saves to <span className="font-mono">/opt/chapter/workspace/books/</span>.
-              Or type a filename below if it already exists there.
-            </p>
+            <p className="text-[10px] text-natural-stone mt-1">Max 100MB · PDF or EPUB</p>
             <input value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="atomic-habits.pdf (if already in books dir)"
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" />
           </div>
