@@ -92,13 +92,23 @@ app.get("/api/quotes", async (_req: Request, res: Response) => {
 
 // ── Community / Book Club ────────────────────────────────
 async function statsFor(ownerId: string | null) {
-  const filter = ownerId ? "AND owner_id=$1" : "";
+  // Ownership lives on books, not reading_log. Join through the parent book for
+  // every log-derived metric so personal Insights never query a nonexistent
+  // reading_log.owner_id column.
+  const bookFilter = ownerId ? "AND b.owner_id=$1" : "";
   const params = ownerId ? [ownerId] : [];
   const [velocity, insights, bookCounts, globalStats] = await Promise.all([
-    query(`SELECT (date AT TIME ZONE 'Asia/Bangkok')::date AS date, SUM(page_end-page_start+1) AS pages_read FROM chapter.reading_log WHERE (date AT TIME ZONE 'Asia/Bangkok')::date >= (NOW() AT TIME ZONE 'Asia/Bangkok')::date - INTERVAL '30 days' ${filter} GROUP BY 1 ORDER BY 1`, params),
-    query(`SELECT unnest(key_insights) AS insight, COUNT(*) AS freq FROM chapter.reading_log WHERE true ${filter} GROUP BY insight ORDER BY freq DESC LIMIT 50`, params),
-    query(`SELECT COUNT(*) FILTER (WHERE status='active') AS active, COUNT(*) FILTER (WHERE status='finished') AS finished, COUNT(*) FILTER (WHERE status='paused') AS paused, COUNT(*) FILTER (WHERE status='queued') AS queued FROM chapter.books WHERE true ${filter}`, params),
-    query(`SELECT COUNT(DISTINCT (date AT TIME ZONE 'Asia/Bangkok')::date) AS total_days_read, MAX(date AT TIME ZONE 'Asia/Bangkok') AS last_read FROM chapter.reading_log WHERE true ${filter}`, params),
+    query(`SELECT (rl.date AT TIME ZONE 'Asia/Bangkok')::date AS date, SUM(rl.page_end-rl.page_start+1) AS pages_read
+           FROM chapter.reading_log rl JOIN chapter.books b ON b.id=rl.book_id
+           WHERE (rl.date AT TIME ZONE 'Asia/Bangkok')::date >= (NOW() AT TIME ZONE 'Asia/Bangkok')::date - INTERVAL '30 days' ${bookFilter}
+           GROUP BY 1 ORDER BY 1`, params),
+    query(`SELECT unnest(rl.key_insights) AS insight, COUNT(*) AS freq
+           FROM chapter.reading_log rl JOIN chapter.books b ON b.id=rl.book_id
+           WHERE true ${bookFilter} GROUP BY insight ORDER BY freq DESC LIMIT 50`, params),
+    query(`SELECT COUNT(*) FILTER (WHERE status='active') AS active, COUNT(*) FILTER (WHERE status='finished') AS finished, COUNT(*) FILTER (WHERE status='paused') AS paused, COUNT(*) FILTER (WHERE status='queued') AS queued FROM chapter.books b WHERE true ${bookFilter}`, params),
+    query(`SELECT COUNT(DISTINCT (rl.date AT TIME ZONE 'Asia/Bangkok')::date) AS total_days_read, MAX(rl.date AT TIME ZONE 'Asia/Bangkok') AS last_read
+           FROM chapter.reading_log rl JOIN chapter.books b ON b.id=rl.book_id
+           WHERE true ${bookFilter}`, params),
   ]);
   return { velocity: velocity.rows, insights: insights.rows, bookCounts: bookCounts.rows[0], globalStats: globalStats.rows[0] };
 }
