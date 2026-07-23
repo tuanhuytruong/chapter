@@ -145,6 +145,46 @@ app.get("/api/goals/weekly", async (req: Request, res: Response) => {
   }
 });
 
+// ── Today dashboard (personal retention loop) ──────────────
+app.get("/api/today", async (req: Request, res: Response) => {
+  try {
+    const ownerId = userFrom(req).id;
+    const appToday = dateInAppTz();
+    const [active, queued, todayLogs, dueReviews, goalRow] = await Promise.all([
+      query(`SELECT * FROM books WHERE owner_id=$1 AND status='active' ORDER BY created_at ASC LIMIT 1`, [ownerId]),
+      query(`SELECT * FROM books WHERE owner_id=$1 AND status='queued' ORDER BY queue_order NULLS LAST, created_at ASC LIMIT 1`, [ownerId]),
+      query<{ sessions: string; units: string }>(
+        `SELECT COUNT(*) AS sessions, COALESCE(SUM(rl.page_end - rl.page_start + 1), 0) AS units
+         FROM reading_log rl JOIN books b ON b.id=rl.book_id
+         WHERE b.owner_id=$1 AND rl.date=$2::date`, [ownerId, appToday]
+      ),
+      query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM review_cards rc JOIN books b ON b.id=rc.book_id
+         WHERE b.owner_id=$1 AND rc.due_date <= $2::date`, [ownerId, appToday]
+      ),
+      query<WeeklyGoalRow>("SELECT * FROM weekly_reading_goals WHERE owner_id=$1", [ownerId]),
+    ]);
+    const goal = goalRow.rows[0] || null;
+    const bounds = progressFor(goal, 0, appToday);
+    const metricExpr = goal?.metric === "units" ? "COALESCE(SUM(rl.page_end - rl.page_start + 1), 0)" : "COUNT(*)";
+    const weekly = await query<{ completed: string }>(
+      `SELECT ${metricExpr} AS completed FROM reading_log rl JOIN books b ON b.id=rl.book_id
+       WHERE b.owner_id=$1 AND rl.date >= $2::date AND rl.date <= $3::date`,
+      [ownerId, bounds.week_start, bounds.week_end]
+    );
+    res.json({
+      today: appToday,
+      active_book: active.rows[0] || null,
+      next_queued_book: queued.rows[0] || null,
+      today_progress: { sessions: Number(todayLogs.rows[0]?.sessions || 0), units: Number(todayLogs.rows[0]?.units || 0) },
+      due_reviews: Number(dueReviews.rows[0]?.count || 0),
+      weekly_goal: progressFor(goal, Number(weekly.rows[0]?.completed || 0), appToday),
+    });
+  } catch (e: any) {
+    res.status(503).json({ error: "today dashboard unavailable", detail: e.message });
+  }
+});
+
 app.put("/api/goals/weekly", async (req: Request, res: Response) => {
   const metric = req.body?.metric as WeeklyGoalMetric;
   const target = Number(req.body?.target);

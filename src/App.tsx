@@ -7,7 +7,8 @@ import Insights from './pages/Insights';
 import Review from './pages/Review';
 import ReadingCalendar from './pages/Calendar';
 import Momentum from './pages/Momentum';
-import { BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Moon, Sun, LogOut } from 'lucide-react';
+import Today from './pages/Today';
+import { BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -48,6 +49,9 @@ function Layout() {
             </NavLink>
 
             <nav className="flex shrink-0 items-center gap-1 font-sans text-xs font-semibold uppercase tracking-widest text-natural-stone sm:gap-6" aria-label="Primary navigation">
+              <NavLink to="/today" aria-label="Today" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
+                <Sparkles className="w-3.5 h-3.5" /><span className="hidden sm:inline">Today</span>
+              </NavLink>
               <NavLink to="/" end aria-label="Library" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <BookMarked className="w-3.5 h-3.5" /><span className="hidden sm:inline">Library</span>
               </NavLink>
@@ -98,6 +102,7 @@ function AppRoutes() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Library />} />
+          <Route path="/today" element={<Today />} />
           <Route path="/books/:id" element={<BookDetail />} />
           <Route path="/community" element={<Community />} />
           <Route path="/insights" element={<Insights />} />
