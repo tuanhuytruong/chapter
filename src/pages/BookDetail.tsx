@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow } from '../types';
-import { dailyTargetLabel, progressShortLabel } from '../readingUnits';
+import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
@@ -33,7 +33,6 @@ export default function BookDetail() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
-  const [insightIdx, setInsightIdx] = useState(0);
   const [logView, setLogView] = useState<'list' | 'journey'>('list');
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
@@ -62,15 +61,6 @@ export default function BookDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
-
-  // Hooks must run before loading/not-found early returns; otherwise React crashes
-  // after the first load with a different hook count.
-  useEffect(() => {
-    const insights = logs.slice(0, 3).flatMap(l => l.key_insights || []).slice(0, 3);
-    if (insights.length < 2) return;
-    const iv = setInterval(() => setInsightIdx(i => (i + 1) % insights.length), 4000);
-    return () => clearInterval(iv);
-  }, [logs]);
 
   useEffect(() => {
     if (!id || logs.length === 0) return;
@@ -170,9 +160,6 @@ export default function BookDetail() {
   const todaySessions = logs.filter(l => String(l.date).slice(0, 10) === todayStr);
   const sessionCount = todaySessions.length;
   const hasReadToday = sessionCount > 0;
-
-  // Feature 5: Highlight reel — 3 most recent insights
-  const recentInsights = logs.slice(0, 3).flatMap(l => l.key_insights || []).slice(0, 3);
 
   // Feature 1: Search within book
   const filteredLogs = (() => {
@@ -281,12 +268,6 @@ export default function BookDetail() {
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
           <ChapterMarkers book={book} logs={logs} />
-          <p className="text-[10px] text-natural-stone">{pct}% · {progressShortLabel(book)}</p>
-          {recentInsights.length > 0 && (
-            <p key={insightIdx} className="text-[11px] text-natural-muted italic mt-1 line-clamp-1 animate-[fadeIn_0.4s_ease]">
-              💡 {recentInsights[insightIdx]}
-            </p>
-          )}
         </div>
         <div className="order-3 flex w-full flex-col gap-2 sm:order-none sm:w-auto sm:self-start sm:items-end">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (

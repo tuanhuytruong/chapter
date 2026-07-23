@@ -28,9 +28,7 @@ export default function ChapterMarkers({
     }
   }
 
-  const readPct = total_pages > 0
-    ? Math.round((current_page / total_pages) * 100)
-    : 0;
+  const readPct = Math.round((current_page / total_pages) * 100);
 
   // Generate ruler segments: small fixed-size marks for visual density
   const SEGMENTS = 80; // number of ruler ticks
@@ -78,17 +76,6 @@ export default function ChapterMarkers({
         <span>{unit} {total_pages}</span>
       </div>
 
-      {/* Legend */}
-      {ranges.length > 0 && (
-        <div className="flex items-center gap-3 text-[9px] text-natural-stone font-sans">
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2 rounded-sm bg-natural-sage/50" /> Read ({ranges.length} segment{ranges.length > 1 ? 's' : ''})
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2 rounded-sm border border-natural-border/50 bg-natural-cream" /> Unread
-          </span>
-        </div>
-      )}
     </div>
   );
 }
