@@ -102,51 +102,6 @@ function computeMomentum(book: BookRow, logs: LogRow[]): {
   return { score, consistency, velocity, intensity, trend };
 }
 
-/* ── SVG Arc ── */
-function Arc({ score, size = 72 }: { score: number; size?: number }) {
-  const stroke = 6;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const filled = (score / 100) * circ;
-
-  const color =
-    score >= 80 ? '#7A9E7E' :   // natural-sage
-    score >= 60 ? '#B8A45A' :   // gold
-    score >= 40 ? '#C4785A' :   // natural-clay
-                   '#C45A5A';   // red
-
-  const bgColor = score >= 60 ? '#e8efe8' : '#f5ece8';
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Background ring */}
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={bgColor} strokeWidth={stroke}
-      />
-      {/* Filled arc */}
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={`${filled} ${circ - filled}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        className="transition-all duration-700"
-      />
-      {/* Score number */}
-      <text
-        x={size / 2} y={size / 2}
-        textAnchor="middle" dominantBaseline="central"
-        fontSize={size * 0.32} fontWeight={700}
-        fill={color}
-        fontFamily="ui-sans-serif,system-ui"
-      >
-        {score}
-      </text>
-    </svg>
-  );
-}
-
 export default function MomentumScore({
   book,
   logs,
@@ -164,20 +119,14 @@ export default function MomentumScore({
                      m.trend === 'down' ? 'Slipping' : 'Steady';
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-natural-border bg-natural-cream/60 px-3 py-2">
-      <div className="shrink-0 sm:hidden"><Arc score={m.score} size={56} /></div>
-      <div className="hidden shrink-0 sm:block"><Arc score={m.score} size={64} /></div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-          <span className="font-sans text-[11px] font-bold text-natural-dark">Momentum</span>
-          <TrendIcon className={`h-3 w-3 shrink-0 ${trendColor}`} />
-          <span className={`font-sans text-[9px] ${trendColor}`}>{trendLabel}</span>
-        </div>
-        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 font-sans text-[9px] text-natural-stone">
-          <span>Consistency <b className="text-natural-dark">{m.consistency}%</b></span>
-          <span>Velocity <b className="text-natural-dark">{m.velocity}%</b></span>
-        </div>
-      </div>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-y border-natural-border/70 py-2 font-sans">
+      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-natural-stone">Momentum</span>
+      <span className="inline-flex items-center gap-1 rounded-full bg-natural-sage/15 px-2 py-0.5 text-[10px] font-bold text-natural-dark">
+        {m.score} <TrendIcon className={`h-3 w-3 ${trendColor}`} /> <span className={trendColor}>{trendLabel}</span>
+      </span>
+      <span className="basis-full text-[10px] text-natural-stone sm:basis-auto sm:ml-auto">
+        Consistency <b className="text-natural-dark">{m.consistency}%</b><span className="px-1 text-natural-border">·</span>Velocity <b className="text-natural-dark">{m.velocity}%</b>
+      </span>
     </div>
   );
 }
