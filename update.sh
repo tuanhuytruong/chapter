@@ -28,9 +28,12 @@ fi
 
 echo "==> DB schema will be ensured automatically on server boot (ensureSchema)"
 
-echo "==> (Re)Starting with PM2"
+echo "==> (Re)Starting with PM2 in production mode"
+# The build is served from dist/ in production. Explicitly pass --env on BOTH
+# start and reload so a previously started development process cannot keep
+# Vite middleware (which rejects unapproved public hosts) or non-secure cookies.
 if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
-  pm2 reload "$APP_NAME" --update-env
+  pm2 reload ecosystem.config.cjs --only "$APP_NAME" --env production --update-env
 else
   pm2 start ecosystem.config.cjs --env production
 fi
