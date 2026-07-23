@@ -9,7 +9,8 @@ import ReadingCalendar from './pages/Calendar';
 import Momentum from './pages/Momentum';
 import Today from './pages/Today';
 import Achievements from './pages/Achievements';
-import { Award, BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
+import Account from './pages/Account';
+import { Award, BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut, Settings2 } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -81,6 +82,7 @@ function Layout() {
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream hover:opacity-70 sm:h-7 sm:w-7">
                 {isDark ? <Sun className="w-3.5 h-3.5 text-natural-clay" /> : <Moon className="w-3.5 h-3.5 text-natural-stone" />}
               </button>
+              <NavLink to="/account" aria-label="Account settings" className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone hover:text-natural-dark"><Settings2 className="h-3.5 w-3.5" /></NavLink>
               <button onClick={() => logout()} className="flex min-h-10 items-center gap-1.5 hover:opacity-70" title="Sign out" aria-label="Sign out">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-natural-sage/20"><span className="font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span></div>
                 <span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark sm:inline">{user?.displayName}</span><LogOut className="hidden w-3 h-3 text-natural-stone sm:block" />
@@ -114,6 +116,7 @@ function AppRoutes() {
           <Route path="/calendar" element={<ReadingCalendar />} />
           <Route path="/momentum" element={<Momentum />} />
           <Route path="/achievements" element={<Achievements />} />
+          <Route path="/account" element={<Account />} />
           <Route path="*" element={<Library />} />
         </Route>
       </Routes>

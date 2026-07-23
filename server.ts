@@ -16,6 +16,8 @@ import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
 import { getPool } from "./src/db.js";
 import { dateInAppTz, progressFor, type WeeklyGoalMetric, type WeeklyGoalRow } from "./src/weekly-goal.js";
 import { achievementResponse } from "./src/achievements.js";
+import { config } from "./src/config.js";
+import { createLinkToken, deepLink, linkExpiresAt, telegramUpdate } from "./src/telegram-link.js";
 
 // Ensure the port is 3000
 const PORT = 3000;
@@ -34,6 +36,26 @@ app.use(session({
   resave: false, saveUninitialized: false,
   cookie: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 24 * 60 * 60 * 1000 },
 }));
+
+// Telegram webhook stays public because Telegram cannot hold a Chapter session. The
+// provider secret and one-time token bind the incoming chat to exactly one user.
+app.post("/api/telegram/webhook", async (req: Request, res: Response) => {
+  if (!config.telegramWebhookSecret || req.header("x-telegram-bot-api-secret-token") !== config.telegramWebhookSecret) {
+    return res.status(401).json({ ok: false });
+  }
+  const incoming = telegramUpdate(req.body);
+  if (!incoming) return res.status(200).json({ ok: true });
+  try {
+    const { rowCount } = await query(
+      `UPDATE users SET telegram_chat_id=$1, telegram_link_token=NULL, telegram_link_expires_at=NULL
+       WHERE telegram_link_token=$2 AND telegram_link_expires_at > now()`,
+      [incoming.chatId, incoming.token]
+    );
+    res.status(200).json({ ok: true, linked: rowCount === 1 });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: "Telegram linking unavailable" });
+  }
+});
 
 app.get("/api/auth/session", (req, res) => res.json({ user: req.session.user || null }));
 app.get("/api/auth/me", (req, res) => res.json({ user: req.session.user || null }));
@@ -66,13 +88,25 @@ app.post("/api/auth/change-password", async (req: Request, res: Response) => {
     res.json({ ok: true });
   } catch (e: any) { res.status(500).json({ error: "Failed to change password", detail: e.message }); }
 });
-app.put("/api/auth/telegram", async (req: Request, res: Response) => {
-  const chatId = req.body?.telegram_chat_id;
-  if (chatId !== null && chatId !== undefined && typeof chatId !== "string") return res.status(400).json({ error: "telegram_chat_id must be a string or null" });
+app.get("/api/auth/telegram", async (req: Request, res: Response) => {
   try {
-    const { rows } = await query("UPDATE users SET telegram_chat_id=$1 WHERE id=$2 RETURNING telegram_chat_id", [chatId?.trim() || null, userFrom(req).id]);
-    res.json({ telegram_chat_id: rows[0]?.telegram_chat_id || null });
-  } catch (e: any) { res.status(500).json({ error: "Failed to update Telegram", detail: e.message }); }
+    const { rows } = await query("SELECT telegram_chat_id FROM users WHERE id=$1", [userFrom(req).id]);
+    res.json({ connected: Boolean(rows[0]?.telegram_chat_id) });
+  } catch { res.status(500).json({ error: "Telegram status unavailable" }); }
+});
+app.post("/api/auth/telegram/link", async (req: Request, res: Response) => {
+  if (!config.telegramBotUsername) return res.status(503).json({ error: "Telegram linking is not configured" });
+  const token = createLinkToken();
+  try {
+    await query("UPDATE users SET telegram_link_token=$1, telegram_link_expires_at=$2 WHERE id=$3", [token, linkExpiresAt(), userFrom(req).id]);
+    res.json({ url: deepLink(config.telegramBotUsername, token), expires_in_seconds: 900 });
+  } catch { res.status(500).json({ error: "Could not start Telegram link" }); }
+});
+app.delete("/api/auth/telegram", async (req: Request, res: Response) => {
+  try {
+    await query("UPDATE users SET telegram_chat_id=NULL, telegram_link_token=NULL, telegram_link_expires_at=NULL WHERE id=$1", [userFrom(req).id]);
+    res.json({ connected: false });
+  } catch { res.status(500).json({ error: "Could not disconnect Telegram" }); }
 });
 app.use("/api/books", booksRouter);
 app.use("/api/reviews", reviewsRouter);
