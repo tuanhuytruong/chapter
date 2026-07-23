@@ -34,7 +34,7 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listBooks: () => req<BookRow[]>(`${BASE}`),
+  listBooks: (scope: "mine" | "all" = "mine") => req<BookRow[]>(`${BASE}?scope=${scope}`),
   getBook: (id: string) => req<BookRow>(`${BASE}/${id}`),
   createBook: (body: Partial<BookRow>) =>
     req<BookRow>(`${BASE}`, { method: "POST", body: JSON.stringify(body) }),
@@ -62,6 +62,12 @@ export const api = {
     bookCounts: { active: number; finished: number; paused: number; queued: number };
     globalStats: { total_days_read: number; last_read: string };
   }>("/api/stats"),
+  getCommunityStats: () => req<{
+    velocity: { date: string; pages_read: number }[];
+    insights: { insight: string; freq: number }[];
+    bookCounts: { active: number; finished: number; paused: number; queued: number };
+    globalStats: { total_days_read: number; last_read: string };
+  }>("/api/stats/community"),
 };
 
 export interface UploadResult {

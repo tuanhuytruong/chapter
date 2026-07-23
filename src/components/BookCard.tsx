@@ -15,7 +15,7 @@ const STATUS_COLOR: Record<string, string> = {
   finished: 'bg-blue-100 text-blue-700',
 };
 
-const BookCard: React.FC<{ book: BookRow; streak?: number }> = ({ book, streak }) => {
+const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean }> = ({ book, streak, readOnly = false }) => {
   const navigate = useNavigate();
   const pct = progressPct(book);
 
@@ -38,6 +38,7 @@ const BookCard: React.FC<{ book: BookRow; streak?: number }> = ({ book, streak }
           <span className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full font-sans ${STATUS_COLOR[book.status]}`}>
             {STATUS_LABEL[book.status]}
           </span>
+          <span className="ml-1 inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full font-sans bg-natural-sage/10 text-natural-sage">{readOnly ? `Read-only · ${book.owner_name || "Reader"}` : book.can_edit ? "Your book" : `Read-only · ${book.owner_name || "Reader"}`}</span>
         </div>
       </div>
 

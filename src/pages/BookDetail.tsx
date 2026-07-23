@@ -241,8 +241,8 @@ export default function BookDetail() {
     <div className="space-y-6 font-sans">
       <div className="flex items-center justify-between">
         <button onClick={() => navigate('/')} className="flex items-center gap-1 text-xs text-natural-stone hover:text-natural-dark"><ArrowLeft className="w-4 h-4" /> Library</button>
-        <button onClick={deleteBook} disabled={deleting}
-          className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+        {book.can_edit && <button onClick={deleteBook} disabled={deleting}
+          className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" /> Delete</button>}
       </div>
 
       {/* Header */}
@@ -273,7 +273,7 @@ export default function BookDetail() {
           )}
         </div>
         <div className="self-start flex flex-col items-end gap-2">
-          {book.status === 'finished' ? (
+          {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-border text-natural-stone rounded-full text-xs font-bold uppercase tracking-wider">
                 <CheckCircle className="w-3.5 h-3.5" /> Finished
@@ -308,10 +308,10 @@ export default function BookDetail() {
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Heatmap
           </button>
-          <button onClick={() => setActiveTab('settings')}
+          {book.can_edit && <button onClick={() => setActiveTab('settings')}
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'settings' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Settings
-          </button>
+          </button>}
           <button onClick={() => setActiveTab('forecast')}
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'forecast' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Forecast
@@ -325,7 +325,7 @@ export default function BookDetail() {
           </>
         )}
 
-        {activeTab === 'settings' && (
+        {book.can_edit && activeTab === 'settings' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
@@ -453,7 +453,7 @@ export default function BookDetail() {
                             <div className="flex-1 h-px bg-natural-border" />
                           </div>
                         )}
-                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} highlight={search} />
+                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} />
                       </div>
                     ))}
                   </div>
@@ -465,7 +465,7 @@ export default function BookDetail() {
       </div>
 
       {/* Knowledge Map */}
-      {book.status === 'finished' && logs.length > 0 && (
+      {book.can_edit && book.status === 'finished' && logs.length > 0 && (
         <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm text-natural-dark">Knowledge Map</h3>

@@ -22,6 +22,7 @@ interface DaySummaryProps {
   bookTitle?: string;
   bookAuthor?: string;
   bookId?: string;
+  canEdit?: boolean;
   highlight?: string;
 }
 
@@ -43,7 +44,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, highlight }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
@@ -88,7 +89,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           )}
         </div>
         <div className="flex items-center gap-1">
-          {bookTitle && bookId && log.summary && (
+          {canEdit && bookTitle && bookId && log.summary && (
             <button onClick={() => setShowShare(true)} className="text-natural-stone hover:text-natural-sage cursor-pointer" title="Share to community">
               <Share2 className="w-3.5 h-3.5" />
             </button>
@@ -119,8 +120,8 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         </p>
       )}
 
-      {/* Personal notes — collapsible textarea, auto-save on blur */}
-      <div>
+      {/* Personal notes are editable only by the book owner. */}
+      {canEdit && <div>
         <button
           onClick={() => setShowNotes(s => !s)}
           className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone hover:text-natural-dark font-sans"
@@ -137,7 +138,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
             placeholder="Write your own notes about today's reading…"
           />
         )}
-      </div>
+      </div>}
 
       {open && log.raw_text && (
         <div className="pt-2 border-t border-natural-border">

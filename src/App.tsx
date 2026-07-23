@@ -4,8 +4,9 @@ import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
 import Community from './pages/Community';
 import Insights from './pages/Insights';
-import { BookMarked, Users, Pencil, BarChart3, Moon, Sun } from 'lucide-react';
-import NicknamePrompt from './components/NicknamePrompt';
+import { BookMarked, Users, BarChart3, Moon, Sun, LogOut } from 'lucide-react';
+import Login from './components/Login';
+import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
 
 const NICKNAME_KEY = 'chapter_nickname';
@@ -14,8 +15,7 @@ function getNickname() { return localStorage.getItem(NICKNAME_KEY) || ''; }
 // ── Layout (nav + outlet) ──────────────────────────────────────
 function Layout() {
   const location = useLocation();
-  const [nicknameOpen, setNicknameOpen] = useState(false);
-  const [nickname, setNickname] = useState(getNickname);
+  const { user, logout } = useAuth();
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
@@ -26,10 +26,6 @@ function Layout() {
     localStorage.setItem('theme', next ? 'dark' : 'light');
     setIsDark(next);
   };
-
-  useEffect(() => {
-    setNickname(getNickname());
-  }, [nicknameOpen]);
 
   useEffect(() => { swipeNav.attach(); return swipeNav.detach; }, [swipeNav]);
 
@@ -65,13 +61,10 @@ function Layout() {
                 className="w-7 h-7 rounded-full bg-natural-cream border border-natural-border flex items-center justify-center hover:opacity-70 cursor-pointer">
                 {isDark ? <Sun className="w-3.5 h-3.5 text-natural-clay" /> : <Moon className="w-3.5 h-3.5 text-natural-stone" />}
               </button>
-              <button onClick={() => setNicknameOpen(true)} className="flex items-center gap-1.5 hover:opacity-70 cursor-pointer">
-              <div className="w-7 h-7 rounded-full bg-natural-sage/20 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-natural-sage font-sans">{nickname ? nickname[0].toUpperCase() : '?'}</span>
-              </div>
-              <span className="text-xs font-medium text-natural-dark font-sans max-w-[100px] truncate">{nickname || 'Set nickname'}</span>
-              <Pencil className="w-3 h-3 text-natural-stone" />
-            </button>
+              <button onClick={() => logout()} className="flex items-center gap-1.5 hover:opacity-70 cursor-pointer" title="Sign out">
+                <div className="w-7 h-7 rounded-full bg-natural-sage/20 flex items-center justify-center"><span className="text-[10px] font-bold text-natural-sage font-sans">{user?.displayName?.[0]?.toUpperCase()}</span></div>
+                <span className="text-xs font-medium text-natural-dark font-sans max-w-[100px] truncate">{user?.displayName}</span><LogOut className="w-3 h-3 text-natural-stone" />
+              </button>
           </div>
           </div>
         </div>
@@ -80,12 +73,14 @@ function Layout() {
       <div ref={contentRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         <Outlet />
       </div>
-      <NicknamePrompt open={nicknameOpen} onDone={() => setNicknameOpen(false)} />
     </div>
   );
 }
 
-export default function App() {
+function AppRoutes() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Login />;
   return (
     <BrowserRouter>
       <Routes>
@@ -99,4 +94,8 @@ export default function App() {
       </Routes>
     </BrowserRouter>
   );
+}
+
+export default function App() {
+  return <AuthProvider><AppRoutes /></AuthProvider>;
 }

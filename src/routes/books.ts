@@ -4,10 +4,18 @@ import { extractRange, getChapterTitle } from "../extractor.js";
 import { callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
+import { requireAuth, requireOwner, userFrom } from "../auth.js";
 import fs from "fs";
 import path from "path";
 
 export const booksRouter = Router();
+booksRouter.use(requireAuth);
+
+async function ownerCanMutate(req: Request, res: Response, bookId: string): Promise<boolean> {
+  const found = await query("SELECT owner_id FROM books WHERE id=$1", [bookId]);
+  if (!found.rows.length) { res.status(404).json({ error: "book not found" }); return false; }
+  return requireOwner(req, res, found.rows[0].owner_id);
+}
 
 // App timezone is Asia/Bangkok (UTC+7) — all "today" logic and daily-summary
 // grouping use this, independent of where the server physically runs.
@@ -36,9 +44,17 @@ function resolveBookPath(input: string): string {
 
 // ── B7: CRUD ──────────────────────────────────────────────
 // GET /api/books — list all with computed progress (computed client-side)
-booksRouter.get("/", async (_req: Request, res: Response) => {
+booksRouter.get("/", async (req: Request, res: Response) => {
   try {
-    const { rows } = await query(`SELECT * FROM books ORDER BY created_at DESC`);
+    const scope = req.query.scope || "mine";
+    if (scope !== "mine" && scope !== "all") return res.status(400).json({ error: "scope must be 'mine' or 'all'" });
+    const { rows } = await query(
+      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
+       FROM books b LEFT JOIN users u ON u.id=b.owner_id
+       WHERE ($2 = 'all' OR b.owner_id = $1)
+       ORDER BY u.display_name NULLS LAST, b.created_at DESC`,
+      [userFrom(req).id, scope]
+    );
     res.json(rows);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
@@ -58,9 +74,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const resolvedPath = resolveBookPath(file_path);
   try {
     const { rows } = await query(
-      `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null, lang]
+      `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null, lang, userFrom(req).id]
     );
     res.status(201).json(rows[0]);
   } catch (e: any) {
@@ -71,6 +87,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
 // PATCH /api/books/:id — update settings
 booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang"];
   const sets: string[] = [];
   const vals: any[] = [];
@@ -99,6 +116,7 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
 // and delete the uploaded file from disk so nothing is left behind.
 booksRouter.delete("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   try {
     // Fetch the file path first so we can clean up the physical file.
     const found = await query("SELECT file_path FROM books WHERE id = $1", [id]);
@@ -130,7 +148,11 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
 booksRouter.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const { rows } = await query("SELECT * FROM books WHERE id = $1", [id]);
+    const { rows } = await query(
+      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $2) AS can_edit
+       FROM books b LEFT JOIN users u ON u.id=b.owner_id WHERE b.id = $1`,
+      [id, userFrom(req).id]
+    );
     if (!rows.length) return res.status(404).json({ error: "book not found" });
     res.json(rows[0]);
   } catch (e: any) {
@@ -154,9 +176,9 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
 
 // ── B6: Advance all active (define BEFORE /:id/advance to avoid route clash) ──
 // POST /api/books/all/advance
-booksRouter.post("/all/advance", async (_req: Request, res: Response) => {
+booksRouter.post("/all/advance", async (req: Request, res: Response) => {
   try {
-    const { rows: active } = await query("SELECT id FROM books WHERE status = 'active'");
+    const { rows: active } = await query("SELECT id FROM books WHERE status = 'active' AND owner_id=$1", [userFrom(req).id]);
     const results = [];
     for (const b of active) {
       try {
@@ -176,6 +198,7 @@ booksRouter.post("/all/advance", async (_req: Request, res: Response) => {
 // POST /api/books/:id/advance
 booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   const force = req.query.force === "1" || req.body?.force === true;
   try {
     const result = await advanceBook(id, force);
@@ -281,6 +304,7 @@ booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
 // POST /api/books/:id/retry/:date — re-generate summary for a specific day
 booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
   const { id, date } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   try {
     const logRes = await query(
       "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
@@ -314,13 +338,14 @@ booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
 
 // PATCH /api/books/:id/logs/:logId — update personal notes on a log entry
 booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
-  const { logId } = req.params;
+  const { id, logId } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   const { notes } = req.body;
   if (notes === undefined) return res.status(400).json({ error: "notes field required" });
   try {
     const { rows } = await query(
-      "UPDATE reading_log SET notes=$1 WHERE id=$2 RETURNING *",
-      [notes, logId]
+      "UPDATE reading_log SET notes=$1 WHERE id=$2 AND book_id=$3 RETURNING *",
+      [notes, logId, id]
     );
     if (!rows.length) return res.status(404).json({ error: "log not found" });
     res.json(rows[0]);
@@ -331,12 +356,12 @@ booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
 
 // POST /api/books/all/notify — push today's logs to Telegram + mark sent.
 // Called by n8n AFTER /all/advance. Returns per-book delivery status.
-booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
+booksRouter.post("/all/notify", async (req: Request, res: Response) => {
   const cfg = getTelegramConfig();
   if (!cfg) return res.status(500).json({ error: "Telegram not configured (TELEGRAM_BOT_TOKEN/CHAT_ID)" });
   try {
     const { rows: books } = await query(
-      "SELECT * FROM books WHERE status='active'"
+      "SELECT * FROM books WHERE status='active' AND owner_id=$1", [userFrom(req).id]
     );
     const results: any[] = [];
     for (const b of books) {
@@ -365,9 +390,9 @@ booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
 });
 
 // GET /api/books/all/log/today — convenience for n8n: today's sessions for all active books.
-booksRouter.get("/all/log/today", async (_req: Request, res: Response) => {
+booksRouter.get("/all/log/today", async (req: Request, res: Response) => {
   try {
-    const { rows: books } = await query("SELECT * FROM books WHERE status='active'");
+    const { rows: books } = await query("SELECT * FROM books WHERE status='active' AND owner_id=$1", [userFrom(req).id]);
     const out: any[] = [];
     for (const b of books) {
       const { rows } = await query(

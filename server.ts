@@ -1,4 +1,7 @@
 import express, { Request, Response } from "express";
+import session from "express-session";
+import pgSession from "connect-pg-simple";
+import bcrypt from "bcrypt";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
@@ -8,17 +11,65 @@ import { booksRouter } from "./src/routes/books.js";
 import { uploadRouter } from "./src/routes/upload.js";
 import { ensureSchema, query } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
+import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
+import { getPool } from "./src/db.js";
 
 // Ensure the port is 3000
 const PORT = 3000;
 
 const app = express();
+// Production deployments terminate TLS at the reverse proxy. Trust that single
+// proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
+app.set("trust proxy", 1);
 app.use(express.json());
+const PgStore = pgSession(session);
+app.use(session({
+  store: process.env.DATABASE_URL ? new PgStore({ pool: getPool(), schemaName: "chapter", tableName: "session" }) : undefined,
+  secret: process.env.SESSION_SECRET || "development-only-session-secret",
+  resave: false, saveUninitialized: false,
+  cookie: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 24 * 60 * 60 * 1000 },
+}));
 
-// ── Book reading companion routes (Phase 1) ──
+app.get("/api/auth/session", (req, res) => res.json({ user: req.session.user || null }));
+app.get("/api/auth/me", (req, res) => res.json({ user: req.session.user || null }));
+app.post("/api/auth/login", async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: "username and password required" });
+  try {
+    const result = await query("SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE username=$1", [username]);
+    const row = result.rows[0];
+    if (!row || !await bcrypt.compare(password, row.password_hash)) return res.status(401).json({ error: "Invalid username or password" });
+    req.session.user = { id: row.id, username: row.username, displayName: row.display_name, avatarUrl: row.avatar_url || avatarFor(row.username) };
+    res.json({ user: req.session.user });
+  } catch (e: any) {
+    res.status(503).json({ error: "Authentication service unavailable", detail: e.message });
+  }
+});
+app.post("/api/auth/logout", (req, res) => req.session.destroy(() => res.status(204).end()));
+app.use("/api", requireAuth);
+app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof currentPassword !== "string" || typeof newPassword !== "string" || newPassword.length < 8) {
+    return res.status(400).json({ error: "currentPassword and a newPassword of at least 8 characters are required" });
+  }
+  try {
+    const user = (await query("SELECT password_hash FROM users WHERE id=$1", [userFrom(req).id])).rows[0];
+    if (!user || !await bcrypt.compare(currentPassword, user.password_hash)) {
+      return res.status(400).json({ error: "Current password is incorrect" });
+    }
+    await query("UPDATE users SET password_hash=$1 WHERE id=$2", [await bcrypt.hash(newPassword, 12), userFrom(req).id]);
+    res.json({ ok: true });
+  } catch (e: any) { res.status(500).json({ error: "Failed to change password", detail: e.message }); }
+});
+app.put("/api/auth/telegram", async (req: Request, res: Response) => {
+  const chatId = req.body?.telegram_chat_id;
+  if (chatId !== null && chatId !== undefined && typeof chatId !== "string") return res.status(400).json({ error: "telegram_chat_id must be a string or null" });
+  try {
+    const { rows } = await query("UPDATE users SET telegram_chat_id=$1 WHERE id=$2 RETURNING telegram_chat_id", [chatId?.trim() || null, userFrom(req).id]);
+    res.json({ telegram_chat_id: rows[0]?.telegram_chat_id || null });
+  } catch (e: any) { res.status(500).json({ error: "Failed to update Telegram", detail: e.message }); }
+});
 app.use("/api/books", booksRouter);
-
-// ── Book file upload (Phase 3) ──
 app.use("/api/upload", uploadRouter);
 
 // ── Quote Wall ────────────────────────────────────────────
@@ -38,42 +89,26 @@ app.get("/api/quotes", async (_req: Request, res: Response) => {
 });
 
 // ── Community / Book Club ────────────────────────────────
+async function statsFor(ownerId: string | null) {
+  const filter = ownerId ? "AND owner_id=$1" : "";
+  const params = ownerId ? [ownerId] : [];
+  const [velocity, insights, bookCounts, globalStats] = await Promise.all([
+    query(`SELECT (date AT TIME ZONE 'Asia/Bangkok')::date AS date, SUM(page_end-page_start+1) AS pages_read FROM chapter.reading_log WHERE (date AT TIME ZONE 'Asia/Bangkok')::date >= (NOW() AT TIME ZONE 'Asia/Bangkok')::date - INTERVAL '30 days' ${filter} GROUP BY 1 ORDER BY 1`, params),
+    query(`SELECT unnest(key_insights) AS insight, COUNT(*) AS freq FROM chapter.reading_log WHERE true ${filter} GROUP BY insight ORDER BY freq DESC LIMIT 50`, params),
+    query(`SELECT COUNT(*) FILTER (WHERE status='active') AS active, COUNT(*) FILTER (WHERE status='finished') AS finished, COUNT(*) FILTER (WHERE status='paused') AS paused, COUNT(*) FILTER (WHERE status='queued') AS queued FROM chapter.books WHERE true ${filter}`, params),
+    query(`SELECT COUNT(DISTINCT (date AT TIME ZONE 'Asia/Bangkok')::date) AS total_days_read, MAX(date AT TIME ZONE 'Asia/Bangkok') AS last_read FROM chapter.reading_log WHERE true ${filter}`, params),
+  ]);
+  return { velocity: velocity.rows, insights: insights.rows, bookCounts: bookCounts.rows[0], globalStats: globalStats.rows[0] };
+}
 // ── Stats endpoint ───────────────────────────────────────
-app.get("/api/stats", async (_req: Request, res: Response) => {
+app.get("/api/stats", async (req: Request, res: Response) => {
   try {
-    const [velocity, insights, bookCounts, globalStats] = await Promise.all([
-      query(`SELECT
-               (date AT TIME ZONE 'Asia/Bangkok')::date AS date,
-               SUM(page_end - page_start + 1) AS pages_read
-             FROM chapter.reading_log
-             WHERE (date AT TIME ZONE 'Asia/Bangkok')::date
-                   >= (NOW() AT TIME ZONE 'Asia/Bangkok')::date - INTERVAL '30 days'
-             GROUP BY (date AT TIME ZONE 'Asia/Bangkok')::date
-             ORDER BY date ASC`),
-      query(`SELECT unnest(key_insights) AS insight, COUNT(*) AS freq
-             FROM chapter.reading_log
-             GROUP BY insight ORDER BY freq DESC LIMIT 50`),
-      query(`SELECT
-               COUNT(*) FILTER (WHERE status = 'active') AS active,
-               COUNT(*) FILTER (WHERE status = 'finished') AS finished,
-               COUNT(*) FILTER (WHERE status = 'paused') AS paused,
-               COUNT(*) FILTER (WHERE status = 'queued') AS queued
-             FROM chapter.books`),
-      query(`SELECT
-               COUNT(DISTINCT (date AT TIME ZONE 'Asia/Bangkok')::date) AS total_days_read,
-               MAX(date AT TIME ZONE 'Asia/Bangkok') AS last_read
-             FROM chapter.reading_log`),
-    ]);
-    res.json({
-      velocity: velocity.rows,
-      insights: insights.rows,
-      bookCounts: bookCounts.rows[0],
-      globalStats: globalStats.rows[0],
-    });
+    res.json(await statsFor(userFrom(req).id));
   } catch (e: any) {
     res.status(500).json({ error: "Failed to fetch stats", detail: e.message });
   }
 });
+app.get("/api/stats/community", async (_req, res) => { try { res.json(await statsFor(null)); } catch (e: any) { res.status(500).json({ error: "Failed to fetch community stats", detail: e.message }); } });
 
 function delay(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
@@ -129,9 +164,10 @@ async function fetchPost(id: string): Promise<CommunityPost | null> {
 // ── Community / Book Club (persisted in Postgres) ──────────
 
 // 1. Get All Community Posts
-app.get("/api/community/posts", async (_req: Request, res: Response) => {
+app.get("/api/community/posts", async (req: Request, res: Response) => {
   try {
-    const p = await query("SELECT * FROM community_posts ORDER BY created_at DESC");
+    const authorId = typeof req.query.author_id === "string" ? req.query.author_id : undefined;
+    const p = await query(`SELECT * FROM community_posts ${authorId ? "WHERE author_id=$1" : ""} ORDER BY created_at DESC`, authorId ? [authorId] : []);
     const posts: CommunityPost[] = [];
     for (const row of p.rows) {
       const c = await query(
@@ -145,21 +181,26 @@ app.get("/api/community/posts", async (_req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch posts", detail: e.message });
   }
 });
+app.get("/api/community/readers", async (_req, res) => { try {
+  const { rows } = await query("SELECT u.id, u.username, u.display_name, u.avatar_url, COUNT(b.id)::int AS book_count FROM users u LEFT JOIN books b ON b.owner_id=u.id GROUP BY u.id ORDER BY u.display_name");
+  res.json(rows.map((r: any) => ({ ...r, avatar_url: r.avatar_url || avatarFor(r.username) })));
+} catch (e: any) { res.status(500).json({ error: "Failed to fetch readers", detail: e.message }); } });
 
 // 2. Submit a New Community Post — auto-triggers AI book club
 app.post("/api/community/posts", async (req: Request, res: Response) => {
-  const { authorName, authorAvatar, bookTitle, bookAuthor, summary, content, book_id } = req.body;
+  const { bookTitle, bookAuthor, summary, content, book_id } = req.body;
+  const sessionUser = userFrom(req);
   if (!bookTitle || !bookAuthor || !summary || !content) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
   try {
     const r = await query(
-      `INSERT INTO community_posts (author_name, author_avatar, author_bio, book_title, book_author, book_id, summary, content)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO community_posts (author_id, author_name, author_avatar, author_bio, book_title, book_author, book_id, summary, content)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [
-        authorName || "Book Lover",
-        authorAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+        sessionUser.id, sessionUser.displayName,
+        sessionUser.avatarUrl || avatarFor(sessionUser.username),
         "Dedicated Reader & Community Member",
         bookTitle, bookAuthor, book_id || null, summary, content,
       ]
@@ -281,15 +322,16 @@ app.post("/api/community/posts/:id/like", async (req: Request, res: Response) =>
 
 // 4. Comment on a Post
 app.post("/api/community/posts/:id/comments", async (req: Request, res: Response) => {
-  const { content, authorName, authorAvatar, authorBio } = req.body;
+  const { content } = req.body;
+  const sessionUser = userFrom(req);
   if (!content) { res.status(400).json({ error: "Comment content is required" }); return; }
   try {
     await query(
-      `INSERT INTO community_comments (post_id, author_name, author_avatar, author_bio, content)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [req.params.id, authorName || "Fellow Reader",
-       authorAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-       authorBio || "Book Lover", content]
+      `INSERT INTO community_comments (post_id, author_id, author_name, author_avatar, author_bio, content)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [req.params.id, sessionUser.id, sessionUser.displayName,
+       sessionUser.avatarUrl || avatarFor(sessionUser.username),
+       "Book Lover", content]
     );
     const post = await fetchPost(req.params.id);
     if (!post) { res.status(404).json({ error: "Post not found" }); return; }
@@ -385,6 +427,8 @@ async function startServer() {
 // ── Re-read support ───────────────────────────────────────────
 app.post('/api/books/:id/reread', async (req: Request, res: Response) => {
   try {
+    const owned = await query("SELECT id FROM books WHERE id=$1 AND owner_id=$2", [req.params.id, userFrom(req).id]);
+    if (!owned.rows.length) return res.status(403).json({ error: "Only the owner may modify this resource" });
     const { id } = req.params;
     await query(
       `UPDATE chapter.books SET current_page = 0, status = 'active', reading_round = reading_round + 1 WHERE id = $1`,
@@ -399,6 +443,8 @@ app.post('/api/books/:id/reread', async (req: Request, res: Response) => {
 // ── Knowledge Mindmap ─────────────────────────────────────────
 app.post('/api/books/:id/mindmap', async (req: Request, res: Response) => {
   try {
+    const owned = await query("SELECT id FROM books WHERE id=$1 AND owner_id=$2", [req.params.id, userFrom(req).id]);
+    if (!owned.rows.length) return res.status(403).json({ error: "Only the owner may modify this resource" });
     const { id } = req.params;
     const book = (await query(`SELECT * FROM chapter.books WHERE id = $1`, [id])).rows[0];
     if (!book) return res.status(404).json({ error: 'Book not found' });

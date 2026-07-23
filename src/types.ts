@@ -44,6 +44,9 @@ export interface BookRow {
   cover_url?: string;
   created_at: string;
   progress?: number;
+  owner_id?: string | null;
+  owner_name?: string | null;
+  can_edit?: boolean;
 }
 
 export interface LogRow {

@@ -1,10 +1,11 @@
 import { useCallback, useRef } from 'react';
+import type { RefObject } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const ROUTES = ['/', '/community', '/insights'];
 const MIN_SWIPE = 50;
 
-export default function useSwipeNav(containerRef: React.RefObject<HTMLElement | null>) {
+export default function useSwipeNav(containerRef: RefObject<HTMLElement | null>) {
   const navigate = useNavigate();
   const location = useLocation();
   const startX = useRef(0);

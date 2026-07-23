@@ -25,6 +25,7 @@ const SORTS: { id: Sort; label: string }[] = [
 
 export default function Library() {
   const [books, setBooks] = useState<BookRow[]>([]);
+  const [scope, setScope] = useState<"mine" | "all">("mine");
   const [streaks, setStreaks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
@@ -37,7 +38,7 @@ export default function Library() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await api.listBooks();
+      const list = await api.listBooks(scope);
       setBooks(list);
       const s: Record<string, number> = {};
       await Promise.all(list.map(async (b) => {
@@ -52,7 +53,7 @@ export default function Library() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scope]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -85,12 +86,23 @@ export default function Library() {
     return books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999));
   }, [books]);
 
+  const readerGroups = useMemo(() => {
+    const groups = new Map<string, { name: string; books: BookRow[] }>();
+    for (const book of visible) {
+      const key = book.owner_id || 'unassigned';
+      const group = groups.get(key) || { name: book.owner_name || 'Unassigned reader', books: [] };
+      group.books.push(book);
+      groups.set(key, group);
+    }
+    return [...groups.values()];
+  }, [visible]);
+
   const startQueuedBook = async (book: BookRow) => {
     try {
       await api.updateBook(book.id, { status: 'active' } as any);
       setToast({ type: 'ok', msg: `Started "${book.title}"!` });
       // reload books list
-      const list = await api.listBooks();
+      const list = await api.listBooks(scope);
       setBooks(list);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
@@ -105,17 +117,21 @@ export default function Library() {
           <p className="text-xs text-natural-stone font-sans">Track daily reading and AI summaries</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={readAll} disabled={advancing}
+          {scope === "mine" && <button onClick={readAll} disabled={advancing}
             className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
             {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Read All Today
-          </button>
-          <button onClick={() => setShowAdd(true)}
+          </button>}
+          {scope === "mine" && <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
-          </button>
+          </button>}
         </div>
       </div>
 
+      <div className="flex gap-2 border-b border-natural-border">
+        {([['mine', 'My Shelf'], ['all', 'All Readers']] as const).map(([id, label]) => <button key={id} onClick={() => setScope(id)} className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px ${scope === id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone'}`}>{label}</button>)}
+      </div>
+      {scope === 'all' && <p className="text-xs text-natural-stone font-sans">Browsing shared shelves — books are read-only.</p>}
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div className="flex gap-2 border-b border-natural-border">
           {FILTERS.map(f => (
@@ -150,10 +166,19 @@ export default function Library() {
         <div className="flex flex-col items-center justify-center p-16 bg-natural-cream rounded-[32px] border border-natural-border text-center space-y-3">
           <BookOpen className="w-10 h-10 text-natural-stone" />
           <p className="text-sm font-bold text-natural-dark font-sans">No books yet</p>
-          <p className="text-xs text-natural-stone font-sans">Add your first book to start the daily reading companion.</p>
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider cursor-pointer">
+          <p className="text-xs text-natural-stone font-sans">{scope === 'all' ? 'No readers have books matching these filters.' : 'Add your first book to start the daily reading companion.'}</p>
+          {scope === 'mine' && <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
-          </button>
+          </button>}
+        </div>
+      ) : scope === 'all' ? (
+        <div className="space-y-6">
+          {readerGroups.map(group => <section key={group.name} className="space-y-3">
+            <h2 className="text-sm font-bold text-natural-dark font-sans">{group.name}'s shelf <span className="text-natural-stone font-normal">({group.books.length})</span></h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {group.books.map(b => <BookCard key={b.id} book={b} streak={streaks[b.id]} readOnly />)}
+            </div>
+          </section>)}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -162,7 +187,7 @@ export default function Library() {
       )}
 
       {/* ── Up Next (queue) ── */}
-      {[...queued].length > 0 && (
+      {scope === 'mine' && queued.length > 0 && (
         <div className="bg-natural-cream rounded-[32px] border border-natural-border shadow-xs p-6">
           <h3 className="text-sm font-bold text-natural-dark font-sans uppercase tracking-wider mb-4">
             Up Next ({queued.length})
