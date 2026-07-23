@@ -30,7 +30,13 @@ export default function ReadingCalendar() {
 
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarLogRow[]>();
-    logs.forEach((log) => map.set(log.date, [...(map.get(log.date) || []), log]));
+    // Defensive normalization: production databases/drivers can serialize a DATE
+    // as an ISO datetime, while calendar cells are always plain YYYY-MM-DD.
+    // Without this, totals load correctly but no cell can find its sessions.
+    logs.forEach((log) => {
+      const date = String(log.date).slice(0, 10);
+      map.set(date, [...(map.get(date) || []), { ...log, date }]);
+    });
     return map;
   }, [logs]);
   const selectedLogs = selected ? byDay.get(selected) || [] : [];
