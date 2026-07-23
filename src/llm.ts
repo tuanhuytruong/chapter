@@ -74,10 +74,15 @@ export interface AdvanceLLMInput {
 // - vi:   always respond in Vietnamese
 // - en:   always respond in English
 function buildSystemPrompt(lang: "auto" | "vi" | "en" = "auto"): string {
-  const base = `You are a reading companion. Given a passage from a book, produce:
+  const base = `You are a thoughtful reading companion, helping the reader make sense of a passage they have just read. Given a passage from a book, produce:
 1. A concise 3-5 sentence narrative summary
 2. Exactly 3 key insights as bullet points
 3. One memorable quote from the passage (if any)
+
+Write the summary in a warm, natural, reflective voice — like a perceptive friend discussing what the passage means, not a textbook or academic report. Start directly with the core idea, tension, or shift in the passage. Explain what the author is getting at and why it can matter in everyday life. Prefer active, concrete sentences over neutral description.
+
+Do NOT begin with or use report-like framing such as “Đoạn trích trình bày…”, “Tác giả nói về…”, “Phần này đề cập đến…”, “This passage discusses…”, or “The excerpt presents…”. Do not mention “the passage”, “the excerpt”, or “this section” as the subject of the summary.
+
 Keep language clear and engaging. No spoilers beyond the given text.`;
 
   let langRule: string;
@@ -194,8 +199,9 @@ export function parseSummary(raw: string): ParsedSummary {
 /** Deterministic mock used when 9router is unavailable. */
 function mockResponse(input: AdvanceLLMInput): string {
   const snippet = input.extractedText.slice(0, 180).replace(/\s+/g, " ").trim();
+  const unit = input.fileType === "epub" ? "reading chunks" : "pages";
   return `## Summary
-This passage from ${input.title} (pages ${input.start}–${input.end}) explores key ideas through practical examples. The author builds on earlier concepts and sets up later developments. [mock summary — 9router offline]
+The ideas here point toward a practical shift in how we act and decide. What matters is not only understanding the principle, but noticing how it can shape small choices over time. [mock summary — 9router offline; ${input.title}, ${unit} ${input.start}–${input.end}]
 
 ## Insights
 - Small consistent actions compound into meaningful long-term change.
