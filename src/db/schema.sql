@@ -118,6 +118,10 @@ ALTER TABLE chapter.reading_log
   DROP CONSTRAINT IF EXISTS reading_log_book_id_date_key;
 ALTER TABLE chapter.reading_log
   ADD COLUMN IF NOT EXISTS session INT NOT NULL DEFAULT 1;
+-- PostgreSQL has no ADD CONSTRAINT IF NOT EXISTS. Drop this named constraint
+-- before recreating it so startup remains idempotent after a partial deploy.
+ALTER TABLE chapter.reading_log
+  DROP CONSTRAINT IF EXISTS reading_log_book_id_date_session_key;
 ALTER TABLE chapter.reading_log
   ADD CONSTRAINT reading_log_book_id_date_session_key
   UNIQUE (book_id, date, session);
