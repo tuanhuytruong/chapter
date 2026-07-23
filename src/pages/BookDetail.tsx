@@ -269,14 +269,14 @@ export default function BookDetail() {
         <div className="order-2 min-w-0 flex-1 sm:order-none">
           <h1 className="line-clamp-3 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
           <p className="mb-2 text-xs italic text-natural-stone">by {book.author}</p>
-          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="flex items-center gap-1 text-natural-clay font-bold text-sm"><Flame className="w-4 h-4 fill-natural-clay" />{streak}d streak</span>
             {daysToFinish(book) !== null && (
               <span className="text-[11px] text-natural-stone/70">~{daysToFinish(book)} days left</span>
             )}
             <span className="text-[11px] text-natural-stone">{logs.length} days read</span>
+            <MomentumScore book={book} logs={logs} />
           </div>
-          <MomentumScore book={book} logs={logs} />
           <div className="h-2 bg-natural-cream rounded-full overflow-hidden mb-1">
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
