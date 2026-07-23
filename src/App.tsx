@@ -5,7 +5,8 @@ import BookDetail from './pages/BookDetail';
 import Community from './pages/Community';
 import Insights from './pages/Insights';
 import Review from './pages/Review';
-import { BookMarked, Users, BarChart3, Brain, Moon, Sun, LogOut } from 'lucide-react';
+import ReadingCalendar from './pages/Calendar';
+import { BookMarked, Users, BarChart3, Brain, CalendarDays, Moon, Sun, LogOut } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -34,7 +35,7 @@ function Layout() {
     <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-serif">
       <header className="sticky top-0 z-40 flex min-h-16 items-center border-b border-natural-border bg-natural-bg sm:h-20">
         <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <NavLink to="/" className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-natural-sage text-white">
                 <BookMarked className="w-4 h-4" />
@@ -57,6 +58,9 @@ function Layout() {
               </NavLink>
               <NavLink to="/review" aria-label="Review" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <Brain className="w-3.5 h-3.5" /><span className="hidden sm:inline">Review</span>
+              </NavLink>
+              <NavLink to="/calendar" aria-label="Reading calendar" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
+                <CalendarDays className="w-3.5 h-3.5" /><span className="hidden sm:inline">Calendar</span>
               </NavLink>
             </nav>
 
@@ -94,6 +98,7 @@ function AppRoutes() {
           <Route path="/community" element={<Community />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/review" element={<Review />} />
+          <Route path="/calendar" element={<ReadingCalendar />} />
           <Route path="*" element={<Library />} />
         </Route>
       </Routes>

@@ -1,6 +1,7 @@
 // API client for the Chapter reading-companion backend (Phase 1 routes).
 import type { BookRow } from "./types";
 import type { ReviewCardRow } from "./review";
+import type { CalendarLogRow } from "./calendar";
 
 export interface LogRow {
   id: string;
@@ -45,6 +46,8 @@ export const api = {
     req<{ ok: true }>(`${BASE}/${id}`, { method: "DELETE" }),
 
   getLog: (id: string) => req<LogRow[]>(`${BASE}/${id}/log`),
+  getCalendar: (month: string, bookId = "") =>
+    req<CalendarLogRow[]>(`${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}`),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
     req<LogRow & { finished?: boolean }>(`${BASE}/${id}/advance`, { method: "POST" }),

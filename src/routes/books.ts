@@ -84,6 +84,35 @@ booksRouter.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/books/calendar?month=YYYY-MM&bookId=<optional UUID>
+// Personal calendar rows are derived directly from reading_log; the parent book
+// is the ownership boundary so no dependent owner_id is duplicated.
+booksRouter.get("/calendar", async (req: Request, res: Response) => {
+  const month = typeof req.query.month === "string" ? req.query.month : "";
+  const bookId = typeof req.query.bookId === "string" ? req.query.bookId : "";
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    return res.status(400).json({ error: "month must be YYYY-MM" });
+  }
+  try {
+    const { rows } = await query(
+      `SELECT rl.id, rl.book_id, rl.date, rl.session, rl.page_start, rl.page_end,
+              rl.summary, rl.chapter_title, b.title, b.author,
+              (rl.page_end - rl.page_start + 1) AS units_read
+       FROM reading_log rl
+       JOIN books b ON b.id=rl.book_id
+       WHERE b.owner_id=$1
+         AND rl.date >= ($2 || '-01')::date
+         AND rl.date < (($2 || '-01')::date + INTERVAL '1 month')
+         AND ($3 = '' OR rl.book_id::text = $3)
+       ORDER BY rl.date ASC, rl.session ASC`,
+      [userFrom(req).id, month, bookId]
+    );
+    res.json(rows);
+  } catch (e: any) {
+    res.status(503).json({ error: "calendar unavailable", detail: e.message });
+  }
+});
+
 // POST /api/books — register a new book
 booksRouter.post("/", async (req: Request, res: Response) => {
   const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang } = req.body;
