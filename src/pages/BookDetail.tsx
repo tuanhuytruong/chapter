@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow } from '../types';
+import { dailyTargetLabel, progressShortLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
@@ -265,7 +266,7 @@ export default function BookDetail() {
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
           <ChapterMarkers book={book} logs={logs} />
-          <p className="text-[10px] text-natural-stone">{pct}% · {book.current_page}/{book.total_pages} pages</p>
+          <p className="text-[10px] text-natural-stone">{pct}% · {progressShortLabel(book)}</p>
           {recentInsights.length > 0 && (
             <p key={insightIdx} className="text-[11px] text-natural-muted italic mt-1 line-clamp-1 animate-[fadeIn_0.4s_ease]">
               💡 {recentInsights[insightIdx]}
@@ -377,7 +378,7 @@ export default function BookDetail() {
               </div>
             ) : (
               <div className="text-xs text-natural-muted space-y-1">
-                <p>Pages/day: <b className="text-natural-dark">{book.daily_pages}</b></p>
+                <p>{dailyTargetLabel(book.file_type)}: <b className="text-natural-dark">{book.daily_pages}</b></p>
                 <p>Status: <b className="text-natural-dark capitalize">{book.status}</b></p>
                 <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
               </div>
@@ -439,7 +440,7 @@ export default function BookDetail() {
         ) : (
           <>
             {logView === 'journey' ? (
-              <JourneyView logs={filteredLogs} expanded={journeyExpanded} setExpanded={setJourneyExpanded} />
+              <JourneyView logs={filteredLogs} fileType={book.file_type} expanded={journeyExpanded} setExpanded={setJourneyExpanded} />
             ) : (
               <div className="space-y-3">
                 {logsByDate.map(([date, dayLogs]) => (
@@ -453,7 +454,7 @@ export default function BookDetail() {
                             <div className="flex-1 h-px bg-natural-border" />
                           </div>
                         )}
-                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} />
+                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} />
                       </div>
                     ))}
                   </div>

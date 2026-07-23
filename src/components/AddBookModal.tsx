@@ -140,11 +140,12 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               </select>
             </div>
             <div className="w-28">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Pages/day</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">{fileType === 'epub' ? 'Chunks/day' : 'Pages/day'}</label>
               <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))}
                 className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" />
             </div>
           </div>
+          {fileType === 'epub' && <p className="-mt-2 text-[10px] text-natural-stone">EPUB is split into stable reading chunks, not fixed printed pages.</p>}
           <div className="flex items-center gap-2 py-1">
             <input id="addToQueue" type="checkbox" checked={addToQueue} onChange={e => setAddToQueue(e.target.checked)}
               className="accent-natural-sage cursor-pointer" />

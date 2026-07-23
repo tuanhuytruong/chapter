@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, Target, TrendingDown } from 'lucide-react';
 import type { BookRow, LogRow } from '../types';
+import { readingUnit } from '../readingUnits';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -35,6 +36,8 @@ export default function ReadingForecast({
   book: BookRow;
   logs: LogRow[];
 }) {
+  const unit = readingUnit(book.file_type);
+  const unitSingular = readingUnit(book.file_type, 1);
   const remaining = Math.max(0, book.total_pages - book.current_page);
   if (remaining <= 0 || book.status === 'finished') return null;
 
@@ -86,7 +89,7 @@ export default function ReadingForecast({
       </h4>
 
       <div className="text-xs text-natural-muted font-sans space-y-1">
-        <span className="text-natural-dark font-medium">{remaining}</span> pages remaining
+        <span className="text-natural-dark font-medium">{remaining}</span> {unit} remaining
       </div>
 
       {/* Target pace row */}
@@ -98,7 +101,7 @@ export default function ReadingForecast({
             <span className="text-natural-dark">{formatLabel(targetFinish)}</span>
           </p>
           <p className="text-[10px] text-natural-stone">
-            {book.daily_pages} pages/day → ~{targetNeeded} day{targetNeeded > 1 ? 's' : ''}
+            {book.daily_pages} {unit}/day → ~{targetNeeded} day{targetNeeded > 1 ? 's' : ''}
           </p>
         </div>
       </div>
@@ -119,13 +122,13 @@ export default function ReadingForecast({
                 </span>
               </p>
               <p className="text-[10px] text-natural-stone">
-                {avgPerDay} pages/day avg across {readingDays} reading day{readingDays > 1 ? 's' : ''} (last 7d) → ~{actualNeeded} day{actualNeeded! > 1 ? 's' : ''}
+                {avgPerDay} {unit}/day avg across {readingDays} reading day{readingDays > 1 ? 's' : ''} (last 7d) → ~{actualNeeded} day{actualNeeded! > 1 ? 's' : ''}
               </p>
               {behind && (
                 <p className="text-[10px] text-natural-clay mt-1 flex items-start gap-1">
                   <span>↓</span>
                   <span>
-                    Reading <b>{extraNeeded}</b> more page{extraNeeded > 1 ? 's' : ''}/
+                    Reading <b>{extraNeeded}</b> more {extraNeeded === 1 ? unitSingular : unit}/
                     day would catch up to target
                   </span>
                 </p>

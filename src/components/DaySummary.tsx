@@ -24,6 +24,7 @@ interface DaySummaryProps {
   bookId?: string;
   canEdit?: boolean;
   highlight?: string;
+  fileType?: 'pdf' | 'epub';
 }
 
 /** Highlight search matches in text */
@@ -44,7 +45,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf' }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
@@ -85,7 +86,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
               📑 {log.chapter_title}
             </span>
           ) : (
-            <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
+            <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">{fileType === 'epub' ? 'Chunks' : 'Pages'} {log.page_start}–{log.page_end}</span>
           )}
         </div>
         <div className="flex items-center gap-1">

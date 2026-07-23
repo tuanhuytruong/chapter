@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Flame, BookOpen } from 'lucide-react';
 import type { BookRow } from '../types';
 import { progressPct, daysToFinish } from '../api';
+import { progressShortLabel } from '../readingUnits';
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Active',
@@ -47,7 +48,7 @@ const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean }>
           <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
         </div>
         <div className="flex justify-between text-[10px] text-natural-stone font-sans mb-1">
-          <span>{pct}% · {book.current_page}/{book.total_pages} pg</span>
+          <span>{pct}% · {progressShortLabel(book)}</span>
           {streak ? <span className="flex items-center gap-0.5 text-natural-clay font-bold"><Flame className="w-3 h-3 fill-natural-clay" />{streak}d</span> : null}
         </div>
         {daysToFinish(book) !== null && (

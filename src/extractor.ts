@@ -25,8 +25,67 @@ const pdfParse = req(pdfParseLibPath);
 
 export interface ExtractResult {
   text: string;
-  /** Total units available (pages for PDF, chapters for EPUB). */
+  /** Total units available (pages for PDF, reading chunks for EPUB). */
   totalUnits: number;
+}
+
+export interface EpubReadingUnit {
+  unitIndex: number;
+  title: string | null;
+  rawText: string;
+}
+
+// ~4,500 Vietnamese characters is typically 700–900 words: a practical
+// 2–3 printed-page reading session without making AI summaries too long.
+const EPUB_TARGET_CHARS = 4_500;
+const EPUB_MIN_CHARS = 1_800;
+
+function htmlToParagraphs(html: string): string[] {
+  return html
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|section|article)>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .split(/\n{2,}/)
+    .map((part) => part.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+/**
+ * EPUB has reflowable text rather than fixed printed pages. Build stable,
+ * paragraph-aware reading chunks so each daily summary has comparable context.
+ */
+export async function buildEpubReadingUnits(filePath: string): Promise<EpubReadingUnit[]> {
+  const epub = await loadEpub(filePath);
+  const units: EpubReadingUnit[] = [];
+  let pending: string[] = [];
+  let pendingTitle: string | null = null;
+
+  const flush = () => {
+    const rawText = pending.join("\n\n").trim();
+    if (rawText) units.push({ unitIndex: units.length + 1, title: pendingTitle, rawText });
+    pending = [];
+    pendingTitle = null;
+  };
+
+  for (const item of epub.flow as any[]) {
+    let html = "";
+    try { html = await epub.getChapter(item.id) || ""; } catch { continue; }
+    const paragraphs = htmlToParagraphs(html);
+    if (!paragraphs.length) continue;
+    const title = item.title || null;
+
+    for (const paragraph of paragraphs) {
+      const currentLength = pending.reduce((n, p) => n + p.length, 0);
+      if (pending.length && currentLength >= EPUB_MIN_CHARS && currentLength + paragraph.length > EPUB_TARGET_CHARS) flush();
+      if (!pendingTitle) pendingTitle = title;
+      pending.push(paragraph);
+    }
+  }
+  flush();
+  return units;
 }
 
 /** Load an EPUB using the current promise-based `epub` package API. */

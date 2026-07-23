@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { query, withClient } from "../db.js";
-import { extractRange, getChapterTitle } from "../extractor.js";
+import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
 import { callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
@@ -40,6 +40,28 @@ function resolveBookPath(input: string): string {
   if (p.startsWith("/")) return p;
   const dir = config.booksDir.replace(/\/+$/, "");
   return `${dir}/${p}`;
+}
+
+/** Build an EPUB map only once. Chunk indices are persisted and become the
+ * stable progress cursor for all later sessions. */
+async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
+  const existing = await client.query(
+    "SELECT count(*)::int AS count FROM book_reading_units WHERE book_id=$1",
+    [book.id]
+  );
+  if (existing.rows[0].count > 0) return existing.rows[0].count;
+
+  const units = await buildEpubReadingUnits(book.file_path);
+  if (!units.length) throw new Error("EPUB has no readable text");
+  for (const unit of units) {
+    await client.query(
+      `INSERT INTO book_reading_units (book_id, unit_index, title, raw_text, char_count)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [book.id, unit.unitIndex, unit.title, unit.rawText, unit.rawText.length]
+    );
+  }
+  await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [units.length, book.id]);
+  return units.length;
 }
 
 // ── B7: CRUD ──────────────────────────────────────────────
@@ -233,20 +255,31 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       ? lastSession.rows[0].page_end + 1   // continue from last session's end
       : book.current_page + 1;             // first session: use book cursor
 
-    const end = Math.min(
-      start + book.daily_pages - 1,
-      book.total_pages || start + book.daily_pages
-    );
-    if (start > (book.total_pages || Infinity)) {
-      return { bookId, skipped: true, reason: "book finished" };
+    let end: number;
+    let text: string;
+    let chapterTitle: string | null;
+    let totalPages: number;
+
+    if (book.file_type === "epub") {
+      totalPages = await ensureEpubReadingUnits(client, book);
+      if (start > totalPages) return { bookId, skipped: true, reason: "book finished" };
+      end = Math.min(start + Math.max(1, book.daily_pages) - 1, totalPages);
+      const { rows: units } = await client.query(
+        `SELECT unit_index, title, raw_text FROM book_reading_units
+         WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`,
+        [bookId, start, end]
+      );
+      if (!units.length) throw new Error("EPUB reading chunk not found");
+      text = units.map((unit: any) => unit.raw_text).join("\n\n");
+      chapterTitle = units.find((unit: any) => unit.title)?.title || null;
+    } else {
+      end = Math.min(start + book.daily_pages - 1, book.total_pages || start + book.daily_pages);
+      if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
+      const extracted = await extractRange(book.file_path, book.file_type, start, end);
+      text = extracted.text;
+      totalPages = book.total_pages || extracted.totalUnits;
+      chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
     }
-
-    const { text, totalUnits } = await extractRange(book.file_path, book.file_type, start, end);
-    const chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
-
-    // If total_pages wasn't set when the book was added, derive it from the
-    // actual file (PDF page count / EPUB chapter count) on first advance.
-    const totalPages = book.total_pages || totalUnits;
 
     const raw = await callNineRouter({
       title: book.title,
@@ -255,6 +288,7 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       end,
       total: totalPages,
       extractedText: text,
+      fileType: book.file_type,
       lang: (book.summary_lang as "auto" | "vi" | "en") || "auto",
     });
     const parsed = parseSummary(raw);
@@ -280,7 +314,7 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       session: sessionNum,
       pageStart: start,
       pageEnd: end,
-      totalUnits,
+      totalUnits: totalPages,
       finished,
       log: ins.rows[0],
     };

@@ -62,6 +62,23 @@ ALTER TABLE chapter.books ADD CONSTRAINT books_status_check
 CREATE INDEX IF NOT EXISTS idx_books_queue ON chapter.books (queue_order ASC NULLS LAST);
 
 -- ───────────────────────────────────────────────────────────
+-- chapter.book_reading_units (stable EPUB reading chunks)
+-- ───────────────────────────────────────────────────────────
+-- EPUB text reflows by screen and font, so it has no reliable page count.
+-- Persist paragraph-aware chunks once per book to keep progress stable.
+CREATE TABLE IF NOT EXISTS chapter.book_reading_units (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id     UUID NOT NULL REFERENCES chapter.books (id) ON DELETE CASCADE,
+  unit_index  INT NOT NULL,
+  title       TEXT,
+  raw_text    TEXT NOT NULL,
+  char_count  INT NOT NULL,
+  UNIQUE (book_id, unit_index)
+);
+CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_unit
+  ON chapter.book_reading_units (book_id, unit_index);
+
+-- ───────────────────────────────────────────────────────────
 -- chapter.reading_log
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chapter.reading_log (

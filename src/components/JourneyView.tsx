@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, Quote, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
-import type { LogRow } from '../types';
+import type { BookRow, LogRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -32,10 +32,12 @@ function groupByDate(logs: LogRow[]): Map<string, LogRow[]> {
 
 export default function JourneyView({
   logs,
+  fileType,
   expanded,
   setExpanded,
 }: {
   logs: LogRow[];
+  fileType: BookRow['file_type'];
   expanded: string | null;
   setExpanded: (id: string | null) => void;
 }) {
@@ -60,7 +62,7 @@ export default function JourneyView({
       <div className="flex items-center gap-6 px-4 py-3 mb-6 bg-natural-cream border border-natural-border rounded-2xl text-xs text-natural-stone font-sans">
         <span><b className="text-natural-dark font-bold">{entries.length}</b> reading days</span>
         <span><b className="text-natural-dark font-bold">{logs.length}</b> sessions</span>
-        <span><b className="text-natural-dark font-bold">{totalPages}</b> pages</span>
+        <span><b className="text-natural-dark font-bold">{totalPages}</b> {fileType === 'epub' ? 'chunks' : 'pages'}</span>
       </div>
 
       {/* Timeline */}
@@ -100,7 +102,7 @@ export default function JourneyView({
                       </span>
                     )}
                     <span className="text-[10px] text-natural-stone font-sans">
-                      {dayPages} pages · {dayLogs.length} {dayLogs.length === 1 ? 'session' : 'sessions'}
+                      {dayPages} {fileType === 'epub' ? 'chunks' : 'pages'} · {dayLogs.length} {dayLogs.length === 1 ? 'session' : 'sessions'}
                     </span>
                   </div>
                 </div>
@@ -123,7 +125,7 @@ export default function JourneyView({
                               <span className="text-[9px] font-bold uppercase tracking-widest text-natural-stone/50 font-sans mb-1.5 block">
                                 {dayLogs.length > 1
                                   ? `Session ${si + 1} · `
-                                  : ''}pp. {log.page_start}–{log.page_end}
+                                  : ''}{fileType === 'epub' ? 'chunks' : 'pp.'} {log.page_start}–{log.page_end}
                               </span>
                               <p className="text-sm text-natural-dark font-sans leading-relaxed">
                                 {log.summary || 'Session summary…'}

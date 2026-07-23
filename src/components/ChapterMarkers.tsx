@@ -1,5 +1,6 @@
 import React from 'react';
-import type { LogRow, BookRow } from '../types';
+import type { BookRow, LogRow } from '../types';
+import { readingUnit } from '../readingUnits';
 
 export default function ChapterMarkers({
   book,
@@ -9,6 +10,7 @@ export default function ChapterMarkers({
   logs: LogRow[];
 }) {
   const { total_pages, current_page } = book;
+  const unit = readingUnit(book.file_type, 1);
   if (total_pages <= 0) return null;
 
   // Merge overlapping/sorted ranges
@@ -71,9 +73,9 @@ export default function ChapterMarkers({
 
       {/* Labels */}
       <div className="flex justify-between text-[9px] text-natural-stone font-sans">
-        <span>pg 1</span>
-        <span className="text-natural-clay font-semibold">{readPct}% · pg {current_page}</span>
-        <span>pg {total_pages}</span>
+        <span>{unit} 1</span>
+        <span className="text-natural-clay font-semibold">{readPct}% · {unit} {current_page}</span>
+        <span>{unit} {total_pages}</span>
       </div>
 
       {/* Legend */}

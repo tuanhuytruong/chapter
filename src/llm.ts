@@ -65,6 +65,7 @@ export interface AdvanceLLMInput {
   end: number;
   total: number;
   extractedText: string;
+  fileType?: "pdf" | "epub";
   lang?: "auto" | "vi" | "en";
 }
 
@@ -107,8 +108,9 @@ Format your response EXACTLY as:
 }
 
 function buildUserPrompt(input: AdvanceLLMInput): string {
+  const unit = input.fileType === "epub" ? "Reading chunks" : "Pages";
   return `Book: ${input.title} by ${input.author}
-Pages ${input.start}–${input.end} of ${input.total}:
+${unit} ${input.start}–${input.end} of ${input.total}:
 
 ${input.extractedText}`;
 }
