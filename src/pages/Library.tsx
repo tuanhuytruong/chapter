@@ -128,23 +128,19 @@ export default function Library() {
         </div>
       </div>
 
-      <div className="overflow-x-auto border-b border-natural-border">
-        <div className="flex w-max min-w-full gap-2">
-          {([['mine', 'My Shelf'], ['all', 'All Readers']] as const).map(([id, label]) => <button key={id} onClick={() => setScope(id)} className={`shrink-0 px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px ${scope === id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone'}`}>{label}</button>)}
-        </div>
+      <div className="flex flex-wrap gap-2 border-b border-natural-border">
+        {([['mine', 'My Shelf'], ['all', 'All Readers']] as const).map(([id, label]) => <button key={id} onClick={() => setScope(id)} className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px ${scope === id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone'}`}>{label}</button>)}
       </div>
       {scope === 'all' && <p className="text-xs text-natural-stone font-sans">Browsing shared shelves — books are read-only.</p>}
       <div className="space-y-3">
-        <div className="overflow-x-auto border-b border-natural-border">
-          <div className="flex w-max min-w-full gap-2">
-            {FILTERS.map(f => (
-              <button key={f.id} onClick={() => setFilter(f.id)}
-                className={`shrink-0 px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
-                  filter === f.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
-                {f.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2 border-b border-natural-border">
+          {FILTERS.map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)}
+              className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
+                filter === f.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
+              {f.label}
+            </button>
+          ))}
         </div>
         <div className="grid grid-cols-1 gap-2 sm:flex sm:justify-end">
           <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
