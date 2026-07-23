@@ -4,7 +4,8 @@ import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
 import Community from './pages/Community';
 import Insights from './pages/Insights';
-import { BookMarked, Users, BarChart3, Moon, Sun, LogOut } from 'lucide-react';
+import Review from './pages/Review';
+import { BookMarked, Users, BarChart3, Brain, Moon, Sun, LogOut } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -54,6 +55,9 @@ function Layout() {
               <NavLink to="/insights" aria-label="Insights" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <BarChart3 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Insights</span>
               </NavLink>
+              <NavLink to="/review" aria-label="Review" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
+                <Brain className="w-3.5 h-3.5" /><span className="hidden sm:inline">Review</span>
+              </NavLink>
             </nav>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -89,6 +93,7 @@ function AppRoutes() {
           <Route path="/books/:id" element={<BookDetail />} />
           <Route path="/community" element={<Community />} />
           <Route path="/insights" element={<Insights />} />
+          <Route path="/review" element={<Review />} />
           <Route path="*" element={<Library />} />
         </Route>
       </Routes>

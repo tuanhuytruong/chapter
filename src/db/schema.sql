@@ -126,6 +126,26 @@ CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
 
 -- ───────────────────────────────────────────────────────────
+-- chapter.review_cards (owner derived through the parent book)
+-- ───────────────────────────────────────────────────────────
+-- Cards are seeded only at new reading-log creation. The source-log/index key
+-- prevents retries or duplicate writes from creating duplicate review cards.
+CREATE TABLE IF NOT EXISTS chapter.review_cards (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id          UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  log_id           UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  insight_index    INT NOT NULL CHECK (insight_index >= 0),
+  insight          TEXT NOT NULL,
+  interval_days    INT NOT NULL DEFAULT 1 CHECK (interval_days IN (1, 3, 7, 14, 30)),
+  repetitions      INT NOT NULL DEFAULT 0 CHECK (repetitions >= 0),
+  due_date         DATE NOT NULL,
+  last_reviewed_at TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (log_id, insight_index)
+);
+CREATE INDEX IF NOT EXISTS idx_review_cards_due ON chapter.review_cards (due_date, book_id);
+
+-- ───────────────────────────────────────────────────────────
 -- chapter.community_posts (persistent book club)
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chapter.community_posts (

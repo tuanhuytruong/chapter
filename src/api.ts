@@ -1,5 +1,6 @@
 // API client for the Chapter reading-companion backend (Phase 1 routes).
 import type { BookRow } from "./types";
+import type { ReviewCardRow } from "./review";
 
 export interface LogRow {
   id: string;
@@ -57,6 +58,9 @@ export const api = {
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
   generateReflection: (bookId: string) =>
     req<Pick<BookRow, 'reflection_text' | 'reflection_at'>>(`${BASE}/${bookId}/reflection`, { method: "POST" }),
+  getDueReviews: () => req<ReviewCardRow[]>("/api/reviews/due"),
+  submitReview: (id: string, remembered: boolean) =>
+    req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),
   getAllQuotes: () => req<QuoteCard[]>("/api/quotes"),
   getStats: () => req<{
     velocity: { date: string; pages_read: number }[];

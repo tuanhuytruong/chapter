@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 import { CommunityPost, Comment } from "./src/types.js";
 import { booksRouter } from "./src/routes/books.js";
+import { reviewsRouter } from "./src/routes/reviews.js";
 import { uploadRouter } from "./src/routes/upload.js";
 import { ensureSchema, query } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
@@ -72,6 +73,7 @@ app.put("/api/auth/telegram", async (req: Request, res: Response) => {
   } catch (e: any) { res.status(500).json({ error: "Failed to update Telegram", detail: e.message }); }
 });
 app.use("/api/books", booksRouter);
+app.use("/api/reviews", reviewsRouter);
 app.use("/api/upload", uploadRouter);
 
 // ── Quote Wall ────────────────────────────────────────────

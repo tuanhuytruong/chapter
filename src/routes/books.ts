@@ -1,10 +1,11 @@
 import { Router, Request, Response } from "express";
-import { query, withClient } from "../db.js";
+import { query, withTransaction } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
 import { callLLM, callNineRouter, parseSummary } from "../llm.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
 import { requireAuth, requireOwner, userFrom } from "../auth.js";
+import { reviewOutcome } from "../review.js";
 import fs from "fs";
 import path from "path";
 
@@ -273,7 +274,7 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
 
 /** Core: extract next chunk, call LLM, persist. Supports multi-session. */
 async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
-  return withClient(async (client) => {
+  return withTransaction(async (client) => {
     const bRes = await client.query("SELECT * FROM books WHERE id = $1", [bookId]);
     const book = bRes.rows[0];
     if (!book) return null;
@@ -345,6 +346,19 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [bookId, dateStr, sessionNum, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
     );
+
+    // Seed only the insights produced by this new session. The source log/index
+    // unique constraint makes this idempotent and deliberately avoids backfill.
+    const firstDue = reviewOutcome(1, false, dateStr).dueDate;
+    for (const [insightIndex, insight] of parsed.key_insights.entries()) {
+      const trimmed = insight.trim();
+      if (!trimmed) continue;
+      await client.query(
+        `INSERT INTO review_cards (book_id, log_id, insight_index, insight, due_date)
+         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id, insight_index) DO NOTHING`,
+        [bookId, ins.rows[0].id, insightIndex, trimmed, firstDue]
+      );
+    }
 
     return {
       bookId,
