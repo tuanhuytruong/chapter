@@ -62,7 +62,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   }, [logs]);
 
   // Compute grid weeks anchored to first reading day
-  const { weeks, streakLen, totalReadDays } = useMemo(() => {
+  const { weeks, streakLen, totalReadDays, firstLogStr } = useMemo(() => {
     const logSet = new Set<string>(byDay.keys());
     const totalReadDays = logSet.size;
 
@@ -103,7 +103,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
 
     const streakLen = computeStreakLen(logSet, todayStr);
 
-    return { weeks: w, streakLen, totalReadDays };
+    return { weeks: w, streakLen, totalReadDays, firstLogStr };
   }, [logs, byDay, todayStr]);
 
   const level = (dateStr: string): number => {
@@ -146,15 +146,19 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
           <div key={wi} className="flex flex-col gap-1">
             {week.map((dayStr, di) => {
               const future = dayStr > todayStr;
-              const lv = future ? 0 : level(dayStr);
-              const streak = !future && isStreakDay(dayStr);
+              // The week grid is Sunday-aligned. Do not imply missed reading
+              // before this book had its first actual reading session.
+              const beforeFirstReading = dayStr < firstLogStr;
+              const hidden = future || beforeFirstReading;
+              const lv = hidden ? 0 : level(dayStr);
+              const streak = !hidden && isStreakDay(dayStr);
               return (
                 <div
                   key={di}
                   title={dayStr}
                   className={[
                     'w-3 h-3 rounded-sm',
-                    future ? 'bg-transparent' : COLORS[lv],
+                    hidden ? 'bg-transparent' : COLORS[lv],
                     streak && lv === 0 ? 'ring-1 ring-natural-clay bg-natural-clay/20' : '',
                     streak && lv > 0  ? 'ring-1 ring-natural-clay' : '',
                   ].join(' ')}
