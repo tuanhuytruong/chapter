@@ -15,6 +15,20 @@
 CREATE SCHEMA IF NOT EXISTS chapter;
 
 -- ───────────────────────────────────────────────────────────
+-- chapter.session (express-session via connect-pg-simple)
+-- ───────────────────────────────────────────────────────────
+-- Create this here rather than relying on connect-pg-simple's lazy auto-create:
+-- session middleware can receive a request before that asynchronous bootstrap
+-- completes, which otherwise surfaces as Express's default HTML 500 page.
+CREATE TABLE IF NOT EXISTS chapter.session (
+  sid     varchar NOT NULL COLLATE "default",
+  sess    json NOT NULL,
+  expire  timestamp(6) NOT NULL,
+  CONSTRAINT session_pkey PRIMARY KEY (sid)
+);
+CREATE INDEX IF NOT EXISTS idx_session_expire ON chapter.session (expire);
+
+-- ───────────────────────────────────────────────────────────
 -- chapter.books
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chapter.books (
