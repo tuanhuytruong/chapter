@@ -74,7 +74,7 @@ function Layout() {
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-natural-border bg-natural-cream hover:opacity-70 sm:h-7 sm:w-7">
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream hover:opacity-70 sm:h-7 sm:w-7">
                 {isDark ? <Sun className="w-3.5 h-3.5 text-natural-clay" /> : <Moon className="w-3.5 h-3.5 text-natural-stone" />}
               </button>
               <button onClick={() => logout()} className="flex min-h-10 items-center gap-1.5 hover:opacity-70" title="Sign out" aria-label="Sign out">
