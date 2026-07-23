@@ -122,3 +122,17 @@ export async function ensureSchema(): Promise<void> {
   }
   console.log("[db] schema ensured");
 }
+
+/** Core feature tables that must exist before the app serves authenticated APIs.
+ * A missing relation means the deployment is only partially migrated and must fail
+ * fast rather than turning Today, Review, or Momentum into a misleading 503. */
+export async function verifyCoreSchema(): Promise<void> {
+  const required = ["books", "reading_log", "review_cards", "weekly_reading_goals"];
+  const { rows } = await query<{ relation: string | null }>(
+    "SELECT to_regclass('chapter.' || unnest($1::text[])) AS relation",
+    [required]
+  );
+  const missing = required.filter((_, index) => !rows[index]?.relation);
+  if (missing.length) throw new Error(`required schema relations missing: ${missing.map((name) => `chapter.${name}`).join(", ")}`);
+  console.log("[db] core schema verified");
+}

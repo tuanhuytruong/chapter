@@ -10,7 +10,7 @@ import { CommunityPost, Comment } from "./src/types.js";
 import { booksRouter } from "./src/routes/books.js";
 import { reviewsRouter } from "./src/routes/reviews.js";
 import { uploadRouter } from "./src/routes/upload.js";
-import { ensureSchema, query } from "./src/db.js";
+import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
 import { getPool } from "./src/db.js";
@@ -512,8 +512,11 @@ async function startServer() {
   if (process.env.DATABASE_URL) {
     try {
       await ensureSchema();
+      await verifyCoreSchema();
     } catch (e: any) {
-      console.error("[db] schema ensure failed:", e.message);
+      console.error("[db] schema bootstrap failed; refusing to start:", e.message);
+      process.exitCode = 1;
+      return;
     }
   } else {
     console.warn("[db] DATABASE_URL not set — /api/books routes will be unavailable");

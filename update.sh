@@ -42,6 +42,18 @@ pm2 save
 echo "==> Done. Status:"
 pm2 status "$APP_NAME"
 echo ""
+echo "Schema check:"
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "DATABASE_URL is not configured; cannot verify core schema" >&2
+  exit 1
+fi
+MISSING_RELATIONS="$(psql "$DATABASE_URL" -Atqc "SELECT string_agg(name, ', ') FROM unnest(ARRAY['review_cards','weekly_reading_goals']) AS name WHERE to_regclass('chapter.' || name) IS NULL")"
+if [ -n "$MISSING_RELATIONS" ]; then
+  echo "Missing core relation(s): $MISSING_RELATIONS" >&2
+  exit 1
+fi
+echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals"
+echo ""
 echo "Health check:"
 HEALTH_URL="http://localhost:${PORT}/health"
 HEALTH_STATUS="$(curl -sS -m 5 -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)"

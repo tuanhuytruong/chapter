@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Loader2, BookOpen, Zap, Search, ArrowUpDown, ChevronDown, ChevronUp, ListOrdered, Play } from 'lucide-react';
+import { Plus, Loader2, BookOpen, Zap, Search, ChevronDown, ChevronUp, ListOrdered, Play } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';
 import AddBookModal from '../components/AddBookModal';
 import Toast from '../components/Toast';
 import QuoteWall from '../components/QuoteWall';
+import SortMenu from '../components/SortMenu';
 
 type Filter = 'all' | 'active' | 'paused' | 'finished';
 const FILTERS: { id: Filter; label: string }[] = [
@@ -159,13 +160,7 @@ export default function Library() {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title/author"
               className="min-w-0 flex-1 bg-transparent text-xs font-sans outline-none sm:w-32 sm:flex-none" />
           </div>
-          <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
-            <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-natural-stone" />
-            <select value={sort} onChange={e => setSort(e.target.value as Sort)}
-              className="min-w-0 flex-1 cursor-pointer bg-transparent text-xs font-sans outline-none sm:flex-none">
-              {SORTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
+          <SortMenu value={sort} onChange={setSort} />
         </div>
       </div>
 
