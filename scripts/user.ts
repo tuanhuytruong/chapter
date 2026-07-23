@@ -1,5 +1,9 @@
+import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { withClient } from "../src/db.js";
+
+// tsx does not automatically load .env.local, unlike the app server.
+dotenv.config({ path: ".env.local" });
 
 const [command, username, ...args] = process.argv.slice(2);
 if (!command || !username) throw new Error("Usage: create-user <username> <display-name> <password> | delete-user <username> | reset-password <username> <new-password>");

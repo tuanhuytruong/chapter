@@ -22,6 +22,8 @@ const app = express();
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
 app.use(express.json());
+// Public liveness probe: intentionally does not require a session or database query.
+app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
 const PgStore = pgSession(session);
 app.use(session({
   store: process.env.DATABASE_URL ? new PgStore({ pool: getPool(), schemaName: "chapter", tableName: "session" }) : undefined,

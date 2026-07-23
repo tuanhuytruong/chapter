@@ -40,4 +40,11 @@ echo "==> Done. Status:"
 pm2 status "$APP_NAME"
 echo ""
 echo "Health check:"
-curl -s -m 5 "http://localhost:${PORT}/api/books" -o /dev/null -w "GET /api/books -> HTTP %{http_code}\n" || echo "server not responding yet"
+HEALTH_URL="http://localhost:${PORT}/health"
+HEALTH_STATUS="$(curl -sS -m 5 -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)"
+if [ "$HEALTH_STATUS" = "200" ]; then
+  echo "GET /health -> HTTP 200"
+else
+  echo "GET /health -> HTTP ${HEALTH_STATUS:-000} (server not healthy)" >&2
+  exit 1
+fi
