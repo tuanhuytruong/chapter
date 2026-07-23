@@ -8,7 +8,8 @@ import Review from './pages/Review';
 import ReadingCalendar from './pages/Calendar';
 import Momentum from './pages/Momentum';
 import Today from './pages/Today';
-import { BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
+import Achievements from './pages/Achievements';
+import { Award, BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -70,6 +71,9 @@ function Layout() {
               <NavLink to="/momentum" aria-label="Weekly momentum" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <CircleGauge className="w-3.5 h-3.5" /><span className="hidden sm:inline">Momentum</span>
               </NavLink>
+              <NavLink to="/achievements" aria-label="Achievements" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
+                <Award className="w-3.5 h-3.5" /><span className="hidden sm:inline">Milestones</span>
+              </NavLink>
             </nav>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -109,6 +113,7 @@ function AppRoutes() {
           <Route path="/review" element={<Review />} />
           <Route path="/calendar" element={<ReadingCalendar />} />
           <Route path="/momentum" element={<Momentum />} />
+          <Route path="/achievements" element={<Achievements />} />
           <Route path="*" element={<Library />} />
         </Route>
       </Routes>

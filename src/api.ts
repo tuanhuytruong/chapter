@@ -3,6 +3,7 @@ import type { BookRow } from "./types";
 import type { ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
 import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
+import type { AchievementsResponse } from "./achievements";
 
 export interface TodayDashboard {
   today: string;
@@ -78,6 +79,7 @@ export const api = {
     req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
+  getAchievements: () => req<AchievementsResponse>("/api/achievements"),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>
     req<WeeklyGoalRow>("/api/goals/weekly", { method: "PUT", body: JSON.stringify({ metric, target }) }),
   getAllQuotes: () => req<QuoteCard[]>("/api/quotes"),

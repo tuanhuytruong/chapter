@@ -15,6 +15,7 @@ import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
 import { getPool } from "./src/db.js";
 import { dateInAppTz, progressFor, type WeeklyGoalMetric, type WeeklyGoalRow } from "./src/weekly-goal.js";
+import { achievementResponse } from "./src/achievements.js";
 
 // Ensure the port is 3000
 const PORT = 3000;
@@ -76,6 +77,36 @@ app.put("/api/auth/telegram", async (req: Request, res: Response) => {
 app.use("/api/books", booksRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/upload", uploadRouter);
+
+// ── Personal achievements (derived; no duplicate achievement state) ─
+app.get("/api/achievements", async (req: Request, res: Response) => {
+  try {
+    const ownerId = userFrom(req).id;
+    const [books, logs, insights, reflections, reviews] = await Promise.all([
+      query<{ books_added: string; books_finished: string }>(
+        "SELECT COUNT(*) AS books_added, COUNT(*) FILTER (WHERE status='finished') AS books_finished FROM books WHERE owner_id=$1", [ownerId]),
+      query<{ date: string; units_read: string }>(
+        `SELECT rl.date::text AS date, COALESCE(SUM(rl.page_end - rl.page_start + 1), 0) AS units_read
+         FROM reading_log rl JOIN books b ON b.id=rl.book_id WHERE b.owner_id=$1 GROUP BY rl.date`, [ownerId]),
+      query<{ insights_saved: string }>(
+        `SELECT COALESCE(SUM(cardinality(rl.key_insights)), 0) AS insights_saved
+         FROM reading_log rl JOIN books b ON b.id=rl.book_id WHERE b.owner_id=$1`, [ownerId]),
+      query<{ reflections_created: string }>("SELECT COUNT(*) AS reflections_created FROM books WHERE owner_id=$1 AND reflection_text IS NOT NULL AND btrim(reflection_text) <> ''", [ownerId]),
+      query<{ reviews_completed: string }>(
+        `SELECT COUNT(*) AS reviews_completed FROM review_cards rc JOIN books b ON b.id=rc.book_id
+         WHERE b.owner_id=$1 AND rc.last_reviewed_at IS NOT NULL`, [ownerId]),
+    ]);
+    const bookFacts = books.rows[0] || { books_added: "0", books_finished: "0" };
+    res.json(achievementResponse({
+      books_added: Number(bookFacts.books_added), books_finished: Number(bookFacts.books_finished),
+      units_read: logs.rows.reduce((total, row) => total + Number(row.units_read || 0), 0),
+      reading_days: logs.rows.map((row) => row.date),
+      insights_saved: Number(insights.rows[0]?.insights_saved || 0),
+      reflections_created: Number(reflections.rows[0]?.reflections_created || 0),
+      reviews_completed: Number(reviews.rows[0]?.reviews_completed || 0),
+    }));
+  } catch (e: any) { res.status(503).json({ error: "achievements unavailable", detail: e.message }); }
+});
 
 // ── Quote Wall ────────────────────────────────────────────
 app.get("/api/quotes", async (_req: Request, res: Response) => {
