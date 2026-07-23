@@ -247,14 +247,14 @@ export default function BookDetail() {
       </div>
 
       {/* Header */}
-      <div className="flex gap-5 bg-natural-cream border border-natural-border rounded-[28px] p-5 shadow-sm">
-        <div className="w-24 h-32 shrink-0 rounded-xl overflow-hidden bg-natural-cream border border-natural-border flex items-center justify-center">
+      <div className="flex flex-wrap gap-4 rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:flex-nowrap sm:gap-5 sm:p-5">
+        <div className="flex h-[108px] w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-natural-border bg-natural-cream sm:h-32 sm:w-24">
           {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-xl text-natural-dark leading-tight">{book.title}</h1>
-          <p className="text-xs text-natural-stone italic mb-2">by {book.author}</p>
-          <div className="flex items-center gap-3 mb-3">
+        <div className="order-2 min-w-0 flex-1 sm:order-none">
+          <h1 className="line-clamp-3 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
+          <p className="mb-2 text-xs italic text-natural-stone">by {book.author}</p>
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="flex items-center gap-1 text-natural-clay font-bold text-sm"><Flame className="w-4 h-4 fill-natural-clay" />{streak}d streak</span>
             {daysToFinish(book) !== null && (
               <span className="text-[11px] text-natural-stone/70">~{daysToFinish(book)} days left</span>
@@ -273,26 +273,26 @@ export default function BookDetail() {
             </p>
           )}
         </div>
-        <div className="self-start flex flex-col items-end gap-2">
+        <div className="order-3 flex w-full flex-col gap-2 sm:order-none sm:w-auto sm:self-start sm:items-end">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-border text-natural-stone rounded-full text-xs font-bold uppercase tracking-wider">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
                 <CheckCircle className="w-3.5 h-3.5" /> Finished
               </span>
               <button onClick={startReread}
-                className="flex items-center gap-1.5 px-4 py-2.5 border border-natural-border hover:border-natural-sage text-natural-stone hover:text-natural-dark rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer">
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 sm:flex-none cursor-pointer">
                 <RotateCcw className="w-3.5 h-3.5" /> Re-read
               </button>
             </div>
           ) : (
             <>
               <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer">
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 sm:min-h-0 sm:w-auto sm:justify-start cursor-pointer">
                 {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
               </button>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer">
+                  className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark sm:min-h-0 sm:w-auto cursor-pointer">
                   <CheckCircle className="w-3.5 h-3.5" /> Mark Finished
                 </button>
               )}
@@ -304,7 +304,7 @@ export default function BookDetail() {
       {/* Reading activity — tabs: Heatmap / Settings / Forecast */}
       <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
         {/* Pill tabs */}
-        <div className="flex items-center gap-1 mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <button onClick={() => setActiveTab('heatmap')}
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Heatmap
@@ -336,11 +336,11 @@ export default function BookDetail() {
               <div className="space-y-3">
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Title</label>
-                  <input value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                  <input value={title} onChange={e => setTitle(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Author</label>
-                  <input value={author} onChange={e => setAuthor(e.target.value)} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                  <input value={author} onChange={e => setAuthor(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Cover URL</label>
@@ -351,12 +351,12 @@ export default function BookDetail() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Pages / day</label>
-                  <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs" />
+                  <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>
                   <select value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
-                    className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+                    className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
                     <option value="auto">Auto (book's language)</option>
                     <option value="vi">Tiếng Việt</option>
                     <option value="en">English</option>
@@ -365,7 +365,7 @@ export default function BookDetail() {
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
                   <select value={status} onChange={e => setStatus(e.target.value as any)}
-                    className="w-full px-3 py-1.5 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+                    className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
                     <option value="active">Active</option>
                     <option value="paused">Paused</option>
                     <option value="finished">Finished</option>
@@ -395,13 +395,13 @@ export default function BookDetail() {
 
       {/* Timeline */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="font-bold text-sm text-natural-dark font-sans flex-1">Daily Summaries</h3>
-          <div className="relative">
+        <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <h3 className="flex-1 font-sans text-sm font-bold text-natural-dark">Daily Summaries</h3>
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-natural-stone" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search summaries..."
-              className="pl-7 pr-3 py-1.5 text-xs bg-natural-cream border border-natural-border rounded-full focus:outline-none focus:ring-2 focus:ring-natural-sage w-44" />
+              className="min-h-11 w-full rounded-full border border-natural-border bg-natural-cream py-1.5 pl-7 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage sm:w-44" />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-natural-stone hover:text-natural-dark">
                 <X className="w-3 h-3" />
@@ -486,7 +486,7 @@ export default function BookDetail() {
       {/* Finish queue modal */}
       {finishModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={() => setFinishModal(null)}>
-          <div className="bg-natural-cream rounded-[28px] border border-natural-border shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="safe-bottom max-h-[calc(100dvh-2rem)] w-full max-w-sm space-y-4 overflow-y-auto rounded-[28px] border border-natural-border bg-natural-cream p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="text-center space-y-2">
               <p className="text-2xl">🎉</p>
               <h3 className="font-bold text-lg text-natural-dark font-sans">You finished &ldquo;{book?.title}&rdquo;!</h3>

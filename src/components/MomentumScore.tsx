@@ -164,15 +164,16 @@ export default function MomentumScore({
                      m.trend === 'down' ? 'Slipping' : 'Steady';
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 bg-natural-cream/60 border border-natural-border rounded-2xl">
-      <Arc score={m.score} size={64} />
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-bold text-natural-dark font-sans">Momentum</span>
-          <TrendIcon className={`w-3 h-3 ${trendColor}`} />
-          <span className={`text-[9px] font-sans ${trendColor}`}>{trendLabel}</span>
+    <div className="flex items-center gap-3 rounded-2xl border border-natural-border bg-natural-cream/60 px-3 py-2">
+      <div className="shrink-0 sm:hidden"><Arc score={m.score} size={56} /></div>
+      <div className="hidden shrink-0 sm:block"><Arc score={m.score} size={64} /></div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span className="font-sans text-[11px] font-bold text-natural-dark">Momentum</span>
+          <TrendIcon className={`h-3 w-3 shrink-0 ${trendColor}`} />
+          <span className={`font-sans text-[9px] ${trendColor}`}>{trendLabel}</span>
         </div>
-        <div className="flex gap-3 text-[9px] text-natural-stone font-sans mt-0.5">
+        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 font-sans text-[9px] text-natural-stone">
           <span>Consistency <b className="text-natural-dark">{m.consistency}%</b></span>
           <span>Velocity <b className="text-natural-dark">{m.velocity}%</b></span>
         </div>

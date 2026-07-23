@@ -111,47 +111,51 @@ export default function Library() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-bold text-2xl text-natural-dark font-sans">Your Library</h1>
           <p className="text-xs text-natural-stone font-sans">Track daily reading and AI summaries</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex">
           {scope === "mine" && <button onClick={readAll} disabled={advancing}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
             {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Read All Today
           </button>}
           {scope === "mine" && <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
           </button>}
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-natural-border">
-        {([['mine', 'My Shelf'], ['all', 'All Readers']] as const).map(([id, label]) => <button key={id} onClick={() => setScope(id)} className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px ${scope === id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone'}`}>{label}</button>)}
+      <div className="overflow-x-auto border-b border-natural-border">
+        <div className="flex w-max min-w-full gap-2">
+          {([['mine', 'My Shelf'], ['all', 'All Readers']] as const).map(([id, label]) => <button key={id} onClick={() => setScope(id)} className={`shrink-0 px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px ${scope === id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone'}`}>{label}</button>)}
+        </div>
       </div>
       {scope === 'all' && <p className="text-xs text-natural-stone font-sans">Browsing shared shelves — books are read-only.</p>}
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex gap-2 border-b border-natural-border">
-          {FILTERS.map(f => (
-            <button key={f.id} onClick={() => setFilter(f.id)}
-              className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
-                filter === f.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-natural-cream border border-natural-border rounded-full">
-            <Search className="w-3.5 h-3.5 text-natural-stone" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title/author"
-              className="text-xs bg-transparent outline-none w-32 font-sans" />
+      <div className="space-y-3">
+        <div className="overflow-x-auto border-b border-natural-border">
+          <div className="flex w-max min-w-full gap-2">
+            {FILTERS.map(f => (
+              <button key={f.id} onClick={() => setFilter(f.id)}
+                className={`shrink-0 px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
+                  filter === f.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
+                {f.label}
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-natural-cream border border-natural-border rounded-full">
-            <ArrowUpDown className="w-3.5 h-3.5 text-natural-stone" />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:justify-end">
+          <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
+            <Search className="w-3.5 h-3.5 shrink-0 text-natural-stone" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title/author"
+              className="min-w-0 flex-1 bg-transparent text-xs font-sans outline-none sm:w-32 sm:flex-none" />
+          </div>
+          <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
+            <ArrowUpDown className="w-3.5 h-3.5 shrink-0 text-natural-stone" />
             <select value={sort} onChange={e => setSort(e.target.value as Sort)}
-              className="text-xs bg-transparent outline-none font-sans cursor-pointer">
+              className="min-w-0 flex-1 cursor-pointer bg-transparent text-xs font-sans outline-none sm:flex-none">
               {SORTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </div>
