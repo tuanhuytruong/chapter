@@ -43,6 +43,8 @@ export const api = {
     req<BookRow>(`${BASE}`, { method: "POST", body: JSON.stringify(body) }),
   updateBook: (id: string, body: Partial<BookRow>) =>
     req<BookRow>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  reorderQueue: (bookIds: string[]) =>
+    req<BookRow[]>(`${BASE}/queue`, { method: "PUT", body: JSON.stringify({ bookIds }) }),
   deleteBook: (id: string) =>
     req<{ ok: true }>(`${BASE}/${id}`, { method: "DELETE" }),
 

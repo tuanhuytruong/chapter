@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Loader2, BookOpen, Zap, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, Loader2, BookOpen, Zap, Search, ArrowUpDown, ChevronDown, ChevronUp, ListOrdered, Play } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';
@@ -101,9 +101,20 @@ export default function Library() {
     try {
       await api.updateBook(book.id, { status: 'active' } as any);
       setToast({ type: 'ok', msg: `Started "${book.title}"!` });
-      // reload books list
-      const list = await api.listBooks(scope);
-      setBooks(list);
+      await load();
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+    }
+  };
+
+  const moveQueuedBook = async (index: number, direction: -1 | 1) => {
+    const next = [...queued];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    try {
+      const updated = await api.reorderQueue(next.map((book) => book.id));
+      setBooks((current) => [...current.filter((book) => book.status !== 'queued'), ...updated]);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     }
@@ -186,29 +197,27 @@ export default function Library() {
         </div>
       )}
 
-      {/* ── Up Next (queue) ── */}
+      {/* ── Personal reading queue ── */}
       {scope === 'mine' && queued.length > 0 && (
-        <div className="bg-natural-cream rounded-[32px] border border-natural-border shadow-xs p-6">
-          <h3 className="text-sm font-bold text-natural-dark font-sans uppercase tracking-wider mb-4">
-            Up Next ({queued.length})
-          </h3>
-          <div className="space-y-3">
-            {queued.map(b => (
-              <div key={b.id} className="flex items-center justify-between py-3 px-4 border border-natural-border rounded-2xl hover:bg-natural-cream/30 transition">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-natural-dark font-sans truncate">{b.title}</p>
-                  <p className="text-xs text-natural-stone font-sans truncate">{b.author}</p>
+        <section className="rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-xs sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-natural-sage">Personal queue</p><h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-natural-dark"><ListOrdered className="h-5 w-5" /> Up next</h3></div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-natural-stone">{queued.length} book{queued.length === 1 ? '' : 's'}</span>
+          </div>
+          <div className="space-y-2">
+            {queued.map((book, index) => (
+              <article key={book.id} className="flex flex-wrap items-center gap-2 rounded-2xl border border-natural-border bg-white/65 p-3 sm:flex-nowrap">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-natural-sage/15 text-sm font-bold text-natural-sage">{index + 1}</span>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-natural-dark">{book.title}</p><p className="truncate text-xs text-natural-stone">{book.author}</p></div>
+                <div className="flex shrink-0 gap-1">
+                  <button aria-label={`Move ${book.title} earlier`} onClick={() => moveQueuedBook(index, -1)} disabled={index === 0} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronUp className="h-4 w-4" /></button>
+                  <button aria-label={`Move ${book.title} later`} onClick={() => moveQueuedBook(index, 1)} disabled={index === queued.length - 1} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronDown className="h-4 w-4" /></button>
+                  <button onClick={() => startQueuedBook(book)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-natural-sage px-3 text-xs font-bold text-white hover:bg-natural-sage-dark"><Play className="h-3.5 w-3.5" /> Start</button>
                 </div>
-                <button
-                  onClick={() => startQueuedBook(b)}
-                  className="shrink-0 ml-3 px-4 py-2 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer"
-                >
-                  Start Reading
-                </button>
-              </div>
+              </article>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       <div className="pt-10 border-t border-natural-border">

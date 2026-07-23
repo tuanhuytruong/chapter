@@ -115,7 +115,7 @@ booksRouter.get("/calendar", async (req: Request, res: Response) => {
 
 // POST /api/books — register a new book
 booksRouter.post("/", async (req: Request, res: Response) => {
-  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang } = req.body;
+  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, status } = req.body;
   if (!title || !file_path || !file_type) {
     return res.status(400).json({ error: "title, file_path, file_type required" });
   }
@@ -123,16 +123,47 @@ booksRouter.post("/", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "file_type must be 'pdf' or 'epub'" });
   }
   const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
+  const initialStatus = status === "queued" ? "queued" : "active";
   const resolvedPath = resolveBookPath(file_path);
   try {
-    const { rows } = await query(
-      `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, owner_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, userFrom(req).id]
-    );
+    const { rows } = await withTransaction(async (client) => {
+      const queueOrder = initialStatus === "queued"
+        ? Number((await client.query("SELECT COALESCE(MAX(queue_order), 0) + 1 AS next FROM books WHERE owner_id=$1 AND status='queued'", [userFrom(req).id])).rows[0].next)
+        : null;
+      return client.query(
+        `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, owner_id, status, queue_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, userFrom(req).id, initialStatus, queueOrder]
+      );
+    });
     res.status(201).json(rows[0]);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
+  }
+});
+
+// PUT /api/books/queue — replace the signed-in readers complete queue order.
+// This static route must precede /:id so Express does not treat "queue" as an ID.
+booksRouter.put("/queue", async (req: Request, res: Response) => {
+  const orderedIds = req.body?.bookIds;
+  if (!Array.isArray(orderedIds) || !orderedIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id)) || new Set(orderedIds).size !== orderedIds.length) {
+    return res.status(400).json({ error: "bookIds must be a unique UUID array" });
+  }
+  try {
+    const rows = await withTransaction(async (client) => {
+      const current = await client.query("SELECT id FROM books WHERE owner_id=$1 AND status='queued' ORDER BY queue_order NULLS LAST, created_at", [userFrom(req).id]);
+      const existingIds = current.rows.map((row: any) => row.id);
+      if (existingIds.length !== orderedIds.length || existingIds.some((id: string) => !orderedIds.includes(id))) {
+        throw Object.assign(new Error("queue does not match your queued books"), { status: 409 });
+      }
+      for (const [index, id] of orderedIds.entries()) {
+        await client.query("UPDATE books SET queue_order=$1 WHERE id=$2 AND owner_id=$3 AND status='queued'", [index + 1, id, userFrom(req).id]);
+      }
+      return (await client.query("SELECT * FROM books WHERE owner_id=$1 AND status='queued' ORDER BY queue_order", [userFrom(req).id])).rows;
+    });
+    res.json(rows);
+  } catch (e: any) {
+    res.status(e.status || 503).json({ error: e.message || "could not reorder queue" });
   }
 });
 
@@ -141,6 +172,9 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   if (!await ownerCanMutate(req, res, id)) return;
   const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang"];
+  if (req.body.status !== undefined && !["active", "paused", "finished", "queued"].includes(req.body.status)) {
+    return res.status(400).json({ error: "invalid status" });
+  }
   const sets: string[] = [];
   const vals: any[] = [];
   let i = 1;
