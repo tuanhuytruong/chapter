@@ -11,7 +11,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [author, setAuthor] = useState('');
   const [filePath, setFilePath] = useState('');
   const [fileType, setFileType] = useState<'pdf' | 'epub'>('pdf');
-  const [dailyPages, setDailyPages] = useState(20);
+  const [dailyPages, setDailyPages] = useState(3);
   const [coverUrl, setCoverUrl] = useState('');
   const [summaryLang, setSummaryLang] = useState<'auto' | 'vi' | 'en'>('auto');
   const [addToQueue, setAddToQueue] = useState(false);

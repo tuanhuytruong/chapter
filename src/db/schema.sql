@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   file_path     TEXT NOT NULL,
   file_type     TEXT NOT NULL CHECK (file_type IN ('pdf', 'epub')),
   total_pages   INT NOT NULL DEFAULT 0,
-  daily_pages   INT NOT NULL DEFAULT 20,
+  daily_pages   INT NOT NULL DEFAULT 3,
   current_page  INT NOT NULL DEFAULT 0,
   status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished', 'queued')),
   summary_lang  TEXT NOT NULL DEFAULT 'auto' CHECK (summary_lang IN ('auto', 'vi', 'en')),

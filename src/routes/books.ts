@@ -76,7 +76,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
     const { rows } = await query(
       `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, owner_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null, lang, userFrom(req).id]
+      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, userFrom(req).id]
     );
     res.status(201).json(rows[0]);
   } catch (e: any) {
