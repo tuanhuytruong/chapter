@@ -473,6 +473,16 @@ export default function BookDetail() {
             Journey
           </button>
         </div>
+
+        {book.can_edit && lenses.length >= 3 && (
+          <section className="mb-5 rounded-[24px] border border-natural-sage/30 bg-natural-sage/5 p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">Reading Lens · {lenses.length} sessions</p><h2 className="mt-1 text-base font-bold text-natural-dark">Synthesize this journey</h2><p className="mt-1 text-xs text-natural-stone">Find the thread across your saved session analyses.</p></div>
+              <button onClick={synthesizeReadingLens} disabled={lensSynthesizing} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">{lensSynthesizing ? 'Synthesizing…' : 'Synthesize this journey'}</button>
+            </div>
+            {lensSynthesis && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{lensSynthesis}</article>}
+          </section>
+        )}
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
             <BookOpen className="w-8 h-8 text-natural-stone" />
@@ -513,16 +523,6 @@ export default function BookDetail() {
           </>
         )}
       </div>
-
-      {lenses.length >= 3 && (
-        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">Reading Lens</p><h2 className="mt-1 text-base font-bold text-natural-dark">Synthesize this journey</h2><p className="mt-1 text-xs text-natural-stone">A grounded view across your saved session analyses.</p></div>
-            {book.can_edit && <button onClick={synthesizeReadingLens} disabled={lensSynthesizing} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">{lensSynthesizing ? 'Synthesizing…' : 'Synthesize this journey'}</button>}
-          </div>
-          {lensSynthesis && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{lensSynthesis}</article>}
-        </section>
-      )}
 
       {/* Knowledge Map */}
       {book.can_edit && book.status === 'finished' && logs.length > 0 && (
