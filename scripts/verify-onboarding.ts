@@ -23,7 +23,11 @@ assertIncludes("src/pages/BookDetail.tsx", 'step="story_thread"');
 assertIncludes("src/pages/Review.tsx", 'step="review"');
 assertIncludes("src/components/JourneyDrawer.tsx", 'step="journey"');
 assertIncludes("src/pages/Account.tsx", "OnboardingHelp");
-assertIncludes("src/App.tsx", '<NavLink to="/account" aria-label="Account settings" title="Account settings"');
 assertIncludes("src/App.tsx", 'title="Sign out" aria-label="Sign out"');
+assertIncludes("src/App.tsx", 'to="/profile" aria-label="Your profile"');
+assertIncludes("src/App.tsx", 'to="/account" aria-label="Telegram settings"');
+assertIncludes("src/pages/Profile.tsx", "Choose an animal companion");
+assertIncludes("server.ts", 'app.patch("/api/auth/profile"');
+assertIncludes("server.ts", "isAvatarPresetValue");
 
 console.log("ONBOARDING_FIXTURES_OK");

@@ -11,6 +11,7 @@ interface AuthValue {
   user: CurrentUser | null;
   loading: boolean;
   login(username: string, password: string): Promise<void>;
+  updateUser(user: CurrentUser): void;
   logout(): Promise<void>;
 }
 
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setUser(data.user);
     },
+    updateUser(nextUser) { setUser(nextUser); },
     async logout() {
       await authRequest("/api/auth/logout", { method: "POST" });
       setUser(null);

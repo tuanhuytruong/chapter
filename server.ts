@@ -17,6 +17,7 @@ import { dateInAppTz, progressFor, type WeeklyGoalMetric, type WeeklyGoalRow } f
 import { achievementResponse } from "./src/achievements.js";
 import { config } from "./src/config.js";
 import { createLinkToken, deepLink, linkExpiresAt, telegramUpdate } from "./src/telegram-link.js";
+import { isAvatarPresetValue } from "./src/avatar-presets.js";
 
 // Ensure the port is 3000
 const PORT = 3000;
@@ -73,6 +74,29 @@ app.post("/api/auth/login", async (req, res) => {
 });
 app.post("/api/auth/logout", (req, res) => req.session.destroy(() => res.status(204).end()));
 app.use("/api", requireAuth);
+app.get("/api/auth/profile", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query<{ username: string; display_name: string; avatar_url: string | null }>("SELECT username, display_name, avatar_url FROM users WHERE id=$1", [userFrom(req).id]);
+    const profile = rows[0];
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    res.json({ username: profile.username, displayName: profile.display_name, avatarUrl: profile.avatar_url || null });
+  } catch { res.status(500).json({ error: "Could not load profile" }); }
+});
+app.patch("/api/auth/profile", async (req: Request, res: Response) => {
+  const displayName = typeof req.body?.displayName === "string" ? req.body.displayName.trim() : "";
+  const avatarUrl = req.body?.avatarUrl;
+  if (!displayName || displayName.length > 60) return res.status(400).json({ error: "displayName must be between 1 and 60 characters" });
+  if (!isAvatarPresetValue(avatarUrl)) return res.status(400).json({ error: "Choose an available avatar" });
+  try {
+    const { rows } = await query<{ username: string; display_name: string; avatar_url: string }>(
+      "UPDATE users SET display_name=$1, avatar_url=$2 WHERE id=$3 RETURNING username, display_name, avatar_url",
+      [displayName, avatarUrl, userFrom(req).id]
+    );
+    const updated = rows[0];
+    req.session.user = { ...userFrom(req), username: updated.username, displayName: updated.display_name, avatarUrl: updated.avatar_url };
+    res.json({ user: req.session.user });
+  } catch { res.status(500).json({ error: "Could not save profile" }); }
+});
 app.post("/api/auth/change-password", async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body || {};
   if (typeof currentPassword !== "string" || typeof newPassword !== "string" || newPassword.length < 8) {

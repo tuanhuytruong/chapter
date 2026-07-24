@@ -9,6 +9,8 @@ import Momentum from './pages/Momentum';
 import Today from './pages/Today';
 import Achievements from './pages/Achievements';
 import Account from './pages/Account';
+import Profile from './pages/Profile';
+import { presetFromAvatarValue } from './avatar-presets';
 import JourneyDrawer from './components/JourneyDrawer';
 import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2 } from 'lucide-react';
 import Login from './components/Login';
@@ -56,7 +58,8 @@ function Layout() {
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <button onClick={() => setJourneyOpen(true)} aria-label="Open reading journey" title="Your Journey" aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50 focus-visible:ring-offset-2 focus-visible:ring-offset-natural-bg sm:h-7 sm:w-7"><Map className="h-3.5 w-3.5" /></button>
             <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'} className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50 focus-visible:ring-offset-2 focus-visible:ring-offset-natural-bg sm:h-7 sm:w-7">{isDark ? <Sun className="h-3.5 w-3.5 text-natural-clay" /> : <Moon className="h-3.5 w-3.5 text-natural-stone" />}</button>
-            <NavLink to="/account" aria-label="Account settings" title="Account settings" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50 focus-visible:ring-offset-2 focus-visible:ring-offset-natural-bg"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-natural-sage/20"><span className="font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span></div><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span><Settings2 className="hidden h-3 w-3 text-natural-stone lg:block" /></NavLink>
+            <NavLink to="/profile" aria-label="Your profile" title="Your profile" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50 focus-visible:ring-offset-2 focus-visible:ring-offset-natural-bg"><div className={`flex h-8 w-8 items-center justify-center rounded-full text-base ${presetFromAvatarValue(user?.avatarUrl)?.tone || 'bg-natural-sage/20'}`}><span>{presetFromAvatarValue(user?.avatarUrl)?.emoji || user?.displayName?.[0]?.toUpperCase()}</span></div><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span></NavLink>
+            <NavLink to="/account" aria-label="Telegram settings" title="Telegram settings" className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50 focus-visible:ring-offset-2 focus-visible:ring-offset-natural-bg"><Settings2 className="h-3.5 w-3.5" /></NavLink>
             <button onClick={() => void logout()} className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50 focus-visible:ring-offset-2 focus-visible:ring-offset-natural-bg" title="Sign out" aria-label="Sign out"><LogOut className="h-3.5 w-3.5" /></button>
           </div>
         </div>
@@ -81,6 +84,7 @@ function AppRoutes() {
     <Route path="/calendar" element={<ReadingCalendar />} />
     <Route path="/momentum" element={<Momentum />} />
     <Route path="/achievements" element={<Achievements />} />
+    <Route path="/profile" element={<Profile />} />
     <Route path="/account" element={<Account />} />
     <Route path="*" element={<Library />} />
   </Route></Routes></BrowserRouter></OnboardingProvider>;
