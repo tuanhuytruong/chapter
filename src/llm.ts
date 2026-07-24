@@ -64,6 +64,11 @@ export async function callLLM(
   }
 }
 
+/** Strict JSON call used by persisted structured enrichments. */
+export async function callJsonLLM(system: string, user: string, temperature = 0.2): Promise<string> {
+  return callLLM(system, user, temperature, true, true);
+}
+
 export interface ParsedSummary {
   summary: string;
   key_insights: string[];

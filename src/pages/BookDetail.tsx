@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
-import type { BookRow, LogRow, ReadingLensRow, SummaryMode } from '../types';
+import type { BookRow, LogRow, ReadingLensRow, StoryThreadRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import ReadingLensCard from '../components/ReadingLensCard';
@@ -14,6 +14,7 @@ import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
+import StoryThreadView from '../components/story/StoryThreadView';
 
 function InlineMarkdown({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -72,6 +73,7 @@ export default function BookDetail() {
   const [mindmapLoading, setMindmapLoading] = useState(false);
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [lenses, setLenses] = useState<ReadingLensRow[]>([]);
+  const [storyThread, setStoryThread] = useState<StoryThreadRow[]>([]);
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
@@ -81,7 +83,9 @@ export default function BookDetail() {
     setLoading(true);
     try {
       const [b, l] = await Promise.all([api.getBook(id), api.getLog(id)]);
-      const lensRows = b.can_edit ? await api.getReadingLens(id) : [];
+      const analysisRows = b.can_edit
+        ? b.reading_experience === 'story' ? await api.getStoryThread(id) : await api.getReadingLens(id)
+        : [];
       setBook(b);
       setDailyPages(b.daily_pages);
       setStatus(b.status);
@@ -91,7 +95,8 @@ export default function BookDetail() {
       setSummaryLang(b.summary_lang || 'auto');
       setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
-      setLenses(lensRows);
+      setLenses(b.reading_experience === 'analytical' ? analysisRows as ReadingLensRow[] : []);
+      setStoryThread(b.reading_experience === 'story' ? analysisRows as StoryThreadRow[] : []);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {
@@ -155,7 +160,7 @@ export default function BookDetail() {
         author: author.trim(),
         cover_url: coverUrl || undefined,
         summary_lang: summaryLang,
-        summary_mode: summaryMode,
+        ...(book?.reading_experience === 'analytical' ? { summary_mode: summaryMode } : {}),
       });
       setToast({ type: 'ok', msg: 'Saved' });
       setEditing(false);
@@ -435,11 +440,11 @@ export default function BookDetail() {
                     <option value="en">English</option>
                   </select>
                 </div>
-                <fieldset>
+                {book.reading_experience === 'analytical' && <fieldset>
                   <legend className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Summary style</legend>
                   <div className="mt-1 grid gap-2 sm:grid-cols-2">{([['casual', 'Casual', 'Warm highlights for everyday reading.'], ['deep_reading', 'Deep Reading', 'Arguments, support, assumptions, and concepts.']] as const).map(([value, label, copy]) => <label key={value} className={`min-h-11 cursor-pointer rounded-xl border p-3 text-xs ${summaryMode === value ? 'border-natural-sage bg-natural-sage/10' : 'border-natural-border'}`}><input className="sr-only" type="radio" checked={summaryMode === value} onChange={() => setSummaryMode(value)} /><b>{label}</b><span className="mt-0.5 block text-[10px] text-natural-stone">{copy}</span></label>)}</div>
                   <p className="mt-1 text-[10px] text-natural-stone">Applies to new summaries and summaries you retry. Earlier summaries stay unchanged.</p>
-                </fieldset>
+                </fieldset>}
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
                   <select value={status} onChange={e => setStatus(e.target.value as any)}
@@ -458,7 +463,7 @@ export default function BookDetail() {
               <div className="text-xs text-natural-muted space-y-1">
                 <p>{dailyTargetLabel(book.file_type)}: <b className="text-natural-dark">{book.daily_pages}</b></p>
                 <p>Status: <b className="text-natural-dark capitalize">{book.status}</b></p>
-                <p>Summary: <b className="text-natural-dark">{book.summary_mode === 'deep_reading' ? 'Deep Reading' : 'Casual'}</b></p>
+                {book.reading_experience === 'analytical' && <p>Summary: <b className="text-natural-dark">{book.summary_mode === 'deep_reading' ? 'Deep Reading' : 'Casual'}</b></p>}
                 <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
               </div>
             )}
@@ -472,6 +477,7 @@ export default function BookDetail() {
         )}
       </div>
 
+      {book.reading_experience === 'story' ? <StoryThreadView analyses={storyThread} logs={logs} /> : <>
       {/* Timeline */}
       <div>
         <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -570,6 +576,7 @@ export default function BookDetail() {
           }
         </div>
       )}
+      </>}
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 

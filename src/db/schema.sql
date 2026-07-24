@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   current_page  INT NOT NULL DEFAULT 0,
   status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished', 'queued')),
   summary_lang  TEXT NOT NULL DEFAULT 'auto' CHECK (summary_lang IN ('auto', 'vi', 'en')),
+  reading_experience TEXT NOT NULL DEFAULT 'analytical' CHECK (reading_experience IN ('analytical', 'story')),
   summary_mode  TEXT NOT NULL DEFAULT 'casual' CHECK (summary_mode IN ('casual', 'deep_reading')),
   cover_url     TEXT,
   reflection_text TEXT,
@@ -62,6 +63,14 @@ ALTER TABLE chapter.books
 ALTER TABLE chapter.books DROP CONSTRAINT IF EXISTS books_summary_mode_check;
 ALTER TABLE chapter.books ADD CONSTRAINT books_summary_mode_check
   CHECK (summary_mode IN ('casual', 'deep_reading'));
+
+-- Migration: Story is a distinct, immutable reading experience. Existing books
+-- remain analytical; summary_mode is meaningful only for analytical books.
+ALTER TABLE chapter.books
+  ADD COLUMN IF NOT EXISTS reading_experience TEXT NOT NULL DEFAULT 'analytical';
+ALTER TABLE chapter.books DROP CONSTRAINT IF EXISTS books_reading_experience_check;
+ALTER TABLE chapter.books ADD CONSTRAINT books_reading_experience_check
+  CHECK (reading_experience IN ('analytical', 'story'));
 
 -- Migration: one persisted end-of-book reflection per book (idempotent).
 ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reflection_text TEXT;
@@ -152,6 +161,28 @@ CREATE TABLE IF NOT EXISTS chapter.reading_lens_analyses (
 );
 CREATE INDEX IF NOT EXISTS idx_reading_lens_analyses_book_generated
   ON chapter.reading_lens_analyses (book_id, generated_at ASC);
+
+-- Story continuity is separate from analytical Reading Lens output.
+CREATE TABLE IF NOT EXISTS chapter.story_thread_analyses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  schema_version SMALLINT NOT NULL DEFAULT 1,
+  analysis JSONB NOT NULL,
+  story_recap TEXT NOT NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (log_id, schema_version)
+);
+CREATE INDEX IF NOT EXISTS idx_story_thread_analyses_book_generated
+  ON chapter.story_thread_analyses (book_id, generated_at ASC);
+
+CREATE TABLE IF NOT EXISTS chapter.story_state_snapshots (
+  book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
+  reading_round INT NOT NULL DEFAULT 1,
+  last_log_id UUID REFERENCES chapter.reading_log(id) ON DELETE SET NULL,
+  state JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- ───────────────────────────────────────────────────────────
 -- chapter.review_cards (owner derived through the parent book)

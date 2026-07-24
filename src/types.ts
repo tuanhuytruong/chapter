@@ -30,6 +30,7 @@ export interface ReadingLog {
 
 // New server-side DB row shapes (snake_case from Postgres)
 export type SummaryMode = "casual" | "deep_reading";
+export type ReadingExperience = "analytical" | "story";
 
 export interface BookRow {
   id: string;
@@ -44,6 +45,7 @@ export interface BookRow {
   queue_order?: number;
   summary_lang: "auto" | "vi" | "en";
   summary_mode: SummaryMode;
+  reading_experience: ReadingExperience;
   cover_url?: string;
   reflection_text?: string | null;
   reflection_at?: string | null;
@@ -68,6 +70,25 @@ export type ReadingLensAnalysis = {
 export interface ReadingLensRow {
   id: string; book_id: string; log_id: string; schema_version: number;
   analysis: ReadingLensAnalysis; analyst_summary: string; generated_at: string;
+}
+
+export type StoryThreadStatus = "open" | "escalating" | "resolved" | "uncertain";
+export interface StoryThreadAnalysis {
+  storyRecap: string;
+  changedEvents: string[];
+  threads: Array<{ id: string; label: string; status: StoryThreadStatus; detail: string }>;
+  characterPulse: Array<{ name: string; pulse: string }>;
+  readerMemory: string[];
+  confidenceNotes: string[];
+}
+export interface StoryThreadRow {
+  id: string;
+  book_id: string;
+  log_id: string;
+  schema_version: number;
+  analysis: StoryThreadAnalysis;
+  story_recap: string;
+  generated_at: string;
 }
 
 export interface LogRow {

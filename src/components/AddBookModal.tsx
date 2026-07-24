@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, ImageIcon } from 'lucide-react';
 import { api, fetchCover, uploadBook, deleteUpload } from '../api';
-import type { SummaryMode } from '../types';
+import type { ReadingExperience, SummaryMode } from '../types';
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -16,6 +16,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [coverUrl, setCoverUrl] = useState('');
   const [summaryLang, setSummaryLang] = useState<'auto' | 'vi' | 'en'>('auto');
   const [summaryMode, setSummaryMode] = useState<SummaryMode>('casual');
+  const [readingExperience, setReadingExperience] = useState<ReadingExperience>('analytical');
   const [addToQueue, setAddToQueue] = useState(false);
   const [autoCover, setAutoCover] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -68,6 +69,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         cover_url: coverUrl || undefined,
         summary_lang: summaryLang,
         summary_mode: summaryMode,
+        reading_experience: readingExperience,
         status: addToQueue ? 'queued' : 'active',
       } as any);
       submittedRef.current = true; // keep the uploaded file
@@ -167,6 +169,18 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             <p className="text-[10px] text-natural-stone mt-1">Language used for the AI daily summary. Can be changed later in book settings.</p>
           </div>
           <fieldset>
+            <legend className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading experience</legend>
+            <div className="mt-1 grid gap-2 sm:grid-cols-2">
+              {([['analytical', 'Reading companion', 'Choose Casual or Deep Reading. You can switch between them later.'], ['story', 'Story Thread', 'For fiction and narrative books. Keeps characters, events, and unresolved threads connected. This cannot be changed later.']] as const).map(([value, label, copy]) => (
+                <label key={value} className={`min-h-11 cursor-pointer rounded-xl border p-3 text-xs ${readingExperience === value ? 'border-natural-sage bg-natural-sage/10 text-natural-dark' : 'border-natural-border text-natural-stone'}`}>
+                  <input className="sr-only" type="radio" name="reading-experience" value={value} checked={readingExperience === value} onChange={() => setReadingExperience(value)} />
+                  <span className="block font-bold">{label}</span>
+                  <span className="mt-0.5 block text-[10px] leading-relaxed">{copy}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {readingExperience === 'analytical' && <fieldset>
             <legend className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary style</legend>
             <div className="mt-1 grid gap-2 sm:grid-cols-2">
               {([['casual', 'Casual', 'Warm, clear highlights for everyday reading.'], ['deep_reading', 'Deep Reading', 'Argument maps, support, assumptions, and concepts for academic or research books.']] as const).map(([value, label, copy]) => (
@@ -177,7 +191,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
                 </label>
               ))}
             </div>
-          </fieldset>
+          </fieldset>}
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1.5">
               <ImageIcon className="w-3 h-3" /> Cover URL

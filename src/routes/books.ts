@@ -1,7 +1,8 @@
 import { Router, Request, Response } from "express";
 import { query, withTransaction } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
-import { callLLM, callNineRouter, parseSummary } from "../llm.js";
+import { callJsonLLM, callLLM, callNineRouter, parseSummary } from "../llm.js";
+import { buildStoryThreadPrompt, getStoryState, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
@@ -117,7 +118,7 @@ booksRouter.get("/calendar", async (req: Request, res: Response) => {
 
 // POST /api/books — register a new book
 booksRouter.post("/", async (req: Request, res: Response) => {
-  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, status } = req.body;
+  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, reading_experience, status } = req.body;
   if (!title || !file_path || !file_type) {
     return res.status(400).json({ error: "title, file_path, file_type required" });
   }
@@ -127,6 +128,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
   const initialStatus = status === "queued" ? "queued" : "active";
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
+  const readingExperience = ["analytical", "story"].includes(reading_experience) ? reading_experience : "analytical";
   const resolvedPath = resolveBookPath(file_path);
   try {
     const { rows } = await withTransaction(async (client) => {
@@ -134,9 +136,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
         ? Number((await client.query("SELECT COALESCE(MAX(queue_order), 0) + 1 AS next FROM books WHERE owner_id=$1 AND status='queued'", [userFrom(req).id])).rows[0].next)
         : null;
       return client.query(
-        `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, owner_id, status, queue_order)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, summaryMode, userFrom(req).id, initialStatus, queueOrder]
+        `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, reading_experience, owner_id, status, queue_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, summaryMode, readingExperience, userFrom(req).id, initialStatus, queueOrder]
       );
     });
     res.status(201).json(rows[0]);
@@ -180,6 +182,12 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   }
   if (req.body.summary_mode !== undefined && !["casual", "deep_reading"].includes(req.body.summary_mode)) {
     return res.status(400).json({ error: "invalid summary_mode" });
+  }
+  if (req.body.reading_experience !== undefined) return res.status(400).json({ error: "reading_experience is immutable" });
+  const existing = (await query("SELECT reading_experience FROM books WHERE id=$1", [id])).rows[0];
+  if (!existing) return res.status(404).json({ error: "book not found" });
+  if (existing.reading_experience === "story" && req.body.summary_mode !== undefined) {
+    return res.status(400).json({ error: "Story Thread books do not use analytical summary styles" });
   }
   const sets: string[] = [];
   const vals: any[] = [];
@@ -234,6 +242,26 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
+});
+
+// GET /api/books/:id/story-thread — owner-only Story continuity, never source text.
+booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
+    res.json(await listStoryThreadAnalyses(id));
+  } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
+});
+booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
+    const analysis = await getStoryThreadAnalysis(id, logId);
+    if (!analysis) return res.status(404).json({ error: "story thread not available" });
+    res.json(analysis);
+  } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
 });
 
 // GET /api/books/:id — single book
@@ -436,18 +464,15 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
     }
 
-    const raw = await callNineRouter({
-      title: book.title,
-      author: book.author,
-      start,
-      end,
-      total: totalPages,
-      extractedText: text,
-      fileType: book.file_type,
-      lang: (book.summary_lang as "auto" | "vi" | "en") || "auto",
-      summaryMode: book.summary_mode || "casual",
-    });
-    const parsed = parseSummary(raw, book.summary_mode || "casual");
+    // Story books do not invoke the analytical summary pipeline. Their compatible
+    // log fields are filled by Story Thread only after this transaction commits.
+    const parsed = book.reading_experience === "story"
+      ? { summary: "Story Thread analysis is being prepared.", key_insights: [], quote: null }
+      : parseSummary(await callNineRouter({
+        title: book.title, author: book.author, start, end, total: totalPages,
+        extractedText: text, fileType: book.file_type,
+        lang: (book.summary_lang as "auto" | "vi" | "en") || "auto", summaryMode: book.summary_mode || "casual",
+      }), book.summary_mode || "casual");
 
     // Update book cursor — always advances regardless of session count
     const newCurrent = end;
@@ -463,6 +488,8 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       [bookId, dateStr, sessionNum, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
     );
 
+    // Story sessions intentionally never seed analytical spaced-review cards.
+    if (book.reading_experience !== "story") {
     // Seed only the insights produced by this new session. The source log/index
     // unique constraint makes this idempotent and deliberately avoids backfill.
     const firstDue = reviewOutcome(1, false, dateStr).dueDate;
@@ -474,6 +501,7 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
          VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id, insight_index) DO NOTHING`,
         [bookId, ins.rows[0].id, insightIndex, trimmed, firstDue]
       );
+    }
     }
 
     return {
@@ -488,17 +516,16 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       totalUnits: totalPages,
       finished,
       log: ins.rows[0],
+      readingExperience: book.reading_experience || "analytical",
     };
   });
   if (result?.log?.raw_text) {
-    // Deliberately detached after the committed reading session: Lens is helpful
-    // background enrichment, never a reason to fail Read Today or review cards.
-    void generateReadingLensForLog(result.log, {
-      title: result.title,
-      author: result.author,
-      total: result.totalUnits,
-      lang: result.summaryLang || "auto",
-    }).catch((error) => console.warn("[reading-lens] background analysis unavailable:", error.message));
+    // Enrichment starts only after the reading transaction commits.
+    if (result.readingExperience === "story") {
+      void generateStoryThreadForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto", session: result.session }).catch((error) => console.warn("[story-thread] background analysis unavailable:", error.message));
+    } else {
+      void generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" }).catch((error) => console.warn("[reading-lens] background analysis unavailable:", error.message));
+    }
   }
   return result;
 }
@@ -511,6 +538,17 @@ async function generateReadingLensForLog(log: any, book: { title: string; author
     : JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
   const analysis = parseReadingLensAnalysis(raw, log.raw_text);
   await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+}
+
+
+async function generateStoryThreadForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en"; session: number }): Promise<void> {
+  if (!log.raw_text?.trim()) return;
+  const previous = await getStoryState(log.book_id);
+  const prompt = buildStoryThreadPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text, priorState: previous });
+  const analysis = process.env.NINE_ROUTER_URL ? parseStoryThreadAnalysis(await callJsonLLM(prompt.system, prompt.user, 0.2)) : storyFallback();
+  await upsertStoryThreadAnalysis(log.book_id, log.id, book.session, analysis, previous);
+  const compat = storyCompatSummary(analysis);
+  await query("UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5", [compat.summary, compat.key_insights, compat.quote, log.id, log.book_id]);
 }
 
 // GET /api/books/:id/log/today — returns array of today's sessions (n8n compatibility)
@@ -541,6 +579,11 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
     const book = (await query("SELECT * FROM books WHERE id=$1", [id])).rows[0];
     if (!book) return res.status(404).json({ error: "book not found" });
 
+    if (book.reading_experience === "story") {
+      await generateStoryThreadForLog(entry, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto", session: entry.session });
+      const analysis = await getStoryThreadAnalysis(id, logId);
+      return res.json(analysis || entry);
+    }
     const raw = await callNineRouter({
       title: book.title,
       author: book.author,

@@ -47,12 +47,12 @@ if [ -z "${DATABASE_URL:-}" ]; then
   echo "DATABASE_URL is not configured; cannot verify core schema" >&2
   exit 1
 fi
-MISSING_RELATIONS="$(psql "$DATABASE_URL" -Atqc "SELECT string_agg(name, ', ') FROM unnest(ARRAY['review_cards','weekly_reading_goals','reading_lens_analyses']) AS name WHERE to_regclass('chapter.' || name) IS NULL")"
+MISSING_RELATIONS="$(psql "$DATABASE_URL" -Atqc "SELECT string_agg(name, ', ') FROM unnest(ARRAY['review_cards','weekly_reading_goals','reading_lens_analyses','story_thread_analyses','story_state_snapshots']) AS name WHERE to_regclass('chapter.' || name) IS NULL")"
 if [ -n "$MISSING_RELATIONS" ]; then
   echo "Missing core relation(s): $MISSING_RELATIONS" >&2
   exit 1
 fi
-echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses"
+echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots"
 echo ""
 echo "Health check:"
 HEALTH_URL="http://localhost:${PORT}/health"
