@@ -15,6 +15,7 @@ export default function JourneyDrawer({ open, onClose }: JourneyDrawerProps) {
   const [rendered, setRendered] = useState(open);
   const [visible, setVisible] = useState(open);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasOpenRef = useRef(open);
 
   useEffect(() => {
     let frame = 0;
@@ -24,12 +25,16 @@ export default function JourneyDrawer({ open, onClose }: JourneyDrawerProps) {
       frame = requestAnimationFrame(() => setVisible(true));
       timer = setTimeout(() => closeButtonRef.current?.focus(), 180);
     } else {
+      const shouldRestoreTriggerFocus = wasOpenRef.current;
       setVisible(false);
       timer = setTimeout(() => {
         setRendered(false);
-        document.querySelector<HTMLButtonElement>('[aria-label="Open reading journey"]')?.focus();
+        if (shouldRestoreTriggerFocus) {
+          document.querySelector<HTMLButtonElement>('[aria-label="Open reading journey"]')?.focus();
+        }
       }, 200);
     }
+    wasOpenRef.current = open;
     return () => {
       cancelAnimationFrame(frame);
       if (timer) clearTimeout(timer);
