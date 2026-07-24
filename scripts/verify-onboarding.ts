@@ -23,5 +23,7 @@ assertIncludes("src/pages/BookDetail.tsx", 'step="story_thread"');
 assertIncludes("src/pages/Review.tsx", 'step="review"');
 assertIncludes("src/components/JourneyDrawer.tsx", 'step="journey"');
 assertIncludes("src/pages/Account.tsx", "OnboardingHelp");
+assertIncludes("src/App.tsx", '<NavLink to="/account" aria-label="Account settings" title="Account settings"');
+assertIncludes("src/App.tsx", 'title="Sign out" aria-label="Sign out"');
 
 console.log("ONBOARDING_FIXTURES_OK");
