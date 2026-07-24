@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
@@ -14,6 +14,37 @@ import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
+
+function InlineMarkdown({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return <>{parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>;
+    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  })}</>;
+}
+
+function ReadingLensSynthesis({ text }: { text: string }) {
+  const blocks: ReactNode[] = [];
+  let bullets: string[] = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    blocks.push(<ul key={`list-${blocks.length}`} className="ml-4 list-disc space-y-1.5 pl-3">{bullets.map((item, index) => <li key={index}><InlineMarkdown text={item} /></li>)}</ul>);
+    bullets = [];
+  };
+  for (const [index, raw] of text.split(/\r?\n/).entries()) {
+    const line = raw.trim();
+    if (!line) { flushBullets(); continue; }
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    if (heading) { flushBullets(); blocks.push(<h3 key={`heading-${index}`} className="pt-2 text-sm font-bold text-natural-dark"><InlineMarkdown text={heading[1]} /></h3>); continue; }
+    const bullet = line.match(/^[-•]\s+(.+)$/);
+    if (bullet) { bullets.push(bullet[1]); continue; }
+    flushBullets();
+    blocks.push(<p key={`paragraph-${index}`}><InlineMarkdown text={line} /></p>);
+  }
+  flushBullets();
+  return <article className="mt-4 space-y-3 rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{blocks}</article>;
+}
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -480,7 +511,7 @@ export default function BookDetail() {
               <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">Reading Lens · {lenses.length} sessions</p><h2 className="mt-1 text-base font-bold text-natural-dark">Synthesize this journey</h2><p className="mt-1 text-xs text-natural-stone">Find the thread across your saved session analyses.</p></div>
               <button onClick={synthesizeReadingLens} disabled={lensSynthesizing} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">{lensSynthesizing ? 'Synthesizing…' : 'Synthesize this journey'}</button>
             </div>
-            {lensSynthesis && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{lensSynthesis}</article>}
+            {lensSynthesis && <ReadingLensSynthesis text={lensSynthesis} />}
           </section>
         )}
         {logs.length === 0 ? (
