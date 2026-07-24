@@ -46,10 +46,17 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
+function InlineMarkdown({ text, highlight }: { text: string; highlight?: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return <>{parts.map((part, index) => part.startsWith('**') && part.endsWith('**')
+    ? <strong key={index} className="font-bold text-natural-dark">{highlight ? <HighlightText text={part.slice(2, -2)} query={highlight} /> : part.slice(2, -2)}</strong>
+    : <React.Fragment key={index}>{highlight ? <HighlightText text={part} query={highlight} /> : part}</React.Fragment>)}</>;
+}
+
 function DeepReadingSummary({ text, highlight }: { text: string; highlight?: string }) {
   const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
-  if (!sections.length) return <p className="text-xs leading-relaxed text-natural-dark">{highlight ? <HighlightText text={text} query={highlight} /> : text}</p>;
-  return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-natural-dark">{highlight ? <HighlightText text={section.body} query={highlight} /> : section.body}</div></section>)}</div>;
+  if (!sections.length) return <p className="text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={text} highlight={highlight} /></p>;
+  return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
 }
 
 const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete }) => {
