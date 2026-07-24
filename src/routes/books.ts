@@ -507,7 +507,7 @@ async function generateReadingLensForLog(log: any, book: { title: string; author
   if (!log.raw_text?.trim()) return;
   const prompt = buildReadingLensPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text });
   const raw = process.env.NINE_ROUTER_URL
-    ? await callLLM(prompt.system, prompt.user, 0.2)
+    ? await callLLM(prompt.system, prompt.user, 0.2, true, true)
     : JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
   const analysis = parseReadingLensAnalysis(raw, log.raw_text);
   await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));

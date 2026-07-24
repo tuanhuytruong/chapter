@@ -10,12 +10,15 @@
 export async function callLLM(
   system: string,
   user: string,
-  temperature = 0.7
+  temperature = 0.7,
+  strict = false,
+  jsonMode = false
 ): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
 
   if (!url) {
+    if (strict) throw new Error("NineRouter is not configured");
     console.warn("[llm] NINE_ROUTER_URL not set — using fallback");
     return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
   }
@@ -38,6 +41,7 @@ export async function callLLM(
             { role: "user", content: user },
           ],
           temperature,
+          ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
           stream: false,
         }),
         signal: controller.signal,
@@ -54,7 +58,8 @@ export async function callLLM(
     if (!text) throw new Error("9router returned empty content");
     return text.trim();
   } catch (err: any) {
-    console.error("[llm] generic call failed:", err.message, "— using fallback");
+    console.error("[llm] generic call failed:", err.message, strict ? "— surfacing error" : "— using fallback");
+    if (strict) throw err;
     return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
   }
 }

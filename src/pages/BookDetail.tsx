@@ -231,7 +231,7 @@ export default function BookDetail() {
       await api.retryReadingLens(id, logId);
       await load();
       setToast({ type: 'ok', msg: 'Reading Lens is ready' });
-    } catch (e: any) { setToast({ type: 'err', msg: e.message }); }
+    } catch (e: any) { setToast({ type: 'err', msg: e.message }); throw e; }
   };
 
   const synthesizeReadingLens = async () => {
