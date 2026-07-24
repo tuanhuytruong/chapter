@@ -1,5 +1,5 @@
 // API client for the Chapter reading-companion backend (Phase 1 routes).
-import type { BookRow } from "./types";
+import type { BookRow, ReadingLensRow } from "./types";
 import type { ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
 import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
@@ -70,6 +70,11 @@ export const api = {
     }),
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
+  getReadingLens: (bookId: string) => req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
+  retryReadingLens: (bookId: string, logId: string) =>
+    req<ReadingLensRow>(`${BASE}/${bookId}/logs/${logId}/reading-lens/retry`, { method: "POST" }),
+  synthesizeReadingLens: (bookId: string) =>
+    req<{ synthesis: string }>(`${BASE}/${bookId}/reading-lens/synthesis`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
   generateReflection: (bookId: string) =>

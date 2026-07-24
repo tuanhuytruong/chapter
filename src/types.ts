@@ -54,6 +54,22 @@ export interface BookRow {
   can_edit?: boolean;
 }
 
+export type ReadingLensAnalysis = {
+  coreArgument: string;
+  argumentMap: Array<{ claim: string; support: string; implication: string }>;
+  assumptionsAndLimits: string[];
+  keyConcepts: Array<{ term: string; definition: string }>;
+  questionsToCarryForward: string[];
+  durableInsights: string[];
+  quote: string | null;
+  confidenceNotes: string[];
+};
+
+export interface ReadingLensRow {
+  id: string; book_id: string; log_id: string; schema_version: number;
+  analysis: ReadingLensAnalysis; analyst_summary: string; generated_at: string;
+}
+
 export interface LogRow {
   id: string;
   book_id: string;

@@ -2,6 +2,8 @@ import { Router, Request, Response } from "express";
 import { query, withTransaction } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
 import { callLLM, callNineRouter, parseSummary } from "../llm.js";
+import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
+import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
 import { requireAuth, requireOwner, userFrom } from "../auth.js";
@@ -264,6 +266,52 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/books/:id/reading-lens — no source text is exposed.
+booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
+    res.json(await listReadingLensAnalyses(id));
+  } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
+});
+
+booksRouter.get("/:id/logs/:logId/reading-lens", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
+    const analysis = await getReadingLensAnalysisForLog(id, logId);
+    if (!analysis) return res.status(404).json({ error: "reading lens not available" });
+    res.json(analysis);
+  } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
+});
+
+booksRouter.post("/:id/logs/:logId/reading-lens/retry", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const [book, log] = [(await query("SELECT * FROM books WHERE id=$1", [id])).rows[0], (await query("SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, id])).rows[0]];
+    if (!log?.raw_text) return res.status(400).json({ error: "session has no extracted text" });
+    await generateReadingLensForLog(log, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto" });
+    res.json(await getReadingLensAnalysisForLog(id, logId));
+  } catch (e: any) { res.status(500).json({ error: "reading lens retry failed", detail: e.message }); }
+});
+
+booksRouter.post("/:id/reading-lens/synthesis", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const analyses = await listReadingLensAnalyses(id);
+    if (analyses.length < 3) return res.status(409).json({ error: "at least three Reading Lens sessions are required" });
+    const book = (await query("SELECT title, author, summary_lang FROM books WHERE id=$1", [id])).rows[0];
+    const journal = analyses.slice(-24).map((item, index) => `Session ${index + 1}: ${item.analyst_summary}\nInsights: ${(item.analysis.durableInsights || []).join("; ")}\nQuestions: ${(item.analysis.questionsToCarryForward || []).join("; ")}`).join("\n\n").slice(0, 50000);
+    const language = book.summary_lang === "vi" ? "Write entirely in Vietnamese." : book.summary_lang === "en" ? "Write entirely in English." : "Match the journal language.";
+    const synthesis = await callLLM("You synthesize a reader's saved private journal. Stay grounded in it; do not present a definitive interpretation of the book.", `${language}\nCreate a concise Reading Lens journey synthesis for ${book.title}. Identify recurring arguments, tensions, developing concepts, and questions.\n\n${journal}`, 0.35);
+    res.json({ synthesis });
+  } catch (e: any) { res.status(500).json({ error: "reading lens synthesis failed", detail: e.message }); }
+});
+
 // ── B6: Advance all active (define BEFORE /:id/advance to avoid route clash) ──
 // POST /api/books/all/advance
 booksRouter.post("/all/advance", async (req: Request, res: Response) => {
@@ -341,7 +389,7 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
 
 /** Core: extract next chunk, call LLM, persist. Supports multi-session. */
 async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
-  return withTransaction(async (client) => {
+  const result: any = await withTransaction(async (client) => {
     const bRes = await client.query("SELECT * FROM books WHERE id = $1", [bookId]);
     const book = bRes.rows[0];
     if (!book) return null;
@@ -431,6 +479,8 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     return {
       bookId,
       title: book.title,
+      author: book.author,
+      summaryLang: book.summary_lang || "auto",
       date: dateStr,
       session: sessionNum,
       pageStart: start,
@@ -440,6 +490,27 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       log: ins.rows[0],
     };
   });
+  if (result?.log?.raw_text) {
+    // Deliberately detached after the committed reading session: Lens is helpful
+    // background enrichment, never a reason to fail Read Today or review cards.
+    void generateReadingLensForLog(result.log, {
+      title: result.title,
+      author: result.author,
+      total: result.totalUnits,
+      lang: result.summaryLang || "auto",
+    }).catch((error) => console.warn("[reading-lens] background analysis unavailable:", error.message));
+  }
+  return result;
+}
+
+async function generateReadingLensForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en" }): Promise<void> {
+  if (!log.raw_text?.trim()) return;
+  const prompt = buildReadingLensPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text });
+  const raw = process.env.NINE_ROUTER_URL
+    ? await callLLM(prompt.system, prompt.user, 0.2)
+    : JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
+  const analysis = parseReadingLensAnalysis(raw, log.raw_text);
+  await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
 }
 
 // GET /api/books/:id/log/today — returns array of today's sessions (n8n compatibility)

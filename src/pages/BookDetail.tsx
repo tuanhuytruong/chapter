@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
-import type { BookRow, LogRow, SummaryMode } from '../types';
+import type { BookRow, LogRow, ReadingLensRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
+import ReadingLensCard from '../components/ReadingLensCard';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
 import ChapterMarkers from '../components/ChapterMarkers';
@@ -39,6 +40,9 @@ export default function BookDetail() {
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
   const [reflectionLoading, setReflectionLoading] = useState(false);
+  const [lenses, setLenses] = useState<ReadingLensRow[]>([]);
+  const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
+  const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
 
   const load = useCallback(async () => {
@@ -46,6 +50,7 @@ export default function BookDetail() {
     setLoading(true);
     try {
       const [b, l] = await Promise.all([api.getBook(id), api.getLog(id)]);
+      const lensRows = b.can_edit ? await api.getReadingLens(id) : [];
       setBook(b);
       setDailyPages(b.daily_pages);
       setStatus(b.status);
@@ -55,6 +60,7 @@ export default function BookDetail() {
       setSummaryLang(b.summary_lang || 'auto');
       setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
+      setLenses(lensRows);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {
@@ -217,6 +223,25 @@ export default function BookDetail() {
     } finally {
       setReflectionLoading(false);
     }
+  };
+
+  const retryReadingLens = async (logId: string) => {
+    if (!id) return;
+    try {
+      await api.retryReadingLens(id, logId);
+      await load();
+      setToast({ type: 'ok', msg: 'Reading Lens is ready' });
+    } catch (e: any) { setToast({ type: 'err', msg: e.message }); }
+  };
+
+  const synthesizeReadingLens = async () => {
+    if (!id) return;
+    setLensSynthesizing(true);
+    try {
+      const result = await api.synthesizeReadingLens(id);
+      setLensSynthesis(result.synthesis);
+    } catch (e: any) { setToast({ type: 'err', msg: e.message }); }
+    finally { setLensSynthesizing(false); }
   };
 
   const generateMindmap = async () => {
@@ -478,6 +503,7 @@ export default function BookDetail() {
                           </div>
                         )}
                         <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
+                        <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} onRetry={() => retryReadingLens(log.id)} />
                       </div>
                     ))}
                   </div>
@@ -487,6 +513,16 @@ export default function BookDetail() {
           </>
         )}
       </div>
+
+      {lenses.length >= 3 && (
+        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">Reading Lens</p><h2 className="mt-1 text-base font-bold text-natural-dark">Synthesize this journey</h2><p className="mt-1 text-xs text-natural-stone">A grounded view across your saved session analyses.</p></div>
+            {book.can_edit && <button onClick={synthesizeReadingLens} disabled={lensSynthesizing} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">{lensSynthesizing ? 'Synthesizing…' : 'Synthesize this journey'}</button>}
+          </div>
+          {lensSynthesis && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{lensSynthesis}</article>}
+        </section>
+      )}
 
       {/* Knowledge Map */}
       {book.can_edit && book.status === 'finished' && logs.length > 0 && (

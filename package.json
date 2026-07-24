@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit",
     "verify:phase1": "tsx scripts/verify-phase1.mjs",
     "verify:9router": "tsx scripts/verify-9router.mjs",
+    "verify:reading-lens": "tsx scripts/verify-reading-lens.ts",
     "create-user": "tsx scripts/user.ts create",
     "delete-user": "tsx scripts/user.ts delete",
     "reset-password": "tsx scripts/user.ts reset-password"
