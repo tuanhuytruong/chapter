@@ -67,38 +67,3 @@ export interface LogRow {
   chapter_title: string | null;
   created_at: string;
 }
-
-export interface Comment {
-  id: string;
-  authorName: string;
-  authorAvatar: string;
-  authorBio: string;
-  content: string;
-  timestamp: string;
-}
-
-export interface CommunityPost {
-  id: string;
-  authorName: string;
-  authorAvatar: string;
-  authorBio: string;
-  bookTitle: string;
-  bookAuthor: string;
-  book_id?: string;       // link back to the reading log's book
-  summary: string;        // The short summary
-  content: string;        // The thoughts/reflection
-  likes: number;
-  comments: Comment[];
-  timestamp: string;
-  isUserPost?: boolean;
-}
-
-export interface CommunityPersona {
-  id: string;
-  name: string;
-  avatar: string;
-  bio: string;
-  specialty: string;
-  color: string;
-  systemPrompt: string;
-}

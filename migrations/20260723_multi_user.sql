@@ -8,12 +8,7 @@ CREATE TABLE IF NOT EXISTS chapter.users (
   display_name TEXT NOT NULL, avatar_url TEXT, telegram_chat_id TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES chapter.users(id) ON DELETE RESTRICT;
-ALTER TABLE chapter.community_posts ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES chapter.users(id) ON DELETE SET NULL;
-ALTER TABLE chapter.community_comments ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES chapter.users(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_books_owner ON chapter.books(owner_id);
-CREATE INDEX IF NOT EXISTS idx_posts_author ON chapter.community_posts(author_id);
-CREATE INDEX IF NOT EXISTS idx_comments_author ON chapter.community_comments(author_id);
 -- Backfill procedure (run after creating the intended owner):
 -- UPDATE chapter.books SET owner_id='<user uuid>' WHERE owner_id IS NULL;
--- Existing community authors remain NULL because historical display names cannot be reliably mapped.
--- Do not add NOT NULL constraints until every book/log owner has been audited and backfilled.
+-- Do not add a NOT NULL constraint until every book/log owner has been audited and backfilled.

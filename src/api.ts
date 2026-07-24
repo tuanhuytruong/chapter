@@ -89,12 +89,6 @@ export const api = {
     bookCounts: { active: number; finished: number; paused: number; queued: number };
     globalStats: { total_days_read: number; last_read: string };
   }>("/api/stats"),
-  getCommunityStats: () => req<{
-    velocity: { date: string; pages_read: number }[];
-    insights: { insight: string; freq: number }[];
-    bookCounts: { active: number; finished: number; paused: number; queued: number };
-    globalStats: { total_days_read: number; last_read: string };
-  }>("/api/stats/community"),
 };
 
 export interface UploadResult {

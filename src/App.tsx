@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Outlet, useLocation } from 'react-router-dom';
 import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
-import Community from './pages/Community';
 import Insights from './pages/Insights';
 import Review from './pages/Review';
 import ReadingCalendar from './pages/Calendar';
@@ -10,13 +9,11 @@ import Momentum from './pages/Momentum';
 import Today from './pages/Today';
 import Achievements from './pages/Achievements';
 import Account from './pages/Account';
-import { Award, BookMarked, Users, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut, Settings2 } from 'lucide-react';
+import { Award, BookMarked, BarChart3, Brain, CalendarDays, CircleGauge, Sparkles, Moon, Sun, LogOut, Settings2 } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
 
-const NICKNAME_KEY = 'chapter_nickname';
-function getNickname() { return localStorage.getItem(NICKNAME_KEY) || ''; }
 
 // ── Layout (nav + outlet) ──────────────────────────────────────
 function Layout() {
@@ -56,9 +53,6 @@ function Layout() {
               </NavLink>
               <NavLink to="/" end aria-label="Library" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <BookMarked className="w-3.5 h-3.5" /><span className="hidden sm:inline">Library</span>
-              </NavLink>
-              <NavLink to="/community" aria-label="Community" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
-                <Users className="w-3.5 h-3.5" /><span className="hidden sm:inline">Community</span>
               </NavLink>
               <NavLink to="/insights" aria-label="Insights" className={({isActive}) => isActive ? 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0 sm:min-w-0' : 'flex min-h-10 min-w-8 items-center justify-center gap-1.5 hover:text-natural-dark sm:min-h-0 sm:min-w-0'}>
                 <BarChart3 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Insights</span>
@@ -110,7 +104,6 @@ function AppRoutes() {
           <Route path="/" element={<Library />} />
           <Route path="/today" element={<Today />} />
           <Route path="/books/:id" element={<BookDetail />} />
-          <Route path="/community" element={<Community />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/review" element={<Review />} />
           <Route path="/calendar" element={<ReadingCalendar />} />

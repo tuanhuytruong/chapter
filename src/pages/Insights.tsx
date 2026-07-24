@@ -30,14 +30,13 @@ export default function Insights() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.getStats>> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [scope, setScope] = useState<"personal" | "community">("personal");
   const [books, setBooks] = useState<BookRow[]>([]);
   const [logsByBook, setLogsByBook] = useState<Record<string, LogRow[]>>({});
 
   useEffect(() => {
     (async () => {
       try {
-        const [data, allBooks] = await Promise.all([scope === "personal" ? api.getStats() : api.getCommunityStats(), api.listBooks(scope === "personal" ? "mine" : "all")]);
+        const [data, allBooks] = await Promise.all([api.getStats(), api.listBooks("mine")]);
         setStats(data);
         setBooks(allBooks);
         // Fetch logs for all books in parallel
@@ -51,7 +50,7 @@ export default function Insights() {
         setLoading(false);
       }
     })();
-  }, [scope]);
+  }, []);
 
   if (loading) return <div className="flex justify-center p-16"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /></div>;
   if (!stats) return <div className="text-center p-16 text-natural-stone font-sans">Could not load stats.</div>;
@@ -63,7 +62,7 @@ export default function Insights() {
   if (totalBooks === 0) {
     return (
       <div className="space-y-6 font-sans">
-        <div className="flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2><div className="flex gap-1"><button onClick={() => setScope("personal")} className={`px-3 py-1.5 text-xs rounded-full ${scope === "personal" ? "bg-natural-sage text-white" : "text-natural-stone"}`}>My Insights</button><button onClick={() => setScope("community")} className={`px-3 py-1.5 text-xs rounded-full ${scope === "community" ? "bg-natural-sage text-white" : "text-natural-stone"}`}>Community</button></div></div>
+        <h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2>
         <div className="flex flex-col items-center justify-center p-16 bg-natural-cream rounded-[32px] border border-natural-border text-center space-y-3">
           <BarChart3 className="w-10 h-10 text-natural-stone" />
           <p className="font-bold text-natural-dark text-sm">No insights yet</p>
@@ -83,7 +82,7 @@ export default function Insights() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2><div className="flex gap-1"><button onClick={() => setScope("personal")} className={`px-3 py-1.5 text-xs rounded-full ${scope === "personal" ? "bg-natural-sage text-white" : "text-natural-stone"}`}>My Insights</button><button onClick={() => setScope("community")} className={`px-3 py-1.5 text-xs rounded-full ${scope === "community" ? "bg-natural-sage text-white" : "text-natural-stone"}`}>Community</button></div></div>
+      <h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

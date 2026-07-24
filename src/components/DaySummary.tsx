@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
 import type { LogRow } from '../types';
 import { api } from '../api';
-import ShareSummaryModal from './ShareSummaryModal';
 
 // Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
 // whitespace, drop blank lines, and keep paragraph breaks so the preview is
@@ -53,7 +52,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [saving, setSaving] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
-  const [showShare, setShowShare] = useState(false);
 
   // Auto-save on blur
   const saveNotes = useCallback(async (text: string) => {
@@ -106,11 +104,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           )}
         </div>
         <div className="flex items-center gap-1">
-          {canEdit && bookTitle && bookId && log.summary && (
-            <button onClick={() => setShowShare(true)} className="text-natural-stone hover:text-natural-sage cursor-pointer" title="Share to community">
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
-          )}
           {log.raw_text && (
             <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -174,16 +167,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         </div>
       )}
 
-      {showShare && bookTitle && bookAuthor && bookId && (
-        <ShareSummaryModal
-          log={log}
-          bookTitle={bookTitle}
-          bookAuthor={bookAuthor}
-          bookId={bookId}
-          onClose={() => setShowShare(false)}
-          onShared={() => {}}
-        />
-      )}
     </div>
   );
 };

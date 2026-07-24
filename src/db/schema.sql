@@ -160,33 +160,3 @@ CREATE TABLE IF NOT EXISTS chapter.weekly_reading_goals (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (owner_id)
 );
-
--- ───────────────────────────────────────────────────────────
--- chapter.community_posts (persistent book club)
--- ───────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS chapter.community_posts (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  author_name   TEXT NOT NULL,
-  author_avatar TEXT NOT NULL,
-  author_bio    TEXT NOT NULL DEFAULT 'Book Enthusiast',
-  book_title    TEXT NOT NULL,
-  book_author   TEXT NOT NULL,
-  book_id       UUID REFERENCES chapter.books(id) ON DELETE SET NULL,
-  summary       TEXT NOT NULL,
-  content       TEXT NOT NULL,
-  likes         INT NOT NULL DEFAULT 0,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS chapter.community_comments (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id       UUID NOT NULL REFERENCES chapter.community_posts(id) ON DELETE CASCADE,
-  author_name   TEXT NOT NULL,
-  author_avatar TEXT NOT NULL,
-  author_bio    TEXT NOT NULL DEFAULT '',
-  content       TEXT NOT NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_community_posts_created ON chapter.community_posts (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_community_comments_post ON chapter.community_comments (post_id, created_at ASC);
