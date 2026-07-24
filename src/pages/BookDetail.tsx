@@ -488,7 +488,7 @@ export default function BookDetail() {
         ) : (
           <>
             {logView === 'journey' ? (
-              <JourneyView logs={filteredLogs} fileType={book.file_type} expanded={journeyExpanded} setExpanded={setJourneyExpanded} />
+              <JourneyView logs={filteredLogs} fileType={book.file_type} summaryMode={book.summary_mode} expanded={journeyExpanded} setExpanded={setJourneyExpanded} />
             ) : (
               <div className="space-y-3">
                 {logsByDate.map(([date, dayLogs]) => (

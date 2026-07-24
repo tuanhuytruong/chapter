@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, Quote, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
-import type { BookRow, LogRow } from '../types';
+import type { BookRow, LogRow, SummaryMode } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -30,14 +30,38 @@ function groupByDate(logs: LogRow[]): Map<string, LogRow[]> {
   return new Map([...map.entries()].sort(([a], [b]) => b.localeCompare(a)));
 }
 
+function InlineMarkdown({ text }: { text: string }) {
+  return <>{text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => part.startsWith('**') && part.endsWith('**')
+    ? <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>
+    : <React.Fragment key={index}>{part}</React.Fragment>)}</>;
+}
+
+function DeepReadingJourney({ text, expanded }: { text: string; expanded: boolean }) {
+  const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
+  if (!sections.length) return <p className="text-sm text-natural-dark font-sans leading-relaxed"><InlineMarkdown text={text} /></p>;
+  const core = sections[0];
+  const rest = sections.slice(1);
+  return <div className="font-sans">
+    <p className="text-sm text-natural-dark leading-relaxed"><InlineMarkdown text={core.body} /></p>
+    {expanded && <div className="mt-3 space-y-3 border-t border-natural-border/40 pt-3">
+      {rest.map((section) => <section key={section.title}>
+        <h4 className="mb-1 text-[10px] font-bold uppercase tracking-wider text-natural-sage">{section.title}</h4>
+        <div className="whitespace-pre-wrap text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} /></div>
+      </section>)}
+    </div>}
+  </div>;
+}
+
 export default function JourneyView({
   logs,
   fileType,
+  summaryMode = 'casual',
   expanded,
   setExpanded,
 }: {
   logs: LogRow[];
   fileType: BookRow['file_type'];
+  summaryMode?: SummaryMode;
   expanded: string | null;
   setExpanded: (id: string | null) => void;
 }) {
@@ -127,9 +151,12 @@ export default function JourneyView({
                                   ? `Session ${si + 1} · `
                                   : ''}{fileType === 'epub' ? 'chunks' : 'pp.'} {log.page_start}–{log.page_end}
                               </span>
-                              <p className="text-sm text-natural-dark font-sans leading-relaxed">
-                                {log.summary || 'Session summary…'}
-                              </p>
+                              {log.summary
+                                ? summaryMode === 'deep_reading'
+                                  ? <DeepReadingJourney text={log.summary} expanded={isOpen} />
+                                  : <p className="text-sm text-natural-dark font-sans leading-relaxed">{log.summary}</p>
+                                : <p className="text-sm text-natural-stone font-sans">Session summary…</p>}
+
                             </div>
                             <span className="shrink-0 mt-1 text-natural-stone group-hover:text-natural-dark transition">
                               {isOpen
@@ -141,7 +168,7 @@ export default function JourneyView({
                         </button>
 
                         {/* Expanded detail — full insights + quote */}
-                        {isOpen && (
+                        {isOpen && summaryMode !== 'deep_reading' && (
                           <div className="px-4 pb-4 space-y-3 border-t border-natural-border/40 pt-3 bg-natural-cream/40">
                             {log.key_insights && log.key_insights.length > 0 && (
                               <div className="space-y-2">
@@ -170,7 +197,7 @@ export default function JourneyView({
                   })}
 
                   {/* Quote preview strip — only when sessions are collapsed */}
-                  {allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
+                  {summaryMode !== 'deep_reading' && allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
                     <div className="px-4 py-2.5 border-t border-natural-border/40 flex items-start gap-2">
                       <Quote className="w-3 h-3 text-natural-clay/50 shrink-0 mt-0.5" />
                       <p className="text-xs italic text-natural-stone/70 font-serif line-clamp-2">
@@ -180,7 +207,7 @@ export default function JourneyView({
                   )}
 
                   {/* Insights panel — collapsible, scrollable, fully readable */}
-                  {allInsights.length > 0 && (
+                  {summaryMode !== 'deep_reading' && allInsights.length > 0 && (
                     <div className="border-t border-natural-border/40">
                       {/* Toggle bar */}
                       <button
