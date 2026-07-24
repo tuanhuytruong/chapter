@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
-import type { BookRow, LogRow } from '../types';
+import type { BookRow, LogRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import StreakHeatmap from '../components/StreakHeatmap';
@@ -28,6 +28,7 @@ export default function BookDetail() {
   const [author, setAuthor] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [summaryLang, setSummaryLang] = useState<'auto' | 'vi' | 'en'>('auto');
+  const [summaryMode, setSummaryMode] = useState<SummaryMode>('casual');
   const [searchingCover, setSearchingCover] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
@@ -52,6 +53,7 @@ export default function BookDetail() {
       setAuthor(b.author);
       setCoverUrl(b.cover_url || '');
       setSummaryLang(b.summary_lang || 'auto');
+      setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
@@ -116,6 +118,7 @@ export default function BookDetail() {
         author: author.trim(),
         cover_url: coverUrl || undefined,
         summary_lang: summaryLang,
+        summary_mode: summaryMode,
       });
       setToast({ type: 'ok', msg: 'Saved' });
       setEditing(false);
@@ -376,6 +379,11 @@ export default function BookDetail() {
                     <option value="en">English</option>
                   </select>
                 </div>
+                <fieldset>
+                  <legend className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Summary style</legend>
+                  <div className="mt-1 grid gap-2 sm:grid-cols-2">{([['casual', 'Casual', 'Warm highlights for everyday reading.'], ['deep_reading', 'Deep Reading', 'Arguments, support, assumptions, and concepts.']] as const).map(([value, label, copy]) => <label key={value} className={`min-h-11 cursor-pointer rounded-xl border p-3 text-xs ${summaryMode === value ? 'border-natural-sage bg-natural-sage/10' : 'border-natural-border'}`}><input className="sr-only" type="radio" checked={summaryMode === value} onChange={() => setSummaryMode(value)} /><b>{label}</b><span className="mt-0.5 block text-[10px] text-natural-stone">{copy}</span></label>)}</div>
+                  <p className="mt-1 text-[10px] text-natural-stone">Applies to new summaries and summaries you retry. Earlier summaries stay unchanged.</p>
+                </fieldset>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
                   <select value={status} onChange={e => setStatus(e.target.value as any)}
@@ -394,6 +402,7 @@ export default function BookDetail() {
               <div className="text-xs text-natural-muted space-y-1">
                 <p>{dailyTargetLabel(book.file_type)}: <b className="text-natural-dark">{book.daily_pages}</b></p>
                 <p>Status: <b className="text-natural-dark capitalize">{book.status}</b></p>
+                <p>Summary: <b className="text-natural-dark">{book.summary_mode === 'deep_reading' ? 'Deep Reading' : 'Casual'}</b></p>
                 <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
               </div>
             )}
@@ -468,7 +477,7 @@ export default function BookDetail() {
                             <div className="flex-1 h-px bg-natural-border" />
                           </div>
                         )}
-                        <DaySummary log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
+                        <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
                       </div>
                     ))}
                   </div>

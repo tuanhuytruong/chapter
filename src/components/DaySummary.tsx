@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
-import type { LogRow } from '../types';
+import type { LogRow, SummaryMode } from '../types';
 import { api } from '../api';
 
 // Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
@@ -24,6 +24,7 @@ interface DaySummaryProps {
   canEdit?: boolean;
   highlight?: string;
   fileType?: 'pdf' | 'epub';
+  summaryMode?: SummaryMode;
   onRetryComplete?: () => void;
 }
 
@@ -45,7 +46,13 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', onRetryComplete }) => {
+function DeepReadingSummary({ text, highlight }: { text: string; highlight?: string }) {
+  const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
+  if (!sections.length) return <p className="text-xs leading-relaxed text-natural-dark">{highlight ? <HighlightText text={text} query={highlight} /> : text}</p>;
+  return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-natural-dark">{highlight ? <HighlightText text={section.body} query={highlight} /> : section.body}</div></section>)}</div>;
+}
+
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
@@ -112,7 +119,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         </div>
       </div>
 
-      {log.summary && <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>}
+      {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
 
       {canEdit && !log.summary && log.raw_text && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">

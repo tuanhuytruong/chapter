@@ -29,6 +29,8 @@ export interface ReadingLog {
 }
 
 // New server-side DB row shapes (snake_case from Postgres)
+export type SummaryMode = "casual" | "deep_reading";
+
 export interface BookRow {
   id: string;
   title: string;
@@ -41,6 +43,7 @@ export interface BookRow {
   daily_pages: number;
   queue_order?: number;
   summary_lang: "auto" | "vi" | "en";
+  summary_mode: SummaryMode;
   cover_url?: string;
   reflection_text?: string | null;
   reflection_at?: string | null;

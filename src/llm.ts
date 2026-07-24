@@ -74,6 +74,7 @@ export interface AdvanceLLMInput {
   extractedText: string;
   fileType?: "pdf" | "epub";
   lang?: "auto" | "vi" | "en";
+  summaryMode?: "casual" | "deep_reading";
 }
 
 // Build the system prompt based on the requested summary language.
@@ -119,6 +120,42 @@ Format your response EXACTLY as:
 <the quote, or "N/A" if none>`;
 }
 
+function buildDeepReadingSystemPrompt(lang: "auto" | "vi" | "en" = "auto"): string {
+  const language = lang === "vi"
+    ? "Respond entirely in Vietnamese (Tiếng Việt)."
+    : lang === "en"
+      ? "Respond entirely in English."
+      : "Respond in the SAME language as the provided reading text.";
+  return `You are a rigorous, careful reading companion for academic and research-oriented books. Analyze ONLY the provided reading text. Never add outside facts, citations, evidence, or claims. Distinguish what is explicit from a reasonable inference. If the text does not establish a point, say \"Not established in this reading.\" Do not call a claim evidence unless the text itself provides support. Quotes must be verbatim from the reading text.
+
+${language}
+
+Format your response EXACTLY as:
+
+## Core argument
+<one concise paragraph explaining the central claim, explanation, or problem>
+
+## Argument map
+1. **Claim:** <grounded claim>
+   - **Support:** <reasoning or evidence present, or "Not established in this reading.">
+   - **Implication:** <what follows if the claim holds>
+
+## Assumptions & limits
+- <assumption, scope, tension, or "Not established in this reading.">
+
+## Key concepts
+- **<concept>:** <short contextual definition>
+
+## Questions to carry forward
+- <one or two questions for the next reading>
+
+## Insights
+- <exactly 3 concise, durable insights suitable for spaced review>
+
+## Quote
+<one verbatim quote, or "N/A">`;
+}
+
 function buildUserPrompt(input: AdvanceLLMInput): string {
   const unit = input.fileType === "epub" ? "Reading chunks" : "Pages";
   return `Book: ${input.title} by ${input.author}
@@ -148,7 +185,7 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: buildSystemPrompt(input.lang) },
+          { role: "system", content: input.summaryMode === "deep_reading" ? buildDeepReadingSystemPrompt(input.lang) : buildSystemPrompt(input.lang) },
           { role: "user", content: buildUserPrompt(input) },
         ],
         temperature: 0.7,
@@ -170,36 +207,29 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
 }
 
 /** Parse the markdown-shaped LLM output into structured fields. */
-export function parseSummary(raw: string): ParsedSummary {
+export function parseSummary(raw: string, summaryMode: "casual" | "deep_reading" = "casual"): ParsedSummary {
   const result: ParsedSummary = { summary: "", key_insights: [], quote: null };
-
   const section = (name: string): string => {
     const re = new RegExp(`##\\s*${name}\\s*\\n([\\s\\S]*?)(?=\\n##\\s*|$)`, "i");
-    const m = raw.match(re);
-    return m ? m[1].trim() : "";
+    return raw.match(re)?.[1]?.trim() || "";
   };
 
-  const summaryRaw = section("Summary");
-  if (summaryRaw) result.summary = summaryRaw;
-
   const insightsRaw = section("Insights");
+  if (summaryMode === "deep_reading") {
+    const insightsStart = raw.search(/\n##\s*Insights\s*\n/i);
+    result.summary = (insightsStart >= 0 ? raw.slice(0, insightsStart) : raw).trim();
+  } else {
+    result.summary = section("Summary");
+  }
   if (insightsRaw) {
-    result.key_insights = insightsRaw
-      .split("\n")
-      .map((l) => l.replace(/^[-*•]\s*/, "").trim())
+    result.key_insights = insightsRaw.split("\n")
+      .map((line) => line.replace(/^[-*•]\s*/, "").trim())
       .filter(Boolean)
-      .slice(0, 5);
+      .slice(0, summaryMode === "deep_reading" ? 3 : 5);
   }
-
   const quoteRaw = section("Quote");
-  if (quoteRaw && !/^n\/?a$/i.test(quoteRaw)) {
-    result.quote = quoteRaw.replace(/^["']|["']$/g, "");
-  }
-
-  // Fallback: if parsing yielded nothing, treat the whole blob as summary.
-  if (!result.summary && !result.key_insights.length) {
-    result.summary = raw.trim();
-  }
+  if (quoteRaw && !/^n\/?a$/i.test(quoteRaw)) result.quote = quoteRaw.replace(/^["']|["']$/g, "");
+  if (!result.summary && !result.key_insights.length) result.summary = raw.trim();
   return result;
 }
 
@@ -207,6 +237,30 @@ export function parseSummary(raw: string): ParsedSummary {
 function mockResponse(input: AdvanceLLMInput): string {
   const snippet = input.extractedText.slice(0, 180).replace(/\s+/g, " ").trim();
   const unit = input.fileType === "epub" ? "reading chunks" : "pages";
+  if (input.summaryMode === "deep_reading") return `## Core argument
+This reading develops a central claim and connects it to its immediate consequences. [mock Deep Reading — ${input.title}, ${unit} ${input.start}–${input.end}]
+
+## Argument map
+1. **Claim:** The text advances a practical proposition.
+   - **Support:** The provided reading frames its reasoning directly.
+   - **Implication:** The claim changes how the following material should be evaluated.
+
+## Assumptions & limits
+- Not established in this reading.
+
+## Key concepts
+- **Central proposition:** The main idea developed in the reading.
+
+## Questions to carry forward
+- What evidence will the next section add to this claim?
+
+## Insights
+- Claims should be separated from the evidence offered for them.
+- Scope and assumptions shape how far a conclusion can travel.
+- A useful reading question follows the argument into the next section.
+
+## Quote
+"${snippet.slice(0, 80)}…"`;
   return `## Summary
 The ideas here point toward a practical shift in how we act and decide. What matters is not only understanding the principle, but noticing how it can shape small choices over time. [mock summary — 9router offline; ${input.title}, ${unit} ${input.start}–${input.end}]
 
@@ -216,5 +270,5 @@ The ideas here point toward a practical shift in how we act and decide. What mat
 - Measurement creates awareness, which is the first step to improvement.
 
 ## Quote
-"${snippet.slice(0, 80)}…" || null`;
+"${snippet.slice(0, 80)}…"`;
 }

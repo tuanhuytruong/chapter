@@ -115,7 +115,7 @@ booksRouter.get("/calendar", async (req: Request, res: Response) => {
 
 // POST /api/books — register a new book
 booksRouter.post("/", async (req: Request, res: Response) => {
-  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, status } = req.body;
+  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, status } = req.body;
   if (!title || !file_path || !file_type) {
     return res.status(400).json({ error: "title, file_path, file_type required" });
   }
@@ -124,6 +124,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   }
   const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
   const initialStatus = status === "queued" ? "queued" : "active";
+  const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
   const resolvedPath = resolveBookPath(file_path);
   try {
     const { rows } = await withTransaction(async (client) => {
@@ -131,9 +132,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
         ? Number((await client.query("SELECT COALESCE(MAX(queue_order), 0) + 1 AS next FROM books WHERE owner_id=$1 AND status='queued'", [userFrom(req).id])).rows[0].next)
         : null;
       return client.query(
-        `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, owner_id, status, queue_order)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, userFrom(req).id, initialStatus, queueOrder]
+        `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, owner_id, status, queue_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, summaryMode, userFrom(req).id, initialStatus, queueOrder]
       );
     });
     res.status(201).json(rows[0]);
@@ -171,9 +172,12 @@ booksRouter.put("/queue", async (req: Request, res: Response) => {
 booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   if (!await ownerCanMutate(req, res, id)) return;
-  const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang"];
+  const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang", "summary_mode"];
   if (req.body.status !== undefined && !["active", "paused", "finished", "queued"].includes(req.body.status)) {
     return res.status(400).json({ error: "invalid status" });
+  }
+  if (req.body.summary_mode !== undefined && !["casual", "deep_reading"].includes(req.body.summary_mode)) {
+    return res.status(400).json({ error: "invalid summary_mode" });
   }
   const sets: string[] = [];
   const vals: any[] = [];
@@ -393,8 +397,9 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       extractedText: text,
       fileType: book.file_type,
       lang: (book.summary_lang as "auto" | "vi" | "en") || "auto",
+      summaryMode: book.summary_mode || "casual",
     });
-    const parsed = parseSummary(raw);
+    const parsed = parseSummary(raw, book.summary_mode || "casual");
 
     // Update book cursor — always advances regardless of session count
     const newCurrent = end;
@@ -474,8 +479,9 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
       extractedText: entry.raw_text,
       fileType: book.file_type,
       lang: book.summary_lang || "auto",
+      summaryMode: book.summary_mode || "casual",
     });
-    const parsed = parseSummary(raw);
+    const parsed = parseSummary(raw, book.summary_mode || "casual");
     const { rows } = await query(
       `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,
       [parsed.summary, parsed.key_insights, parsed.quote, logId, id]

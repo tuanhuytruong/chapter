@@ -10,7 +10,7 @@ import Today from './pages/Today';
 import Achievements from './pages/Achievements';
 import Account from './pages/Account';
 import JourneyDrawer from './components/JourneyDrawer';
-import { BookMarked, Brain, Menu, Moon, Sparkles, Sun, LogOut, Settings2 } from 'lucide-react';
+import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2 } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -50,10 +50,10 @@ function Layout() {
             <NavLink to="/today" aria-label="Today" className={({ isActive }) => primaryLink(isActive)}><Sparkles className="h-3.5 w-3.5" /><span className="hidden sm:inline">Today</span></NavLink>
             <NavLink to="/" end aria-label="Library" className={({ isActive }) => primaryLink(isActive)}><BookMarked className="h-3.5 w-3.5" /><span className="hidden sm:inline">Library</span></NavLink>
             <NavLink to="/review" aria-label="Review" className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span className="hidden sm:inline">Review</span></NavLink>
-            <button onClick={() => setJourneyOpen(true)} aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex min-h-10 items-center justify-center gap-1.5 text-natural-stone hover:text-natural-dark sm:min-h-0"><Menu className="h-4 w-4" /><span className="hidden sm:inline">Journey</span></button>
           </nav>
 
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <button onClick={() => setJourneyOpen(true)} aria-label="Open reading journey" title="Your Journey" aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone hover:text-natural-dark sm:h-7 sm:w-7 sm:border-l-2"><Map className="h-3.5 w-3.5" /></button>
             <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'} className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream hover:opacity-70 sm:h-7 sm:w-7">{isDark ? <Sun className="h-3.5 w-3.5 text-natural-clay" /> : <Moon className="h-3.5 w-3.5 text-natural-stone" />}</button>
             <NavLink to="/account" aria-label="Account settings" className="hidden h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone hover:text-natural-dark sm:flex"><Settings2 className="h-3.5 w-3.5" /></NavLink>
             <button onClick={() => logout()} className="flex min-h-10 items-center gap-1.5 hover:opacity-70" title="Sign out" aria-label="Sign out"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-natural-sage/20"><span className="font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span></div><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span><LogOut className="hidden h-3 w-3 text-natural-stone lg:block" /></button>

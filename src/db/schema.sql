@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   current_page  INT NOT NULL DEFAULT 0,
   status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'finished', 'queued')),
   summary_lang  TEXT NOT NULL DEFAULT 'auto' CHECK (summary_lang IN ('auto', 'vi', 'en')),
+  summary_mode  TEXT NOT NULL DEFAULT 'casual' CHECK (summary_mode IN ('casual', 'deep_reading')),
   cover_url     TEXT,
   reflection_text TEXT,
   reflection_at TIMESTAMPTZ,
@@ -54,6 +55,13 @@ CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
 ALTER TABLE chapter.books
   ADD COLUMN IF NOT EXISTS summary_lang TEXT NOT NULL DEFAULT 'auto'
   CHECK (summary_lang IN ('auto', 'vi', 'en'));
+
+-- Migration: per-book AI summary depth. Existing books remain Casual.
+ALTER TABLE chapter.books
+  ADD COLUMN IF NOT EXISTS summary_mode TEXT NOT NULL DEFAULT 'casual';
+ALTER TABLE chapter.books DROP CONSTRAINT IF EXISTS books_summary_mode_check;
+ALTER TABLE chapter.books ADD CONSTRAINT books_summary_mode_check
+  CHECK (summary_mode IN ('casual', 'deep_reading'));
 
 -- Migration: one persisted end-of-book reflection per book (idempotent).
 ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reflection_text TEXT;
