@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS chapter.books (
 
 CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
 
+-- Per-reader, dismissible onboarding milestones. Content remains in the client.
+CREATE TABLE IF NOT EXISTS chapter.onboarding_progress (
+  owner_id UUID PRIMARY KEY REFERENCES chapter.users(id) ON DELETE CASCADE,
+  dismissed_steps TEXT[] NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Migration: add summary_lang to existing tables (idempotent; safe to re-run).
 ALTER TABLE chapter.books
   ADD COLUMN IF NOT EXISTS summary_lang TEXT NOT NULL DEFAULT 'auto'

@@ -5,6 +5,7 @@ import type { ReviewCardRow } from "../review";
 import ReviewHeader from "../components/review/ReviewHeader";
 import RecallCard from "../components/review/RecallCard";
 import ReviewEmptyState from "../components/review/ReviewEmptyState";
+import { GuideCard } from "../onboarding";
 
 export default function Review() {
   const [cards, setCards] = useState<ReviewCardRow[]>([]);
@@ -84,6 +85,7 @@ export default function Review() {
   return (
     <main className="mx-auto max-w-2xl space-y-5 px-4 font-sans sm:px-0">
       <ReviewHeader completed={done} total={totalDue} hasActiveCard={!!card} />
+      <GuideCard step="review" eyebrow="Review" title="A gentle return to ideas worth keeping"><p>These cards arrive after some space. Reveal the idea first, then simply choose whether it came back to you — there is no score to chase.</p></GuideCard>
       {card ? <>
         <RecallCard card={card} revealed={revealed} saving={saving} onReveal={reveal} onSubmit={(remembered) => void submit(remembered)} revealRef={revealRef} responseRef={responseRef} />
         {error && <p role="alert" className="text-center text-xs text-red-700">{error}</p>}

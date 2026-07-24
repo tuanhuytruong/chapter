@@ -15,7 +15,8 @@
     "create-user": "tsx scripts/user.ts create",
     "delete-user": "tsx scripts/user.ts delete",
     "reset-password": "tsx scripts/user.ts reset-password",
-    "verify:story-thread": "tsx scripts/verify-story-thread.ts"
+    "verify:story-thread": "tsx scripts/verify-story-thread.ts",
+    "verify:onboarding": "tsx scripts/verify-onboarding.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, ImageIcon } from 'lucide-react';
 import { api, fetchCover, uploadBook, deleteUpload } from '../api';
 import type { ReadingExperience, SummaryMode } from '../types';
+import { GuideCard } from '../onboarding';
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -93,6 +94,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         </div>
 
         <form onSubmit={submit} className="space-y-3 font-sans">
+          <GuideCard step="add_book" eyebrow="Choose your companion" title="Pick the reading experience that fits this book"><p><strong className="text-natural-dark">Reading Companion</strong> is for ideas and reflection: choose Casual or Deep Reading, and switch between them later. <strong className="text-natural-dark">Story Thread</strong> is for fiction: it follows people and open threads across sessions, and stays locked to protect that continuity.</p></GuideCard>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} required

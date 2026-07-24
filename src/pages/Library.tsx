@@ -7,6 +7,7 @@ import AddBookModal from '../components/AddBookModal';
 import Toast from '../components/Toast';
 import QuoteWall from '../components/QuoteWall';
 import SortMenu from '../components/SortMenu';
+import { GuideCard, useOnboarding } from '../onboarding';
 
 type Filter = 'all' | 'active' | 'paused' | 'finished';
 const FILTERS: { id: Filter; label: string }[] = [
@@ -35,6 +36,7 @@ export default function Library() {
   const [showAdd, setShowAdd] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const { dismiss } = useOnboarding();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,6 +125,7 @@ export default function Library() {
 
   return (
     <div className="space-y-6">
+      {scope === 'mine' && !loading && books.length === 0 && <GuideCard step="welcome" title="Begin with one book, one small session"><p>Chapter keeps the reading surface quiet: add a book, read at your pace, and let the companion notes arrive after your progress is safely saved.</p><button onClick={() => { void dismiss('welcome'); setShowAdd(true); }} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white hover:bg-natural-sage-dark">Add your first book</button></GuideCard>}
       <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-bold text-2xl text-natural-dark font-sans">Your Library</h1>

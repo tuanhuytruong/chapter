@@ -107,6 +107,27 @@ app.delete("/api/auth/telegram", async (req: Request, res: Response) => {
     res.json({ connected: false });
   } catch { res.status(500).json({ error: "Could not disconnect Telegram" }); }
 });
+
+const ONBOARDING_STEPS = new Set(["welcome", "add_book", "first_session", "review", "journey", "story_thread"]);
+app.get("/api/onboarding", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query<{ dismissed_steps: string[] }>("SELECT dismissed_steps FROM onboarding_progress WHERE owner_id=$1", [userFrom(req).id]);
+    res.json({ dismissed_steps: rows[0]?.dismissed_steps || [] });
+  } catch { res.status(500).json({ error: "Onboarding state unavailable" }); }
+});
+app.patch("/api/onboarding", async (req: Request, res: Response) => {
+  const steps = Array.isArray(req.body?.dismissed_steps) ? req.body.dismissed_steps.filter((step: unknown): step is string => typeof step === "string" && ONBOARDING_STEPS.has(step)) : null;
+  if (!steps) return res.status(400).json({ error: "dismissed_steps must be a valid step list" });
+  try {
+    const { rows } = await query<{ dismissed_steps: string[] }>(
+      `INSERT INTO onboarding_progress (owner_id, dismissed_steps) VALUES ($1, $2)
+       ON CONFLICT (owner_id) DO UPDATE SET dismissed_steps=EXCLUDED.dismissed_steps, updated_at=now()
+       RETURNING dismissed_steps`,
+      [userFrom(req).id, [...new Set(steps)]]
+    );
+    res.json({ dismissed_steps: rows[0].dismissed_steps });
+  } catch { res.status(500).json({ error: "Could not save onboarding state" }); }
+});
 app.use("/api/books", booksRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/upload", uploadRouter);

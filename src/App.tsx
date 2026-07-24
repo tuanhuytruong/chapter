@@ -13,6 +13,7 @@ import JourneyDrawer from './components/JourneyDrawer';
 import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2 } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
+import { OnboardingProvider } from './onboarding';
 import useSwipeNav from './hooks/useSwipeNav';
 
 const primaryLink = (active: boolean) => active
@@ -71,7 +72,7 @@ function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Login />;
-  return <BrowserRouter><Routes><Route element={<Layout />}>
+  return <OnboardingProvider><BrowserRouter><Routes><Route element={<Layout />}>
     <Route path="/" element={<Library />} />
     <Route path="/today" element={<Today />} />
     <Route path="/books/:id" element={<BookDetail />} />
@@ -82,7 +83,7 @@ function AppRoutes() {
     <Route path="/achievements" element={<Achievements />} />
     <Route path="/account" element={<Account />} />
     <Route path="*" element={<Library />} />
-  </Route></Routes></BrowserRouter>;
+  </Route></Routes></BrowserRouter></OnboardingProvider>;
 }
 
 export default function App() { return <AuthProvider><AppRoutes /></AuthProvider>; }
