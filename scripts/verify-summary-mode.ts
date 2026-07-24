@@ -7,6 +7,7 @@ A conclusion follows from the supplied premise.
 ## Argument map
 1. **Claim:** A grounded claim.
    - **Support:** A stated reason.
+   - **Example:** A concrete instance from the reading.
    - **Implication:** A consequence.
 
 ## Assumptions & limits
@@ -31,6 +32,7 @@ const parsedDeep = parseSummary(deep, "deep_reading");
 assert.equal(parsedDeep.key_insights.length, 3);
 assert.equal(parsedDeep.quote, "A conclusion follows.");
 assert.match(parsedDeep.summary, /## Argument map/);
+assert.match(parsedDeep.summary, /\*\*Example:\*\* A concrete instance/);
 assert.doesNotMatch(parsedDeep.summary, /## Insights/);
 
 const casual = parseSummary("## Summary\nA clear summary.\n\n## Insights\n- One\n- Two\n\n## Quote\nN/A");
