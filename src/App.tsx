@@ -62,7 +62,7 @@ function Layout() {
       </header>
 
       <JourneyDrawer open={journeyOpen} onClose={() => setJourneyOpen(false)} />
-      <div ref={contentRef} className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-6 sm:py-8 lg:px-8"><Outlet /></div>
+      <div ref={contentRef} className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-6 sm:py-8 lg:px-8"><div key={location.pathname} className="route-content"><Outlet /></div></div>
     </div>
   );
 }
