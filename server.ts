@@ -308,6 +308,9 @@ app.post('/api/books/:id/mindmap', async (req: Request, res: Response) => {
     const { id } = req.params;
     const book = (await query(`SELECT * FROM chapter.books WHERE id = $1`, [id])).rows[0];
     if (!book) return res.status(404).json({ error: 'Book not found' });
+    if (book.reading_experience === "story") {
+      return res.status(400).json({ error: "Story Thread books do not use Knowledge Maps" });
+    }
 
     const { rows: logs } = await query(
       `SELECT * FROM chapter.reading_log WHERE book_id = $1 ORDER BY date DESC`,

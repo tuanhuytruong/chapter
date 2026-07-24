@@ -74,6 +74,7 @@ export default function BookDetail() {
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [lenses, setLenses] = useState<ReadingLensRow[]>([]);
   const [storyThread, setStoryThread] = useState<StoryThreadRow[]>([]);
+  const [storyRetryingLogId, setStoryRetryingLogId] = useState<string | null>(null);
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
@@ -268,6 +269,21 @@ export default function BookDetail() {
       await load();
       setToast({ type: 'ok', msg: 'Reading Lens is ready' });
     } catch (e: any) { setToast({ type: 'err', msg: e.message }); throw e; }
+  };
+
+  const retryStoryThread = async (logId: string) => {
+    if (!id) return;
+    setStoryRetryingLogId(logId);
+    try {
+      await api.retryStoryThread(id, logId);
+      await load();
+      setToast({ type: 'ok', msg: 'Story Thread is ready' });
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+      throw e;
+    } finally {
+      setStoryRetryingLogId(null);
+    }
   };
 
   const synthesizeReadingLens = async () => {
@@ -477,7 +493,7 @@ export default function BookDetail() {
         )}
       </div>
 
-      {book.reading_experience === 'story' ? <StoryThreadView analyses={storyThread} logs={logs} /> : <>
+      {book.reading_experience === 'story' ? <StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /> : <>
       {/* Timeline */}
       <div>
         <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">

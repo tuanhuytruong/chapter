@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { query, withTransaction } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
 import { callJsonLLM, callLLM, callNineRouter, parseSummary } from "../llm.js";
-import { buildStoryThreadPrompt, getStoryState, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
+import { buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
@@ -298,8 +298,8 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
 booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
-    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
     res.json(await listReadingLensAnalyses(id));
   } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
 });
@@ -307,8 +307,8 @@ booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
 booksRouter.get("/:id/logs/:logId/reading-lens", async (req: Request, res: Response) => {
   const { id, logId } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
-    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
     const analysis = await getReadingLensAnalysisForLog(id, logId);
     if (!analysis) return res.status(404).json({ error: "reading lens not available" });
     res.json(analysis);
@@ -320,6 +320,7 @@ booksRouter.post("/:id/logs/:logId/reading-lens/retry", async (req: Request, res
   if (!await ownerCanMutate(req, res, id)) return;
   try {
     const [book, log] = [(await query("SELECT * FROM books WHERE id=$1", [id])).rows[0], (await query("SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, id])).rows[0]];
+    if (!book || book.reading_experience !== "analytical") return res.status(400).json({ error: "Story Thread books do not use Reading Lens" });
     if (!log?.raw_text) return res.status(400).json({ error: "session has no extracted text" });
     await generateReadingLensForLog(log, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto" });
     res.json(await getReadingLensAnalysisForLog(id, logId));
@@ -330,9 +331,10 @@ booksRouter.post("/:id/reading-lens/synthesis", async (req: Request, res: Respon
   const { id } = req.params;
   if (!await ownerCanMutate(req, res, id)) return;
   try {
+    const book = (await query("SELECT title, author, summary_lang, reading_experience FROM books WHERE id=$1", [id])).rows[0];
+    if (!book || book.reading_experience !== "analytical") return res.status(400).json({ error: "Story Thread books do not use Reading Lens" });
     const analyses = await listReadingLensAnalyses(id);
     if (analyses.length < 3) return res.status(409).json({ error: "at least three Reading Lens sessions are required" });
-    const book = (await query("SELECT title, author, summary_lang FROM books WHERE id=$1", [id])).rows[0];
     const journal = analyses.slice(-24).map((item, index) => `Session ${index + 1}: ${item.analyst_summary}\nInsights: ${(item.analysis.durableInsights || []).join("; ")}\nQuestions: ${(item.analysis.questionsToCarryForward || []).join("; ")}`).join("\n\n").slice(0, 50000);
     const language = book.summary_lang === "vi" ? "Write entirely in Vietnamese." : book.summary_lang === "en" ? "Write entirely in English." : "Match the journal language.";
     const synthesis = await callLLM("You synthesize a reader's saved private journal. Stay grounded in it; do not present a definitive interpretation of the book.", `${language}\nCreate a concise Reading Lens journey synthesis for ${book.title}. Identify recurring arguments, tensions, developing concepts, and questions.\n\n${journal}`, 0.35);
@@ -543,10 +545,12 @@ async function generateReadingLensForLog(log: any, book: { title: string; author
 
 async function generateStoryThreadForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en"; session: number }): Promise<void> {
   if (!log.raw_text?.trim()) return;
-  const previous = await getStoryState(log.book_id);
+  // On retry, use only state that existed before this session. The current/newer
+  // analysis must never become its own evidence or leak future story details.
+  const previous = await getStoryStateBeforeLog(log.book_id, log.date, log.session);
   const prompt = buildStoryThreadPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text, priorState: previous });
   const analysis = process.env.NINE_ROUTER_URL ? parseStoryThreadAnalysis(await callJsonLLM(prompt.system, prompt.user, 0.2)) : storyFallback();
-  await upsertStoryThreadAnalysis(log.book_id, log.id, book.session, analysis, previous);
+  await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
   const compat = storyCompatSummary(analysis);
   await query("UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5", [compat.summary, compat.key_insights, compat.quote, log.id, log.book_id]);
 }

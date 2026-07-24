@@ -29,12 +29,15 @@ function SessionStory({ item, log }: { item: StoryThreadRow; log?: LogRow }) {
   </article>;
 }
 
-export default function StoryThreadView({ analyses, logs }: { analyses: StoryThreadRow[]; logs: LogRow[] }) {
+export default function StoryThreadView({ analyses, logs, onRetry, retryingLogId }: { analyses: StoryThreadRow[]; logs: LogRow[]; onRetry?: (logId: string) => Promise<void>; retryingLogId?: string | null }) {
   const latest = analyses.at(-1);
+  const analyzedLogIds = new Set(analyses.map((item) => item.log_id));
+  const pendingLogs = logs.filter((log) => !analyzedLogIds.has(log.id));
   if (!latest) return <section className="rounded-[24px] border border-dashed border-natural-border bg-natural-cream p-6 text-center">
     <BookHeart className="mx-auto h-7 w-7 text-natural-sage" />
     <h2 className="mt-3 text-base font-bold text-natural-dark">Your story companion is preparing</h2>
     <p className="mt-1 text-xs leading-relaxed text-natural-stone">After a reading session, this space will keep track of the story, its people, and the details worth carrying forward.</p>
+    {pendingLogs[0] && onRetry && <button onClick={() => onRetry(pendingLogs[0].id)} disabled={retryingLogId === pendingLogs[0].id} className="mt-4 min-h-11 rounded-full border border-natural-sage px-4 py-2 text-xs font-bold text-natural-sage disabled:opacity-50">{retryingLogId === pendingLogs[0].id ? 'Preparing…' : 'Try Story Thread again'}</button>}
   </section>;
 
   const state = latest.analysis;

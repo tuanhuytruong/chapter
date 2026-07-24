@@ -59,16 +59,31 @@ export function mergeStoryState(previous: StoryState | null, analysis: StoryAnal
   return { threads: [...byId.values()].slice(-16), characterPulse: [...byName.values()].slice(-16), readerMemory: [...new Set([...(previous?.readerMemory || []), ...analysis.readerMemory])].slice(-16) };
 }
 
-export async function getStoryState(bookId: string): Promise<StoryState | null> {
-  const { rows } = await query<{ state: StoryState }>("SELECT state FROM story_state_snapshots WHERE book_id=$1", [bookId]);
-  return rows[0]?.state || null;
+export async function getStoryStateBeforeLog(bookId: string, date: string, session: number): Promise<StoryState | null> {
+  const { rows } = await query<{ analysis: StoryAnalysis }>(
+    `SELECT sta.analysis FROM story_thread_analyses sta
+     JOIN reading_log rl ON rl.id=sta.log_id
+     WHERE sta.book_id=$1 AND sta.schema_version=1
+       AND (rl.date < $2::date OR (rl.date = $2::date AND rl.session < $3))
+     ORDER BY rl.date ASC, rl.session ASC`,
+    [bookId, date, session]
+  );
+  let state: StoryState | null = null;
+  for (const item of rows) state = mergeStoryState(state, item.analysis);
+  return state;
 }
-export async function upsertStoryThreadAnalysis(bookId: string, logId: string, readingRound: number, analysis: StoryAnalysis, previous: StoryState | null): Promise<void> {
-  const state = mergeStoryState(previous, analysis);
+export async function upsertStoryThreadAnalysis(bookId: string, logId: string, analysis: StoryAnalysis): Promise<void> {
   await query(`INSERT INTO story_thread_analyses (book_id, log_id, schema_version, analysis, story_recap) VALUES ($1,$2,1,$3::jsonb,$4) ON CONFLICT (log_id, schema_version) DO UPDATE SET analysis=EXCLUDED.analysis, story_recap=EXCLUDED.story_recap, generated_at=now()`, [bookId, logId, JSON.stringify(analysis), analysis.storyRecap]);
-  await query(`INSERT INTO story_state_snapshots (book_id, reading_round, last_log_id, state) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT (book_id) DO UPDATE SET reading_round=EXCLUDED.reading_round, last_log_id=EXCLUDED.last_log_id, state=EXCLUDED.state, updated_at=now()`, [bookId, readingRound, logId, JSON.stringify(state)]);
+
+  // Rebuild from every persisted session in chronological order. This prevents a
+  // retry of an earlier log from replacing the newest Story State with stale data.
+  const analyses = await listStoryThreadAnalyses(bookId);
+  let state: StoryState | null = null;
+  for (const item of analyses) state = mergeStoryState(state, item.analysis as StoryAnalysis);
+  const latest = analyses.at(-1);
+  await query(`INSERT INTO story_state_snapshots (book_id, reading_round, last_log_id, state) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT (book_id) DO UPDATE SET reading_round=EXCLUDED.reading_round, last_log_id=EXCLUDED.last_log_id, state=EXCLUDED.state, updated_at=now()`, [bookId, latest?.session || 1, latest?.log_id || logId, JSON.stringify(state || { threads: [], characterPulse: [], readerMemory: [] })]);
 }
 export async function getStoryThreadAnalysis(bookId: string, logId: string): Promise<any | null> { const { rows } = await query("SELECT * FROM story_thread_analyses WHERE book_id=$1 AND log_id=$2 AND schema_version=1", [bookId, logId]); return rows[0] || null; }
-export async function listStoryThreadAnalyses(bookId: string): Promise<any[]> { return (await query("SELECT sta.* FROM story_thread_analyses sta JOIN reading_log rl ON rl.id=sta.log_id WHERE sta.book_id=$1 AND sta.schema_version=1 ORDER BY rl.date ASC, rl.session ASC", [bookId])).rows; }
+export async function listStoryThreadAnalyses(bookId: string): Promise<any[]> { return (await query("SELECT sta.*, rl.session FROM story_thread_analyses sta JOIN reading_log rl ON rl.id=sta.log_id WHERE sta.book_id=$1 AND sta.schema_version=1 ORDER BY rl.date ASC, rl.session ASC", [bookId])).rows; }
 export function storyCompatSummary(analysis: StoryAnalysis): { summary: string; key_insights: string[]; quote: null } { return { summary: analysis.storyRecap, key_insights: analysis.readerMemory.slice(0, 3), quote: null }; }
 export const storyFallback = (): StoryAnalysis => ({ storyRecap: "Story Thread is waiting for a configured language model.", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["No Story Thread analysis was generated because NineRouter is unavailable."] });

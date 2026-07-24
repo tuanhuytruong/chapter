@@ -78,6 +78,8 @@ export const api = {
   getStoryThread: (bookId: string) => req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread`),
   getStoryThreadForLog: (bookId: string, logId: string) =>
     req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),
+  retryStoryThread: (bookId: string, logId: string) =>
+    req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
   generateReflection: (bookId: string) =>
