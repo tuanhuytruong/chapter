@@ -29,5 +29,8 @@ assertIncludes("src/App.tsx", 'to="/account" aria-label="Telegram settings"');
 assertIncludes("src/pages/Profile.tsx", "Choose an animal companion");
 assertIncludes("server.ts", 'app.patch("/api/auth/profile"');
 assertIncludes("server.ts", "isAvatarPresetValue");
+assertIncludes("src/App.tsx", 'sm:hidden" aria-label="Primary navigation"');
+assertIncludes("src/App.tsx", "Open menu");
+assertIncludes("src/App.tsx", "Your Journey");
 
 console.log("ONBOARDING_FIXTURES_OK");
