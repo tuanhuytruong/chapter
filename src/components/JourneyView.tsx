@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, Quote, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
-import type { BookRow, LogRow, SummaryMode } from '../types';
+import type { BookRow, LogRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -36,6 +36,10 @@ function InlineMarkdown({ text }: { text: string }) {
     : <React.Fragment key={index}>{part}</React.Fragment>)}</>;
 }
 
+function isDeepReadingSummary(text: string | null | undefined): boolean {
+  return !!text?.match(/^##\s+(Core argument|Lập luận cốt lõi)\s*$/im);
+}
+
 function DeepReadingJourney({ text, expanded }: { text: string; expanded: boolean }) {
   const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
   if (!sections.length) return <p className="text-sm text-natural-dark font-sans leading-relaxed"><InlineMarkdown text={text} /></p>;
@@ -55,13 +59,11 @@ function DeepReadingJourney({ text, expanded }: { text: string; expanded: boolea
 export default function JourneyView({
   logs,
   fileType,
-  summaryMode = 'casual',
   expanded,
   setExpanded,
 }: {
   logs: LogRow[];
   fileType: BookRow['file_type'];
-  summaryMode?: SummaryMode;
   expanded: string | null;
   setExpanded: (id: string | null) => void;
 }) {
@@ -98,8 +100,9 @@ export default function JourneyView({
           {entries.map(([date, dayLogs], entryIdx) => {
             const isLatest = entryIdx === 0;
             const dayPages = dayLogs.reduce((sum, l) => sum + (l.page_end - l.page_start + 1), 0);
-            const allQuotes = dayLogs.flatMap(l => l.quote ? [l.quote] : []);
-            const allInsights = dayLogs.flatMap(l => l.key_insights || []);
+            const casualLogs = dayLogs.filter((log) => !isDeepReadingSummary(log.summary));
+            const allQuotes = casualLogs.flatMap(l => l.quote ? [l.quote] : []);
+            const allInsights = casualLogs.flatMap(l => l.key_insights || []);
             const insightsExpanded = insightsOpen.has(date);
 
             return (
@@ -138,6 +141,7 @@ export default function JourneyView({
                   {/* Sessions */}
                   {dayLogs.map((log, si) => {
                     const isOpen = expanded === log.id;
+                    const isDeepReading = isDeepReadingSummary(log.summary);
                     return (
                       <div key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
                         <button
@@ -152,7 +156,7 @@ export default function JourneyView({
                                   : ''}{fileType === 'epub' ? 'chunks' : 'pp.'} {log.page_start}–{log.page_end}
                               </span>
                               {log.summary
-                                ? summaryMode === 'deep_reading'
+                                ? isDeepReading
                                   ? <DeepReadingJourney text={log.summary} expanded={isOpen} />
                                   : <p className="text-sm text-natural-dark font-sans leading-relaxed">{log.summary}</p>
                                 : <p className="text-sm text-natural-stone font-sans">Session summary…</p>}
@@ -168,7 +172,7 @@ export default function JourneyView({
                         </button>
 
                         {/* Expanded detail — full insights + quote */}
-                        {isOpen && summaryMode !== 'deep_reading' && (
+                        {isOpen && !isDeepReading && (
                           <div className="px-4 pb-4 space-y-3 border-t border-natural-border/40 pt-3 bg-natural-cream/40">
                             {log.key_insights && log.key_insights.length > 0 && (
                               <div className="space-y-2">
@@ -197,7 +201,7 @@ export default function JourneyView({
                   })}
 
                   {/* Quote preview strip — only when sessions are collapsed */}
-                  {summaryMode !== 'deep_reading' && allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
+                  {allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
                     <div className="px-4 py-2.5 border-t border-natural-border/40 flex items-start gap-2">
                       <Quote className="w-3 h-3 text-natural-clay/50 shrink-0 mt-0.5" />
                       <p className="text-xs italic text-natural-stone/70 font-serif line-clamp-2">
@@ -207,7 +211,7 @@ export default function JourneyView({
                   )}
 
                   {/* Insights panel — collapsible, scrollable, fully readable */}
-                  {summaryMode !== 'deep_reading' && allInsights.length > 0 && (
+                  {allInsights.length > 0 && (
                     <div className="border-t border-natural-border/40">
                       {/* Toggle bar */}
                       <button
