@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, ImageIcon } from 'lucide-react';
 import { api, fetchCover, uploadBook, deleteUpload } from '../api';
 import type { ReadingExperience, SummaryMode } from '../types';
@@ -85,8 +86,8 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
     }
   };
 
-  return (
-    <div data-swipe-nav-ignore className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
+  return createPortal(
+    <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="add-book-title" className="my-auto w-full max-w-md rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-xl sm:p-6" onClick={e => e.stopPropagation()}>
         <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto pr-1">
         <div className="flex items-center justify-between">
@@ -221,6 +222,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
