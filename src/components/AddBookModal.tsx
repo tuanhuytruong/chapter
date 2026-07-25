@@ -86,10 +86,11 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   };
 
   return (
-    <div data-swipe-nav-ignore className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-natural-cream rounded-[28px] border border-natural-border shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+    <div data-swipe-nav-ignore className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-labelledby="add-book-title" className="my-auto w-full max-w-md rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-xl sm:p-6" onClick={e => e.stopPropagation()}>
+        <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto pr-1">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold text-lg text-natural-dark font-sans">Add a Book</h2>
+          <h2 id="add-book-title" className="font-bold text-lg text-natural-dark font-sans">Add a Book</h2>
           <button onClick={onClose} className="text-natural-stone hover:text-natural-dark"><X className="w-5 h-5" /></button>
         </div>
 
@@ -218,6 +219,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
