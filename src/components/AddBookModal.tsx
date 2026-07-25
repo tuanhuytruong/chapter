@@ -88,15 +88,15 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
 
   return createPortal(
     <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-labelledby="add-book-title" className="my-auto w-full max-w-md rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-xl sm:p-6" onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="add-book-title" className="my-auto w-full max-w-4xl rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-xl sm:p-6" onClick={e => e.stopPropagation()}>
         <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto pr-1">
         <div className="flex items-center justify-between">
           <h2 id="add-book-title" className="font-bold text-lg text-natural-dark font-sans">Add a Book</h2>
           <button onClick={onClose} className="text-natural-stone hover:text-natural-dark"><X className="w-5 h-5" /></button>
         </div>
 
-        <form onSubmit={submit} className="space-y-3 font-sans">
-          <GuideCard step="add_book" eyebrow="Choose your companion" title="Pick the reading experience that fits this book"><p><strong className="text-natural-dark">Reading Companion</strong> is for ideas and reflection: choose Casual or Deep Reading, and switch between them later. <strong className="text-natural-dark">Story Thread</strong> is for fiction: it follows people and open threads across sessions, and stays locked to protect that continuity.</p></GuideCard>
+        <form onSubmit={submit} className="space-y-3 font-sans md:grid md:grid-cols-2 md:gap-x-5 md:gap-y-3 md:space-y-0">
+          <div className="md:col-span-2"><GuideCard step="add_book" eyebrow="Choose your companion" title="Pick the reading experience that fits this book"><p><strong className="text-natural-dark">Reading Companion</strong> is for ideas and reflection: choose Casual or Deep Reading, and switch between them later. <strong className="text-natural-dark">Story Thread</strong> is for fiction: it follows people and open threads across sessions, and stays locked to protect that continuity.</p></GuideCard></div>
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} required
@@ -136,7 +136,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               </div>
             )}
             <p className="text-[10px] text-natural-stone mt-1">Max 100MB · PDF or EPUB</p>
-            <input value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="atomic-habits.pdf (if already in books dir)"
+            <input value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="atomic-habits.pdf"
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" />
           </div>
           <div className="flex gap-3">
@@ -172,7 +172,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             </select>
             <p className="text-[10px] text-natural-stone mt-1">Language used for the AI daily summary. Can be changed later in book settings.</p>
           </div>
-          <fieldset>
+          <fieldset className="md:col-span-2">
             <legend className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading experience</legend>
             <div className="mt-1 grid gap-2 sm:grid-cols-2">
               {([['analytical', 'Reading companion', 'Choose Casual or Deep Reading. You can switch between them later.'], ['story', 'Story Thread', 'For fiction and narrative books. Keeps characters, events, and unresolved threads connected. This cannot be changed later.']] as const).map(([value, label, copy]) => (
@@ -212,7 +212,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 md:col-span-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-natural-border rounded-full text-xs font-bold font-sans uppercase tracking-wider text-natural-stone hover:text-natural-dark cursor-pointer">Cancel</button>
             <button type="submit" disabled={submitting}
               className="flex-1 py-2.5 bg-natural-sage hover:bg-natural-sage-dark disabled:opacity-50 text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider cursor-pointer">
