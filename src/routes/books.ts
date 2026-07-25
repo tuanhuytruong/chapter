@@ -1,13 +1,25 @@
 import { Router, Request, Response } from "express";
-import { query, withClient } from "../db.js";
-import { extractRange, getChapterTitle } from "../extractor.js";
-import { callNineRouter, parseSummary } from "../llm.js";
+import { query, withTransaction } from "../db.js";
+import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
+import { callJsonLLM, callLLM, callNineRouter, parseSummary } from "../llm.js";
+import { buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
+import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
+import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
+import { requireAuth, requireOwner, userFrom } from "../auth.js";
+import { reviewOutcome } from "../review.js";
 import fs from "fs";
 import path from "path";
 
 export const booksRouter = Router();
+booksRouter.use(requireAuth);
+
+async function ownerCanMutate(req: Request, res: Response, bookId: string): Promise<boolean> {
+  const found = await query("SELECT owner_id FROM books WHERE id=$1", [bookId]);
+  if (!found.rows.length) { res.status(404).json({ error: "book not found" }); return false; }
+  return requireOwner(req, res, found.rows[0].owner_id);
+}
 
 // App timezone is Asia/Bangkok (UTC+7) — all "today" logic and daily-summary
 // grouping use this, independent of where the server physically runs.
@@ -34,20 +46,79 @@ function resolveBookPath(input: string): string {
   return `${dir}/${p}`;
 }
 
+/** Build an EPUB map only once. Chunk indices are persisted and become the
+ * stable progress cursor for all later sessions. */
+async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
+  const existing = await client.query(
+    "SELECT count(*)::int AS count FROM book_reading_units WHERE book_id=$1",
+    [book.id]
+  );
+  if (existing.rows[0].count > 0) return existing.rows[0].count;
+
+  const units = await buildEpubReadingUnits(book.file_path);
+  if (!units.length) throw new Error("EPUB has no readable text");
+  for (const unit of units) {
+    await client.query(
+      `INSERT INTO book_reading_units (book_id, unit_index, title, raw_text, char_count)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [book.id, unit.unitIndex, unit.title, unit.rawText, unit.rawText.length]
+    );
+  }
+  await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [units.length, book.id]);
+  return units.length;
+}
+
 // ── B7: CRUD ──────────────────────────────────────────────
 // GET /api/books — list all with computed progress (computed client-side)
-booksRouter.get("/", async (_req: Request, res: Response) => {
+booksRouter.get("/", async (req: Request, res: Response) => {
   try {
-    const { rows } = await query(`SELECT * FROM books ORDER BY created_at DESC`);
+    const scope = req.query.scope || "mine";
+    if (scope !== "mine" && scope !== "all") return res.status(400).json({ error: "scope must be 'mine' or 'all'" });
+    const { rows } = await query(
+      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
+       FROM books b LEFT JOIN users u ON u.id=b.owner_id
+       WHERE ($2 = 'all' OR b.owner_id = $1)
+       ORDER BY u.display_name NULLS LAST, b.created_at DESC`,
+      [userFrom(req).id, scope]
+    );
     res.json(rows);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
 });
 
+// GET /api/books/calendar?month=YYYY-MM&bookId=<optional UUID>
+// Personal calendar rows are derived directly from reading_log; the parent book
+// is the ownership boundary so no dependent owner_id is duplicated.
+booksRouter.get("/calendar", async (req: Request, res: Response) => {
+  const month = typeof req.query.month === "string" ? req.query.month : "";
+  const bookId = typeof req.query.bookId === "string" ? req.query.bookId : "";
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    return res.status(400).json({ error: "month must be YYYY-MM" });
+  }
+  try {
+    const { rows } = await query(
+      `SELECT rl.id, rl.book_id, rl.date, rl.session, rl.page_start, rl.page_end,
+              rl.summary, rl.chapter_title, b.title, b.author,
+              (rl.page_end - rl.page_start + 1) AS units_read
+       FROM reading_log rl
+       JOIN books b ON b.id=rl.book_id
+       WHERE b.owner_id=$1
+         AND rl.date >= ($2 || '-01')::date
+         AND rl.date < (($2 || '-01')::date + INTERVAL '1 month')
+         AND ($3 = '' OR rl.book_id::text = $3)
+       ORDER BY rl.date ASC, rl.session ASC`,
+      [userFrom(req).id, month, bookId]
+    );
+    res.json(rows);
+  } catch (e: any) {
+    res.status(503).json({ error: "calendar unavailable", detail: e.message });
+  }
+});
+
 // POST /api/books — register a new book
 booksRouter.post("/", async (req: Request, res: Response) => {
-  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang } = req.body;
+  const { title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, reading_experience, status } = req.body;
   if (!title || !file_path || !file_type) {
     return res.status(400).json({ error: "title, file_path, file_type required" });
   }
@@ -55,23 +126,69 @@ booksRouter.post("/", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "file_type must be 'pdf' or 'epub'" });
   }
   const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
+  const initialStatus = status === "queued" ? "queued" : "active";
+  const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
+  const readingExperience = ["analytical", "story"].includes(reading_experience) ? reading_experience : "analytical";
   const resolvedPath = resolveBookPath(file_path);
   try {
-    const { rows } = await query(
-      `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 20, cover_url || null, lang]
-    );
+    const { rows } = await withTransaction(async (client) => {
+      const queueOrder = initialStatus === "queued"
+        ? Number((await client.query("SELECT COALESCE(MAX(queue_order), 0) + 1 AS next FROM books WHERE owner_id=$1 AND status='queued'", [userFrom(req).id])).rows[0].next)
+        : null;
+      return client.query(
+        `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, reading_experience, owner_id, status, queue_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, summaryMode, readingExperience, userFrom(req).id, initialStatus, queueOrder]
+      );
+    });
     res.status(201).json(rows[0]);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
 });
 
+// PUT /api/books/queue — replace the signed-in readers complete queue order.
+// This static route must precede /:id so Express does not treat "queue" as an ID.
+booksRouter.put("/queue", async (req: Request, res: Response) => {
+  const orderedIds = req.body?.bookIds;
+  if (!Array.isArray(orderedIds) || !orderedIds.every((id) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id)) || new Set(orderedIds).size !== orderedIds.length) {
+    return res.status(400).json({ error: "bookIds must be a unique UUID array" });
+  }
+  try {
+    const rows = await withTransaction(async (client) => {
+      const current = await client.query("SELECT id FROM books WHERE owner_id=$1 AND status='queued' ORDER BY queue_order NULLS LAST, created_at", [userFrom(req).id]);
+      const existingIds = current.rows.map((row: any) => row.id);
+      if (existingIds.length !== orderedIds.length || existingIds.some((id: string) => !orderedIds.includes(id))) {
+        throw Object.assign(new Error("queue does not match your queued books"), { status: 409 });
+      }
+      for (const [index, id] of orderedIds.entries()) {
+        await client.query("UPDATE books SET queue_order=$1 WHERE id=$2 AND owner_id=$3 AND status='queued'", [index + 1, id, userFrom(req).id]);
+      }
+      return (await client.query("SELECT * FROM books WHERE owner_id=$1 AND status='queued' ORDER BY queue_order", [userFrom(req).id])).rows;
+    });
+    res.json(rows);
+  } catch (e: any) {
+    res.status(e.status || 503).json({ error: e.message || "could not reorder queue" });
+  }
+});
+
 // PATCH /api/books/:id — update settings
 booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang"];
+  if (!await ownerCanMutate(req, res, id)) return;
+  const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang", "summary_mode"];
+  if (req.body.status !== undefined && !["active", "paused", "finished", "queued"].includes(req.body.status)) {
+    return res.status(400).json({ error: "invalid status" });
+  }
+  if (req.body.summary_mode !== undefined && !["casual", "deep_reading"].includes(req.body.summary_mode)) {
+    return res.status(400).json({ error: "invalid summary_mode" });
+  }
+  if (req.body.reading_experience !== undefined) return res.status(400).json({ error: "reading_experience is immutable" });
+  const existing = (await query("SELECT reading_experience FROM books WHERE id=$1", [id])).rows[0];
+  if (!existing) return res.status(404).json({ error: "book not found" });
+  if (existing.reading_experience === "story" && req.body.summary_mode !== undefined) {
+    return res.status(400).json({ error: "Story Thread books do not use analytical summary styles" });
+  }
   const sets: string[] = [];
   const vals: any[] = [];
   let i = 1;
@@ -99,6 +216,7 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
 // and delete the uploaded file from disk so nothing is left behind.
 booksRouter.delete("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   try {
     // Fetch the file path first so we can clean up the physical file.
     const found = await query("SELECT file_path FROM books WHERE id = $1", [id]);
@@ -126,11 +244,35 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/books/:id/story-thread — owner-only Story continuity, never source text.
+booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
+    res.json(await listStoryThreadAnalyses(id));
+  } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
+});
+booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
+    const analysis = await getStoryThreadAnalysis(id, logId);
+    if (!analysis) return res.status(404).json({ error: "story thread not available" });
+    res.json(analysis);
+  } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
+});
+
 // GET /api/books/:id — single book
 booksRouter.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const { rows } = await query("SELECT * FROM books WHERE id = $1", [id]);
+    const { rows } = await query(
+      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $2) AS can_edit
+       FROM books b LEFT JOIN users u ON u.id=b.owner_id WHERE b.id = $1`,
+      [id, userFrom(req).id]
+    );
     if (!rows.length) return res.status(404).json({ error: "book not found" });
     res.json(rows[0]);
   } catch (e: any) {
@@ -152,11 +294,59 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/books/:id/reading-lens — no source text is exposed.
+booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
+    res.json(await listReadingLensAnalyses(id));
+  } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
+});
+
+booksRouter.get("/:id/logs/:logId/reading-lens", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
+    const analysis = await getReadingLensAnalysisForLog(id, logId);
+    if (!analysis) return res.status(404).json({ error: "reading lens not available" });
+    res.json(analysis);
+  } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
+});
+
+booksRouter.post("/:id/logs/:logId/reading-lens/retry", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const [book, log] = [(await query("SELECT * FROM books WHERE id=$1", [id])).rows[0], (await query("SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, id])).rows[0]];
+    if (!book || book.reading_experience !== "analytical") return res.status(400).json({ error: "Story Thread books do not use Reading Lens" });
+    if (!log?.raw_text) return res.status(400).json({ error: "session has no extracted text" });
+    await generateReadingLensForLog(log, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto" });
+    res.json(await getReadingLensAnalysisForLog(id, logId));
+  } catch (e: any) { res.status(500).json({ error: "reading lens retry failed", detail: e.message }); }
+});
+
+booksRouter.post("/:id/reading-lens/synthesis", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const book = (await query("SELECT title, author, summary_lang, reading_experience FROM books WHERE id=$1", [id])).rows[0];
+    if (!book || book.reading_experience !== "analytical") return res.status(400).json({ error: "Story Thread books do not use Reading Lens" });
+    const analyses = await listReadingLensAnalyses(id);
+    if (analyses.length < 3) return res.status(409).json({ error: "at least three Reading Lens sessions are required" });
+    const journal = analyses.slice(-24).map((item, index) => `Session ${index + 1}: ${item.analyst_summary}\nInsights: ${(item.analysis.durableInsights || []).join("; ")}\nQuestions: ${(item.analysis.questionsToCarryForward || []).join("; ")}`).join("\n\n").slice(0, 50000);
+    const language = book.summary_lang === "vi" ? "Write entirely in Vietnamese." : book.summary_lang === "en" ? "Write entirely in English." : "Match the journal language.";
+    const synthesis = await callLLM("You synthesize a reader's saved private journal. Stay grounded in it; do not present a definitive interpretation of the book.", `${language}\nCreate a concise Reading Lens journey synthesis for ${book.title}. Identify recurring arguments, tensions, developing concepts, and questions.\n\n${journal}`, 0.35);
+    res.json({ synthesis });
+  } catch (e: any) { res.status(500).json({ error: "reading lens synthesis failed", detail: e.message }); }
+});
+
 // ── B6: Advance all active (define BEFORE /:id/advance to avoid route clash) ──
 // POST /api/books/all/advance
-booksRouter.post("/all/advance", async (_req: Request, res: Response) => {
+booksRouter.post("/all/advance", async (req: Request, res: Response) => {
   try {
-    const { rows: active } = await query("SELECT id FROM books WHERE status = 'active'");
+    const { rows: active } = await query("SELECT id FROM books WHERE status = 'active' AND owner_id=$1", [userFrom(req).id]);
     const results = [];
     for (const b of active) {
       try {
@@ -173,9 +363,49 @@ booksRouter.post("/all/advance", async (_req: Request, res: Response) => {
 });
 
 // ── B5: Core advance endpoint ─────────────────────────────
+// POST /api/books/:id/reflection — generate and persist a finished-book reflection.
+// Explicit user action keeps the final reading session responsive and allows retries.
+booksRouter.post("/:id/reflection", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const book = (await query("SELECT * FROM books WHERE id=$1", [id])).rows[0];
+    if (!book) return res.status(404).json({ error: "book not found" });
+    if (book.status !== "finished") return res.status(409).json({ error: "finish the book before creating a reflection" });
+
+    const { rows: logs } = await query(
+      `SELECT date, session, summary, key_insights FROM reading_log
+       WHERE book_id=$1 AND (summary IS NOT NULL OR cardinality(key_insights) > 0)
+       ORDER BY date ASC, session ASC`, [id]
+    );
+    if (!logs.length) return res.status(400).json({ error: "no reading summaries available for reflection" });
+
+    const journal = logs.map((log: any) => {
+      const insights = (log.key_insights || []).map((item: string) => `- ${item}`).join("\n");
+      return `Session ${log.date}${log.session > 1 ? ` (#${log.session})` : ""}\nSummary: ${log.summary || "—"}\nInsights:\n${insights || "—"}`;
+    }).join("\n\n");
+    // Bound context to keep a very long book within upstream limits, retaining its end.
+    const boundedJournal = journal.length > 100_000 ? `${journal.slice(0, 20_000)}\n\n[earlier sessions omitted]\n\n${journal.slice(-80_000)}` : journal;
+    const language = book.summary_lang === "vi" ? "Write entirely in Vietnamese." : book.summary_lang === "en" ? "Write entirely in English." : "Match the predominant language in the reading journal.";
+    const reflection = await callLLM(
+      "You are a thoughtful reading companion. Synthesize a completed reader's own journal; stay concrete and avoid inventing events, quotes, or claims not present in it.",
+      `Create a warm, lasting end-of-book reflection for \"${book.title}\" by ${book.author}.\n\n${language}\n\nUse exactly these markdown sections:\n## What stayed with you\nA concise thesis about the journey.\n\n## Five insights to carry forward\nExactly five grounded bullets (use fewer only if the journal genuinely contains fewer distinct ideas).\n\n## A letter to your future self\nA short personal, practical letter.\n\nDo not call this a passage, excerpt, or report.\n\nReading journal:\n${boundedJournal}`,
+      0.5
+    );
+    const { rows } = await query(
+      "UPDATE books SET reflection_text=$1, reflection_at=now() WHERE id=$2 RETURNING reflection_text, reflection_at",
+      [reflection, id]
+    );
+    res.json(rows[0]);
+  } catch (e: any) {
+    res.status(500).json({ error: "reflection failed", detail: e.message });
+  }
+});
+
 // POST /api/books/:id/advance
 booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   const force = req.query.force === "1" || req.body?.force === true;
   try {
     const result = await advanceBook(id, force);
@@ -189,7 +419,7 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
 
 /** Core: extract next chunk, call LLM, persist. Supports multi-session. */
 async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
-  return withClient(async (client) => {
+  const result: any = await withTransaction(async (client) => {
     const bRes = await client.query("SELECT * FROM books WHERE id = $1", [bookId]);
     const book = bRes.rows[0];
     if (!book) return null;
@@ -210,31 +440,41 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       ? lastSession.rows[0].page_end + 1   // continue from last session's end
       : book.current_page + 1;             // first session: use book cursor
 
-    const end = Math.min(
-      start + book.daily_pages - 1,
-      book.total_pages || start + book.daily_pages
-    );
-    if (start > (book.total_pages || Infinity)) {
-      return { bookId, skipped: true, reason: "book finished" };
+    let end: number;
+    let text: string;
+    let chapterTitle: string | null;
+    let totalPages: number;
+
+    if (book.file_type === "epub") {
+      totalPages = await ensureEpubReadingUnits(client, book);
+      if (start > totalPages) return { bookId, skipped: true, reason: "book finished" };
+      end = Math.min(start + Math.max(1, book.daily_pages) - 1, totalPages);
+      const { rows: units } = await client.query(
+        `SELECT unit_index, title, raw_text FROM book_reading_units
+         WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`,
+        [bookId, start, end]
+      );
+      if (!units.length) throw new Error("EPUB reading chunk not found");
+      text = units.map((unit: any) => unit.raw_text).join("\n\n");
+      chapterTitle = units.find((unit: any) => unit.title)?.title || null;
+    } else {
+      end = Math.min(start + book.daily_pages - 1, book.total_pages || start + book.daily_pages);
+      if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
+      const extracted = await extractRange(book.file_path, book.file_type, start, end);
+      text = extracted.text;
+      totalPages = book.total_pages || extracted.totalUnits;
+      chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
     }
 
-    const { text, totalUnits } = await extractRange(book.file_path, book.file_type, start, end);
-    const chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
-
-    // If total_pages wasn't set when the book was added, derive it from the
-    // actual file (PDF page count / EPUB chapter count) on first advance.
-    const totalPages = book.total_pages || totalUnits;
-
-    const raw = await callNineRouter({
-      title: book.title,
-      author: book.author,
-      start,
-      end,
-      total: totalPages,
-      extractedText: text,
-      lang: (book.summary_lang as "auto" | "vi" | "en") || "auto",
-    });
-    const parsed = parseSummary(raw);
+    // Story books do not invoke the analytical summary pipeline. Their compatible
+    // log fields are filled by Story Thread only after this transaction commits.
+    const parsed = book.reading_experience === "story"
+      ? { summary: "Story Thread analysis is being prepared.", key_insights: [], quote: null }
+      : parseSummary(await callNineRouter({
+        title: book.title, author: book.author, start, end, total: totalPages,
+        extractedText: text, fileType: book.file_type,
+        lang: (book.summary_lang as "auto" | "vi" | "en") || "auto", summaryMode: book.summary_mode || "casual",
+      }), book.summary_mode || "casual");
 
     // Update book cursor — always advances regardless of session count
     const newCurrent = end;
@@ -250,18 +490,69 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       [bookId, dateStr, sessionNum, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
     );
 
+    // Story sessions intentionally never seed analytical spaced-review cards.
+    if (book.reading_experience !== "story") {
+    // Seed only the insights produced by this new session. The source log/index
+    // unique constraint makes this idempotent and deliberately avoids backfill.
+    const firstDue = reviewOutcome(1, false, dateStr).dueDate;
+    for (const [insightIndex, insight] of parsed.key_insights.entries()) {
+      const trimmed = insight.trim();
+      if (!trimmed) continue;
+      await client.query(
+        `INSERT INTO review_cards (book_id, log_id, insight_index, insight, due_date)
+         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id, insight_index) DO NOTHING`,
+        [bookId, ins.rows[0].id, insightIndex, trimmed, firstDue]
+      );
+    }
+    }
+
     return {
       bookId,
       title: book.title,
+      author: book.author,
+      summaryLang: book.summary_lang || "auto",
       date: dateStr,
       session: sessionNum,
       pageStart: start,
       pageEnd: end,
-      totalUnits,
+      totalUnits: totalPages,
       finished,
       log: ins.rows[0],
+      readingExperience: book.reading_experience || "analytical",
     };
   });
+  if (result?.log?.raw_text) {
+    // Enrichment starts only after the reading transaction commits.
+    if (result.readingExperience === "story") {
+      void generateStoryThreadForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto", session: result.session }).catch((error) => console.warn("[story-thread] background analysis unavailable:", error.message));
+    } else {
+      void generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" }).catch((error) => console.warn("[reading-lens] background analysis unavailable:", error.message));
+    }
+  }
+  return result;
+}
+
+async function generateReadingLensForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en" }): Promise<void> {
+  if (!log.raw_text?.trim()) return;
+  const prompt = buildReadingLensPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text });
+  const raw = process.env.NINE_ROUTER_URL
+    ? await callLLM(prompt.system, prompt.user, 0.2, true, true)
+    : JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
+  const analysis = parseReadingLensAnalysis(raw, log.raw_text);
+  await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+}
+
+
+async function generateStoryThreadForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en"; session: number }): Promise<void> {
+  if (!log.raw_text?.trim()) return;
+  // On retry, use only state that existed before this session. The current/newer
+  // analysis must never become its own evidence or leak future story details.
+  const previous = await getStoryStateBeforeLog(log.book_id, log.date, log.session);
+  const prompt = buildStoryThreadPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text, priorState: previous });
+  const analysis = process.env.NINE_ROUTER_URL ? parseStoryThreadAnalysis(await callJsonLLM(prompt.system, prompt.user, 0.2)) : storyFallback();
+  await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
+  const compat = storyCompatSummary(analysis);
+  await query("UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5", [compat.summary, compat.key_insights, compat.quote, log.id, log.book_id]);
 }
 
 // GET /api/books/:id/log/today — returns array of today's sessions (n8n compatibility)
@@ -278,33 +569,40 @@ booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/books/:id/retry/:date — re-generate summary for a specific day
-booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
-  const { id, date } = req.params;
+// POST /api/books/:id/logs/:logId/retry — regenerate exactly one session.
+// UUID targeting is required because a book can have multiple sessions on a day.
+booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   try {
-    const logRes = await query(
-      "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
-      [id, date]
-    );
-    const entry = logRes.rows[0];
+    const entry = (await query(
+      "SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, id]
+    )).rows[0];
     if (!entry) return res.status(404).json({ error: "log not found" });
-    const bookRes = await query("SELECT * FROM books WHERE id=$1", [id]);
-    const book = bookRes.rows[0];
+    if (!entry.raw_text) return res.status(400).json({ error: "session has no extracted text to retry" });
+    const book = (await query("SELECT * FROM books WHERE id=$1", [id])).rows[0];
     if (!book) return res.status(404).json({ error: "book not found" });
 
+    if (book.reading_experience === "story") {
+      await generateStoryThreadForLog(entry, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto", session: entry.session });
+      const analysis = await getStoryThreadAnalysis(id, logId);
+      return res.json(analysis || entry);
+    }
     const raw = await callNineRouter({
       title: book.title,
       author: book.author,
       start: entry.page_start,
       end: entry.page_end,
       total: book.total_pages,
-      extractedText: entry.raw_text || "",
+      extractedText: entry.raw_text,
+      fileType: book.file_type,
+      lang: book.summary_lang || "auto",
+      summaryMode: book.summary_mode || "casual",
     });
-    const parsed = parseSummary(raw);
-
+    const parsed = parseSummary(raw, book.summary_mode || "casual");
     const { rows } = await query(
-      `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 RETURNING *`,
-      [parsed.summary, parsed.key_insights, parsed.quote, entry.id]
+      `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,
+      [parsed.summary, parsed.key_insights, parsed.quote, logId, id]
     );
     res.json(rows[0]);
   } catch (e: any) {
@@ -314,13 +612,14 @@ booksRouter.post("/:id/retry/:date", async (req: Request, res: Response) => {
 
 // PATCH /api/books/:id/logs/:logId — update personal notes on a log entry
 booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
-  const { logId } = req.params;
+  const { id, logId } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
   const { notes } = req.body;
   if (notes === undefined) return res.status(400).json({ error: "notes field required" });
   try {
     const { rows } = await query(
-      "UPDATE reading_log SET notes=$1 WHERE id=$2 RETURNING *",
-      [notes, logId]
+      "UPDATE reading_log SET notes=$1 WHERE id=$2 AND book_id=$3 RETURNING *",
+      [notes, logId, id]
     );
     if (!rows.length) return res.status(404).json({ error: "log not found" });
     res.json(rows[0]);
@@ -331,12 +630,15 @@ booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
 
 // POST /api/books/all/notify — push today's logs to Telegram + mark sent.
 // Called by n8n AFTER /all/advance. Returns per-book delivery status.
-booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
+booksRouter.post("/all/notify", async (req: Request, res: Response) => {
   const cfg = getTelegramConfig();
-  if (!cfg) return res.status(500).json({ error: "Telegram not configured (TELEGRAM_BOT_TOKEN/CHAT_ID)" });
+  if (!cfg) return res.status(500).json({ error: "Telegram bot is not configured" });
   try {
     const { rows: books } = await query(
-      "SELECT * FROM books WHERE status='active'"
+      `SELECT b.*, u.telegram_chat_id
+       FROM books b JOIN users u ON u.id=b.owner_id
+       WHERE b.status='active' AND b.owner_id=$1`,
+      [userFrom(req).id]
     );
     const results: any[] = [];
     for (const b of books) {
@@ -349,8 +651,12 @@ booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
         results.push({ book: b.title, delivered: false, reason: "no summary today" });
         continue;
       }
+      if (!b.telegram_chat_id) {
+        results.push({ book: b.title, delivered: false, reason: "Telegram chat ID not configured" });
+        continue;
+      }
       const text = formatDailyMessage(b.title, b.author, log);
-      const sent = await sendTelegramMessage(cfg, text);
+      const sent = await sendTelegramMessage(cfg, b.telegram_chat_id, text);
       if (sent.ok) {
         await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [log.id]);
         results.push({ book: b.title, delivered: true });
@@ -365,9 +671,9 @@ booksRouter.post("/all/notify", async (_req: Request, res: Response) => {
 });
 
 // GET /api/books/all/log/today — convenience for n8n: today's sessions for all active books.
-booksRouter.get("/all/log/today", async (_req: Request, res: Response) => {
+booksRouter.get("/all/log/today", async (req: Request, res: Response) => {
   try {
-    const { rows: books } = await query("SELECT * FROM books WHERE status='active'");
+    const { rows: books } = await query("SELECT * FROM books WHERE status='active' AND owner_id=$1", [userFrom(req).id]);
     const out: any[] = [];
     for (const b of books) {
       const { rows } = await query(

@@ -1,5 +1,18 @@
 // API client for the Chapter reading-companion backend (Phase 1 routes).
-import type { BookRow } from "./types";
+import type { BookRow, ReadingLensRow, StoryThreadRow } from "./types";
+import type { ReviewCardRow } from "./review";
+import type { CalendarLogRow } from "./calendar";
+import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
+import type { AchievementsResponse } from "./achievements";
+
+export interface TodayDashboard {
+  today: string;
+  active_book: BookRow | null;
+  next_queued_book: BookRow | null;
+  today_progress: { sessions: number; units: number };
+  due_reviews: number;
+  weekly_goal: WeeklyGoalProgress;
+}
 
 export interface LogRow {
   id: string;
@@ -34,16 +47,20 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listBooks: () => req<BookRow[]>(`${BASE}`),
+  listBooks: (scope: "mine" | "all" = "mine") => req<BookRow[]>(`${BASE}?scope=${scope}`),
   getBook: (id: string) => req<BookRow>(`${BASE}/${id}`),
   createBook: (body: Partial<BookRow>) =>
     req<BookRow>(`${BASE}`, { method: "POST", body: JSON.stringify(body) }),
   updateBook: (id: string, body: Partial<BookRow>) =>
     req<BookRow>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  reorderQueue: (bookIds: string[]) =>
+    req<BookRow[]>(`${BASE}/queue`, { method: "PUT", body: JSON.stringify({ bookIds }) }),
   deleteBook: (id: string) =>
     req<{ ok: true }>(`${BASE}/${id}`, { method: "DELETE" }),
 
   getLog: (id: string) => req<LogRow[]>(`${BASE}/${id}/log`),
+  getCalendar: (month: string, bookId = "") =>
+    req<CalendarLogRow[]>(`${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}`),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
     req<LogRow & { finished?: boolean }>(`${BASE}/${id}/advance`, { method: "POST" }),
@@ -51,10 +68,32 @@ export const api = {
     req<{ advanced: number; skipped: number; errors: any[] }>(`${BASE}/all/advance`, {
       method: "POST",
     }),
-  retry: (id: string, date: string) =>
-    req<LogRow>(`${BASE}/${id}/retry/${date}`, { method: "POST" }),
+  retryLog: (bookId: string, logId: string) =>
+    req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
+  getReadingLens: (bookId: string) => req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
+  retryReadingLens: (bookId: string, logId: string) =>
+    req<ReadingLensRow>(`${BASE}/${bookId}/logs/${logId}/reading-lens/retry`, { method: "POST" }),
+  synthesizeReadingLens: (bookId: string) =>
+    req<{ synthesis: string }>(`${BASE}/${bookId}/reading-lens/synthesis`, { method: "POST" }),
+  getStoryThread: (bookId: string) => req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread`),
+  getStoryThreadForLog: (bookId: string, logId: string) =>
+    req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),
+  retryStoryThread: (bookId: string, logId: string) =>
+    req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
+  generateReflection: (bookId: string) =>
+    req<Pick<BookRow, 'reflection_text' | 'reflection_at'>>(`${BASE}/${bookId}/reflection`, { method: "POST" }),
+  getDueReviews: () => req<ReviewCardRow[]>("/api/reviews/due"),
+  submitReview: (id: string, remembered: boolean) =>
+    req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),
+  getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
+  getTodayDashboard: () => req<TodayDashboard>("/api/today"),
+  getAchievements: () => req<AchievementsResponse>("/api/achievements"),
+  getOnboarding: () => req<{ dismissed_steps: string[] }>("/api/onboarding"),
+  saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
+  saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>
+    req<WeeklyGoalRow>("/api/goals/weekly", { method: "PUT", body: JSON.stringify({ metric, target }) }),
   getAllQuotes: () => req<QuoteCard[]>("/api/quotes"),
   getStats: () => req<{
     velocity: { date: string; pages_read: number }[];

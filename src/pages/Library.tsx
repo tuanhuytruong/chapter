@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Loader2, BookOpen, Zap, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, Loader2, BookOpen, Zap, Search, ChevronDown, ChevronUp, ListOrdered, Play } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';
 import AddBookModal from '../components/AddBookModal';
 import Toast from '../components/Toast';
 import QuoteWall from '../components/QuoteWall';
+import SortMenu from '../components/SortMenu';
+import { GuideCard, useOnboarding } from '../onboarding';
 
 type Filter = 'all' | 'active' | 'paused' | 'finished';
 const FILTERS: { id: Filter; label: string }[] = [
@@ -25,6 +27,7 @@ const SORTS: { id: Sort; label: string }[] = [
 
 export default function Library() {
   const [books, setBooks] = useState<BookRow[]>([]);
+  const [scope, setScope] = useState<"mine" | "all">("mine");
   const [streaks, setStreaks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
@@ -33,11 +36,12 @@ export default function Library() {
   const [showAdd, setShowAdd] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+  const { dismiss } = useOnboarding();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await api.listBooks();
+      const list = await api.listBooks(scope);
       setBooks(list);
       const s: Record<string, number> = {};
       await Promise.all(list.map(async (b) => {
@@ -52,7 +56,7 @@ export default function Library() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scope]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -85,13 +89,35 @@ export default function Library() {
     return books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999));
   }, [books]);
 
+  const readerGroups = useMemo(() => {
+    const groups = new Map<string, { name: string; books: BookRow[] }>();
+    for (const book of visible) {
+      const key = book.owner_id || 'unassigned';
+      const group = groups.get(key) || { name: book.owner_name || 'Unassigned reader', books: [] };
+      group.books.push(book);
+      groups.set(key, group);
+    }
+    return [...groups.values()];
+  }, [visible]);
+
   const startQueuedBook = async (book: BookRow) => {
     try {
       await api.updateBook(book.id, { status: 'active' } as any);
       setToast({ type: 'ok', msg: `Started "${book.title}"!` });
-      // reload books list
-      const list = await api.listBooks();
-      setBooks(list);
+      await load();
+    } catch (e: any) {
+      setToast({ type: 'err', msg: e.message });
+    }
+  };
+
+  const moveQueuedBook = async (index: number, direction: -1 | 1) => {
+    const next = [...queued];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    try {
+      const updated = await api.reorderQueue(next.map((book) => book.id));
+      setBooks((current) => [...current.filter((book) => book.status !== 'queued'), ...updated]);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     }
@@ -99,25 +125,30 @@ export default function Library() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {scope === 'mine' && !loading && books.length === 0 && <GuideCard step="welcome" title="Begin with one book, one small session"><p>Chapter keeps the reading surface quiet: add a book, read at your pace, and let the companion notes arrive after your progress is safely saved.</p><button onClick={() => { void dismiss('welcome'); setShowAdd(true); }} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white hover:bg-natural-sage-dark">Add your first book</button></GuideCard>}
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-bold text-2xl text-natural-dark font-sans">Your Library</h1>
           <p className="text-xs text-natural-stone font-sans">Track daily reading and AI summaries</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={readAll} disabled={advancing}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-clay hover:opacity-90 disabled:opacity-50 text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
+        <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex">
+          {scope === "mine" && <button onClick={readAll} disabled={advancing}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
             {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Read All Today
-          </button>
-          <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer">
+          </button>}
+          {scope === "mine" && <button onClick={() => setShowAdd(true)}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
-          </button>
+          </button>}
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex gap-2 border-b border-natural-border">
+      <div className="flex flex-wrap gap-2 border-b border-natural-border">
+        {([['mine', 'My Shelf'], ['all', 'All Readers']] as const).map(([id, label]) => <button key={id} onClick={() => setScope(id)} className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px ${scope === id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone'}`}>{label}</button>)}
+      </div>
+      {scope === 'all' && <p className="text-xs text-natural-stone font-sans">Browsing shared shelves — books are read-only.</p>}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2 border-b border-natural-border">
           {FILTERS.map(f => (
             <button key={f.id} onClick={() => setFilter(f.id)}
               className={`px-4 py-2 text-xs font-semibold uppercase tracking-widest font-sans border-b-2 -mb-px transition ${
@@ -126,19 +157,13 @@ export default function Library() {
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-natural-cream border border-natural-border rounded-full">
-            <Search className="w-3.5 h-3.5 text-natural-stone" />
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:justify-end">
+          <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
+            <Search className="w-3.5 h-3.5 shrink-0 text-natural-stone" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title/author"
-              className="text-xs bg-transparent outline-none w-32 font-sans" />
+              className="min-w-0 flex-1 bg-transparent text-xs font-sans outline-none sm:w-32 sm:flex-none" />
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-natural-cream border border-natural-border rounded-full">
-            <ArrowUpDown className="w-3.5 h-3.5 text-natural-stone" />
-            <select value={sort} onChange={e => setSort(e.target.value as Sort)}
-              className="text-xs bg-transparent outline-none font-sans cursor-pointer">
-              {SORTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
+          <SortMenu value={sort} onChange={setSort} />
         </div>
       </div>
 
@@ -150,10 +175,19 @@ export default function Library() {
         <div className="flex flex-col items-center justify-center p-16 bg-natural-cream rounded-[32px] border border-natural-border text-center space-y-3">
           <BookOpen className="w-10 h-10 text-natural-stone" />
           <p className="text-sm font-bold text-natural-dark font-sans">No books yet</p>
-          <p className="text-xs text-natural-stone font-sans">Add your first book to start the daily reading companion.</p>
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider cursor-pointer">
+          <p className="text-xs text-natural-stone font-sans">{scope === 'all' ? 'No readers have books matching these filters.' : 'Add your first book to start the daily reading companion.'}</p>
+          {scope === 'mine' && <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-natural-sage text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
-          </button>
+          </button>}
+        </div>
+      ) : scope === 'all' ? (
+        <div className="space-y-6">
+          {readerGroups.map(group => <section key={group.name} className="space-y-3">
+            <h2 className="text-sm font-bold text-natural-dark font-sans">{group.name}'s shelf <span className="text-natural-stone font-normal">({group.books.length})</span></h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {group.books.map(b => <BookCard key={b.id} book={b} streak={streaks[b.id]} readOnly />)}
+            </div>
+          </section>)}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -161,29 +195,27 @@ export default function Library() {
         </div>
       )}
 
-      {/* ── Up Next (queue) ── */}
-      {[...queued].length > 0 && (
-        <div className="bg-natural-cream rounded-[32px] border border-natural-border shadow-xs p-6">
-          <h3 className="text-sm font-bold text-natural-dark font-sans uppercase tracking-wider mb-4">
-            Up Next ({queued.length})
-          </h3>
-          <div className="space-y-3">
-            {queued.map(b => (
-              <div key={b.id} className="flex items-center justify-between py-3 px-4 border border-natural-border rounded-2xl hover:bg-natural-cream/30 transition">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-natural-dark font-sans truncate">{b.title}</p>
-                  <p className="text-xs text-natural-stone font-sans truncate">{b.author}</p>
+      {/* ── Personal reading queue ── */}
+      {scope === 'mine' && queued.length > 0 && (
+        <section className="rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-xs sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-natural-sage">Personal queue</p><h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-natural-dark"><ListOrdered className="h-5 w-5" /> Up next</h3></div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-natural-stone">{queued.length} book{queued.length === 1 ? '' : 's'}</span>
+          </div>
+          <div className="space-y-2">
+            {queued.map((book, index) => (
+              <article key={book.id} className="flex flex-wrap items-center gap-2 rounded-2xl border border-natural-border bg-white/65 p-3 sm:flex-nowrap">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-natural-sage/15 text-sm font-bold text-natural-sage">{index + 1}</span>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-natural-dark">{book.title}</p><p className="truncate text-xs text-natural-stone">{book.author}</p></div>
+                <div className="flex shrink-0 gap-1">
+                  <button aria-label={`Move ${book.title} earlier`} onClick={() => moveQueuedBook(index, -1)} disabled={index === 0} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronUp className="h-4 w-4" /></button>
+                  <button aria-label={`Move ${book.title} later`} onClick={() => moveQueuedBook(index, 1)} disabled={index === queued.length - 1} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronDown className="h-4 w-4" /></button>
+                  <button onClick={() => startQueuedBook(book)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-natural-sage px-3 text-xs font-bold text-white hover:bg-natural-sage-dark"><Play className="h-3.5 w-3.5" /> Start</button>
                 </div>
-                <button
-                  onClick={() => startQueuedBook(b)}
-                  className="shrink-0 ml-3 px-4 py-2 bg-natural-sage hover:bg-natural-sage-dark text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider shadow-sm cursor-pointer"
-                >
-                  Start Reading
-                </button>
-              </div>
+              </article>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       <div className="pt-10 border-t border-natural-border">

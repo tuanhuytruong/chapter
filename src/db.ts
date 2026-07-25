@@ -63,6 +63,21 @@ export async function withClient<T>(fn: (client: any) => Promise<T>): Promise<T>
   }
 }
 
+/** Run related writes atomically; a failed review-card seed rolls back its log too. */
+export async function withTransaction<T>(fn: (client: any) => Promise<T>): Promise<T> {
+  return withClient(async (client) => {
+    await client.query("BEGIN");
+    try {
+      const result = await fn(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    }
+  });
+}
+
 export async function ensureSchema(): Promise<void> {
   const fs = await import("fs");
   const path = await import("path");
@@ -106,4 +121,18 @@ export async function ensureSchema(): Promise<void> {
     }
   }
   console.log("[db] schema ensured");
+}
+
+/** Core feature tables that must exist before the app serves authenticated APIs.
+ * A missing relation means the deployment is only partially migrated and must fail
+ * fast rather than turning Today, Review, or Momentum into a misleading 503. */
+export async function verifyCoreSchema(): Promise<void> {
+  const required = ["books", "reading_log", "review_cards", "weekly_reading_goals", "story_thread_analyses", "story_state_snapshots", "onboarding_progress"];
+  const { rows } = await query<{ relation: string | null }>(
+    "SELECT to_regclass('chapter.' || unnest($1::text[])) AS relation",
+    [required]
+  );
+  const missing = required.filter((_, index) => !rows[index]?.relation);
+  if (missing.length) throw new Error(`required schema relations missing: ${missing.map((name) => `chapter.${name}`).join(", ")}`);
+  console.log("[db] core schema verified");
 }

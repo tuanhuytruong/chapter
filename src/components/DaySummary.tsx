@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote, Share2 } from 'lucide-react';
-import type { LogRow } from '../types';
+import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
+import type { LogRow, SummaryMode } from '../types';
 import { api } from '../api';
-import ShareSummaryModal from './ShareSummaryModal';
 
 // Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
 // whitespace, drop blank lines, and keep paragraph breaks so the preview is
@@ -22,14 +21,51 @@ interface DaySummaryProps {
   bookTitle?: string;
   bookAuthor?: string;
   bookId?: string;
+  canEdit?: boolean;
+  highlight?: string;
+  fileType?: 'pdf' | 'epub';
+  summaryMode?: SummaryMode;
+  onRetryComplete?: () => void;
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId }) => {
+/** Highlight search matches in text */
+function HighlightText({ text, query }: { text: string; query: string }) {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) return <>{text}</>;
+  const escaped = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === normalizedQuery.toLowerCase()
+          ? <mark key={i} className="bg-yellow-200 text-natural-dark rounded">{part}</mark>
+          : part
+      )}
+    </>
+  );
+}
+
+function InlineMarkdown({ text, highlight }: { text: string; highlight?: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return <>{parts.map((part, index) => part.startsWith('**') && part.endsWith('**')
+    ? <strong key={index} className="font-bold text-natural-dark">{highlight ? <HighlightText text={part.slice(2, -2)} query={highlight} /> : part.slice(2, -2)}</strong>
+    : <React.Fragment key={index}>{highlight ? <HighlightText text={part} query={highlight} /> : part}</React.Fragment>)}</>;
+}
+
+function DeepReadingSummary({ text, highlight }: { text: string; highlight?: string }) {
+  const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
+  if (!sections.length) return <p className="text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={text} highlight={highlight} /></p>;
+  return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
+}
+
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete }) => {
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
   const [saving, setSaving] = useState(false);
-  const [showShare, setShowShare] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   // Auto-save on blur
   const saveNotes = useCallback(async (text: string) => {
@@ -42,6 +78,19 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       setSaving(false);
     }
   }, [log.book_id, log.id]);
+
+  const retrySummary = useCallback(async () => {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      await api.retryLog(log.book_id, log.id);
+      onRetryComplete?.();
+    } catch (e: any) {
+      setRetryError(e.message || 'Could not retry this session');
+    } finally {
+      setRetrying(false);
+    }
+  }, [log.book_id, log.id, onRetryComplete]);
 
   // log.date is a YYYY-MM-DD string or ISO datetime (e.g. "2026-07-20T17:00:00.000Z"
   // when pg serializes a DATE as a UTC timestamp). Pass the raw string to Date()
@@ -65,15 +114,10 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
               📑 {log.chapter_title}
             </span>
           ) : (
-            <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Pages {log.page_start}–{log.page_end}</span>
+            <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">{fileType === 'epub' ? 'Chunks' : 'Pages'} {log.page_start}–{log.page_end}</span>
           )}
         </div>
         <div className="flex items-center gap-1">
-          {bookTitle && bookId && log.summary && (
-            <button onClick={() => setShowShare(true)} className="text-natural-stone hover:text-natural-sage cursor-pointer" title="Share to community">
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
-          )}
           {log.raw_text && (
             <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -82,13 +126,23 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         </div>
       </div>
 
-      {log.summary && <p className="text-xs text-natural-dark font-sans leading-relaxed">{log.summary}</p>}
+      {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
+
+      {canEdit && !log.summary && log.raw_text && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">
+          <span className="flex-1 text-[11px] text-natural-stone">Summary unavailable for this session.</span>
+          <button onClick={retrySummary} disabled={retrying} className="min-h-9 rounded-full bg-natural-sage px-3 text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-50">
+            {retrying ? 'Retrying…' : 'Retry summary'}
+          </button>
+          {retryError && <p className="w-full text-[10px] text-red-600">{retryError}</p>}
+        </div>
+      )}
 
       {log.key_insights && log.key_insights.length > 0 && (
         <ul className="space-y-1">
           {log.key_insights.map((ins, i) => (
             <li key={i} className="flex gap-1.5 text-[11px] text-natural-muted font-sans">
-              <span className="text-natural-sage mt-0.5">•</span>{ins}
+              <span className="text-natural-sage mt-0.5">•</span>{highlight ? <HighlightText text={ins} query={highlight} /> : ins}
             </li>
           ))}
         </ul>
@@ -96,12 +150,12 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
       {log.quote && (
         <p className="flex gap-1.5 text-[11px] italic text-natural-stone font-sans border-l-2 border-natural-clay pl-2">
-          <Quote className="w-3 h-3 shrink-0 mt-0.5" />{log.quote}
+          <Quote className="w-3 h-3 shrink-0 mt-0.5" />{highlight ? <HighlightText text={log.quote} query={highlight} /> : log.quote}
         </p>
       )}
 
-      {/* Personal notes — collapsible textarea, auto-save on blur */}
-      <div>
+      {/* Personal notes are editable only by the book owner. */}
+      {canEdit && <div>
         <button
           onClick={() => setShowNotes(s => !s)}
           className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone hover:text-natural-dark font-sans"
@@ -118,7 +172,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
             placeholder="Write your own notes about today's reading…"
           />
         )}
-      </div>
+      </div>}
 
       {open && log.raw_text && (
         <div className="pt-2 border-t border-natural-border">
@@ -127,16 +181,6 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         </div>
       )}
 
-      {showShare && bookTitle && bookAuthor && bookId && (
-        <ShareSummaryModal
-          log={log}
-          bookTitle={bookTitle}
-          bookAuthor={bookAuthor}
-          bookId={bookId}
-          onClose={() => setShowShare(false)}
-          onShared={() => {}}
-        />
-      )}
     </div>
   );
 };

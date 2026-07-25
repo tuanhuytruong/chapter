@@ -79,7 +79,14 @@ export default function QuoteWall() {
               <span className="font-bold">{q.title}</span>
               <span>— {q.author}</span>
             </div>
-            <p className="text-[10px] text-natural-stone/60 font-sans mt-1.5">{q.date?.slice(0, 10)}</p>
+            <p className="text-[10px] text-natural-stone/60 font-sans mt-1.5">
+              {q.date
+                ? (String(q.date).includes('T')
+                    ? new Date(q.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Bangkok' })
+                    : (() => { const [y,m,d] = q.date.slice(0,10).split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); })()
+                  )
+                : ''}
+            </p>
           </div>
         ))}
       </div>

@@ -22,9 +22,31 @@ body {
   color: var(--color-natural-dark);
 }
 
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Calm navigation motion: opacity/transform only, so interactions stay light. */
+@keyframes journeyBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes journeyPanelIn { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes journeyEntryIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes routeContentIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.journey-drawer[data-state="open"] .journey-backdrop { animation: journeyBackdropIn 160ms ease-out both; }
+.journey-drawer[data-state="open"] .journey-panel { animation: journeyPanelIn 200ms cubic-bezier(0.22, 0.8, 0.28, 1) both; }
+.journey-drawer[data-state="open"] .journey-entry { animation: journeyEntryIn 180ms cubic-bezier(0.22, 0.8, 0.28, 1) both; }
+.journey-drawer[data-state="closed"] .journey-backdrop { opacity: 0; transition: opacity 160ms ease-in; }
+.journey-drawer[data-state="closed"] .journey-panel { opacity: 0; transform: translateX(-12px); transition: opacity 160ms ease-in, transform 180ms ease-in; }
+.journey-drawer[data-state="closed"] .journey-entry { opacity: 0; transition: opacity 100ms ease-in; }
+.route-content { animation: routeContentIn 180ms cubic-bezier(0.22, 0.8, 0.28, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
 /* ── Dark mode — warm lamplight theme ── */
