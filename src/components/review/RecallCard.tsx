@@ -1,5 +1,5 @@
 import { Check, Eye, RotateCcw } from 'lucide-react';
-import type { RefObject } from 'react';
+import { Fragment, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import type { ReviewCardRow } from '../../review';
 
@@ -12,6 +12,15 @@ function sourceLabel(card: ReviewCardRow): string | null {
   }
   if (card.source_page_start != null && card.source_page_end != null) parts.push(`pp. ${card.source_page_start}–${card.source_page_end}`);
   return parts.length ? parts.join(' · ') : null;
+}
+
+/** Render the limited emphasis syntax produced in review-card insights. */
+function InsightText({ text }: { text: string }) {
+  return <>{text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
+    return <Fragment key={index}>{part}</Fragment>;
+  })}</>;
 }
 
 export default function RecallCard({ card, revealed, saving, onReveal, onSubmit, revealRef, responseRef }: {
@@ -40,7 +49,7 @@ export default function RecallCard({ card, revealed, saving, onReveal, onSubmit,
       ) : (
         <div className="py-7 sm:py-9">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-natural-sage">The insight</p>
-          <p className="mt-3 text-base leading-relaxed text-natural-dark sm:text-lg">{card.insight}</p>
+          <p className="mt-3 text-base leading-relaxed text-natural-dark sm:text-lg"><InsightText text={card.insight} /></p>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-natural-border pt-4 text-xs text-natural-stone">
             <span>{source ? `From your ${source} session` : 'From your reading'}</span>
             <Link to={`/books/${card.book_id}`} className="font-semibold text-natural-sage hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage">Open book →</Link>
