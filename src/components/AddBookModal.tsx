@@ -107,7 +107,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             <input value={author} onChange={e => setAuthor(e.target.value)}
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="James Clear" />
           </div>
-          <div>
+          <div className="md:row-span-2">
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">File *</label>
             <input type="file" accept=".pdf,.epub" onChange={async (e) => {
               const f = e.target.files?.[0];
@@ -155,21 +155,22 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             </div>
           </div>
           {fileType === 'epub' && <p className="-mt-2 text-[10px] text-natural-stone">EPUB is split into stable reading chunks, not fixed printed pages.</p>}
-          <div className="md:col-span-2 flex flex-col gap-2 rounded-xl border border-natural-border/70 bg-natural-cream/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-            <label htmlFor="addToQueue" className="flex items-center gap-2 text-[11px] text-natural-stone font-sans cursor-pointer">
-              <input id="addToQueue" type="checkbox" checked={addToQueue} onChange={e => setAddToQueue(e.target.checked)}
-                className="accent-natural-sage cursor-pointer" />
+          <div className="md:col-start-2">
+            <label htmlFor="summaryLang" className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary language</label>
+            <select id="summaryLang" value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
+              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
+              <option value="auto">Auto (book's language)</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="en">English</option>
+            </select>
+            <p className="text-[10px] text-natural-stone mt-1">Language used for the AI daily summary. Can be changed later in book settings.</p>
+          </div>
+          <div className="md:col-span-2 flex items-center gap-2 py-1">
+            <input id="addToQueue" type="checkbox" checked={addToQueue} onChange={e => setAddToQueue(e.target.checked)}
+              className="accent-natural-sage cursor-pointer" />
+            <label htmlFor="addToQueue" className="text-[11px] text-natural-stone font-sans cursor-pointer">
               Add to reading queue instead of starting now
             </label>
-            <div className="flex min-w-0 items-center gap-2 sm:shrink-0">
-              <label htmlFor="summaryLang" className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary language</label>
-              <select id="summaryLang" value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
-                className="min-w-0 flex-1 px-3 py-2 bg-natural-cream border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage sm:w-48">
-                <option value="auto">Auto (book's language)</option>
-                <option value="vi">Tiếng Việt</option>
-                <option value="en">English</option>
-              </select>
-            </div>
           </div>
           <fieldset className="md:col-span-2">
             <legend className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading experience</legend>
