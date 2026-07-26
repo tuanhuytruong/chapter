@@ -11,7 +11,8 @@ All tables live in the `chapter` schema of the `dwh` database. The schema is app
 
 ## Entity relationship diagram
 
-```mermaid
+<!-- openwiki: mermaid parse failed and this diagram was converted to a text fence so it does not break rendering. Fix the diagram source and restore the mermaid fence. Parser error: Parse error on line 111: ... uuid owner_id PK FK text[] di Expecting 'BLOCK_STOP', 'ATTRIBUTE_WORD', ',', 'COMMENT', got 'ATTRIBUTE_KEY' -->
+```text
 erDiagram
     users {
         uuid id PK

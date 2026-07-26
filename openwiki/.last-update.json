@@ -1,12 +1,6 @@
 {
-  "lastUpdate": "2026-07-25",
-  "lastMessage": "Initial wiki generation for Chapter AI Reading Companion",
-  "pages": [
-    "/openwiki/architecture/overview.md",
-    "/openwiki/data-model.md",
-    "/openwiki/operations.md",
-    "/openwiki/quickstart.md",
-    "/openwiki/reading-engine.md",
-    "/openwiki/workflows.md"
-  ]
+  "updatedAt": "2026-07-26T03:32:56.830Z",
+  "command": "update",
+  "gitHead": "afa9faac9c733547529fc4a206ccd13afdd58682",
+  "model": "n8n"
 }
