@@ -16,6 +16,9 @@ const chunk = parseChunkAnalysis(JSON.stringify({
   notable_quotes: [{ text: "sealed letter", page_start: 1 }],
 }));
 assert.equal(chunk.people[0].name, "Mara");
+const recoveredControls = parseChunkAnalysis(`{"chunk_summary":"Mara walks
+into the dark.","concepts":[]}`);
+assert.equal(recoveredControls.chunk_summary, "Mara walks into the dark.");
 assert.equal(companionVoice("Đoạn văn giới thiệu Ove và sự bướng bỉnh của ông."), "Ove và sự bướng bỉnh của ông.");
 assert.equal(companionVoice("The excerpt discusses Mara's fear."), "Mara's fear.");
 

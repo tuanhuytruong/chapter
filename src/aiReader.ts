@@ -135,12 +135,40 @@ const arr = <T>(v: unknown, max: number, mapper: (item: unknown) => T | null): T
   return v.slice(0, max).map(mapper).filter((x): x is T => x !== null);
 };
 
+function escapeRawControlsInStrings(json: string): string {
+  // A safe recovery only for literal newlines/tabs inside quoted values. Do not
+  // invent missing fields, close truncated JSON, or guess at unescaped quotes.
+  let output = "";
+  let inString = false;
+  let escaped = false;
+  for (const char of json) {
+    if (inString && !escaped && char === "\n") output += "\\n";
+    else if (inString && !escaped && char === "\r") output += "\\r";
+    else if (inString && !escaped && char === "\t") output += "\\t";
+    else output += char;
+    if (char === '"' && !escaped) inString = !inString;
+    escaped = char === "\\" && !escaped;
+    if (char !== "\\") escaped = false;
+  }
+  return output;
+}
+
 function extractJson(raw: string): Record<string, unknown> {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1] || raw.trim();
   const start = fenced.indexOf("{");
   const end = fenced.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("AI Reader: response did not contain JSON");
-  const parsed = JSON.parse(fenced.slice(start, end + 1));
+  const candidate = fenced.slice(start, end + 1);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(candidate);
+  } catch (firstError) {
+    try {
+      parsed = JSON.parse(escapeRawControlsInStrings(candidate));
+    } catch {
+      throw firstError;
+    }
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
     throw new Error("AI Reader: response must be a JSON object");
   return parsed as Record<string, unknown>;
@@ -173,7 +201,10 @@ export function buildChunkPrompt(opts: ChunkInput): string {
 }
 
 function sessionShape(): string {
-  return `{"session":1,"schema_version":2,"session_title":"...","close_reading":"...","starting_context":"...","what_changes":[{"label":"...","detail":"...","significance":"..."}],"threads":[{"id":"stable-kebab-id","label":"...","status":"introduced|deepened|shifted|resolved|uncertain","detail":"...","prior_connection":null}],"entities":[{"id":"stable-kebab-id","name":"...","kind":"person|organisation|idea|force","role_now":"...","change_from_prior":null}],"evidence":[{"text":"verbatim quote","page_start":1,"why_it_matters":"..."}],"handoff":"...","session_summary":"...","chunk_summary":"...","concepts":[{"name":"...","definition":"..."}],"themes":[{"name":"...","description":"..."}],"people":[{"name":"...","pulse":"..."}],"notable_quotes":[{"text":"verbatim quote","page_start":1}]}`;
+  // Keep the per-session contract deliberately small. Large nested JSON causes
+  // small local providers to truncate or emit invalid escaped quotes; optional
+  // maps are safely derived later during synthesis.
+  return `{"session":1,"session_title":"...","close_reading":"...","what_changes":[{"label":"...","detail":"...","significance":"..."}],"threads":[{"id":"stable-kebab-id","label":"...","status":"introduced|deepened|shifted|resolved|uncertain","detail":"..."}],"evidence":[{"text":"verbatim excerpt","page_start":1,"why_it_matters":"..."}],"handoff":"...","session_summary":"...","chunk_summary":"...","concepts":[{"name":"...","definition":"..."}],"themes":[{"name":"...","description":"..."}],"people":[{"name":"...","pulse":"..."}]}`;
 }
 
 /** Build one provider request for up to five independent saved reading sessions. */
