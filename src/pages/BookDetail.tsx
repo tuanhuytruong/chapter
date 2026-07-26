@@ -78,6 +78,7 @@ export default function BookDetail() {
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
+  const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -111,15 +112,21 @@ export default function BookDetail() {
   // the background. Revalidate quietly for a bounded window rather than making
   // the reader refresh the full page.
   useEffect(() => {
-    if (!enrichmentPending || !id) return;
+    if (!enrichmentPending || !pendingEnrichmentLogId || !id) return;
     let cancelled = false;
     const startedAt = Date.now();
     const tick = async () => {
       try {
         const [updatedBook, updatedLogs] = await Promise.all([api.getBook(id), api.getLog(id)]);
         if (cancelled) return;
-        setBook(updatedBook);
-        setLogs(updatedLogs);
+        // Quietly reconcile only changed data. Keeping existing state in place
+        // avoids a route-level loading flash after the reader saves a session.
+        setBook(previous => previous ? { ...previous, ...updatedBook } : updatedBook);
+        setLogs(previous => {
+          const byId = new Map<string, LogRow>(previous.map(log => [log.id, log]));
+          updatedLogs.forEach(log => byId.set(log.id, log));
+          return [...byId.values()].sort((a, b) => `${b.date}-${b.session}`.localeCompare(`${a.date}-${a.session}`));
+        });
         const analyses = updatedBook.can_edit && updatedBook.reading_experience === 'analytical'
           ? await api.getReadingLens(id)
           : [];
@@ -127,19 +134,25 @@ export default function BookDetail() {
           if (updatedBook.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
           else setLenses(analyses);
         }
-        const latest = updatedLogs[0];
+        const pendingLog = updatedLogs.find(log => log.id === pendingEnrichmentLogId);
         const lensReady = updatedBook.reading_experience === 'story'
           ? true
-          : analyses.some(item => item.log_id === latest?.id);
+          : analyses.some(item => item.log_id === pendingEnrichmentLogId);
         const wiki = await api.getWikiStatus(id);
-        if (lensReady && wiki.wikiExists && wiki.pagesCovered >= (latest?.page_end || 0)) setEnrichmentPending(false);
+        if (lensReady && wiki.wikiExists && wiki.pagesCovered >= (pendingLog?.page_end || 0)) {
+          setEnrichmentPending(false);
+          setPendingEnrichmentLogId(null);
+        }
       } catch { /* keep the saved reading session usable; retry until timeout */ }
-      if (!cancelled && Date.now() - startedAt >= 180000) setEnrichmentPending(false);
+      if (!cancelled && Date.now() - startedAt >= 180000) {
+        setEnrichmentPending(false);
+        setPendingEnrichmentLogId(null);
+      }
     };
     void tick();
     const interval = window.setInterval(() => { void tick(); }, 7000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [enrichmentPending, id]);
+  }, [enrichmentPending, id, pendingEnrichmentLogId]);
 
   useEffect(() => {
     if (!id || logs.length === 0) return;
@@ -158,14 +171,23 @@ export default function BookDetail() {
         const nextQueued = books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999))[0];
         if (nextQueued) setFinishModal(nextQueued);
       }
+      // The API returns the persisted log and updated cursor. Merge those into
+      // the live detail view instead of reloading the route and losing context.
+      setLogs(previous => [result.log, ...previous.filter(log => log.id !== result.log.id)]);
+      setBook(previous => previous ? {
+        ...previous,
+        current_page: result.pageEnd,
+        total_pages: result.totalUnits,
+        status: result.finished ? 'finished' : previous.status,
+      } : previous);
       setToast({
         type: 'ok',
         msg: hasReadToday
-          ? `Session ${sessionCount + 1} done — another summary generated`
-          : 'Read today — summary generated'
+          ? `Session ${result.session} saved — companion notes are preparing`
+          : 'Read today saved — companion notes are preparing'
       });
-      await load();
-      setEnrichmentPending(result.readingExperience === 'analytical');
+      setPendingEnrichmentLogId(result.log.id);
+      setEnrichmentPending(true);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {

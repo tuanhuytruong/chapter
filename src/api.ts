@@ -27,7 +27,22 @@ export interface LogRow {
   quote: string | null;
   telegram_sent: boolean;
   notes: string | null;
+  chapter_title: string | null;
   created_at: string;
+}
+
+export interface AdvanceResult {
+  bookId: string;
+  title: string;
+  author: string;
+  date: string;
+  session: number;
+  pageStart: number;
+  pageEnd: number;
+  totalUnits: number;
+  finished: boolean;
+  log: LogRow;
+  readingExperience: "analytical" | "story";
 }
 
 const BASE = "/api/books";
@@ -63,7 +78,7 @@ export const api = {
     req<CalendarLogRow[]>(`${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}`),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
-    req<LogRow & { finished?: boolean; readingExperience?: "analytical" | "story" }>(`${BASE}/${id}/advance`, { method: "POST" }),
+    req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST" }),
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   getReadingLens: (bookId: string) => req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
