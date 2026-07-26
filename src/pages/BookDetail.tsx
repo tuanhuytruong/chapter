@@ -383,7 +383,8 @@ export default function BookDetail() {
           </div>
           <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
-        <aside className="order-3 col-span-full space-y-4 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-span-2 lg:border-t-0 lg:pt-0" aria-label="Book utilities">
+        <aside className="contents" aria-label="Book utilities">
+          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
             <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
@@ -408,14 +409,15 @@ export default function BookDetail() {
               )}
             </>
           )}
+          </div>
 
-          <section className="border-t border-natural-border/70 pt-3">
+          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-2 lg:row-start-2">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
             <StreakHeatmap logs={logs} />
           </section>
 
           {book.can_edit && (
-          <section className="border-t border-natural-border/70 pt-3">
+          <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-2">
             <div className="flex items-center gap-2">
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-natural-dark"><Settings2 className="h-4 w-4" /> Settings</h3>
               {!editing && <button onClick={() => setEditing(true)} className="rounded-full border border-natural-border px-2.5 py-1 text-[11px] font-bold text-natural-sage hover:border-natural-sage">Edit</button>}
