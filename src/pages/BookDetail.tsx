@@ -54,6 +54,7 @@ export default function BookDetail() {
   const [book, setBook] = useState<BookRow | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [dailyPages, setDailyPages] = useState(20);
@@ -85,11 +86,11 @@ export default function BookDetail() {
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
+    setLoadError(null);
     try {
+      // The book record is the detail page's source of truth. Do not let an
+      // optional companion request make an existing, newly-created book look missing.
       const [b, l] = await Promise.all([api.getBook(id), api.getLog(id)]);
-      const analysisRows = b.can_edit
-        ? b.reading_experience === 'story' ? await api.getStoryThread(id) : await api.getReadingLens(id)
-        : [];
       setBook(b);
       setDailyPages(b.daily_pages);
       setStatus(b.status);
@@ -99,9 +100,20 @@ export default function BookDetail() {
       setSummaryLang(b.summary_lang || 'auto');
       setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
-      setLenses(b.reading_experience === 'analytical' ? analysisRows as ReadingLensRow[] : []);
-      setStoryThread(b.reading_experience === 'story' ? analysisRows as StoryThreadRow[] : []);
+
+      if (b.can_edit) {
+        try {
+          if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
+          else setLenses(await api.getReadingLens(id));
+        } catch (e: any) {
+          // Companion analysis is non-critical, especially for a fresh book
+          // with no sessions yet. The detail page remains usable.
+          setToast({ type: 'err', msg: `Companion notes unavailable: ${e.message}` });
+        }
+      }
     } catch (e: any) {
+      setBook(null);
+      setLoadError(e.message);
       setToast({ type: 'err', msg: e.message });
     } finally {
       setLoading(false);
@@ -256,7 +268,8 @@ export default function BookDetail() {
     return <div className="flex justify-center p-16"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /></div>;
   }
   if (!book) {
-    return <div className="text-center p-16 text-natural-stone font-sans">Book not found. <button onClick={() => navigate('/')} className="text-natural-sage underline">Back to library</button></div>;
+    const missing = loadError?.startsWith('404:');
+    return <div className="text-center p-16 text-natural-stone font-sans">{missing ? 'Book not found.' : 'This book could not be loaded.'} <button onClick={() => navigate('/')} className="text-natural-sage underline">Back to library</button></div>;
   }
 
   const pct = progressPct(book);
