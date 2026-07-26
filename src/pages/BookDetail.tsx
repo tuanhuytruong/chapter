@@ -78,7 +78,6 @@ export default function BookDetail() {
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
-  const [activeTab, setActiveTab] = useState<'heatmap' | 'settings'>('heatmap');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -410,28 +409,16 @@ export default function BookDetail() {
             </>
           )}
         </div>
-        <div className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <button onClick={() => setActiveTab('heatmap')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Reading Rhythm
-          </button>
-          {book.can_edit && <button onClick={() => setActiveTab('settings')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'settings' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Settings
-          </button>}
-        </div>
-
-        {activeTab === 'heatmap' && (
-          <>
+        <aside className="order-4 col-span-full space-y-4 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3" aria-label="Book utilities">
+          <section>
+            <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
             <StreakHeatmap logs={logs} />
-          </>
-        )}
+          </section>
 
-        {book.can_edit && activeTab === 'settings' && (
-          <div className="space-y-3">
+          {book.can_edit && (
+          <section className="border-t border-natural-border/70 pt-3">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
+              <h3 className="flex items-center gap-1.5 text-sm font-bold text-natural-dark"><Settings2 className="h-4 w-4" /> Settings</h3>
               {!editing && <button onClick={() => setEditing(true)} className="rounded-full border border-natural-border px-2.5 py-1 text-[11px] font-bold text-natural-sage hover:border-natural-sage">Edit</button>}
             </div>
             {editing ? (
@@ -491,9 +478,9 @@ export default function BookDetail() {
                 <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
               </div>
             )}
-          </div>
-        )}
-          </div>
+          </section>
+          )}
+        </aside>
       </div>
 
       {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read Today</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
