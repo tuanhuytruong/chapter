@@ -383,34 +383,33 @@ export default function BookDetail() {
           </div>
           <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
-        <div className="order-3 col-span-full flex w-full flex-col gap-3 sm:order-none sm:col-span-2 sm:self-start lg:col-span-1 lg:row-span-2">
+        <aside className="order-3 col-span-full space-y-4 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-span-2 lg:border-t-0 lg:pt-0" aria-label="Book utilities">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
-            <div className="flex flex-wrap gap-2 sm:justify-end">
+            <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
                 <CheckCircle className="w-3.5 h-3.5" /> Finished
               </span>
               <button onClick={startReread}
-                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 sm:flex-none cursor-pointer">
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 cursor-pointer">
                 <RotateCcw className="w-3.5 h-3.5" /> Re-read
               </button>
             </div>
           ) : (
             <>
               <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 sm:min-h-0 sm:w-auto sm:justify-start cursor-pointer">
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
                 {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
               </button>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
-                  className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark sm:min-h-0 sm:w-auto cursor-pointer">
+                  className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
                   <CheckCircle className="w-3.5 h-3.5" /> Mark Finished
                 </button>
               )}
             </>
           )}
-        </div>
-        <aside className="order-4 col-span-full space-y-4 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3" aria-label="Book utilities">
-          <section>
+
+          <section className="border-t border-natural-border/70 pt-3">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
             <StreakHeatmap logs={logs} />
           </section>
