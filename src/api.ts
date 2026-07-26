@@ -64,10 +64,6 @@ export const api = {
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
     req<LogRow & { finished?: boolean; readingExperience?: "analytical" | "story" }>(`${BASE}/${id}/advance`, { method: "POST" }),
-  advanceAll: () =>
-    req<{ advanced: number; skipped: number; errors: any[] }>(`${BASE}/all/advance`, {
-      method: "POST",
-    }),
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   getReadingLens: (bookId: string) => req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),

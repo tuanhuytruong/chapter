@@ -40,7 +40,7 @@ Built with **React 19 + TypeScript**, styled with **Tailwind CSS 4**. Single-pag
 
 | Route | Page | Purpose |
 |-------|------|---------|
-| `/` | Library | Book grid, filter/sort/search, queue, "Read All Today" |
+| `/` | Library | Book grid, filter/sort/search, queue, Add Book |
 | `/books/:id` | BookDetail | Reading log, heatmap, analysis views, settings |
 | `/today` | Today | Daily dashboard — active book, weekly goal, due reviews |
 | `/review` | Review | Spaced-repetition review cards |

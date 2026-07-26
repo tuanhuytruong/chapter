@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Loader2, BookOpen, Zap, Search, ChevronDown, ChevronUp, ListOrdered, Play } from 'lucide-react';
+import { Plus, BookOpen, Search, ChevronDown, ChevronUp, ListOrdered, Play } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LogRow } from '../types';
 import BookCard from '../components/BookCard';
@@ -34,7 +34,6 @@ export default function Library() {
   const [sort, setSort] = useState<Sort>('recent');
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [advancing, setAdvancing] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const { dismiss } = useOnboarding();
 
@@ -59,19 +58,6 @@ export default function Library() {
   }, [scope]);
 
   useEffect(() => { load(); }, [load]);
-
-  const readAll = async () => {
-    setAdvancing(true);
-    try {
-      const r = await api.advanceAll();
-      setToast({ type: 'ok', msg: `Read All: ${r.advanced} advanced, ${r.skipped} skipped` });
-      await load();
-    } catch (e: any) {
-      setToast({ type: 'err', msg: e.message });
-    } finally {
-      setAdvancing(false);
-    }
-  };
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -131,16 +117,12 @@ export default function Library() {
           <h1 className="font-bold text-2xl text-natural-dark font-sans">Your Library</h1>
           <p className="text-xs text-natural-stone font-sans">Track daily reading and AI summaries</p>
         </div>
-        <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex">
-          {scope === "mine" && <button onClick={readAll} disabled={advancing}
-            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
-            {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} Read All Today
-          </button>}
-          {scope === "mine" && <button onClick={() => setShowAdd(true)}
+        {scope === "mine" && <div>
+          <button onClick={() => setShowAdd(true)}
             className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
-          </button>}
-        </div>
+          </button>
+        </div>}
       </div>
 
       <div className="flex flex-wrap gap-2 border-b border-natural-border">

@@ -17,7 +17,7 @@ cron job (n8n) pushed to Telegram every morning.
   streak heatmap (GitHub-style), edit/delete book
 - 🤖 **AI Daily Summary** — extract next chunk (PDF/EPUB) → 9router → save summary,
   key insights, quote
-- ⚡ **Read Today** — manual trigger on Book Detail + **Read All Today** bulk button
+- ⚡ **Read Today** — manual trigger from Book Detail
 - 📨 **Telegram Delivery** — n8n cron (07:00) advances all active books, then pushes
   formatted summaries to your Telegram chat
 - 🖼 **Auto Cover** — fetch book cover from Open Library when adding a book
@@ -143,7 +143,7 @@ Open `chapter.mrl.asia` in browser.
    (`/opt/chapter/workspace/books/atomic-habits.pdf`), Type (PDF/EPUB), Pages/day.
 3. Tick **Auto from Open Library** to fetch a cover automatically (or paste a URL).
 4. Click **Add Book**. The card appears in your Library.
-5. Click **Read Today** (or **Read All Today**) to generate the first AI summary.
+5. Open the book, then click **Read Today** to generate the first AI summary.
 
 ---
 
