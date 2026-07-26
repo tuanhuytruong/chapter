@@ -4,6 +4,7 @@ import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extract
 import { callJsonLLM, callLLM, callNineRouter, parseSummary } from "../llm.js";
 import { buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
+import { processBookForWiki } from "../aiReader.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
@@ -262,6 +263,49 @@ booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Respo
     if (!analysis) return res.status(404).json({ error: "story thread not available" });
     res.json(analysis);
   } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
+});
+
+// ── AI Reader / Book Wiki routes ─────────────────────────
+// GET /api/books/:id/wiki — get the book wiki
+booksRouter.get("/:id/wiki", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await query("SELECT * FROM book_wiki WHERE book_id = $1", [id]);
+    if (!rows.length) return res.status(404).json({ error: "wiki not yet generated" });
+    res.json(rows[0]);
+  } catch (e: any) { res.status(503).json({ error: "wiki unavailable", detail: e.message }); }
+});
+
+// GET /api/books/:id/wiki/status — wiki generation status
+booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const [book, logCount, chunkCount, wikiRow] = await Promise.all([
+      query("SELECT file_path FROM books WHERE id=$1", [id]),
+      query("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [id]),
+      query("SELECT count(*)::int AS c FROM ai_reader_chunks WHERE book_id=$1", [id]),
+      query("SELECT generated_at, pages_covered FROM book_wiki WHERE book_id=$1", [id]),
+    ]);
+    const bookData = book.rows[0];
+    res.json({
+      hasFile: !!(bookData?.file_path),
+      totalSessions: logCount.rows[0]?.c || 0,
+      chunksProcessed: chunkCount.rows[0]?.c || 0,
+      wikiExists: wikiRow.rows.length > 0,
+      pagesCovered: wikiRow.rows[0]?.pages_covered || 0,
+      wikiGeneratedAt: wikiRow.rows[0]?.generated_at || null,
+    });
+  } catch (e: any) { res.status(503).json({ error: "wiki status unavailable", detail: e.message }); }
+});
+
+// POST /api/books/:id/wiki/regenerate — trigger wiki regeneration for this book
+booksRouter.post("/:id/wiki/regenerate", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const updated = await processBookForWiki(id, true);
+    res.json({ ok: true, updated });
+  } catch (e: any) { res.status(500).json({ error: "wiki regeneration failed", detail: e.message }); }
 });
 
 // GET /api/books/:id — single book

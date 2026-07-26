@@ -15,6 +15,7 @@ import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
 import StoryThreadView from '../components/story/StoryThreadView';
+import BookWiki from '../components/BookWiki';
 import { GuideCard } from '../onboarding';
 
 function InlineMarkdown({ text }: { text: string }) {
@@ -399,7 +400,7 @@ export default function BookDetail() {
       )}
 
       {/* Reading activity — tabs: Heatmap / Settings / Forecast */}
-      <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
+      <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm overflow-hidden">
         {/* Pill tabs */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <button onClick={() => setActiveTab('heatmap')}
@@ -494,6 +495,11 @@ export default function BookDetail() {
             <ReadingForecast book={book} logs={logs} />
           </div>
         )}
+      </div>
+
+      {/* AI Reader — BookWiki */}
+      <div className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+        <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
       </div>
 
       {book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /></> : <>

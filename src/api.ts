@@ -101,6 +101,17 @@ export const api = {
     bookCounts: { active: number; finished: number; paused: number; queued: number };
     globalStats: { total_days_read: number; last_read: string };
   }>("/api/stats"),
+
+  // ── AI Reader / Book Wiki ─────────────────────────────────
+  request: <T = any>(url: string, opts?: RequestInit) => req<T>(url, opts),
+  getWiki: (bookId: string) => req<any | null>(`${BASE}/${bookId}/wiki`),
+  getWikiStatus: (bookId: string) => req<{
+    hasFile: boolean; totalSessions: number; chunksProcessed: number;
+    wikiExists: boolean; pagesCovered: number; wikiGeneratedAt: string | null;
+  }>(`${BASE}/${bookId}/wiki/status`),
+  regenerateWiki: (bookId: string) => req<{ ok: boolean; updated: boolean }>(
+    `${BASE}/${bookId}/wiki/regenerate`, { method: "POST" }
+  ),
 };
 
 export interface UploadResult {
