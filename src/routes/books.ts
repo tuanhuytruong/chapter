@@ -280,11 +280,12 @@ booksRouter.get("/:id/wiki", async (req: Request, res: Response) => {
 booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const [book, logCount, chunkCount, wikiRow] = await Promise.all([
+    const [book, logCount, chunkCount, wikiRow, job] = await Promise.all([
       query("SELECT file_path FROM books WHERE id=$1", [id]),
       query("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [id]),
       query("SELECT count(*)::int AS c FROM ai_reader_chunks WHERE book_id=$1", [id]),
       query("SELECT generated_at, pages_covered, output_language, schema_version FROM book_wiki WHERE book_id=$1", [id]),
+      query("SELECT status, started_at, error_message FROM ai_reader_jobs WHERE book_id=$1", [id]),
     ]);
     const bookData = book.rows[0];
     res.json({
@@ -296,17 +297,43 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
       wikiGeneratedAt: wikiRow.rows[0]?.generated_at || null,
       outputLanguage: wikiRow.rows[0]?.output_language || "auto",
       schemaVersion: wikiRow.rows[0]?.schema_version || 1,
+      jobStatus: job.rows[0]?.status || "idle",
+      jobStartedAt: job.rows[0]?.started_at || null,
+      jobError: job.rows[0]?.error_message || null,
     });
   } catch (e: any) { res.status(503).json({ error: "wiki status unavailable", detail: e.message }); }
 });
 
-// POST /api/books/:id/wiki/regenerate — trigger wiki regeneration for this book
+// POST /api/books/:id/wiki/regenerate — queue a durable background regeneration.
+// Returning immediately keeps the reader usable and page reloads still see Running.
 booksRouter.post("/:id/wiki/regenerate", async (req: Request, res: Response) => {
   const { id } = req.params;
   if (!await ownerCanMutate(req, res, id)) return;
   try {
-    const updated = await processBookForWiki(id, true);
-    res.json({ ok: true, updated });
+    const claim = await query(
+      `INSERT INTO ai_reader_jobs (book_id, status, started_at, completed_at, error_message)
+       VALUES ($1, 'running', now(), NULL, NULL)
+       ON CONFLICT (book_id) DO UPDATE SET status='running', started_at=now(), completed_at=NULL, error_message=NULL
+       WHERE ai_reader_jobs.status != 'running'
+       RETURNING status`,
+      [id]
+    );
+    if (!claim.rows.length) return res.status(409).json({ error: "AI Reader is already running" });
+    void processBookForWiki(id, true)
+      .then(async (updated) => {
+        await query(
+          "UPDATE ai_reader_jobs SET status='idle', completed_at=now(), error_message=$2 WHERE book_id=$1",
+          [id, updated ? null : "No readable sessions could be processed."]
+        );
+      })
+      .catch(async (error: any) => {
+        console.error(`[ai-reader] Background regeneration failed for ${id}:`, error.message);
+        await query(
+          "UPDATE ai_reader_jobs SET status='failed', completed_at=now(), error_message=$2 WHERE book_id=$1",
+          [id, String(error.message || "Generation failed").slice(0, 300)]
+        );
+      });
+    res.status(202).json({ ok: true, status: "running" });
   } catch (e: any) { res.status(500).json({ error: "wiki regeneration failed", detail: e.message }); }
 });
 

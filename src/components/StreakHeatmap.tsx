@@ -111,7 +111,11 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
           const lv = level(dayStr);
           const streak = isStreakDay(dayStr);
           const count = byDay.get(dayStr) || 0;
-          const dayLabel = new Date(`${dayStr}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+          // Do not remove the final character from a locale-formatted date: in
+          // "Jul 26" that turns every label into "Jul 2". Build the label from
+          // stable YYYY-MM-DD parts instead.
+          const [, month, day] = dayStr.split('-');
+          const dayLabel = `${new Date(Date.UTC(2000, Number(month) - 1, 1)).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} ${Number(day)}`;
           return (
             <div key={dayStr} className="min-w-0" role="gridcell" aria-label={`${dayLabel}: ${count === 0 ? 'no reading' : `${count} ${count === 1 ? 'session' : 'sessions'}`}${streak ? ', current streak' : ''}`}>
               <div className={[
@@ -119,7 +123,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
                 COLORS[lv],
                 streak ? 'ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream' : '',
               ].join(' ')} />
-              <span aria-hidden="true" className="mt-1 block truncate text-center text-[9px] leading-none text-natural-stone">{dayLabel.slice(0, -1)}</span>
+              <span aria-hidden="true" className="mt-1 block truncate text-center text-[9px] leading-none text-natural-stone">{dayLabel}</span>
             </div>
           );
         })}

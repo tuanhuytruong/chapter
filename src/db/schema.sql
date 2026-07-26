@@ -202,6 +202,16 @@ ALTER TABLE chapter.book_wiki DROP CONSTRAINT IF EXISTS book_wiki_output_languag
 ALTER TABLE chapter.book_wiki ADD CONSTRAINT book_wiki_output_language_check
   CHECK (output_language IN ('auto', 'vi', 'en'));
 
+-- Durable AI Reader job state. This lets the UI retain an honest “Running”
+-- state across page refreshes while generation continues in the background.
+CREATE TABLE IF NOT EXISTS chapter.ai_reader_jobs (
+  book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'running', 'failed')),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  error_message TEXT
+);
+
 -- ───────────────────────────────────────────────────────────
 -- chapter.review_cards (owner derived through the parent book)
 -- ───────────────────────────────────────────────────────────

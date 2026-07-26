@@ -18,9 +18,20 @@ ALTER TABLE chapter.book_wiki DROP CONSTRAINT IF EXISTS book_wiki_output_languag
 ALTER TABLE chapter.book_wiki ADD CONSTRAINT book_wiki_output_language_check
   CHECK (output_language IN ('auto', 'vi', 'en'));
 
+-- Durable background-generation state; safe to rerun and does not alter wiki data.
+CREATE TABLE IF NOT EXISTS chapter.ai_reader_jobs (
+  book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'running', 'failed')),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  error_message TEXT
+);
+
 -- Read-only verification
 SELECT column_name
 FROM information_schema.columns
 WHERE table_schema = 'chapter' AND table_name = 'book_wiki'
   AND column_name IN ('schema_version', 'output_language', 'book_so_far', 'current_position', 'narrative_arc', 'carry_forward_insights')
 ORDER BY column_name;
+
+SELECT to_regclass('chapter.ai_reader_jobs') AS ai_reader_jobs_table;

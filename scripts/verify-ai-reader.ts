@@ -33,4 +33,6 @@ for (const column of ["schema_version", "output_language", "book_so_far", "curre
   assert.match(migration, new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
 }
 assert.match(migration, /output_language IN \('auto', 'vi', 'en'\)/);
+assert.match(migration, /CREATE TABLE IF NOT EXISTS chapter\.ai_reader_jobs/);
+assert.match(migration, /status TEXT NOT NULL DEFAULT 'idle' CHECK \(status IN \('idle', 'running', 'failed'\)\)/);
 console.log("AI_READER_NARRATIVE_FIXTURES_OK");

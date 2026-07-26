@@ -355,7 +355,7 @@ export async function processBookForWiki(bookId: string, force = false): Promise
 
   // Get all reading sessions ordered chronologically
   const { rows: logs } = await query(
-    `SELECT id, page_start, page_end, date, session
+    `SELECT id, page_start, page_end, date, session, raw_text
      FROM reading_log
      WHERE book_id = $1 AND raw_text IS NOT NULL AND raw_text != ''
      ORDER BY date ASC, session ASC`,
@@ -378,7 +378,14 @@ export async function processBookForWiki(bookId: string, force = false): Promise
   // Process each unprocessed session
   for (const log of unprocessed) {
     try {
-      const { text } = await extractRange(book.file_path, book.file_type as "pdf" | "epub", log.page_start, log.page_end);
+      // The immutable session text is the source used by all companion
+      // analyses. Re-extract only for legacy rows that predate raw_text.
+      const text = log.raw_text || (await extractRange(
+        book.file_path,
+        book.file_type as "pdf" | "epub",
+        log.page_start,
+        log.page_end
+      )).text;
 
       if (!text.trim()) continue;
 
