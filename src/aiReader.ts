@@ -375,7 +375,24 @@ export async function synthesiseWiki(opts: {
  *
  * Returns true if the wiki was updated, false if nothing to do.
  */
+const activeBookProcesses = new Map<string, Promise<boolean>>();
+
+/**
+ * Queue work per book so consecutive Read Today actions cannot synthesize
+ * overlapping snapshots and overwrite newer coverage with an older one.
+ */
 export async function processBookForWiki(bookId: string, force = false): Promise<boolean> {
+  const prior = activeBookProcesses.get(bookId) || Promise.resolve(false);
+  const queued = prior.catch(() => false).then(() => processBookForWikiNow(bookId, force));
+  activeBookProcesses.set(bookId, queued);
+  try {
+    return await queued;
+  } finally {
+    if (activeBookProcesses.get(bookId) === queued) activeBookProcesses.delete(bookId);
+  }
+}
+
+async function processBookForWikiNow(bookId: string, force = false): Promise<boolean> {
   // Fetch book metadata
   const { rows: books } = await query(
     `SELECT id, title, author, file_path, file_type, total_pages, summary_lang
@@ -508,7 +525,8 @@ export async function processBookForWiki(bookId: string, force = false): Promise
        carry_forward_insights = EXCLUDED.carry_forward_insights,
        reading_path = EXCLUDED.reading_path, thread_map = EXCLUDED.thread_map, entity_map = EXCLUDED.entity_map, connections = EXCLUDED.connections, current_reading_state = EXCLUDED.current_reading_state, next_session_context = EXCLUDED.next_session_context,
        generated_at = now(),
-       generation_ms = EXCLUDED.generation_ms`,
+       generation_ms = EXCLUDED.generation_ms
+     WHERE book_wiki.pages_covered <= EXCLUDED.pages_covered`,
     [
       bookId,
       wiki.schema_version,

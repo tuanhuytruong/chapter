@@ -76,7 +76,8 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
   }, [bookId]);
   useEffect(() => { void fetchReader(); }, [fetchReader]);
   const running = status?.jobStatus === "running";
-  useEffect(() => { if (!running) return; const timer = window.setInterval(() => void fetchReader(), 7000); return () => clearInterval(timer); }, [fetchReader, running]);
+  const catchingUp = !!status && status.chunksProcessed < status.totalSessions;
+  useEffect(() => { if (!running && !catchingUp) return; const timer = window.setInterval(() => void fetchReader(), 7000); return () => clearInterval(timer); }, [fetchReader, running, catchingUp]);
   const refresh = async () => { if (!canEdit || running) return; setRegenerating(true); try { await req(`/api/books/${bookId}/wiki/regenerate`, { method: "POST" }); await fetchReader(); } finally { setRegenerating(false); } };
 
   const v1Sessions = useMemo<ReaderSession[]>(() => wiki?.narrative_arc?.map((arc, index) => ({ id: `arc-${index}`, title: arc.label, summary: arc.detail })) ?? [], [wiki]);

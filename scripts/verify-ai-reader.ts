@@ -53,6 +53,16 @@ assert.equal(batchAnalyses.length, 5);
 assert.equal(batchAnalyses[4].chunk_summary, "Session 5");
 assert.throws(() => parseChunkBatchAnalysis(JSON.stringify({ analyses: [{ session: 2 }] }), 1), /preserve session order/);
 
+// Consecutive one-page sessions must contribute all the way through page 3,
+// rather than allowing a stale page-1 synthesis to be displayed.
+const onePageChunks = [1, 2, 3].map((page) => ({ pageStart: page, pageEnd: page, analysis: chunk }));
+const threeSessionPrompt = buildSynthesisPrompt({ title: "Test", author: "Author", totalPages: 100, pagesCovered: 3, lang: "en", chunks: onePageChunks });
+assert.match(threeSessionPrompt, /Reader has read pages 1–3/);
+assert.match(threeSessionPrompt, /3 entries/);
+const aiReaderSource = readFileSync(new URL("../src/aiReader.ts", import.meta.url), "utf8");
+assert.match(aiReaderSource, /const activeBookProcesses = new Map/);
+assert.match(aiReaderSource, /WHERE book_wiki\.pages_covered <= EXCLUDED\.pages_covered/);
+
 const migration = readFileSync(new URL("../migrations/20260726_expand_ai_reader_narrative.sql", import.meta.url), "utf8");
 const v2Migration = readFileSync(new URL("../migrations/20260726_ai_reader_continuity_map_v2.sql", import.meta.url), "utf8");
 for (const column of ["schema_version", "output_language", "book_so_far", "current_position", "narrative_arc", "carry_forward_insights"]) {
