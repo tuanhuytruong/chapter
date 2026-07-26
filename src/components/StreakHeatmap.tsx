@@ -44,26 +44,28 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
         <span>Best {rhythm.longestStreak} {rhythm.longestStreak === 1 ? "day" : "days"}</span>
       </div>
 
-      <div className="flex items-center gap-1" role="grid" aria-label="Reading activity for the last 14 days">
-        {rhythm.days.map((day) => (
-          <div
-            key={day.date}
-            role="gridcell"
-            aria-label={dayAriaLabel(day)}
-            title={dayAriaLabel(day)}
-            className={[
-              "h-4 w-4 shrink-0 rounded-[3px] sm:h-5 sm:w-5",
-              COLORS[day.level],
-              day.isCurrentStreakDay ? "ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream" : "",
-              day.isToday ? "outline outline-1 outline-natural-stone/40" : "",
-            ].join(" ")}
-          />
-        ))}
-      </div>
+      <div className="w-fit">
+        <div className="flex items-center gap-1" role="grid" aria-label="Reading activity for the last 14 days">
+          {rhythm.days.map((day) => (
+            <div
+              key={day.date}
+              role="gridcell"
+              aria-label={dayAriaLabel(day)}
+              title={dayAriaLabel(day)}
+              className={[
+                "h-4 w-4 shrink-0 rounded-[3px] sm:h-5 sm:w-5",
+                COLORS[day.level],
+                day.isCurrentStreakDay ? "ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream" : "",
+                day.isToday ? "outline outline-1 outline-natural-stone/40" : "",
+              ].join(" ")}
+            />
+          ))}
+        </div>
 
-      <div aria-hidden="true" className="flex justify-between text-[10px] leading-none text-natural-stone">
-        <span>{formatRhythmDate(oldestDay.date)}</span>
-        <span>{newestDay.isToday ? "Today" : formatRhythmDate(newestDay.date)}</span>
+        <div aria-hidden="true" className="mt-1 flex justify-between text-[10px] leading-none text-natural-stone">
+          <span>{formatRhythmDate(oldestDay.date)}</span>
+          <span>{newestDay.isToday ? "Today" : formatRhythmDate(newestDay.date)}</span>
+        </div>
       </div>
 
       <p className="text-xs leading-relaxed text-natural-stone">{rewardLine}</p>

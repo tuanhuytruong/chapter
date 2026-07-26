@@ -365,7 +365,7 @@ export default function BookDetail() {
 
       {/* Header */}
       <div className="grid gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:grid-cols-[104px_minmax(0,1fr)] sm:gap-4 sm:p-5 lg:grid-cols-[144px_minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
-        <div className="flex h-36 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-natural-stone/25 bg-[#e8e6de] p-1.5 shadow-md shadow-natural-dark/10 sm:h-52 sm:w-36 sm:p-2">
+        <div className="flex h-36 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-natural-stone/25 bg-[#e8e6de] p-1.5 shadow-md shadow-natural-dark/10 sm:h-52 sm:w-36 sm:p-2 lg:row-span-2">
           {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="h-full w-full rounded-[1px] object-contain" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
         <div className="order-2 min-w-0 sm:order-none">
@@ -384,7 +384,7 @@ export default function BookDetail() {
           <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
         <aside className="contents" aria-label="Book utilities">
-          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
+          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:justify-self-end lg:border-t-0 lg:pt-0">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
             <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
@@ -398,7 +398,7 @@ export default function BookDetail() {
           ) : (
             <>
               <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
                 {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
               </button>
               {pct >= 85 && book.status === 'active' && (
@@ -411,7 +411,7 @@ export default function BookDetail() {
           )}
           </div>
 
-          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-2 lg:row-start-2">
+          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
             <StreakHeatmap logs={logs} />
           </section>
