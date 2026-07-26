@@ -29,4 +29,10 @@ assert.match(detailSource, /log\.id === newestLogId/);
 const advanceCalls = [...detailSource.matchAll(/api\.advance\(/g)];
 assert.equal(advanceCalls.length, 1, "all CTAs must reuse readToday instead of making another advance call");
 
+assert.match(detailSource, /const \[hasOpenedAiReader, setHasOpenedAiReader\] = useState\(false\)/);
+assert.match(detailSource, /setHasOpenedAiReader\(true\); setLogView\('ai-reader'\)/);
+assert.match(detailSource, /hasOpenedAiReader && \(/);
+assert.match(detailSource, /hidden=\{logView !== 'ai-reader'\}/);
+assert.doesNotMatch(detailSource, /\{logView === 'ai-reader' \? \(/, "AI Reader must stay mounted after its first visit");
+
 console.log("READ_TODAY_IN_PLACE_FIXTURES_OK");

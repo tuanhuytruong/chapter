@@ -68,6 +68,7 @@ export default function BookDetail() {
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
   const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader'>('list');
+  const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
@@ -578,17 +579,19 @@ export default function BookDetail() {
             className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'journey' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Journey
           </button>
-          <button onClick={() => setLogView('ai-reader')}
+          <button onClick={() => { setHasOpenedAiReader(true); setLogView('ai-reader'); }}
+            aria-selected={logView === 'ai-reader'} aria-controls="ai-reader-panel"
             className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'ai-reader' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             AI Reader
           </button>
         </div>
 
-        {logView === 'ai-reader' ? (
-          <div className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+        {hasOpenedAiReader && (
+          <div id="ai-reader-panel" role="tabpanel" aria-hidden={logView !== 'ai-reader'} hidden={logView !== 'ai-reader'} className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
             <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
           </div>
-        ) : <>
+        )}
+        {logView !== 'ai-reader' && <>
         {book.can_edit && lenses.length >= 3 && (
           <section className="mb-5 rounded-[24px] border border-natural-sage/30 bg-natural-sage/5 p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
