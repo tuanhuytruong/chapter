@@ -20,7 +20,9 @@ assert.match(detailSource, /if \(!enrichmentPending \|\| !pendingEnrichmentLogId
 assert.match(detailSource, /const pendingLog = updatedLogs\.find\(log => log\.id === pendingEnrichmentLogId\)/);
 assert.doesNotMatch(detailSource.slice(readTodayStart), /setLoading\(true\)/, "post-save reconciliation must stay quiet");
 
-assert.match(detailSource, /book\.can_edit && book\.status === 'active' && \(/);
+assert.match(detailSource, /import \{ createPortal \} from 'react-dom';/);
+assert.match(detailSource, /book\.can_edit && book\.status === 'active' && createPortal\(/);
+assert.match(detailSource, /document\.body/);
 assert.match(detailSource, /fixed bottom-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\] right-4/);
 assert.match(detailSource, /h-12 w-12 items-center justify-center rounded-full bg-natural-clay/);
 assert.match(detailSource, /aria-label=\{advancing \? 'Saving next session' : 'Read next session'\}/);

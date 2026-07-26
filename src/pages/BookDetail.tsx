@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
@@ -646,13 +647,14 @@ export default function BookDetail() {
       )}
       </>}
 
-      {book.can_edit && book.status === 'active' && (
+      {book.can_edit && book.status === 'active' && createPortal(
         <button onClick={readToday} disabled={advancing}
           aria-label={advancing ? 'Saving next session' : 'Read next session'}
           title={advancing ? 'Saving…' : 'Read next session'}
           className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-natural-clay text-white shadow-lg shadow-natural-dark/20 transition hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:bottom-6 sm:right-6">
           {advancing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
-        </button>
+        </button>,
+        document.body
       )}
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
