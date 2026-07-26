@@ -68,7 +68,7 @@ export default function BookDetail() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
-  const [logView, setLogView] = useState<'list' | 'journey'>('list');
+  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader'>('list');
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
@@ -531,11 +531,6 @@ export default function BookDetail() {
         )}
       </div>
 
-      {/* AI Reader — BookWiki */}
-      <div className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
-        <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
-      </div>
-
       {book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /></> : <>
       {/* Timeline */}
       <div>
@@ -568,8 +563,17 @@ export default function BookDetail() {
             className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'journey' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Journey
           </button>
+          <button onClick={() => setLogView('ai-reader')}
+            className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'ai-reader' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            AI Reader
+          </button>
         </div>
 
+        {logView === 'ai-reader' ? (
+          <div className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+            <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
+          </div>
+        ) : <>
         {book.can_edit && lenses.length >= 3 && (
           <section className="mb-5 rounded-[24px] border border-natural-sage/30 bg-natural-sage/5 p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -618,6 +622,7 @@ export default function BookDetail() {
             )}
           </>
         )}
+        </>}
       </div>
 
       {/* Knowledge Map */}

@@ -270,7 +270,8 @@ booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Respo
 booksRouter.get("/:id/wiki", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const { rows } = await query("SELECT * FROM book_wiki WHERE book_id = $1", [id]);
+    const { rows } = await query(`SELECT w.book_id, w.schema_version, w.output_language, w.pages_covered, w.overview, w.concepts, w.themes, w.people, w.chapter_map, w.notable_quotes, w.open_questions, w.book_so_far, w.current_position, w.narrative_arc, w.carry_forward_insights, w.reading_path, w.thread_map, w.entity_map, w.connections, w.current_reading_state, w.next_session_context, w.generated_at, w.generation_ms
+      FROM book_wiki w JOIN books b ON b.id=w.book_id WHERE w.book_id=$1 AND b.owner_id=$2`, [id, userFrom(req).id]);
     if (!rows.length) return res.status(404).json({ error: "wiki not yet generated" });
     res.json(rows[0]);
   } catch (e: any) { res.status(503).json({ error: "wiki unavailable", detail: e.message }); }
@@ -281,11 +282,11 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const [book, logCount, chunkCount, wikiRow, job] = await Promise.all([
-      query("SELECT file_path FROM books WHERE id=$1", [id]),
-      query("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [id]),
-      query("SELECT count(*)::int AS c FROM ai_reader_chunks WHERE book_id=$1", [id]),
-      query("SELECT generated_at, pages_covered, output_language, schema_version FROM book_wiki WHERE book_id=$1", [id]),
-      query("SELECT status, started_at, error_message FROM ai_reader_jobs WHERE book_id=$1", [id]),
+      query("SELECT file_path FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]),
+      query("SELECT count(*)::int AS c FROM reading_log rl JOIN books b ON b.id=rl.book_id WHERE rl.book_id=$1 AND b.owner_id=$2 AND rl.raw_text IS NOT NULL", [id, userFrom(req).id]),
+      query("SELECT count(*)::int AS c FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id WHERE c.book_id=$1 AND b.owner_id=$2", [id, userFrom(req).id]),
+      query("SELECT w.generated_at, w.pages_covered, w.output_language, w.schema_version FROM book_wiki w JOIN books b ON b.id=w.book_id WHERE w.book_id=$1 AND b.owner_id=$2", [id, userFrom(req).id]),
+      query("SELECT j.status, j.started_at, j.error_message FROM ai_reader_jobs j JOIN books b ON b.id=j.book_id WHERE j.book_id=$1 AND b.owner_id=$2", [id, userFrom(req).id]),
     ]);
     const bookData = book.rows[0];
     res.json({
@@ -302,6 +303,32 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
       jobError: job.rows[0]?.error_message || null,
     });
   } catch (e: any) { res.status(503).json({ error: "wiki status unavailable", detail: e.message }); }
+});
+
+// GET /api/books/:id/wiki/sessions — safe, owner-scoped V2 session analyses.
+booksRouter.get("/:id/wiki/sessions", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await query(`SELECT c.log_id, c.page_start, c.page_end, c.chunk_analysis, c.processed_at
+      FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id
+      WHERE c.book_id=$1 AND b.owner_id=$2 ORDER BY c.page_start, c.page_end`, [id, userFrom(req).id]);
+    if (!rows.length) {
+      const exists = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
+      if (!exists.rows.length) return res.status(404).json({ error: "book not found" });
+    }
+    res.json(rows);
+  } catch (e: any) { res.status(503).json({ error: "wiki sessions unavailable", detail: e.message }); }
+});
+
+// GET /api/books/:id/wiki/sessions/:logId — one safe persisted session analysis.
+booksRouter.get("/:id/wiki/sessions/:logId", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query(`SELECT c.log_id, c.page_start, c.page_end, c.chunk_analysis, c.processed_at
+      FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id
+      WHERE c.book_id=$1 AND c.log_id=$2 AND b.owner_id=$3`, [req.params.id, req.params.logId, userFrom(req).id]);
+    if (!rows.length) return res.status(404).json({ error: "wiki session not found" });
+    res.json(rows[0]);
+  } catch (e: any) { res.status(503).json({ error: "wiki session unavailable", detail: e.message }); }
 });
 
 // POST /api/books/:id/wiki/regenerate — queue a durable background regeneration.

@@ -40,12 +40,23 @@ export interface WikiQuote {
 }
 
 export type SummaryLanguage = "auto" | "vi" | "en";
+export type ResolvedLanguage = "vi" | "en";
+export const AI_READER_SCHEMA_VERSION = 2;
 export interface NarrativePosition { page_start: number; page_end: number; label: string; }
 export interface NarrativeArcEntry { label: string; status: "introduced" | "developing" | "resolved" | "uncertain"; detail: string; }
+export type ReaderThreadStatus = "introduced" | "deepened" | "shifted" | "resolved" | "uncertain";
+export interface ReaderChange { label: string; detail: string; significance: string; }
+export interface ReaderThread { id: string; label: string; status: ReaderThreadStatus; detail: string; prior_connection: string | null; }
+export interface ReaderEntity { id: string; name: string; kind: "person" | "organisation" | "idea" | "force"; role_now: string; change_from_prior: string | null; }
+export interface ReaderEvidence { text: string; page_start: number; why_it_matters: string; }
+export interface ReaderPathEntry { log_id: string; page_start: number; page_end: number; title: string; summary: string; turning_point: string; connected_from: string | null; }
+export interface ReaderMapThread { id: string; label: string; status: "active" | "resolved" | "uncertain"; evolution: Array<{ log_id: string; page_start: number; note: string }>; }
+export interface ReaderMapEntity { id: string; name: string; kind: string; current_state: string; appearances: Array<{ log_id: string; page_start: number; note: string }>; }
+export interface ReaderConnection { from_type: "thread" | "entity" | "session"; from_id: string; to_type: "thread" | "entity" | "session"; to_id: string; label: string; explanation: string; page_start: number; }
 
 export interface BookWiki {
   schema_version: number;
-  output_language: SummaryLanguage;
+  output_language: ResolvedLanguage;
   pages_covered: number;
   overview: string;
   concepts: WikiConcept[];
@@ -58,9 +69,26 @@ export interface BookWiki {
   current_position: NarrativePosition;
   narrative_arc: NarrativeArcEntry[];
   carry_forward_insights: string[];
+  reading_path: ReaderPathEntry[];
+  thread_map: ReaderMapThread[];
+  entity_map: ReaderMapEntity[];
+  connections: ReaderConnection[];
+  current_reading_state: { summary: string; active_threads: string[]; active_entities: string[] };
+  next_session_context: string;
 }
 
 export interface ChunkAnalysis {
+  schema_version: number;
+  session_title: string;
+  close_reading: string;
+  starting_context: string;
+  what_changes: ReaderChange[];
+  threads: ReaderThread[];
+  entities: ReaderEntity[];
+  evidence: ReaderEvidence[];
+  handoff: string;
+  session_summary: string;
+  // V1-compatible fields remain for existing reference rendering.
   concepts: WikiConcept[];
   themes: WikiTheme[];
   people: WikiPerson[];
@@ -69,6 +97,7 @@ export interface ChunkAnalysis {
 }
 
 export interface ChunkForSynthesis {
+  logId?: string;
   pageStart: number;
   pageEnd: number;
   analysis: ChunkAnalysis;
@@ -118,6 +147,13 @@ function langInstruction(lang: SummaryLanguage): string {
 }
 
 const language = (value: unknown): SummaryLanguage => value === "vi" || value === "en" ? value : "auto";
+/** Resolve Auto from the saved source text so persisted output never claims "auto". */
+export function resolveLanguage(requested: SummaryLanguage, sourceText: string): ResolvedLanguage {
+  if (requested === "vi" || requested === "en") return requested;
+  const vietnameseSignals = (sourceText.match(/[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/gi) || []).length;
+  const words = sourceText.match(/[A-Za-zÀ-ỹ]+/g)?.length || 1;
+  return vietnameseSignals / words >= 0.08 ? "vi" : "en";
+}
 const wholeNumber = (value: unknown, fallback = 0): number => typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
 const narrativeStatus = (value: unknown): NarrativeArcEntry["status"] => value === "introduced" || value === "developing" || value === "resolved" ? value : "uncertain";
 
@@ -126,117 +162,52 @@ const narrativeStatus = (value: unknown): NarrativeArcEntry["status"] => value =
 const CHUNK_SYSTEM = `You are an analytical AI reader. Given a passage from a book, extract structured knowledge.
 Respond ONLY with a valid JSON object — no markdown, no preamble, no trailing text.`;
 
-export function buildChunkPrompt(opts: {
-  title: string;
-  author: string;
-  pageStart: number;
-  pageEnd: number;
-  totalPages: number;
-  lang: "auto" | "vi" | "en";
-  text: string;
-}): string {
-  const { title, author, pageStart, pageEnd, totalPages, lang, text } = opts;
-  const bounded = text.slice(0, 12_000); // ~3000 tokens, safe for most context windows
-  return `${langInstruction(lang)}
-
-Book: "${title}" by ${author} (pages ${pageStart}–${pageEnd} of ${totalPages})
-
-Analyse this passage and return a JSON object with exactly these keys:
-{
-  "chunk_summary": "2–3 sentence summary of what this passage covers",
-  "concepts": [{"name": "...", "definition": "..."}, ...],      // up to 6 key ideas/frameworks introduced
-  "themes": [{"name": "...", "description": "..."}, ...],       // up to 4 recurring threads
-  "people": [{"name": "...", "pulse": "..."}, ...],             // up to 5 people/characters (name + one-line role or status)
-  "notable_quotes": [{"text": "...", "page_start": ${pageStart}}, ...]  // up to 3 verbatim quotes from the passage
+export function buildChunkPrompt(opts: ChunkInput): string {
+  return buildChunkBatchPrompt([opts]);
 }
 
-Rules:
-- notable_quotes must be verbatim text found in the passage — never invented
-- If a field has nothing relevant, return an empty array []
-- Keep definitions and descriptions concise (under 120 characters)
-
-Passage:
-${bounded}`;
-}
-
-export function parseChunkAnalysis(raw: string): ChunkAnalysis {
-  const data = extractJson(raw);
-  return {
-    chunk_summary: clean(data.chunk_summary, "No summary available."),
-    concepts: arr(data.concepts, 6, (item) => {
-      const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-      const name = clean(r.name);
-      const definition = clean(r.definition);
-      return name ? { name, definition } : null;
-    }),
-    themes: arr(data.themes, 4, (item) => {
-      const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-      const name = clean(r.name);
-      const description = clean(r.description);
-      return name ? { name, description } : null;
-    }),
-    people: arr(data.people, 5, (item) => {
-      const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-      const name = clean(r.name);
-      const pulse = clean(r.pulse);
-      return name ? { name, pulse } : null;
-    }),
-    notable_quotes: arr(data.notable_quotes, 3, (item) => {
-      const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-      const text = clean(r.text);
-      const page_start = typeof r.page_start === "number" ? r.page_start : 0;
-      return text ? { text, page_start } : null;
-    }),
-  };
-}
-
-export async function analyseChunk(opts: ChunkInput): Promise<ChunkAnalysis> {
-  const prompt = buildChunkPrompt(opts);
-  const raw = await callLLM(CHUNK_SYSTEM, prompt, 0.3, true, true);
-  return parseChunkAnalysis(raw);
+function sessionShape(): string {
+  return `{"session":1,"schema_version":2,"session_title":"...","close_reading":"...","starting_context":"...","what_changes":[{"label":"...","detail":"...","significance":"..."}],"threads":[{"id":"stable-kebab-id","label":"...","status":"introduced|deepened|shifted|resolved|uncertain","detail":"...","prior_connection":null}],"entities":[{"id":"stable-kebab-id","name":"...","kind":"person|organisation|idea|force","role_now":"...","change_from_prior":null}],"evidence":[{"text":"verbatim quote","page_start":1,"why_it_matters":"..."}],"handoff":"...","session_summary":"...","chunk_summary":"...","concepts":[{"name":"...","definition":"..."}],"themes":[{"name":"...","description":"..."}],"people":[{"name":"...","pulse":"..."}],"notable_quotes":[{"text":"verbatim quote","page_start":1}]}`;
 }
 
 /** Build one provider request for up to five independent saved reading sessions. */
 export function buildChunkBatchPrompt(inputs: ChunkInput[]): string {
-  if (!inputs.length || inputs.length > AI_READER_BATCH_SIZE) {
-    throw new Error(`AI Reader batch must contain 1–${AI_READER_BATCH_SIZE} sessions`);
-  }
-  const sessions = inputs
-    .map((input, index) => `SESSION ${index + 1} (pages ${input.pageStart}–${input.pageEnd} of ${input.totalPages})\n${input.text.slice(0, 12_000)}`)
-    .join("\n\n---\n\n");
+  if (!inputs.length || inputs.length > AI_READER_BATCH_SIZE) throw new Error(`AI Reader batch must contain 1–${AI_READER_BATCH_SIZE} sessions`);
+  const sessions = inputs.map((input, index) => `SESSION ${index + 1} (pages ${input.pageStart}–${input.pageEnd} of ${input.totalPages})\n${input.text.slice(0, 12_000)}`).join("\n\n---\n\n");
   return `${langInstruction(inputs[0].lang)}
-
 Book: "${inputs[0].title}" by ${inputs[0].author}
-
-Analyse every session independently. Return exactly this JSON object:
-{"analyses":[{"session":1,"chunk_summary":"...","concepts":[{"name":"...","definition":"..."}],"themes":[{"name":"...","description":"..."}],"people":[{"name":"...","pulse":"..."}],"notable_quotes":[{"text":"...","page_start":1}]}]}
-
-Rules:
-- Return exactly one analysis for every SESSION, in the same order, numbered 1 through ${inputs.length}
-- Do not merge information across sessions
-- notable_quotes must be verbatim text found in that session; page_start must be within that session's range
-- Keep definitions and descriptions concise (under 120 characters); use [] when nothing is relevant
+Analyse every saved session independently, preserving continuity only from evidence in that session. Return exactly {"analyses":[${sessionShape()}]}.
+Rules: exactly one analysis per SESSION in order; all ids must be stable lower-case kebab ids; use []/null if absent; evidence and notable_quotes are verbatim and page_start is within that session; do not invent events or unseen context; session_summary is concise and handoff tells the next reader what to carry forward.
 
 ${sessions}`;
 }
 
-export function parseChunkBatchAnalysis(raw: string, expectedCount: number): ChunkAnalysis[] {
+const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const readerId = (value: unknown, fallback: string): string => clean(value, fallback).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 80) || fallback;
+export function parseChunkAnalysis(raw: string): ChunkAnalysis {
   const data = extractJson(raw);
-  if (!Array.isArray(data.analyses) || data.analyses.length !== expectedCount) {
-    throw new Error(`AI Reader: expected ${expectedCount} batch analyses`);
-  }
-  return data.analyses.map((item, index) => {
-    const row = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : null;
-    if (!row || row.session !== index + 1) throw new Error("AI Reader: batch analyses must preserve session order");
-    return parseChunkAnalysis(JSON.stringify(row));
-  });
+  const quotes = arr(data.notable_quotes, 3, (v) => { const r=object(v), text=clean(r.text); return text ? { text, page_start: wholeNumber(r.page_start) } : null; });
+  return {
+    schema_version: AI_READER_SCHEMA_VERSION,
+    session_title: clean(data.session_title, "Reading session"), close_reading: clean(data.close_reading, clean(data.chunk_summary, "No close reading available.")),
+    starting_context: clean(data.starting_context, "This is the first recorded session or prior context is not established."),
+    what_changes: arr(data.what_changes, 6, (v) => { const r=object(v), label=clean(r.label); return label ? {label, detail:clean(r.detail), significance:clean(r.significance)} : null; }),
+    threads: arr(data.threads, 8, (v) => { const r=object(v), label=clean(r.label); return label ? {id:readerId(r.id,label), label, status:["introduced","deepened","shifted","resolved"].includes(String(r.status)) ? r.status as ReaderThreadStatus : "uncertain", detail:clean(r.detail), prior_connection:clean(r.prior_connection) || null} : null; }),
+    entities: arr(data.entities, 10, (v) => { const r=object(v), name=clean(r.name); const kind=["person","organisation","idea","force"].includes(String(r.kind)) ? r.kind as ReaderEntity["kind"] : "idea"; return name ? {id:readerId(r.id,name),name,kind,role_now:clean(r.role_now),change_from_prior:clean(r.change_from_prior)||null} : null; }),
+    evidence: arr(data.evidence, 4, (v) => { const r=object(v), text=clean(r.text); return text ? {text,page_start:wholeNumber(r.page_start),why_it_matters:clean(r.why_it_matters)} : null; }),
+    handoff: clean(data.handoff, "No additional handoff recorded."), session_summary: clean(data.session_summary, clean(data.chunk_summary, "No summary available.")),
+    chunk_summary: clean(data.chunk_summary, clean(data.session_summary, "No summary available.")),
+    concepts: arr(data.concepts,6,(v)=>{const r=object(v),name=clean(r.name);return name?{name,definition:clean(r.definition)}:null;}),
+    themes: arr(data.themes,4,(v)=>{const r=object(v),name=clean(r.name);return name?{name,description:clean(r.description)}:null;}),
+    people: arr(data.people,5,(v)=>{const r=object(v),name=clean(r.name);return name?{name,pulse:clean(r.pulse)}:null;}), notable_quotes:quotes,
+  };
 }
-
-export async function analyseChunkBatch(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> {
-  if (inputs.length === 1) return [await analyseChunk(inputs[0])];
-  const raw = await callLLM(CHUNK_SYSTEM, buildChunkBatchPrompt(inputs), 0.3, true, true);
-  return parseChunkBatchAnalysis(raw, inputs.length);
+export function parseChunkBatchAnalysis(raw: string, expectedCount: number): ChunkAnalysis[] {
+ const data=extractJson(raw); if(!Array.isArray(data.analyses)||data.analyses.length!==expectedCount) throw new Error(`AI Reader: expected ${expectedCount} batch analyses`);
+ return data.analyses.map((item,index)=>{const row=object(item);if(row.session!==index+1)throw new Error("AI Reader: batch analyses must preserve session order");return parseChunkAnalysis(JSON.stringify(row));});
 }
+export async function analyseChunk(opts: ChunkInput): Promise<ChunkAnalysis> { return (await analyseChunkBatch([opts]))[0]; }
+export async function analyseChunkBatch(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> { const raw=await callLLM(CHUNK_SYSTEM,buildChunkBatchPrompt(inputs),0.3,true,true); return parseChunkBatchAnalysis(raw,inputs.length); }
 
 // ─── Wiki synthesis ───────────────────────────────────────────────────────────
 
@@ -254,7 +225,7 @@ export function buildSynthesisPrompt(opts: {
   const { title, author, totalPages, pagesCovered, lang, chunks } = opts;
 
   const chunkSummaries = chunks
-    .map((c) => `Pages ${c.pageStart}–${c.pageEnd}: ${c.analysis.chunk_summary}`)
+    .map((c) => `Session ${c.logId || ""}, pages ${c.pageStart}–${c.pageEnd}: ${c.analysis.chunk_summary}`)
     .join("\n");
 
   const allConcepts = chunks.flatMap((c) => c.analysis.concepts.map((x) => x.name)).join(", ");
@@ -288,7 +259,13 @@ Synthesise these into a full knowledge wiki. Return a JSON object with exactly t
   "book_so_far": "3–5 sentence spoiler-safe narrative recap through the current reading position",
   "current_position": {"page_start": 1, "page_end": ${pagesCovered}, "label": "where the reader currently is"},
   "narrative_arc": [{"label": "...", "status": "introduced|developing|resolved|uncertain", "detail": "grounded progress so far"}],
-  "carry_forward_insights": ["facts, tensions, or concepts worth remembering before the next session"]
+  "carry_forward_insights": ["facts, tensions, or concepts worth remembering before the next session"],
+  "reading_path": [{"log_id":"session identifier or empty","page_start":N,"page_end":N,"title":"...","summary":"...","turning_point":"...","connected_from":null}],
+  "thread_map": [{"id":"...","label":"...","status":"active|resolved|uncertain","evolution":[{"log_id":"...","page_start":N,"note":"..."}]}],
+  "entity_map": [{"id":"...","name":"...","kind":"...","current_state":"...","appearances":[{"log_id":"...","page_start":N,"note":"..."}]}],
+  "connections": [{"from_type":"thread|entity|session","from_id":"...","to_type":"thread|entity|session","to_id":"...","label":"...","explanation":"...","page_start":N}],
+  "current_reading_state":{"summary":"...","active_threads":["..."],"active_entities":["..."]},
+  "next_session_context":"spoiler-safe continuation context"
 }
 
 Rules:
@@ -329,8 +306,8 @@ export function parseSynthesis(raw: string, chunks: ChunkForSynthesis[], opts?: 
   const current_position: NarrativePosition = { page_start: Math.min(pagesCovered, wholeNumber(position.page_start, chunks[0]?.pageStart || 0)), page_end: Math.min(pagesCovered, Math.max(wholeNumber(position.page_end, pagesCovered), wholeNumber(position.page_start, 0))), label: clean(position.label, `Pages 1–${pagesCovered}`) };
 
   return {
-    schema_version: 1,
-    output_language: language(opts?.lang),
+    schema_version: AI_READER_SCHEMA_VERSION,
+    output_language: resolveLanguage(opts?.lang || "auto", ""),
     overview: clean(data.overview, "Overview not yet available."),
     concepts: arr(data.concepts, 10, (item) => {
       const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
@@ -365,6 +342,12 @@ export function parseSynthesis(raw: string, chunks: ChunkForSynthesis[], opts?: 
       return label ? { label, status: narrativeStatus(row.status), detail: clean(row.detail, "Not established in the completed reading.") } : null;
     }),
     carry_forward_insights: arr(data.carry_forward_insights, 8, (item) => typeof item === "string" ? clean(item) || null : null),
+    reading_path: arr(data.reading_path, 50, (v) => { const r=object(v); return { log_id:clean(r.log_id), page_start:wholeNumber(r.page_start), page_end:wholeNumber(r.page_end), title:clean(r.title,"Reading session"), summary:clean(r.summary), turning_point:clean(r.turning_point), connected_from:clean(r.connected_from)||null }; }),
+    thread_map: arr(data.thread_map, 20, (v) => { const r=object(v), label=clean(r.label); return label ? { id:readerId(r.id,label), label, status:["active","resolved"].includes(String(r.status)) ? r.status as ReaderMapThread["status"] : "uncertain", evolution:arr(r.evolution,50,(e)=>{const x=object(e);return {log_id:clean(x.log_id),page_start:wholeNumber(x.page_start),note:clean(x.note)}}) } : null; }),
+    entity_map: arr(data.entity_map, 30, (v) => { const r=object(v), name=clean(r.name); return name ? {id:readerId(r.id,name),name,kind:clean(r.kind,"idea"),current_state:clean(r.current_state),appearances:arr(r.appearances,50,(e)=>{const x=object(e);return {log_id:clean(x.log_id),page_start:wholeNumber(x.page_start),note:clean(x.note)}})} : null; }),
+    connections: arr(data.connections, 50, (v) => { const r=object(v), ft=String(r.from_type), tt=String(r.to_type); return ["thread","entity","session"].includes(ft) && ["thread","entity","session"].includes(tt) ? {from_type:ft as ReaderConnection["from_type"],from_id:clean(r.from_id),to_type:tt as ReaderConnection["to_type"],to_id:clean(r.to_id),label:clean(r.label),explanation:clean(r.explanation),page_start:wholeNumber(r.page_start)} : null; }),
+    current_reading_state: (() => { const r=object(data.current_reading_state); return {summary:clean(r.summary,clean(data.book_so_far)),active_threads:arr(r.active_threads,12,(v)=>typeof v === "string" ? clean(v)||null:null),active_entities:arr(r.active_entities,12,(v)=>typeof v === "string" ? clean(v)||null:null)}; })(),
+    next_session_context: clean(data.next_session_context, clean(data.book_so_far)),
   };
 }
 
@@ -424,24 +407,20 @@ export async function processBookForWiki(bookId: string, force = false): Promise
 
   if (unprocessed.length === 0) return false;
 
-  // Prepare saved session text first. New Read Today sessions already have
-  // raw_text, so they do not parse the source file again.
+  // AI Reader is grounded strictly in text persisted with each reading session.
+  // Never re-open the source PDF/EPUB: an older log without raw_text remains
+  // unavailable until an owner explicitly rebuilds it through a supported flow.
   const inputs: Array<{ log: any; input: ChunkInput }> = [];
   for (const log of unprocessed) {
-    try {
-      const text = log.raw_text || (await extractRange(
-        book.file_path,
-        book.file_type as "pdf" | "epub",
-        log.page_start,
-        log.page_end
-      )).text;
-      if (text.trim()) inputs.push({
-        log,
-        input: { title: book.title, author: book.author, pageStart: log.page_start, pageEnd: log.page_end, totalPages: book.total_pages, lang, text },
-      });
-    } catch (err: any) {
-      console.error(`[ai-reader] Session p.${log.page_start}–${log.page_end} extraction failed: ${err.message}`);
+    const text = typeof log.raw_text === "string" ? log.raw_text.trim() : "";
+    if (!text) {
+      console.warn(`[ai-reader] Session p.${log.page_start}–${log.page_end} skipped: no persisted raw_text`);
+      continue;
     }
+    inputs.push({
+      log,
+      input: { title: book.title, author: book.author, pageStart: log.page_start, pageEnd: log.page_end, totalPages: book.total_pages, lang, text },
+    });
   }
 
   const batches = Array.from(
@@ -475,7 +454,7 @@ export async function processBookForWiki(bookId: string, force = false): Promise
 
   // Synthesise wiki from all chunks for this book
   const { rows: allChunkRows } = await query(
-    `SELECT c.page_start, c.page_end, c.chunk_analysis
+    `SELECT c.log_id, c.page_start, c.page_end, c.chunk_analysis
      FROM ai_reader_chunks c
      WHERE c.book_id = $1
      ORDER BY c.page_start ASC`,
@@ -485,6 +464,7 @@ export async function processBookForWiki(bookId: string, force = false): Promise
   if (allChunkRows.length === 0) return false;
 
   const chunks: ChunkForSynthesis[] = allChunkRows.map((r: any) => ({
+    logId: r.log_id,
     pageStart: r.page_start,
     pageEnd: r.page_end,
     analysis: r.chunk_analysis as ChunkAnalysis,
@@ -501,11 +481,14 @@ export async function processBookForWiki(bookId: string, force = false): Promise
     chunks,
   });
 
+  wiki.output_language = resolveLanguage(lang, inputs.map(({ input }) => input.text).join("\n"));
+  // Preserve a navigable connected map even if a model omits optional V2 maps.
+  if (!wiki.reading_path.length) wiki.reading_path = chunks.map((chunk, index) => ({ log_id: chunk.logId || "", page_start: chunk.pageStart, page_end: chunk.pageEnd, title: chunk.analysis.session_title || `Pages ${chunk.pageStart}–${chunk.pageEnd}`, summary: chunk.analysis.session_summary, turning_point: chunk.analysis.what_changes[0]?.significance || "Session recorded.", connected_from: index ? chunks[index - 1].logId || null : null }));
   const generationMs = Date.now();
 
   await query(
-    `INSERT INTO book_wiki (book_id, schema_version, output_language, pages_covered, overview, concepts, themes, people, chapter_map, notable_quotes, open_questions, book_so_far, current_position, narrative_arc, carry_forward_insights, generated_at, generation_ms)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now(), $16)
+    `INSERT INTO book_wiki (book_id, schema_version, output_language, pages_covered, overview, concepts, themes, people, chapter_map, notable_quotes, open_questions, book_so_far, current_position, narrative_arc, carry_forward_insights, reading_path, thread_map, entity_map, connections, current_reading_state, next_session_context, generated_at, generation_ms)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, now(), $22)
      ON CONFLICT (book_id) DO UPDATE SET
        schema_version = EXCLUDED.schema_version,
        output_language = EXCLUDED.output_language,
@@ -521,6 +504,7 @@ export async function processBookForWiki(bookId: string, force = false): Promise
        current_position = EXCLUDED.current_position,
        narrative_arc = EXCLUDED.narrative_arc,
        carry_forward_insights = EXCLUDED.carry_forward_insights,
+       reading_path = EXCLUDED.reading_path, thread_map = EXCLUDED.thread_map, entity_map = EXCLUDED.entity_map, connections = EXCLUDED.connections, current_reading_state = EXCLUDED.current_reading_state, next_session_context = EXCLUDED.next_session_context,
        generated_at = now(),
        generation_ms = EXCLUDED.generation_ms`,
     [
@@ -539,6 +523,7 @@ export async function processBookForWiki(bookId: string, force = false): Promise
       JSON.stringify(wiki.current_position),
       JSON.stringify(wiki.narrative_arc),
       JSON.stringify(wiki.carry_forward_insights),
+      JSON.stringify(wiki.reading_path), JSON.stringify(wiki.thread_map), JSON.stringify(wiki.entity_map), JSON.stringify(wiki.connections), JSON.stringify(wiki.current_reading_state), wiki.next_session_context,
       Date.now() - generationMs,
     ]
   );
