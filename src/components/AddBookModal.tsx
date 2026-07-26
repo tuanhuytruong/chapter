@@ -13,6 +13,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [filePath, setFilePath] = useState('');
+  const [uploadedFilename, setUploadedFilename] = useState('');
   const [fileType, setFileType] = useState<'pdf' | 'epub'>('pdf');
   const [dailyPages, setDailyPages] = useState(3);
   const [coverUrl, setCoverUrl] = useState('');
@@ -117,6 +118,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               try {
                 const r = await uploadBook(f, setUploadPct);
                 setFilePath(r.file_path);
+                setUploadedFilename(r.filename);
                 setFileType(r.file_type);
                 uploadedPathRef.current = r.file_path; // mark for cleanup if not saved
                 onToast({ type: 'ok', msg: `Uploaded ${r.filename}` });
@@ -136,8 +138,12 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               </div>
             )}
             <p className="text-[10px] text-natural-stone mt-1">Max 100MB · PDF or EPUB</p>
-            <input value={filePath} onChange={e => setFilePath(e.target.value)} placeholder="atomic-habits.pdf"
-              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-natural-sage" />
+            {uploadedFilename && (
+              <div aria-label="Uploaded file" title={uploadedFilename}
+                className="mt-1 w-full truncate rounded-xl border border-natural-border bg-natural-cream/30 px-3 py-2 text-xs font-mono text-natural-stone/70 cursor-default">
+                {uploadedFilename}
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
