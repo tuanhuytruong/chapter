@@ -54,7 +54,7 @@ export default function StreakHeatmap({ logs, windowDays = 14 }: { logs: LogRow[
               aria-label={dayAriaLabel(day)}
               title={dayAriaLabel(day)}
               className={[
-                "h-4 w-4 shrink-0 rounded-[3px]",
+                "h-4 w-4 shrink-0 rounded-[3px] lg:h-[18px] lg:w-[18px]",
                 COLORS[day.level],
                 day.isCurrentStreakDay ? "ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream" : "",
                 day.isToday ? "outline outline-1 outline-natural-stone/40" : "",

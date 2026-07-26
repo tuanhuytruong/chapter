@@ -401,6 +401,7 @@ export default function BookDetail() {
                 className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
                 {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
               </button>
+              <p className="text-xs text-natural-stone">Continue from page {Math.min(book.current_page + 1, book.total_pages)} · {book.daily_pages} pages</p>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
                   className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
