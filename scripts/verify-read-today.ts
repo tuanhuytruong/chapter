@@ -27,7 +27,7 @@ assert.match(detailSource, /book\.can_edit && book\.status === 'active' && !head
 assert.match(detailSource, /Read next session/);
 assert.doesNotMatch(detailSource, /newestLogId/, "the newest-card action must not remain");
 assert.doesNotMatch(detailSource, /Read Today/, "reading actions should use one continuation label");
-assert.match(detailSource, /Daily target[\s\S]*Forecast/);
+assert.doesNotMatch(detailSource, /Daily target[\s\S]*Forecast/, "header must not repeat reading-plan metrics");
 const advanceCalls = [...detailSource.matchAll(/api\.advance\(/g)];
 assert.equal(advanceCalls.length, 1, "all CTAs must reuse readToday instead of making another advance call");
 

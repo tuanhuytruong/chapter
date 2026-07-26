@@ -447,23 +447,14 @@ export default function BookDetail() {
           )}
           </div>
 
-          {book.can_edit && book.status === 'active' && (
-            <section className="order-4 col-span-full grid grid-cols-2 gap-x-4 gap-y-2 border-t border-natural-border/70 pt-3 text-xs sm:grid-cols-4 lg:col-span-1 lg:col-start-3 lg:row-start-2">
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Current</p><p className="mt-0.5 font-semibold text-natural-dark">{book.current_page} / {book.total_pages}</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Daily target</p><p className="mt-0.5 font-semibold text-natural-dark">{book.daily_pages} {dailyTargetLabel(book.file_type).toLowerCase()}</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Sessions</p><p className="mt-0.5 font-semibold text-natural-dark">{logs.length} saved</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Forecast</p><p className="mt-0.5 font-semibold text-natural-dark">{daysToFinish(book) === null ? '—' : `~${daysToFinish(book)} days`}</p></div>
-            </section>
-          )}
-
-          <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
+          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
             <div className="lg:hidden"><StreakHeatmap logs={logs} /></div>
             <div className="hidden lg:block"><StreakHeatmap logs={logs} windowDays={21} /></div>
           </section>
 
           {book.can_edit && (
-          <section className="order-6 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-3">
+          <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-2">
             <div className="flex items-center gap-2">
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-natural-dark"><Settings2 className="h-4 w-4" /> Settings</h3>
               {!editing && <button onClick={() => setEditing(true)} className="rounded-full border border-natural-border px-2.5 py-1 text-[11px] font-bold text-natural-sage hover:border-natural-sage">Edit</button>}
