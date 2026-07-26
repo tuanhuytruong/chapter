@@ -74,6 +74,21 @@ export interface ChunkForSynthesis {
   analysis: ChunkAnalysis;
 }
 
+export interface ChunkInput {
+  title: string;
+  author: string;
+  pageStart: number;
+  pageEnd: number;
+  totalPages: number;
+  lang: SummaryLanguage;
+  text: string;
+}
+
+// NineRouter can process four requests concurrently. Each request contains at
+// most five independent saved sessions to avoid paying one round-trip per log.
+export const AI_READER_BATCH_SIZE = 5;
+export const AI_READER_CONCURRENCY = 4;
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const MAX_STR = 600;
@@ -175,18 +190,52 @@ export function parseChunkAnalysis(raw: string): ChunkAnalysis {
   };
 }
 
-export async function analyseChunk(opts: {
-  title: string;
-  author: string;
-  pageStart: number;
-  pageEnd: number;
-  totalPages: number;
-  lang: "auto" | "vi" | "en";
-  text: string;
-}): Promise<ChunkAnalysis> {
+export async function analyseChunk(opts: ChunkInput): Promise<ChunkAnalysis> {
   const prompt = buildChunkPrompt(opts);
   const raw = await callLLM(CHUNK_SYSTEM, prompt, 0.3, true, true);
   return parseChunkAnalysis(raw);
+}
+
+/** Build one provider request for up to five independent saved reading sessions. */
+export function buildChunkBatchPrompt(inputs: ChunkInput[]): string {
+  if (!inputs.length || inputs.length > AI_READER_BATCH_SIZE) {
+    throw new Error(`AI Reader batch must contain 1–${AI_READER_BATCH_SIZE} sessions`);
+  }
+  const sessions = inputs
+    .map((input, index) => `SESSION ${index + 1} (pages ${input.pageStart}–${input.pageEnd} of ${input.totalPages})\n${input.text.slice(0, 12_000)}`)
+    .join("\n\n---\n\n");
+  return `${langInstruction(inputs[0].lang)}
+
+Book: "${inputs[0].title}" by ${inputs[0].author}
+
+Analyse every session independently. Return exactly this JSON object:
+{"analyses":[{"session":1,"chunk_summary":"...","concepts":[{"name":"...","definition":"..."}],"themes":[{"name":"...","description":"..."}],"people":[{"name":"...","pulse":"..."}],"notable_quotes":[{"text":"...","page_start":1}]}]}
+
+Rules:
+- Return exactly one analysis for every SESSION, in the same order, numbered 1 through ${inputs.length}
+- Do not merge information across sessions
+- notable_quotes must be verbatim text found in that session; page_start must be within that session's range
+- Keep definitions and descriptions concise (under 120 characters); use [] when nothing is relevant
+
+${sessions}`;
+}
+
+export function parseChunkBatchAnalysis(raw: string, expectedCount: number): ChunkAnalysis[] {
+  const data = extractJson(raw);
+  if (!Array.isArray(data.analyses) || data.analyses.length !== expectedCount) {
+    throw new Error(`AI Reader: expected ${expectedCount} batch analyses`);
+  }
+  return data.analyses.map((item, index) => {
+    const row = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : null;
+    if (!row || row.session !== index + 1) throw new Error("AI Reader: batch analyses must preserve session order");
+    return parseChunkAnalysis(JSON.stringify(row));
+  });
+}
+
+export async function analyseChunkBatch(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> {
+  if (inputs.length === 1) return [await analyseChunk(inputs[0])];
+  const raw = await callLLM(CHUNK_SYSTEM, buildChunkBatchPrompt(inputs), 0.3, true, true);
+  return parseChunkBatchAnalysis(raw, inputs.length);
 }
 
 // ─── Wiki synthesis ───────────────────────────────────────────────────────────
@@ -375,53 +424,54 @@ export async function processBookForWiki(bookId: string, force = false): Promise
 
   if (unprocessed.length === 0) return false;
 
-  // Process each unprocessed session
+  // Prepare saved session text first. New Read Today sessions already have
+  // raw_text, so they do not parse the source file again.
+  const inputs: Array<{ log: any; input: ChunkInput }> = [];
   for (const log of unprocessed) {
     try {
-      // The immutable session text is the source used by all companion
-      // analyses. Re-extract only for legacy rows that predate raw_text.
       const text = log.raw_text || (await extractRange(
         book.file_path,
         book.file_type as "pdf" | "epub",
         log.page_start,
         log.page_end
       )).text;
-
-      if (!text.trim()) continue;
-
-      const analysis = await analyseChunk({
-        title: book.title,
-        author: book.author,
-        pageStart: log.page_start,
-        pageEnd: log.page_end,
-        totalPages: book.total_pages,
-        lang,
-        text,
+      if (text.trim()) inputs.push({
+        log,
+        input: { title: book.title, author: book.author, pageStart: log.page_start, pageEnd: log.page_end, totalPages: book.total_pages, lang, text },
       });
-
-      if (force) {
-        await query(
-          `INSERT INTO ai_reader_chunks (book_id, log_id, page_start, page_end, chunk_analysis)
-           VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (log_id) DO UPDATE
-             SET chunk_analysis = EXCLUDED.chunk_analysis,
-                 processed_at = now()`,
-          [bookId, log.id, log.page_start, log.page_end, JSON.stringify(analysis)]
-        );
-      } else {
-        await query(
-          `INSERT INTO ai_reader_chunks (book_id, log_id, page_start, page_end, chunk_analysis)
-           VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (log_id) DO NOTHING`,
-          [bookId, log.id, log.page_start, log.page_end, JSON.stringify(analysis)]
-        );
-      }
-
-      processedIds.add(log.id);
     } catch (err: any) {
-      console.error(`[ai-reader] Session p.${log.page_start}–${log.page_end} failed: ${err.message}`);
+      console.error(`[ai-reader] Session p.${log.page_start}–${log.page_end} extraction failed: ${err.message}`);
     }
   }
+
+  const batches = Array.from(
+    { length: Math.ceil(inputs.length / AI_READER_BATCH_SIZE) },
+    (_, index) => inputs.slice(index * AI_READER_BATCH_SIZE, (index + 1) * AI_READER_BATCH_SIZE)
+  );
+  let nextBatch = 0;
+  const worker = async () => {
+    while (nextBatch < batches.length) {
+      const batch = batches[nextBatch++];
+      try {
+        const analyses = await analyseChunkBatch(batch.map((item) => item.input));
+        await Promise.all(batch.map(async ({ log }, index) => {
+          const analysis = analyses[index];
+          await query(
+            `INSERT INTO ai_reader_chunks (book_id, log_id, page_start, page_end, chunk_analysis)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (log_id) DO UPDATE SET
+               chunk_analysis = CASE WHEN $6 THEN EXCLUDED.chunk_analysis ELSE ai_reader_chunks.chunk_analysis END,
+               processed_at = CASE WHEN $6 THEN now() ELSE ai_reader_chunks.processed_at END`,
+            [bookId, log.id, log.page_start, log.page_end, JSON.stringify(analysis), force]
+          );
+          processedIds.add(log.id);
+        }));
+      } catch (err: any) {
+        console.error(`[ai-reader] Batch p.${batch[0].log.page_start}–${batch.at(-1)?.log.page_end} failed: ${err.message}`);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(AI_READER_CONCURRENCY, batches.length) }, worker));
 
   // Synthesise wiki from all chunks for this book
   const { rows: allChunkRows } = await query(

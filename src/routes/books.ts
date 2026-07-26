@@ -603,8 +603,12 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
       // enrich it in order so the wiki only synthesizes persisted analyses.
       void (async () => {
         try {
-          await generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" });
-          await processBookForWiki(result.bookId);
+          // The two enrichments use the same persisted source text but do not
+          // depend on each other, so let NineRouter process them concurrently.
+          await Promise.all([
+            generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" }),
+            processBookForWiki(result.bookId),
+          ]);
         } catch (error: any) {
           console.warn("[reading-enrichment] background analysis unavailable:", error.message);
         }

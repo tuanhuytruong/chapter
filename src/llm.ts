@@ -6,6 +6,27 @@
  * verified end-to-end. On e7240ubt, point NINE_ROUTER_URL at localhost:20128.
  */
 
+// Shared process-local capacity guard. It covers every route using 9router, so
+// an AI Reader rebuild cannot exceed the provider's four-request budget when a
+// reader simultaneously requests a summary or Reading Lens analysis.
+const NINE_ROUTER_CONCURRENCY = 4;
+let activeNineRouterCalls = 0;
+const nineRouterWaiters: Array<() => void> = [];
+
+async function acquireNineRouterSlot(): Promise<void> {
+  if (activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
+    activeNineRouterCalls++;
+    return;
+  }
+  await new Promise<void>((resolve) => nineRouterWaiters.push(resolve));
+  activeNineRouterCalls++;
+}
+
+function releaseNineRouterSlot(): void {
+  activeNineRouterCalls--;
+  nineRouterWaiters.shift()?.();
+}
+
 /** Generic 9router call with arbitrary system + user prompts. Returns text. */
 export async function callLLM(
   system: string,
@@ -28,8 +49,10 @@ export async function callLLM(
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 60_000);
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let resp: Response;
+    await acquireNineRouterSlot();
+    timer = setTimeout(() => controller.abort(), 60_000);
     try {
       resp = await fetch(url, {
         method: "POST",
@@ -48,6 +71,7 @@ export async function callLLM(
       });
     } finally {
       clearTimeout(timer);
+      releaseNineRouterSlot();
     }
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
@@ -192,19 +216,25 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
 
-    const resp = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: input.summaryMode === "deep_reading" ? buildDeepReadingSystemPrompt(input.lang) : buildSystemPrompt(input.lang) },
-          { role: "user", content: buildUserPrompt(input) },
-        ],
-        temperature: 0.7,
-        stream: false,
-      }),
-    });
+    await acquireNineRouterSlot();
+    let resp: Response;
+    try {
+      resp = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: input.summaryMode === "deep_reading" ? buildDeepReadingSystemPrompt(input.lang) : buildSystemPrompt(input.lang) },
+            { role: "user", content: buildUserPrompt(input) },
+          ],
+          temperature: 0.7,
+          stream: false,
+        }),
+      });
+    } finally {
+      releaseNineRouterSlot();
+    }
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
       throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);

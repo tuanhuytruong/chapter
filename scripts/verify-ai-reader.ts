@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildSynthesisPrompt, parseChunkAnalysis, parseSynthesis } from "../src/aiReader.js";
+import { AI_READER_BATCH_SIZE, AI_READER_CONCURRENCY, buildChunkBatchPrompt, buildSynthesisPrompt, parseChunkAnalysis, parseChunkBatchAnalysis, parseSynthesis } from "../src/aiReader.js";
 
 const chunk = parseChunkAnalysis(JSON.stringify({
   chunk_summary: "Mara accepts a sealed letter before dawn.",
@@ -27,6 +27,18 @@ assert.equal(wiki.current_position.page_end, 10);
 const prompt = buildSynthesisPrompt({ title: "Test", author: "Author", totalPages: 100, pagesCovered: 10, lang: "en", chunks });
 assert.match(prompt, /Never reveal, predict, or hint at events beyond page 10/);
 assert.match(prompt, /entirely in English/);
+
+assert.equal(AI_READER_BATCH_SIZE, 5);
+assert.equal(AI_READER_CONCURRENCY, 4);
+const batchInputs = Array.from({ length: 5 }, (_, index) => ({ title: "Test", author: "Author", pageStart: index * 10 + 1, pageEnd: index * 10 + 10, totalPages: 100, lang: "en" as const, text: `Session ${index + 1} source text.` }));
+const batchPrompt = buildChunkBatchPrompt(batchInputs);
+assert.match(batchPrompt, /SESSION 1/);
+assert.match(batchPrompt, /SESSION 5/);
+assert.throws(() => buildChunkBatchPrompt([...batchInputs, batchInputs[0]]), /1–5 sessions/);
+const batchAnalyses = parseChunkBatchAnalysis(JSON.stringify({ analyses: batchInputs.map((_, index) => ({ session: index + 1, chunk_summary: `Session ${index + 1}`, concepts: [], themes: [], people: [], notable_quotes: [] })) }), 5);
+assert.equal(batchAnalyses.length, 5);
+assert.equal(batchAnalyses[4].chunk_summary, "Session 5");
+assert.throws(() => parseChunkBatchAnalysis(JSON.stringify({ analyses: [{ session: 2 }] }), 1), /preserve session order/);
 
 const migration = readFileSync(new URL("../migrations/20260726_expand_ai_reader_narrative.sql", import.meta.url), "utf8");
 for (const column of ["schema_version", "output_language", "book_so_far", "current_position", "narrative_arc", "carry_forward_insights"]) {
