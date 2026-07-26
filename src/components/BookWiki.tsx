@@ -1,361 +1,52 @@
-import { useState, useEffect, useCallback } from "react";
-import { BookOpen, Brain, Lightbulb, Users, Map, Quote, HelpCircle, RefreshCw, Loader2 } from "lucide-react";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { Brain, Lightbulb, Users, Map, Quote, HelpCircle, RefreshCw, Loader2, ChevronDown, Sparkles } from "lucide-react";
 
 interface WikiConcept { name: string; definition: string; }
 interface WikiTheme { name: string; description: string; }
 interface WikiPerson { name: string; pulse: string; }
 interface WikiChapterEntry { page_start: number; page_end: number; title: string; summary: string; }
 interface WikiQuote { text: string; page_start: number; }
-
+interface NarrativePosition { page_start?: number; page_end?: number; label?: string; }
+interface NarrativeArc { label: string; status?: string; detail: string; }
 interface BookWikiData {
-  book_id: string;
-  pages_covered: number;
-  overview: string;
-  concepts: WikiConcept[];
-  themes: WikiTheme[];
-  people: WikiPerson[];
-  chapter_map: WikiChapterEntry[];
-  notable_quotes: WikiQuote[];
-  open_questions: string[];
-  generated_at: string;
-  generation_ms: number | null;
+  book_id: string; pages_covered: number; overview: string; concepts: WikiConcept[]; themes: WikiTheme[];
+  people: WikiPerson[]; chapter_map: WikiChapterEntry[]; notable_quotes: WikiQuote[]; open_questions: string[];
+  generated_at: string; schema_version?: number; output_language?: "auto" | "vi" | "en";
+  book_so_far?: string; current_position?: NarrativePosition; narrative_arc?: NarrativeArc[]; carry_forward_insights?: string[];
 }
-
 interface WikiStatus {
-  hasFile: boolean;
-  totalSessions: number;
-  chunksProcessed: number;
-  lastRunAt: string | null;
-  wikiExists: boolean;
-  pagesCovered: number;
-  wikiGeneratedAt: string | null;
+  hasFile: boolean; totalSessions: number; chunksProcessed: number; wikiExists: boolean; pagesCovered: number;
+  wikiGeneratedAt: string | null; outputLanguage?: "auto" | "vi" | "en"; schemaVersion?: number;
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="text-natural-sage">{icon}</span>
-        <h3 className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function ConceptPill({ name, definition }: WikiConcept) {
-  const [open, setOpen] = useState(false);
-  return (
-    <button
-      onClick={() => setOpen(!open)}
-      className="w-full rounded-xl border border-natural-border bg-white/60 px-3 py-2 text-left transition hover:border-natural-sage/40"
-    >
-      <span className="text-xs font-semibold text-natural-dark">{name}</span>
-      {open && <p className="mt-1 text-[11px] leading-relaxed text-natural-stone">{definition}</p>}
-    </button>
-  );
-}
-
-// ─── API helpers ──────────────────────────────────────────────────────────────
-
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
-  if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`${res.status}: ${msg.slice(0, 200)}`);
-  }
-  const text = await res.text();
-  return (text ? JSON.parse(text) : {} as T) as T;
+  const res = await fetch(url, { headers: { "Content-Type": "application/json" }, ...opts });
+  if (!res.ok) throw new Error(`${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const text = await res.text(); return (text ? JSON.parse(text) : {}) as T;
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
-
+function Section({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return <section className="rounded-2xl border border-natural-border bg-natural-cream/40 p-4"><div className="mb-3 flex items-center gap-2 text-natural-sage">{icon}<h3 className="text-[10px] font-bold uppercase tracking-wider">{title}</h3></div>{children}</section>;
+}
+function Concept({ item }: { item: WikiConcept }) {
+  const [open, setOpen] = useState(false);
+  return <button onClick={() => setOpen(!open)} className="w-full rounded-xl border border-natural-border bg-white/60 px-3 py-2 text-left transition hover:border-natural-sage/40"><span className="text-xs font-semibold text-natural-dark">{item.name}</span>{open && <p className="mt-1 text-[11px] leading-relaxed text-natural-stone">{item.definition}</p>}</button>;
+}
 export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: string; totalPages: number; canEdit: boolean }) {
-  const [wiki, setWiki] = useState<BookWikiData | null>(null);
-  const [status, setStatus] = useState<WikiStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(false);
-  const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
-  const BASE = "/api/books";
-
-  const fetchWiki = useCallback(async () => {
-    try {
-      const [wikiData, statusData] = await Promise.all([
-        req<BookWikiData | null>(`${BASE}/${bookId}/wiki`).catch(() => null),
-        req<WikiStatus | null>(`${BASE}/${bookId}/wiki/status`).catch(() => null),
-      ]);
-      setWiki(wikiData);
-      setStatus(statusData);
-    } finally {
-      setLoading(false);
-    }
-  }, [bookId]);
-
-  useEffect(() => {
-    fetchWiki();
-    return () => { if (pollInterval) clearInterval(pollInterval); };
-  }, [fetchWiki]);
-
-  // Poll every 15s while regenerating so UI updates when done
-  useEffect(() => {
-    if (regenerating) {
-      const id = setInterval(async () => {
-        await fetchWiki();
-        // Stop polling once wiki appears or after 3 minutes
-      }, 15_000);
-      setPollInterval(id);
-      const timeout = setTimeout(() => {
-        clearInterval(id);
-        setRegenerating(false);
-      }, 180_000);
-      return () => { clearInterval(id); clearTimeout(timeout); };
-    } else {
-      if (pollInterval) { clearInterval(pollInterval); setPollInterval(null); }
-    }
-  }, [regenerating]);
-
-  // Stop regenerating spinner once wiki appears
-  useEffect(() => {
-    if (wiki && regenerating) setRegenerating(false);
-  }, [wiki]);
-
-  const handleRegenerate = async () => {
-    if (!canEdit) return;
-    setRegenerating(true);
-    try {
-      await req(`${BASE}/${bookId}/wiki/regenerate`, { method: "POST" });
-    } catch {
-      setRegenerating(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-natural-sage" />
-      </div>
-    );
-  }
-
-  // No file uploaded
-  if (status && !status.hasFile) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-natural-sage" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">AI Reader</span>
-        </div>
-        <div className="rounded-2xl border border-dashed border-natural-border p-6 text-center">
-          <BookOpen className="mx-auto mb-2 h-6 w-6 text-natural-stone/40" />
-          <p className="text-xs text-natural-stone">Upload a PDF or EPUB to enable the AI Reader.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // No sessions logged yet
-  if (status && status.totalSessions === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-natural-sage" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">AI Reader</span>
-        </div>
-        <div className="rounded-2xl border border-dashed border-natural-border p-6 text-center">
-          <Brain className="mx-auto mb-2 h-6 w-6 text-natural-stone/40" />
-          <p className="text-xs text-natural-stone">The AI Reader will start after your first reading session.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Wiki not yet generated (sessions exist but batch hasn't run)
-  if (!wiki) {
-    const pct = status ? Math.round((status.chunksProcessed / Math.max(status.totalSessions, 1)) * 100) : 0;
-    return (
-      <div className="space-y-4">
-        {/* Header always visible */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain className="h-4 w-4 text-natural-sage" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">AI Reader</span>
-          </div>
-          {canEdit && (
-            <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className="flex items-center gap-1.5 rounded-full border border-natural-border px-3 py-1 text-[10px] font-bold text-natural-stone transition hover:border-natural-sage/40 hover:text-natural-sage disabled:opacity-50"
-            >
-              {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              {regenerating ? "Running…" : "Run AI Reader now"}
-            </button>
-          )}
-        </div>
-        <div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-5 text-center">
-          <Brain className="mx-auto mb-2 h-6 w-6 text-natural-sage/60" />
-          <p className="text-xs font-semibold text-natural-dark">AI Reader is warming up</p>
-          <p className="mt-1 text-[11px] text-natural-stone">
-            {status?.chunksProcessed
-              ? `Processed ${status.chunksProcessed} of ${status.totalSessions} sessions. Wiki synthesis coming soon.`
-              : "The wiki will be ready after the nightly batch job runs."}
-          </p>
-          {pct > 0 && (
-            <div className="mx-auto mt-3 h-1.5 max-w-xs rounded-full bg-natural-border">
-              <div className="h-1.5 rounded-full bg-natural-sage transition-all" style={{ width: `${pct}%` }} />
-            </div>
-          )}
-        </div>
-        {canEdit && (
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-natural-sage/40 py-2.5 text-xs font-bold text-natural-sage transition hover:bg-natural-sage/10 disabled:opacity-50"
-          >
-            {regenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            {regenerating ? "AI Reader is running…" : "Run AI Reader now"}
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // Wiki exists — render it
-  const generatedDate = new Date(wiki.generated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const progressPct = totalPages > 0 ? Math.min(100, Math.round((wiki.pages_covered / totalPages) * 100)) : 0;
-
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-natural-sage" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">AI Reader</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-natural-stone">Updated {generatedDate}</span>
-          {canEdit && (
-            <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className="flex items-center gap-1.5 rounded-full border border-natural-border px-3 py-1 text-[10px] font-bold text-natural-stone transition hover:border-natural-sage/40 hover:text-natural-sage disabled:opacity-50"
-            >
-              {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              {regenerating ? "Running…" : "Refresh"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      {totalPages > 0 && (
-        <div>
-          <div className="mb-1 flex justify-between text-[10px] text-natural-stone">
-            <span>AI has read p.1–{wiki.pages_covered}</span>
-            <span>{progressPct}% of book</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-natural-border">
-            <div className="h-1.5 rounded-full bg-natural-sage/70 transition-all" style={{ width: `${progressPct}%` }} />
-          </div>
-        </div>
-      )}
-
-      {/* Overview */}
-      {wiki.overview && (
-        <Section icon={<BookOpen className="h-4 w-4" />} title="Overview">
-          <p className="text-xs leading-relaxed text-natural-dark">{wiki.overview}</p>
-        </Section>
-      )}
-
-      {/* Concepts + Themes side by side on desktop */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {wiki.concepts.length > 0 && (
-          <Section icon={<Lightbulb className="h-4 w-4" />} title={`Key Concepts · ${wiki.concepts.length}`}>
-            <div className="space-y-1.5">
-              {wiki.concepts.map((c, i) => <ConceptPill key={i} {...c} />)}
-            </div>
-          </Section>
-        )}
-        {wiki.themes.length > 0 && (
-          <Section icon={<Brain className="h-4 w-4" />} title={`Themes · ${wiki.themes.length}`}>
-            <ul className="space-y-2">
-              {wiki.themes.map((t, i) => (
-                <li key={i}>
-                  <p className="text-xs font-semibold text-natural-dark">{t.name}</p>
-                  {t.description && <p className="text-[11px] leading-relaxed text-natural-stone">{t.description}</p>}
-                </li>
-              ))}
-            </ul>
-          </Section>
-        )}
-      </div>
-
-      {/* People */}
-      {wiki.people.length > 0 && (
-        <Section icon={<Users className="h-4 w-4" />} title={`People · ${wiki.people.length}`}>
-          <div className="flex flex-wrap gap-2">
-            {wiki.people.map((p, i) => (
-              <div key={i} className="rounded-xl border border-natural-border bg-white/60 px-3 py-2">
-                <p className="text-xs font-semibold text-natural-dark">{p.name}</p>
-                {p.pulse && <p className="text-[11px] text-natural-stone">{p.pulse}</p>}
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Chapter map */}
-      {wiki.chapter_map.length > 0 && (
-        <Section icon={<Map className="h-4 w-4" />} title="Chapter Map">
-          <ul className="space-y-3">
-            {wiki.chapter_map.map((c, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="mt-0.5 shrink-0 rounded-md bg-natural-sage/10 px-1.5 py-0.5 text-[10px] font-bold text-natural-sage">
-                  {c.page_start}–{c.page_end}
-                </span>
-                <div>
-                  {c.title && <p className="text-xs font-semibold text-natural-dark">{c.title}</p>}
-                  <p className="text-[11px] leading-relaxed text-natural-stone">{c.summary}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* Notable quotes */}
-      {wiki.notable_quotes.length > 0 && (
-        <Section icon={<Quote className="h-4 w-4" />} title="Notable Quotes">
-          <ul className="space-y-3">
-            {wiki.notable_quotes.map((q, i) => (
-              <li key={i} className="border-l-2 border-natural-sage/40 pl-3">
-                <p className="text-xs italic leading-relaxed text-natural-dark">"{q.text}"</p>
-                <p className="mt-0.5 text-[10px] text-natural-stone">p. {q.page_start}</p>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* Open questions */}
-      {wiki.open_questions.length > 0 && (
-        <Section icon={<HelpCircle className="h-4 w-4" />} title="Open Questions">
-          <ul className="space-y-2">
-            {wiki.open_questions.map((q, i) => (
-              <li key={i} className="flex gap-2 text-xs leading-relaxed text-natural-dark">
-                <span className="mt-0.5 text-natural-sage">?</span>
-                <span>{q}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-    </div>
-  );
+  const [wiki, setWiki] = useState<BookWikiData | null>(null); const [status, setStatus] = useState<WikiStatus | null>(null);
+  const [loading, setLoading] = useState(true); const [regenerating, setRegenerating] = useState(false);
+  const [expanded, setExpanded] = useState(() => localStorage.getItem(`book_wiki_expanded_${bookId}`) === "true");
+  const [showReferences, setShowReferences] = useState(false);
+  const fetchWiki = useCallback(async () => { try { const [w, s] = await Promise.all([req<BookWikiData>(`/api/books/${bookId}/wiki`).catch(() => null), req<WikiStatus>(`/api/books/${bookId}/wiki/status`).catch(() => null)]); setWiki(w); setStatus(s); } finally { setLoading(false); } }, [bookId]);
+  useEffect(() => { void fetchWiki(); }, [fetchWiki]);
+  useEffect(() => { if (!regenerating) return; let active = true; const tick = async () => { await fetchWiki(); }; const interval = window.setInterval(() => { void tick(); }, 7000); const timer = window.setTimeout(() => { if (active) setRegenerating(false); }, 180000); return () => { active = false; clearInterval(interval); clearTimeout(timer); }; }, [regenerating, fetchWiki]);
+  useEffect(() => { if (wiki && regenerating) setRegenerating(false); }, [wiki, regenerating]);
+  const toggle = () => setExpanded(value => { localStorage.setItem(`book_wiki_expanded_${bookId}`, String(!value)); return !value; });
+  const refresh = async () => { if (!canEdit) return; setRegenerating(true); try { await req(`/api/books/${bookId}/wiki/regenerate`, { method: "POST" }); await fetchWiki(); } catch { setRegenerating(false); } };
+  const heading = <div className="flex items-center gap-2"><Brain className="h-4 w-4 text-natural-sage"/><span className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">AI Reader</span></div>;
+  if (loading) return <div className="space-y-3"><>{heading}</><div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage"/></div></div>;
+  if (!status?.hasFile || status.totalSessions === 0) return <div className="space-y-3">{heading}<div className="rounded-2xl border border-dashed border-natural-border p-5 text-center text-xs text-natural-stone">{!status?.hasFile ? "Upload a PDF or EPUB to enable the AI Reader." : "The AI Reader will begin after your first reading session."}</div></div>;
+  if (!wiki) { const pct = Math.round((status.chunksProcessed / Math.max(status.totalSessions, 1)) * 100); return <div className="space-y-3">{heading}<div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">AI Reader is preparing</p><p className="mt-1 text-[11px] text-natural-stone">{status.chunksProcessed ? `${status.chunksProcessed} of ${status.totalSessions} sessions are ready.` : "It will be ready once the latest session is processed."}</p><div className="mx-auto mt-3 h-1.5 max-w-xs rounded-full bg-natural-border"><div className="h-full rounded-full bg-natural-sage" style={{ width: `${pct}%` }}/></div></div>{canEdit && <button onClick={refresh} disabled={regenerating} className="min-h-11 w-full rounded-full border border-natural-sage/40 text-xs font-bold text-natural-sage disabled:opacity-50">{regenerating ? "Running…" : "Run AI Reader now"}</button>}</div>; }
+  const progress = totalPages ? Math.min(100, Math.round((wiki.pages_covered / totalPages) * 100)) : 0;
+  const narrative = wiki.book_so_far || wiki.overview; const current = wiki.current_position?.label; const legacy = !wiki.book_so_far && !wiki.narrative_arc?.length;
+  const languageMismatch = canEdit && status?.outputLanguage && status.outputLanguage !== "auto" && status.outputLanguage !== wiki.output_language;
+  return <div className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-2">{heading}<div className="flex items-center gap-2"><span className="text-[10px] text-natural-stone">Updated {new Date(wiki.generated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>{canEdit && <button onClick={refresh} disabled={regenerating} className="min-h-8 rounded-full border border-natural-border px-3 text-[10px] font-bold text-natural-stone disabled:opacity-50">{regenerating ? <Loader2 className="inline h-3 w-3 animate-spin"/> : <RefreshCw className="mr-1 inline h-3 w-3"/>}Refresh</button>}</div></div><div><div className="mb-1 flex justify-between text-[10px] text-natural-stone"><span>AI has read 1–{wiki.pages_covered}</span><span>{progress}% of book</span></div><div className="h-1.5 rounded-full bg-natural-border"><div className="h-full rounded-full bg-natural-sage/70" style={{ width: `${progress}%` }}/></div></div><div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-4">{languageMismatch && <p className="mb-2 text-[10px] text-natural-clay">The selected language changed. Refresh to update this reading map.</p>}<p className="text-xs leading-relaxed text-natural-dark">{narrative}</p>{current && <p className="mt-2 flex items-start gap-1.5 text-[11px] text-natural-stone"><Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-natural-sage"/>{current}</p>}<button onClick={toggle} aria-expanded={expanded} className="mt-3 flex min-h-11 items-center gap-1 text-xs font-bold text-natural-sage focus:outline-none focus:ring-2 focus:ring-natural-sage">{expanded ? "Collapse AI Reader" : "Expand AI Reader"}<ChevronDown className={`h-4 w-4 transition ${expanded ? "rotate-180" : ""}`}/></button></div>{expanded && <div className="mt-3 space-y-3">{!legacy && wiki.narrative_arc?.length ? <Section icon={<Map className="h-4 w-4"/>} title="Reading arc"><ol className="space-y-3">{wiki.narrative_arc.map((arc, index) => <li key={index} className="border-l-2 border-natural-sage/35 pl-3"><p className="text-xs font-semibold text-natural-dark">{arc.label}</p><p className="mt-0.5 text-[11px] leading-relaxed text-natural-stone">{arc.detail}</p></li>)}</ol></Section> : null}{!legacy && wiki.carry_forward_insights?.length ? <Section icon={<Lightbulb className="h-4 w-4"/>} title="Ideas to carry forward"><ul className="space-y-2 text-xs leading-relaxed text-natural-dark">{wiki.carry_forward_insights.map((item, i) => <li key={i} className="flex gap-2"><span className="text-natural-sage">•</span>{item}</li>)}</ul></Section> : null}<button onClick={() => setShowReferences(!showReferences)} className="min-h-11 text-xs font-bold text-natural-sage">{showReferences ? "Hide references" : "Show concepts, themes & references"}</button>{showReferences && <div className="space-y-3">{wiki.concepts.length > 0 && <Section icon={<Lightbulb className="h-4 w-4"/>} title={`Key concepts · ${wiki.concepts.length}`}><div className="space-y-1.5">{wiki.concepts.map((item, i) => <div key={i}><Concept item={item}/></div>)}</div></Section>}{wiki.themes.length > 0 && <Section icon={<Brain className="h-4 w-4"/>} title="Themes"><ul className="space-y-2">{wiki.themes.map((t, i) => <li key={i}><p className="text-xs font-semibold text-natural-dark">{t.name}</p><p className="text-[11px] text-natural-stone">{t.description}</p></li>)}</ul></Section>}{wiki.people.length > 0 && <Section icon={<Users className="h-4 w-4"/>} title="People"><div className="flex flex-wrap gap-2">{wiki.people.map((p, i) => <span key={i} className="rounded-xl border border-natural-border px-3 py-2 text-xs text-natural-dark">{p.name}</span>)}</div></Section>}{wiki.notable_quotes.length > 0 && <Section icon={<Quote className="h-4 w-4"/>} title="Quotes"><ul className="space-y-3">{wiki.notable_quotes.map((q, i) => <li key={i} className="border-l-2 border-natural-sage/40 pl-3 text-xs italic text-natural-dark">“{q.text}”</li>)}</ul></Section>}{wiki.open_questions.length > 0 && <Section icon={<HelpCircle className="h-4 w-4"/>} title="Open questions"><ul className="space-y-2 text-xs text-natural-dark">{wiki.open_questions.map((q, i) => <li key={i}>? {q}</li>)}</ul></Section>}</div>}</div>}</div>;
 }

@@ -63,7 +63,7 @@ export const api = {
     req<CalendarLogRow[]>(`${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}`),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
-    req<LogRow & { finished?: boolean }>(`${BASE}/${id}/advance`, { method: "POST" }),
+    req<LogRow & { finished?: boolean; readingExperience?: "analytical" | "story" }>(`${BASE}/${id}/advance`, { method: "POST" }),
   advanceAll: () =>
     req<{ advanced: number; skipped: number; errors: any[] }>(`${BASE}/all/advance`, {
       method: "POST",
@@ -108,6 +108,7 @@ export const api = {
   getWikiStatus: (bookId: string) => req<{
     hasFile: boolean; totalSessions: number; chunksProcessed: number;
     wikiExists: boolean; pagesCovered: number; wikiGeneratedAt: string | null;
+    outputLanguage: "auto" | "vi" | "en"; schemaVersion: number;
   }>(`${BASE}/${bookId}/wiki/status`),
   regenerateWiki: (bookId: string) => req<{ ok: boolean; updated: boolean }>(
     `${BASE}/${bookId}/wiki/regenerate`, { method: "POST" }

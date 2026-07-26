@@ -61,49 +61,14 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
     return m;
   }, [logs]);
 
-  // Compute grid weeks anchored to first reading day
-  const { weeks, streakLen, totalReadDays, firstLogStr } = useMemo(() => {
+  // Always render the same recent two-week window, so the activity view stays
+  // compact and fits narrow screens regardless of the book's age.
+  const { days, streakLen, totalReadDays } = useMemo(() => {
     const logSet = new Set<string>(byDay.keys());
     const totalReadDays = logSet.size;
-
-    // Find earliest log date string
-    const firstLogStr: string = logs.length
-      ? [...logSet].sort()[0] ?? todayStr
-      : todayStr;
-
-    // Align to the Sunday of that week (work in UTC date arithmetic)
-    const [fy, fm, fd] = firstLogStr.split('-').map(Number);
-    const firstDate = new Date(Date.UTC(fy, fm - 1, fd));
-    const sundayOffset = firstDate.getUTCDay(); // 0=Sun
-    const gridStartDate = new Date(Date.UTC(fy, fm - 1, fd - sundayOffset));
-
-    // Count weeks needed from gridStart to today
-    const [ty, tm, td] = todayStr.split('-').map(Number);
-    const todayDate = new Date(Date.UTC(ty, tm - 1, td));
-    const diffDays = (todayDate.getTime() - gridStartDate.getTime()) / 86400000;
-    const weeksNeeded = Math.ceil(diffDays / 7) + 1;
-    const totalWeeks = Math.max(weeksNeeded, 4);
-
-    // Build weeks as YYYY-MM-DD strings (no Date timezone issues)
-    const gridStartStr = (() => {
-      const y = gridStartDate.getUTCFullYear();
-      const m = String(gridStartDate.getUTCMonth() + 1).padStart(2, '0');
-      const d = String(gridStartDate.getUTCDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    })();
-
-    const w: string[][] = [];
-    for (let wi = 0; wi < totalWeeks; wi++) {
-      const week: string[] = [];
-      for (let di = 0; di < 7; di++) {
-        week.push(shiftDateStr(gridStartStr, wi * 7 + di));
-      }
-      w.push(week);
-    }
-
     const streakLen = computeStreakLen(logSet, todayStr);
-
-    return { weeks: w, streakLen, totalReadDays, firstLogStr };
+    const days = Array.from({ length: 14 }, (_, index) => shiftDateStr(todayStr, index - 13));
+    return { days, streakLen, totalReadDays };
   }, [logs, byDay, todayStr]);
 
   const level = (dateStr: string): number => {
@@ -133,40 +98,31 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   return (
     <div className="space-y-3">
       {/* Streak + stats bar */}
-      <div className="flex items-center gap-2 text-xs text-natural-stone flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-natural-stone">
         {milestoneLabel && (
           <span className="font-bold text-natural-dark">{milestoneLabel}</span>
         )}
         <span>· {totalReadDays} days read total</span>
       </div>
 
-      {/* Grid */}
-      <div className="flex gap-1 overflow-x-auto pb-1 px-0.5">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-1">
-            {week.map((dayStr, di) => {
-              const future = dayStr > todayStr;
-              // The week grid is Sunday-aligned. Do not imply missed reading
-              // before this book had its first actual reading session.
-              const beforeFirstReading = dayStr < firstLogStr;
-              const hidden = future || beforeFirstReading;
-              const lv = hidden ? 0 : level(dayStr);
-              const streak = !hidden && isStreakDay(dayStr);
-              return (
-                <div
-                  key={di}
-                  title={dayStr}
-                  className={[
-                    'w-3 h-3 rounded-sm',
-                    hidden ? 'bg-transparent' : COLORS[lv],
-                    streak && lv === 0 ? 'ring-1 ring-natural-clay bg-natural-clay/20' : '',
-                    streak && lv > 0  ? 'ring-1 ring-natural-clay' : '',
-                  ].join(' ')}
-                />
-              );
-            })}
-          </div>
-        ))}
+      {/* Fixed 14-day grid: no horizontal scrolling at 390px. */}
+      <div className="mt-5 grid grid-cols-7 gap-1.5 sm:grid-cols-14" role="grid" aria-label="Reading activity for the last 14 days">
+        {days.map((dayStr) => {
+          const lv = level(dayStr);
+          const streak = isStreakDay(dayStr);
+          const count = byDay.get(dayStr) || 0;
+          const dayLabel = new Date(`${dayStr}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+          return (
+            <div key={dayStr} className="min-w-0" role="gridcell" aria-label={`${dayLabel}: ${count === 0 ? 'no reading' : `${count} ${count === 1 ? 'session' : 'sessions'}`}${streak ? ', current streak' : ''}`}>
+              <div className={[
+                'aspect-square w-full rounded-sm',
+                COLORS[lv],
+                streak ? 'ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream' : '',
+              ].join(' ')} />
+              <span aria-hidden="true" className="mt-1 block truncate text-center text-[9px] leading-none text-natural-stone">{dayLabel.slice(0, -1)}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

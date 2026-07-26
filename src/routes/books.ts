@@ -284,7 +284,7 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
       query("SELECT file_path FROM books WHERE id=$1", [id]),
       query("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [id]),
       query("SELECT count(*)::int AS c FROM ai_reader_chunks WHERE book_id=$1", [id]),
-      query("SELECT generated_at, pages_covered FROM book_wiki WHERE book_id=$1", [id]),
+      query("SELECT generated_at, pages_covered, output_language, schema_version FROM book_wiki WHERE book_id=$1", [id]),
     ]);
     const bookData = book.rows[0];
     res.json({
@@ -294,6 +294,8 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
       wikiExists: wikiRow.rows.length > 0,
       pagesCovered: wikiRow.rows[0]?.pages_covered || 0,
       wikiGeneratedAt: wikiRow.rows[0]?.generated_at || null,
+      outputLanguage: wikiRow.rows[0]?.output_language || "auto",
+      schemaVersion: wikiRow.rows[0]?.schema_version || 1,
     });
   } catch (e: any) { res.status(503).json({ error: "wiki status unavailable", detail: e.message }); }
 });
@@ -570,7 +572,16 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     if (result.readingExperience === "story") {
       void generateStoryThreadForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto", session: result.session }).catch((error) => console.warn("[story-thread] background analysis unavailable:", error.message));
     } else {
-      void generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" }).catch((error) => console.warn("[reading-lens] background analysis unavailable:", error.message));
+      // Keep the reading transaction responsive. The session is already saved;
+      // enrich it in order so the wiki only synthesizes persisted analyses.
+      void (async () => {
+        try {
+          await generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" });
+          await processBookForWiki(result.bookId);
+        } catch (error: any) {
+          console.warn("[reading-enrichment] background analysis unavailable:", error.message);
+        }
+      })();
     }
   }
   return result;

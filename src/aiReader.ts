@@ -39,7 +39,13 @@ export interface WikiQuote {
   page_start: number;
 }
 
+export type SummaryLanguage = "auto" | "vi" | "en";
+export interface NarrativePosition { page_start: number; page_end: number; label: string; }
+export interface NarrativeArcEntry { label: string; status: "introduced" | "developing" | "resolved" | "uncertain"; detail: string; }
+
 export interface BookWiki {
+  schema_version: number;
+  output_language: SummaryLanguage;
   pages_covered: number;
   overview: string;
   concepts: WikiConcept[];
@@ -48,6 +54,10 @@ export interface BookWiki {
   chapter_map: WikiChapterEntry[];
   notable_quotes: WikiQuote[];
   open_questions: string[];
+  book_so_far: string;
+  current_position: NarrativePosition;
+  narrative_arc: NarrativeArcEntry[];
+  carry_forward_insights: string[];
 }
 
 export interface ChunkAnalysis {
@@ -86,11 +96,15 @@ function extractJson(raw: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
-function langInstruction(lang: "auto" | "vi" | "en"): string {
+function langInstruction(lang: SummaryLanguage): string {
   if (lang === "vi") return "Write all text fields entirely in Vietnamese.";
   if (lang === "en") return "Write all text fields entirely in English.";
   return "Match the language of the source text for all text fields.";
 }
+
+const language = (value: unknown): SummaryLanguage => value === "vi" || value === "en" ? value : "auto";
+const wholeNumber = (value: unknown, fallback = 0): number => typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
+const narrativeStatus = (value: unknown): NarrativeArcEntry["status"] => value === "introduced" || value === "developing" || value === "resolved" ? value : "uncertain";
 
 // ─── Chunk analysis ───────────────────────────────────────────────────────────
 
@@ -201,7 +215,7 @@ export function buildSynthesisPrompt(opts: {
   return `${langInstruction(lang)}
 
 Book: "${title}" by ${author}
-Reader has read pages 1–${pagesCovered} of ${totalPages} total pages.
+Reader has read pages 1–${pagesCovered} of ${totalPages} total pages. This is a partial reading record, not the complete book.
 
 Chapter-by-chapter summaries:
 ${chunkSummaries}
@@ -221,18 +235,26 @@ Synthesise these into a full knowledge wiki. Return a JSON object with exactly t
     ...
   ],
   "notable_quotes": [{"text": "...", "page_start": N}, ...],    // up to 5 best quotes across all sessions
-  "open_questions": ["...", ...]                                 // up to 5 questions the book has raised but not yet answered
+  "open_questions": ["...", ...],                                // up to 5 questions the book has raised but not yet answered
+  "book_so_far": "3–5 sentence spoiler-safe narrative recap through the current reading position",
+  "current_position": {"page_start": 1, "page_end": ${pagesCovered}, "label": "where the reader currently is"},
+  "narrative_arc": [{"label": "...", "status": "introduced|developing|resolved|uncertain", "detail": "grounded progress so far"}],
+  "carry_forward_insights": ["facts, tensions, or concepts worth remembering before the next session"]
 }
 
 Rules:
 - Deduplicate: if the same concept or theme appears in multiple sessions, merge into one entry
 - chapter_map must have one entry per reading session chunk (${chunks.length} entries)
 - open_questions should reflect genuine tensions or unresolved ideas so far
+- Ground every statement in the supplied chunk summaries and lists; do not infer unseen events or use outside knowledge
+- Never reveal, predict, or hint at events beyond page ${pagesCovered}; if unsure, use "uncertain"
+- book_so_far, current_position, narrative_arc, and carry_forward_insights must describe only what the reader has reached
 - Keep all text concise`;
 }
 
-export function parseSynthesis(raw: string, chunks: ChunkForSynthesis[]): Omit<BookWiki, "pages_covered"> {
+export function parseSynthesis(raw: string, chunks: ChunkForSynthesis[], opts?: { pagesCovered?: number; lang?: SummaryLanguage }): Omit<BookWiki, "pages_covered"> {
   const data = extractJson(raw);
+  const pagesCovered = Math.max(0, opts?.pagesCovered ?? Math.max(0, ...chunks.map((chunk) => chunk.pageEnd)));
 
   const chapter_map: WikiChapterEntry[] = arr(data.chapter_map, 50, (item) => {
     const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
@@ -254,7 +276,12 @@ export function parseSynthesis(raw: string, chunks: ChunkForSynthesis[]): Omit<B
           summary: c.analysis.chunk_summary,
         }));
 
+  const position = data.current_position && typeof data.current_position === "object" && !Array.isArray(data.current_position) ? data.current_position as Record<string, unknown> : {};
+  const current_position: NarrativePosition = { page_start: Math.min(pagesCovered, wholeNumber(position.page_start, chunks[0]?.pageStart || 0)), page_end: Math.min(pagesCovered, Math.max(wholeNumber(position.page_end, pagesCovered), wholeNumber(position.page_start, 0))), label: clean(position.label, `Pages 1–${pagesCovered}`) };
+
   return {
+    schema_version: 1,
+    output_language: language(opts?.lang),
     overview: clean(data.overview, "Overview not yet available."),
     concepts: arr(data.concepts, 10, (item) => {
       const r = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
@@ -279,8 +306,16 @@ export function parseSynthesis(raw: string, chunks: ChunkForSynthesis[]): Omit<B
       return text ? { text, page_start } : null;
     }),
     open_questions: arr(data.open_questions, 5, (item) =>
-      typeof item === "string" ? item.slice(0, MAX_STR) : null
+      typeof item === "string" ? clean(item) || null : null
     ),
+    book_so_far: clean(data.book_so_far, clean(data.overview, "Overview not yet available.")),
+    current_position,
+    narrative_arc: arr(data.narrative_arc, 8, (item) => {
+      const row = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {};
+      const label = clean(row.label);
+      return label ? { label, status: narrativeStatus(row.status), detail: clean(row.detail, "Not established in the completed reading.") } : null;
+    }),
+    carry_forward_insights: arr(data.carry_forward_insights, 8, (item) => typeof item === "string" ? clean(item) || null : null),
   };
 }
 
@@ -294,7 +329,7 @@ export async function synthesiseWiki(opts: {
 }): Promise<Omit<BookWiki, "pages_covered">> {
   const prompt = buildSynthesisPrompt(opts);
   const raw = await callLLM(SYNTHESIS_SYSTEM, prompt, 0.3, true, true);
-  return parseSynthesis(raw, opts.chunks);
+  return parseSynthesis(raw, opts.chunks, { pagesCovered: opts.pagesCovered, lang: opts.lang });
 }
 
 /**
@@ -316,7 +351,7 @@ export async function processBookForWiki(bookId: string, force = false): Promise
   const book = books[0];
   if (!book) throw new Error(`Book ${bookId} not found`);
 
-  const lang = (["auto", "vi", "en"].includes(book.summary_lang) ? book.summary_lang : "auto") as "auto" | "vi" | "en";
+  const lang = language(book.summary_lang);
 
   // Get all reading sessions ordered chronologically
   const { rows: logs } = await query(
@@ -412,21 +447,29 @@ export async function processBookForWiki(bookId: string, force = false): Promise
   const generationMs = Date.now();
 
   await query(
-    `INSERT INTO book_wiki (book_id, pages_covered, overview, concepts, themes, people, chapter_map, notable_quotes, open_questions, generated_at, generation_ms)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10)
+    `INSERT INTO book_wiki (book_id, schema_version, output_language, pages_covered, overview, concepts, themes, people, chapter_map, notable_quotes, open_questions, book_so_far, current_position, narrative_arc, carry_forward_insights, generated_at, generation_ms)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now(), $16)
      ON CONFLICT (book_id) DO UPDATE SET
-       pages_covered  = EXCLUDED.pages_covered,
-       overview       = EXCLUDED.overview,
-       concepts       = EXCLUDED.concepts,
-       themes         = EXCLUDED.themes,
-       people         = EXCLUDED.people,
-       chapter_map    = EXCLUDED.chapter_map,
+       schema_version = EXCLUDED.schema_version,
+       output_language = EXCLUDED.output_language,
+       pages_covered = EXCLUDED.pages_covered,
+       overview = EXCLUDED.overview,
+       concepts = EXCLUDED.concepts,
+       themes = EXCLUDED.themes,
+       people = EXCLUDED.people,
+       chapter_map = EXCLUDED.chapter_map,
        notable_quotes = EXCLUDED.notable_quotes,
        open_questions = EXCLUDED.open_questions,
-       generated_at   = now(),
-       generation_ms  = EXCLUDED.generation_ms`,
+       book_so_far = EXCLUDED.book_so_far,
+       current_position = EXCLUDED.current_position,
+       narrative_arc = EXCLUDED.narrative_arc,
+       carry_forward_insights = EXCLUDED.carry_forward_insights,
+       generated_at = now(),
+       generation_ms = EXCLUDED.generation_ms`,
     [
       bookId,
+      wiki.schema_version,
+      wiki.output_language,
       pagesCovered,
       wiki.overview,
       JSON.stringify(wiki.concepts),
@@ -435,6 +478,10 @@ export async function processBookForWiki(bookId: string, force = false): Promise
       JSON.stringify(wiki.chapter_map),
       JSON.stringify(wiki.notable_quotes),
       JSON.stringify(wiki.open_questions),
+      wiki.book_so_far,
+      JSON.stringify(wiki.current_position),
+      JSON.stringify(wiki.narrative_arc),
+      JSON.stringify(wiki.carry_forward_insights),
       Date.now() - generationMs,
     ]
   );

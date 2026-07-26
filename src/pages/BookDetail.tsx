@@ -8,7 +8,6 @@ import DaySummary from '../components/DaySummary';
 import ReadingLensCard from '../components/ReadingLensCard';
 import StreakHeatmap from '../components/StreakHeatmap';
 import ReadingForecast from '../components/ReadingForecast';
-import ChapterMarkers from '../components/ChapterMarkers';
 import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
@@ -79,6 +78,7 @@ export default function BookDetail() {
   const [storyRetryingLogId, setStoryRetryingLogId] = useState<string | null>(null);
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
+  const [enrichmentPending, setEnrichmentPending] = useState(false);
   const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
 
   const load = useCallback(async () => {
@@ -109,6 +109,40 @@ export default function BookDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  // A reading session is saved immediately; its companion analysis finishes in
+  // the background. Revalidate quietly for a bounded window rather than making
+  // the reader refresh the full page.
+  useEffect(() => {
+    if (!enrichmentPending || !id) return;
+    let cancelled = false;
+    const startedAt = Date.now();
+    const tick = async () => {
+      try {
+        const [updatedBook, updatedLogs] = await Promise.all([api.getBook(id), api.getLog(id)]);
+        if (cancelled) return;
+        setBook(updatedBook);
+        setLogs(updatedLogs);
+        const analyses = updatedBook.can_edit && updatedBook.reading_experience === 'analytical'
+          ? await api.getReadingLens(id)
+          : [];
+        if (updatedBook.can_edit) {
+          if (updatedBook.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
+          else setLenses(analyses);
+        }
+        const latest = updatedLogs[0];
+        const lensReady = updatedBook.reading_experience === 'story'
+          ? true
+          : analyses.some(item => item.log_id === latest?.id);
+        const wiki = await api.getWikiStatus(id);
+        if (lensReady && wiki.wikiExists && wiki.pagesCovered >= (latest?.page_end || 0)) setEnrichmentPending(false);
+      } catch { /* keep the saved reading session usable; retry until timeout */ }
+      if (!cancelled && Date.now() - startedAt >= 180000) setEnrichmentPending(false);
+    };
+    void tick();
+    const interval = window.setInterval(() => { void tick(); }, 7000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [enrichmentPending, id]);
+
   useEffect(() => {
     if (!id || logs.length === 0) return;
     const cached = localStorage.getItem(`mindmap_${id}`);
@@ -133,6 +167,7 @@ export default function BookDetail() {
           : 'Read today — summary generated'
       });
       await load();
+      setEnrichmentPending(result.readingExperience === 'analytical');
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {
@@ -331,25 +366,24 @@ export default function BookDetail() {
       </div>
 
       {/* Header */}
-      <div className="flex flex-wrap gap-4 rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:flex-nowrap sm:gap-5 sm:p-5">
-        <div className="flex h-[108px] w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-natural-border bg-natural-cream sm:h-32 sm:w-24">
+      <div className="flex flex-wrap gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:flex-nowrap sm:items-start sm:gap-4 sm:p-5">
+        <div className="flex h-24 w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-natural-border bg-natural-cream sm:h-28 sm:w-[84px]">
           {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
         <div className="order-2 min-w-0 flex-1 sm:order-none">
-          <h1 className="line-clamp-3 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
+          <h1 className="line-clamp-2 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
           <p className="mb-2 text-xs italic text-natural-stone">by {book.author}</p>
-          <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="flex items-center gap-1 text-natural-clay font-bold text-sm"><Flame className="w-4 h-4 fill-natural-clay" />{streak}d streak</span>
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="flex items-center gap-1 text-sm font-bold text-natural-clay"><Flame className="h-4 w-4 fill-natural-clay" />{streak}d streak</span>
             {daysToFinish(book) !== null && (
-              <span className="text-[11px] text-natural-stone/70">~{daysToFinish(book)} days left</span>
+              <span className="text-[11px] text-natural-stone">Pace: about {daysToFinish(book)} days left</span>
             )}
-            <span className="text-[11px] text-natural-stone">{logs.length} days read</span>
             <MomentumScore book={book} logs={logs} />
           </div>
-          <div className="h-2 bg-natural-cream rounded-full overflow-hidden mb-1">
+          <div className="h-2 overflow-hidden rounded-full bg-natural-border" aria-label={`${pct}% complete`}>
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
-          <ChapterMarkers book={book} logs={logs} />
+          <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
         <div className="order-3 flex w-full flex-col gap-2 sm:order-none sm:w-auto sm:self-start sm:items-end">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
