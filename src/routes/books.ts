@@ -25,6 +25,13 @@ async function ownerCanMutate(req: Request, res: Response, bookId: string): Prom
 // App timezone is Asia/Bangkok (UTC+7) — all "today" logic and daily-summary
 // grouping use this, independent of where the server physically runs.
 const APP_TZ = "Asia/Bangkok";
+const MAX_DAILY_PAGES = 20;
+
+function validDailyPages(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_DAILY_PAGES ? parsed : null;
+}
+
 const today = () => {
   // Returns YYYY-MM-DD for the current date in Asia/Bangkok (UTC+7).
   return new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
@@ -126,6 +133,10 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   if (!["pdf", "epub"].includes(file_type)) {
     return res.status(400).json({ error: "file_type must be 'pdf' or 'epub'" });
   }
+  const parsedDailyPages = daily_pages === undefined ? 3 : validDailyPages(daily_pages);
+  if (parsedDailyPages === null) {
+    return res.status(400).json({ error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}` });
+  }
   const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
   const initialStatus = status === "queued" ? "queued" : "active";
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
@@ -139,7 +150,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
       return client.query(
         `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, reading_experience, owner_id, status, queue_order)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
-        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, summaryMode, readingExperience, userFrom(req).id, initialStatus, queueOrder]
+        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, parsedDailyPages, cover_url || null, lang, summaryMode, readingExperience, userFrom(req).id, initialStatus, queueOrder]
       );
     });
     res.status(201).json(rows[0]);
@@ -180,6 +191,11 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang", "summary_mode"];
   if (req.body.status !== undefined && !["active", "paused", "finished", "queued"].includes(req.body.status)) {
     return res.status(400).json({ error: "invalid status" });
+  }
+  if (req.body.daily_pages !== undefined) {
+    const parsedDailyPages = validDailyPages(req.body.daily_pages);
+    if (parsedDailyPages === null) return res.status(400).json({ error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}` });
+    req.body.daily_pages = parsedDailyPages;
   }
   if (req.body.summary_mode !== undefined && !["casual", "deep_reading"].includes(req.body.summary_mode)) {
     return res.status(400).json({ error: "invalid summary_mode" });

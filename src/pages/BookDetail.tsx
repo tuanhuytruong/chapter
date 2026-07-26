@@ -401,7 +401,6 @@ export default function BookDetail() {
                 className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
                 {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
               </button>
-              <p className="text-xs text-natural-stone">Continue from page {Math.min(book.current_page + 1, book.total_pages)} · {book.daily_pages} pages</p>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
                   className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
@@ -443,7 +442,10 @@ export default function BookDetail() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Pages / day</label>
-                  <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
+                  <input type="number" min={1} max={20} step={1} inputMode="numeric" value={dailyPages} onFocus={e => e.currentTarget.select()} onChange={e => {
+                    const next = e.currentTarget.valueAsNumber;
+                    if (Number.isFinite(next)) setDailyPages(Math.min(20, Math.max(1, Math.trunc(next))));
+                  }} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>

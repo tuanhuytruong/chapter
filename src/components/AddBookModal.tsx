@@ -150,7 +150,10 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             </div>
             <div className="w-28">
               <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">{fileType === 'epub' ? 'Chunks/day' : 'Pages/day'}</label>
-              <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))}
+              <input type="number" min={1} max={20} step={1} inputMode="numeric" value={dailyPages} onFocus={e => e.currentTarget.select()} onChange={e => {
+                const next = e.currentTarget.valueAsNumber;
+                if (Number.isFinite(next)) setDailyPages(Math.min(20, Math.max(1, Math.trunc(next))));
+              }}
                 className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" />
             </div>
           </div>
