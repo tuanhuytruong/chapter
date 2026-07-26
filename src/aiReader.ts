@@ -124,6 +124,12 @@ const MAX_STR = 600;
 const clean = (v: unknown, fallback = ""): string =>
   typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, MAX_STR) || fallback : fallback;
 
+/** Remove generic report-style lead-ins so session notes begin with the actual movement. */
+export const companionVoice = (value: unknown, fallback = ""): string => {
+  const prose = clean(value, fallback);
+  return prose.replace(/^(?:(?:đoạn văn|đoạn trích|phần (?:này|đọc này)|nội dung (?:này|đọc này))\s+(?:(?:đã )?(?:giới thiệu|mô tả|trình bày|nói về|cho thấy|kể về))\s*[:—–-]?\s*|(?:this (?:passage|excerpt|section)|the (?:passage|excerpt|section))\s+(?:(?:introduces|describes|discusses|presents|shows|tells)\s+(?:us\s+)?(?:about\s+)?)?[:—–-]?\s*)/i, "").trim() || prose;
+};
+
 const arr = <T>(v: unknown, max: number, mapper: (item: unknown) => T | null): T[] => {
   if (!Array.isArray(v)) return [];
   return v.slice(0, max).map(mapper).filter((x): x is T => x !== null);
@@ -177,7 +183,7 @@ export function buildChunkBatchPrompt(inputs: ChunkInput[]): string {
   return `${langInstruction(inputs[0].lang)}
 Book: "${inputs[0].title}" by ${inputs[0].author}
 Analyse every saved session independently, preserving continuity only from evidence in that session. Return exactly {"analyses":[${sessionShape()}]}.
-Rules: exactly one analysis per SESSION in order; all ids must be stable lower-case kebab ids; use []/null if absent; evidence and notable_quotes are verbatim and page_start is within that session; do not invent events or unseen context; session_summary is concise and handoff tells the next reader what to carry forward. Write close_reading, session_summary, and map text in a warm, direct reader-companion voice: begin with what is happening, shifting, or becoming clear. Never use report-like openings such as "This passage introduces/discusses/presents", "The excerpt", "Đoạn văn giới thiệu", "Đoạn trích trình bày", or "Tác giả nói về". Give every session_title a specific, evocative title grounded in the text; never return "Untitled", "Reading session", or a generic page label.
+Rules: exactly one analysis per SESSION in order; all ids must be stable lower-case kebab ids; use []/null if absent; evidence and notable_quotes are verbatim and page_start is within that session; do not invent events or unseen context; session_summary is concise and handoff tells the next reader what to carry forward. Write close_reading, session_summary, and map text in a warm, direct reader-companion voice: open immediately with the person, action, tension, image, or idea that is actually moving in the session. Never use a report-style lead-in in any language: forbidden Vietnamese starts include "Đoạn văn giới thiệu", "Đoạn trích nói về", "Đoạn này mô tả", "Phần này trình bày", and "Tác giả nói về"; forbidden English starts include "This passage introduces", "The excerpt discusses", and "This section describes". Give every session_title a specific, evocative title grounded in the text; never return "Untitled", "Reading session", or a generic page label.
 
 ${sessions}`;
 }
@@ -189,8 +195,8 @@ export function parseChunkAnalysis(raw: string): ChunkAnalysis {
   const quotes = arr(data.notable_quotes, 3, (v) => { const r=object(v), text=clean(r.text); return text ? { text, page_start: wholeNumber(r.page_start) } : null; });
   return {
     schema_version: AI_READER_SCHEMA_VERSION,
-    session_title: clean(data.session_title, "Reading session"), close_reading: clean(data.close_reading, clean(data.chunk_summary, "No close reading available.")),
-    starting_context: clean(data.starting_context, "This is the first recorded session or prior context is not established."),
+    session_title: clean(data.session_title, "Reading session"), close_reading: companionVoice(data.close_reading, companionVoice(data.chunk_summary, "No close reading available.")),
+    starting_context: companionVoice(data.starting_context, "This is the first recorded session or prior context is not established."),
     what_changes: arr(data.what_changes, 6, (v) => { const r=object(v), label=clean(r.label); return label ? {label, detail:clean(r.detail), significance:clean(r.significance)} : null; }),
     threads: arr(data.threads, 8, (v) => { const r=object(v), label=clean(r.label); return label ? {id:readerId(r.id,label), label, status:["introduced","deepened","shifted","resolved"].includes(String(r.status)) ? r.status as ReaderThreadStatus : "uncertain", detail:clean(r.detail), prior_connection:clean(r.prior_connection) || null} : null; }),
     entities: arr(data.entities, 10, (v) => { const r=object(v), name=clean(r.name); const kind=["person","organisation","idea","force"].includes(String(r.kind)) ? r.kind as ReaderEntity["kind"] : "idea"; return name ? {id:readerId(r.id,name),name,kind,role_now:clean(r.role_now),change_from_prior:clean(r.change_from_prior)||null} : null; }),
@@ -481,6 +487,16 @@ async function processBookForWikiNow(bookId: string, force = false): Promise<boo
   );
 
   if (allChunkRows.length === 0) return false;
+
+  // Never publish a plausible-but-partial map. A failed batch must remain
+  // visible as a retryable failure rather than silently replacing the wiki
+  // with whichever earlier chunks happened to save successfully.
+  const expectedLogIds = new Set(logs.map((log: any) => log.id));
+  const savedLogIds = new Set(allChunkRows.map((row: any) => row.log_id));
+  const missingLogIds = [...expectedLogIds].filter((id) => !savedLogIds.has(id));
+  if (missingLogIds.length) {
+    throw new Error(`AI Reader is waiting for ${missingLogIds.length} of ${expectedLogIds.size} saved session${expectedLogIds.size === 1 ? "" : "s"}`);
+  }
 
   const chunks: ChunkForSynthesis[] = allChunkRows.map((r: any) => ({
     logId: r.log_id,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { AI_READER_BATCH_SIZE, AI_READER_CONCURRENCY, buildChunkBatchPrompt, buildSynthesisPrompt, parseChunkAnalysis, parseChunkBatchAnalysis, parseSynthesis } from "../src/aiReader.js";
+import { AI_READER_BATCH_SIZE, AI_READER_CONCURRENCY, buildChunkBatchPrompt, buildSynthesisPrompt, companionVoice, parseChunkAnalysis, parseChunkBatchAnalysis, parseSynthesis } from "../src/aiReader.js";
 
 const chunk = parseChunkAnalysis(JSON.stringify({
   schema_version: 2, session_title: "Before dawn", close_reading: "Mara accepts a sealed letter before dawn.", starting_context: "No prior session.",
@@ -16,6 +16,8 @@ const chunk = parseChunkAnalysis(JSON.stringify({
   notable_quotes: [{ text: "sealed letter", page_start: 1 }],
 }));
 assert.equal(chunk.people[0].name, "Mara");
+assert.equal(companionVoice("Đoạn văn giới thiệu Ove và sự bướng bỉnh của ông."), "Ove và sự bướng bỉnh của ông.");
+assert.equal(companionVoice("The excerpt discusses Mara's fear."), "Mara's fear.");
 
 const chunks = [{ pageStart: 1, pageEnd: 10, analysis: chunk }];
 const wiki = parseSynthesis(JSON.stringify({
