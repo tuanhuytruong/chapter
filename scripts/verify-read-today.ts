@@ -20,9 +20,11 @@ assert.match(detailSource, /if \(!enrichmentPending \|\| !pendingEnrichmentLogId
 assert.match(detailSource, /const pendingLog = updatedLogs\.find\(log => log\.id === pendingEnrichmentLogId\)/);
 assert.doesNotMatch(detailSource.slice(readTodayStart), /setLoading\(true\)/, "post-save reconciliation must stay quiet");
 
+assert.match(detailSource, /headerReadActionRef = useRef<HTMLDivElement \| null>\(null\)/);
+assert.match(detailSource, /new IntersectionObserver\(/);
+assert.match(detailSource, /book\.can_edit && book\.status === 'active' && !headerReadActionVisible/);
+assert.match(detailSource, /bottom-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
 assert.match(detailSource, /Read next session/);
-assert.doesNotMatch(detailSource, /IntersectionObserver/, "continuation action must remain in the document flow");
-assert.doesNotMatch(detailSource, /fixed inset-x/, "continuation action must not be fixed to the viewport");
 assert.doesNotMatch(detailSource, /newestLogId/, "the newest-card action must not remain");
 assert.doesNotMatch(detailSource, /Read Today/, "reading actions should use one continuation label");
 assert.doesNotMatch(detailSource, /Daily target[\s\S]*Forecast/, "header must not repeat reading-plan metrics");
