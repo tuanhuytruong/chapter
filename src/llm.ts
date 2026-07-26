@@ -33,7 +33,8 @@ export async function callLLM(
   user: string,
   temperature = 0.7,
   strict = false,
-  jsonMode = false
+  jsonMode = false,
+  timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000)
 ): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
@@ -52,7 +53,8 @@ export async function callLLM(
     let timer: ReturnType<typeof setTimeout> | undefined;
     let resp: Response;
     await acquireNineRouterSlot();
-    timer = setTimeout(() => controller.abort(), 60_000);
+    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(180_000, Math.max(5_000, timeoutMs)) : 60_000;
+    timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
     try {
       resp = await fetch(url, {
         method: "POST",

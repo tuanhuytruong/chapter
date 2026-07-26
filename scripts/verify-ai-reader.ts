@@ -64,6 +64,8 @@ assert.match(threeSessionPrompt, /3 entries/);
 const aiReaderSource = readFileSync(new URL("../src/aiReader.ts", import.meta.url), "utf8");
 assert.match(aiReaderSource, /const activeBookProcesses = new Map/);
 assert.match(aiReaderSource, /WHERE book_wiki\.pages_covered <= EXCLUDED\.pages_covered/);
+assert.match(aiReaderSource, /const AI_READER_TIMEOUT_MS = 150_000/);
+assert.match(aiReaderSource, /Batch retrying as \$\{inputs\.length\} single sessions/);
 
 const migration = readFileSync(new URL("../migrations/20260726_expand_ai_reader_narrative.sql", import.meta.url), "utf8");
 const v2Migration = readFileSync(new URL("../migrations/20260726_ai_reader_continuity_map_v2.sql", import.meta.url), "utf8");

@@ -213,7 +213,34 @@ export function parseChunkBatchAnalysis(raw: string, expectedCount: number): Chu
  return data.analyses.map((item,index)=>{const row=object(item);if(row.session!==index+1)throw new Error("AI Reader: batch analyses must preserve session order");return parseChunkAnalysis(JSON.stringify(row));});
 }
 export async function analyseChunk(opts: ChunkInput): Promise<ChunkAnalysis> { return (await analyseChunkBatch([opts]))[0]; }
-export async function analyseChunkBatch(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> { const raw=await callLLM(CHUNK_SYSTEM,buildChunkBatchPrompt(inputs),0.3,true,true); return parseChunkBatchAnalysis(raw,inputs.length); }
+
+// V2 structured notes can be much slower than daily-summary calls. Allow a
+// longer, bounded provider window here without changing global app latency.
+const AI_READER_TIMEOUT_MS = 150_000;
+export async function analyseChunkBatch(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> {
+  const raw = await callLLM(CHUNK_SYSTEM, buildChunkBatchPrompt(inputs), 0.3, true, true, AI_READER_TIMEOUT_MS);
+  return parseChunkBatchAnalysis(raw, inputs.length);
+}
+
+async function analyseBatchResilient(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> {
+  try {
+    return await analyseChunkBatch(inputs);
+  } catch (batchError) {
+    // A large JSON batch may exceed a constrained provider window. Preserve
+    // progress by retrying the original sessions one at a time; the caller
+    // refuses to publish until every saved session is present.
+    if (inputs.length === 1) throw batchError;
+    console.warn(`[ai-reader] Batch retrying as ${inputs.length} single sessions: ${(batchError as Error).message}`);
+    const singleResults = await Promise.all(inputs.map(async (input) => {
+      try {
+        return await analyseChunkBatch([input]);
+      } catch (singleError) {
+        throw new Error(`Session p.${input.pageStart}–${input.pageEnd} failed after batch fallback: ${(singleError as Error).message}`);
+      }
+    }));
+    return singleResults.flat();
+  }
+}
 
 // ─── Wiki synthesis ───────────────────────────────────────────────────────────
 
@@ -368,7 +395,7 @@ export async function synthesiseWiki(opts: {
   chunks: ChunkForSynthesis[];
 }): Promise<Omit<BookWiki, "pages_covered">> {
   const prompt = buildSynthesisPrompt(opts);
-  const raw = await callLLM(SYNTHESIS_SYSTEM, prompt, 0.3, true, true);
+  const raw = await callLLM(SYNTHESIS_SYSTEM, prompt, 0.3, true, true, AI_READER_TIMEOUT_MS);
   return parseSynthesis(raw, opts.chunks, { pagesCovered: opts.pagesCovered, lang: opts.lang });
 }
 
@@ -457,7 +484,7 @@ async function processBookForWikiNow(bookId: string, force = false): Promise<boo
     while (nextBatch < batches.length) {
       const batch = batches[nextBatch++];
       try {
-        const analyses = await analyseChunkBatch(batch.map((item) => item.input));
+        const analyses = await analyseBatchResilient(batch.map((item) => item.input));
         await Promise.all(batch.map(async ({ log }, index) => {
           const analysis = analyses[index];
           await query(
