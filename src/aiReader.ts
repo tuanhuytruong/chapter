@@ -159,7 +159,7 @@ const narrativeStatus = (value: unknown): NarrativeArcEntry["status"] => value =
 
 // ─── Chunk analysis ───────────────────────────────────────────────────────────
 
-const CHUNK_SYSTEM = `You are an analytical AI reader. Given a passage from a book, extract structured knowledge.
+const CHUNK_SYSTEM = `You are a close, thoughtful reading companion. Given a saved passage from a book, create grounded structured notes that feel natural and alive rather than like a report.
 Respond ONLY with a valid JSON object — no markdown, no preamble, no trailing text.`;
 
 export function buildChunkPrompt(opts: ChunkInput): string {
@@ -177,7 +177,7 @@ export function buildChunkBatchPrompt(inputs: ChunkInput[]): string {
   return `${langInstruction(inputs[0].lang)}
 Book: "${inputs[0].title}" by ${inputs[0].author}
 Analyse every saved session independently, preserving continuity only from evidence in that session. Return exactly {"analyses":[${sessionShape()}]}.
-Rules: exactly one analysis per SESSION in order; all ids must be stable lower-case kebab ids; use []/null if absent; evidence and notable_quotes are verbatim and page_start is within that session; do not invent events or unseen context; session_summary is concise and handoff tells the next reader what to carry forward.
+Rules: exactly one analysis per SESSION in order; all ids must be stable lower-case kebab ids; use []/null if absent; evidence and notable_quotes are verbatim and page_start is within that session; do not invent events or unseen context; session_summary is concise and handoff tells the next reader what to carry forward. Write close_reading, session_summary, and map text in a warm, direct reader-companion voice: begin with what is happening, shifting, or becoming clear. Never use report-like openings such as "This passage introduces/discusses/presents", "The excerpt", "Đoạn văn giới thiệu", "Đoạn trích trình bày", or "Tác giả nói về". Give every session_title a specific, evocative title grounded in the text; never return "Untitled", "Reading session", or a generic page label.
 
 ${sessions}`;
 }
@@ -275,6 +275,8 @@ Rules:
 - Ground every statement in the supplied chunk summaries and lists; do not infer unseen events or use outside knowledge
 - Never reveal, predict, or hint at events beyond page ${pagesCovered}; if unsure, use "uncertain"
 - book_so_far, current_position, narrative_arc, and carry_forward_insights must describe only what the reader has reached
+- Write all reader-facing prose as a warm, direct companion. Start with the situation, movement, tension, or consequence—not a report about the text. Never start any prose with "This passage", "The excerpt", "Đoạn văn", "Đoạn trích", or "Tác giả".
+- Use concrete, natural titles for reading_path entries; never use "Untitled", "Reading session", or generic page labels.
 - Keep all text concise`;
 }
 
