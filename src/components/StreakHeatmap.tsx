@@ -35,7 +35,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
   const newestDay = rhythm.days.at(-1)!;
 
   return (
-    <section className="space-y-2.5" aria-label="Reading rhythm">
+    <section className="w-fit space-y-2.5" aria-label="Reading rhythm">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-natural-stone">
         <span className="font-semibold text-natural-dark">
           {rhythm.currentStreak > 0 ? `${rhythm.currentStreak}-day rhythm` : "Start a reading rhythm"}
