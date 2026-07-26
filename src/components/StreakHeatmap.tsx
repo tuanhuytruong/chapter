@@ -17,11 +17,12 @@ function dayAriaLabel(day: ReturnType<typeof buildReadingRhythm>["days"][number]
   return `${formatRhythmDate(day.date)}${day.isToday ? ", today" : ""}: ${activity}${day.isCurrentStreakDay ? ", part of your current rhythm" : ""}`;
 }
 
-export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
+export default function StreakHeatmap({ logs, windowDays = 14 }: { logs: LogRow[]; windowDays?: number }) {
   const rhythm = useMemo(() => buildReadingRhythm({
     today: todayInAppTz(),
     logDates: logs.map((log) => dateInAppTz(log.date)),
-  }), [logs]);
+    windowDays,
+  }), [logs, windowDays]);
 
   const rewardLine = rhythm.reachedMilestone
     ? `${rhythm.reachedMilestone.title} · reached today`
@@ -53,7 +54,7 @@ export default function StreakHeatmap({ logs }: { logs: LogRow[] }) {
               aria-label={dayAriaLabel(day)}
               title={dayAriaLabel(day)}
               className={[
-                "h-4 w-4 shrink-0 rounded-[3px] sm:h-5 sm:w-5",
+                "h-4 w-4 shrink-0 rounded-[3px]",
                 COLORS[day.level],
                 day.isCurrentStreakDay ? "ring-1 ring-natural-clay ring-offset-1 ring-offset-natural-cream" : "",
                 day.isToday ? "outline outline-1 outline-natural-stone/40" : "",

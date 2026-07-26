@@ -61,7 +61,7 @@ export function todayInAppTz(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
 }
 
-export function buildReadingRhythm({ today, logDates }: { today: string; logDates: string[] }): ReadingRhythm {
+export function buildReadingRhythm({ today, logDates, windowDays = 14 }: { today: string; logDates: string[]; windowDays?: number }): ReadingRhythm {
   const sessionsByDay = new Map<string, number>();
   for (const rawDate of logDates) {
     const date = dateInAppTz(rawDate);
@@ -72,8 +72,8 @@ export function buildReadingRhythm({ today, logDates }: { today: string; logDate
   const currentStreak = consecutiveDaysEndingAt(readingDays, today);
   const longestStreak = longestConsecutiveDays(readingDays);
   const currentStreakStart = shiftDateStr(today, -(currentStreak - 1));
-  const days = Array.from({ length: 14 }, (_, index) => {
-    const date = shiftDateStr(today, index - 13);
+  const days = Array.from({ length: windowDays }, (_, index) => {
+    const date = shiftDateStr(today, index - (windowDays - 1));
     const sessionCount = sessionsByDay.get(date) || 0;
     return {
       date,

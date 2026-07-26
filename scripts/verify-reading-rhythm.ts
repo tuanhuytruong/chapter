@@ -6,6 +6,10 @@ const rhythm = buildReadingRhythm({
   logDates: ["2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-26", "2026-07-26"],
 });
 assert.equal(rhythm.days.length, 14);
+const desktopRhythm = buildReadingRhythm({ today: "2026-07-26", logDates: ["2026-07-26"], windowDays: 21 });
+assert.equal(desktopRhythm.days.length, 21);
+assert.equal(desktopRhythm.days.at(0)?.date, "2026-07-06");
+assert.equal(desktopRhythm.days.at(-1)?.isToday, true);
 assert.equal(rhythm.currentStreak, 1);
 assert.equal(rhythm.longestStreak, 4);
 assert.equal(rhythm.totalReadDays, 5);

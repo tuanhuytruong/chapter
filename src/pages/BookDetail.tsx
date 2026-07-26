@@ -384,7 +384,7 @@ export default function BookDetail() {
           <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
         <aside className="contents" aria-label="Book utilities">
-          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:justify-self-end lg:border-t-0 lg:pt-0">
+          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
             <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
@@ -413,7 +413,8 @@ export default function BookDetail() {
 
           <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
-            <StreakHeatmap logs={logs} />
+            <div className="lg:hidden"><StreakHeatmap logs={logs} /></div>
+            <div className="hidden lg:block"><StreakHeatmap logs={logs} windowDays={21} /></div>
           </section>
 
           {book.can_edit && (
