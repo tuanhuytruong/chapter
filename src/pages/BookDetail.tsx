@@ -368,7 +368,7 @@ export default function BookDetail() {
       {/* Header */}
       <div className="flex flex-wrap gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:flex-nowrap sm:items-start sm:gap-4 sm:p-5">
         <div className="flex h-28 w-[84px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-natural-border bg-natural-cream sm:h-32 sm:w-[96px]">
-          {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
+          {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="h-full w-full object-contain" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
         <div className="order-2 min-w-0 flex-1 sm:order-none">
           <h1 className="line-clamp-2 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
