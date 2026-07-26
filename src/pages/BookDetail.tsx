@@ -7,7 +7,6 @@ import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import ReadingLensCard from '../components/ReadingLensCard';
 import StreakHeatmap from '../components/StreakHeatmap';
-import ReadingForecast from '../components/ReadingForecast';
 import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
@@ -79,7 +78,7 @@ export default function BookDetail() {
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
-  const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
+  const [activeTab, setActiveTab] = useState<'heatmap' | 'settings'>('heatmap');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -366,11 +365,11 @@ export default function BookDetail() {
       </div>
 
       {/* Header */}
-      <div className="flex flex-wrap gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:flex-nowrap sm:items-start sm:gap-4 sm:p-5">
+      <div className="grid gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:grid-cols-[104px_minmax(0,1fr)] sm:gap-4 sm:p-5 lg:grid-cols-[144px_minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
         <div className="flex h-36 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-natural-stone/25 bg-[#e8e6de] p-1.5 shadow-md shadow-natural-dark/10 sm:h-52 sm:w-36 sm:p-2">
           {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="h-full w-full rounded-[1px] object-contain" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
-        <div className="order-2 min-w-0 flex-1 sm:order-none">
+        <div className="order-2 min-w-0 sm:order-none">
           <h1 className="line-clamp-2 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
           <p className="mb-2 text-xs italic text-natural-stone">by {book.author}</p>
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -385,7 +384,7 @@ export default function BookDetail() {
           </div>
           <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
-        <div className="order-3 flex w-full flex-col gap-2 sm:order-none sm:w-auto sm:self-start sm:items-end">
+        <div className="order-3 col-span-full flex w-full flex-col gap-3 sm:order-none sm:col-span-2 sm:self-start lg:col-span-1 lg:row-span-2">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
             <div className="flex flex-wrap gap-2 sm:justify-end">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
@@ -411,32 +410,8 @@ export default function BookDetail() {
             </>
           )}
         </div>
-      </div>
-
-      {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read Today</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
-
-      {book.status === 'finished' && (
-        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">End-of-book reflection</p>
-              <h2 className="mt-1 text-base font-bold text-natural-dark">What will stay with you?</h2>
-              {!book.reflection_text && <p className="mt-1 text-xs leading-relaxed text-natural-stone">Turn your reading journal into a personal takeaway you can revisit later.</p>}
-            </div>
-            {book.can_edit && (
-              <button onClick={generateReflection} disabled={reflectionLoading} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">
-                {reflectionLoading ? 'Reflecting…' : book.reflection_text ? 'Generate again' : 'Create reflection'}
-              </button>
-            )}
-          </div>
-          {book.reflection_text && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{book.reflection_text}</article>}
-        </section>
-      )}
-
-      {/* Reading activity — tabs: Heatmap / Settings / Forecast */}
-      <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm overflow-hidden">
-        {/* Pill tabs */}
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <button onClick={() => setActiveTab('heatmap')}
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Reading Rhythm
@@ -445,13 +420,8 @@ export default function BookDetail() {
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'settings' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Settings
           </button>}
-          <button onClick={() => setActiveTab('forecast')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'forecast' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Forecast
-          </button>
         </div>
 
-        {/* Tab content */}
         {activeTab === 'heatmap' && (
           <>
             <StreakHeatmap logs={logs} />
@@ -460,9 +430,9 @@ export default function BookDetail() {
 
         {book.can_edit && activeTab === 'settings' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
-              {!editing && <button onClick={() => setEditing(true)} className="text-[11px] text-natural-sage font-bold">Edit</button>}
+              {!editing && <button onClick={() => setEditing(true)} className="rounded-full border border-natural-border px-2.5 py-1 text-[11px] font-bold text-natural-sage hover:border-natural-sage">Edit</button>}
             </div>
             {editing ? (
               <div className="space-y-3">
@@ -523,13 +493,30 @@ export default function BookDetail() {
             )}
           </div>
         )}
-
-        {activeTab === 'forecast' && (
-          <div>
-            <ReadingForecast book={book} logs={logs} />
           </div>
-        )}
       </div>
+
+      {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read Today</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
+
+      {book.status === 'finished' && (
+        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">End-of-book reflection</p>
+              <h2 className="mt-1 text-base font-bold text-natural-dark">What will stay with you?</h2>
+              {!book.reflection_text && <p className="mt-1 text-xs leading-relaxed text-natural-stone">Turn your reading journal into a personal takeaway you can revisit later.</p>}
+            </div>
+            {book.can_edit && (
+              <button onClick={generateReflection} disabled={reflectionLoading} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">
+                {reflectionLoading ? 'Reflecting…' : book.reflection_text ? 'Generate again' : 'Create reflection'}
+              </button>
+            )}
+          </div>
+          {book.reflection_text && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{book.reflection_text}</article>}
+        </section>
+      )}
+
+
 
       {book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /></> : <>
       {/* Timeline */}
