@@ -439,7 +439,7 @@ export default function BookDetail() {
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <button onClick={() => setActiveTab('heatmap')}
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Heatmap
+            Reading Rhythm
           </button>
           {book.can_edit && <button onClick={() => setActiveTab('settings')}
             className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'settings' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
