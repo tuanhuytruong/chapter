@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
@@ -79,6 +79,8 @@ export default function BookDetail() {
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<string | null>(null);
+  const headerReadActionRef = useRef<HTMLDivElement | null>(null);
+  const [headerReadActionVisible, setHeaderReadActionVisible] = useState(true);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -107,6 +109,17 @@ export default function BookDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const target = headerReadActionRef.current;
+    if (!target || !book?.can_edit || book.status === 'finished') {
+      setHeaderReadActionVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => setHeaderReadActionVisible(entry.isIntersecting), { threshold: 0.1 });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [book?.can_edit, book?.status]);
 
   // A reading session is saved immediately; its companion analysis finishes in
   // the background. Revalidate quietly for a bounded window rather than making
@@ -263,6 +276,7 @@ export default function BookDetail() {
   const todaySessions = logs.filter(l => String(l.date).slice(0, 10) === todayStr);
   const sessionCount = todaySessions.length;
   const hasReadToday = sessionCount > 0;
+  const newestLogId = [...logs].sort((a, b) => `${b.date}-${b.session}`.localeCompare(`${a.date}-${a.session}`))[0]?.id;
 
   // Feature 1: Search within book
   const filteredLogs = (() => {
@@ -406,7 +420,7 @@ export default function BookDetail() {
           <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
         <aside className="contents" aria-label="Book utilities">
-          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
+          <div ref={headerReadActionRef} className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
             <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
@@ -615,6 +629,14 @@ export default function BookDetail() {
                         )}
                         <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
                         <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} onRetry={() => retryReadingLens(log.id)} />
+                        {book.can_edit && book.status === 'active' && !search && log.id === newestLogId && (
+                          <div className="mt-3 flex justify-end">
+                            <button onClick={readToday} disabled={advancing}
+                              className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-natural-sage/40 bg-natural-cream px-4 py-2 text-xs font-bold uppercase tracking-wider text-natural-sage shadow-sm hover:border-natural-sage hover:bg-natural-sage/10 disabled:opacity-50 cursor-pointer">
+                              {advancing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />} Read next session
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -642,6 +664,16 @@ export default function BookDetail() {
         </div>
       )}
       </>}
+
+      {book.can_edit && book.status === 'active' && !headerReadActionVisible && (
+        <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 sm:inset-x-auto sm:bottom-24 sm:right-6">
+          <button onClick={readToday} disabled={advancing}
+            aria-label={hasReadToday ? `Read more, session ${sessionCount + 1}` : 'Read today'}
+            className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-natural-dark/20 hover:opacity-90 disabled:opacity-50 cursor-pointer sm:w-auto">
+            {advancing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />} {advancing ? 'Saving…' : hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
+          </button>
+        </div>
+      )}
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 

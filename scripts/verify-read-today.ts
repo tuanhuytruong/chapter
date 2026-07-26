@@ -20,4 +20,13 @@ assert.match(detailSource, /if \(!enrichmentPending \|\| !pendingEnrichmentLogId
 assert.match(detailSource, /const pendingLog = updatedLogs\.find\(log => log\.id === pendingEnrichmentLogId\)/);
 assert.doesNotMatch(detailSource.slice(readTodayStart), /setLoading\(true\)/, "post-save reconciliation must stay quiet");
 
+assert.match(detailSource, /headerReadActionRef = useRef<HTMLDivElement \| null>\(null\)/);
+assert.match(detailSource, /new IntersectionObserver\(/);
+assert.match(detailSource, /return \(\) => observer\.disconnect\(\)/);
+assert.match(detailSource, /book\.can_edit && book\.status === 'active' && !headerReadActionVisible/);
+assert.match(detailSource, /Read next session/);
+assert.match(detailSource, /log\.id === newestLogId/);
+const advanceCalls = [...detailSource.matchAll(/api\.advance\(/g)];
+assert.equal(advanceCalls.length, 1, "all CTAs must reuse readToday instead of making another advance call");
+
 console.log("READ_TODAY_IN_PLACE_FIXTURES_OK");
