@@ -277,7 +277,6 @@ export default function BookDetail() {
   const todaySessions = logs.filter(l => String(l.date).slice(0, 10) === todayStr);
   const sessionCount = todaySessions.length;
   const hasReadToday = sessionCount > 0;
-  const newestLogId = [...logs].sort((a, b) => `${b.date}-${b.session}`.localeCompare(`${a.date}-${a.session}`))[0]?.id;
 
   // Feature 1: Search within book
   const filteredLogs = (() => {
@@ -436,7 +435,7 @@ export default function BookDetail() {
             <>
               <button onClick={readToday} disabled={advancing || book.status === 'finished'}
                 className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
-                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
+                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Saving…' : 'Read next session'}
               </button>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
@@ -448,14 +447,23 @@ export default function BookDetail() {
           )}
           </div>
 
-          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
+          {book.can_edit && book.status === 'active' && (
+            <section className="order-4 col-span-full grid grid-cols-2 gap-x-4 gap-y-2 border-t border-natural-border/70 pt-3 text-xs sm:grid-cols-4 lg:col-span-1 lg:col-start-3 lg:row-start-2">
+              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Current</p><p className="mt-0.5 font-semibold text-natural-dark">{book.current_page} / {book.total_pages}</p></div>
+              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Daily target</p><p className="mt-0.5 font-semibold text-natural-dark">{book.daily_pages} {dailyTargetLabel(book.file_type).toLowerCase()}</p></div>
+              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Sessions</p><p className="mt-0.5 font-semibold text-natural-dark">{logs.length} saved</p></div>
+              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Forecast</p><p className="mt-0.5 font-semibold text-natural-dark">{daysToFinish(book) === null ? '—' : `~${daysToFinish(book)} days`}</p></div>
+            </section>
+          )}
+
+          <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
             <div className="lg:hidden"><StreakHeatmap logs={logs} /></div>
             <div className="hidden lg:block"><StreakHeatmap logs={logs} windowDays={21} /></div>
           </section>
 
           {book.can_edit && (
-          <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-2">
+          <section className="order-6 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-3">
             <div className="flex items-center gap-2">
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-natural-dark"><Settings2 className="h-4 w-4" /> Settings</h3>
               {!editing && <button onClick={() => setEditing(true)} className="rounded-full border border-natural-border px-2.5 py-1 text-[11px] font-bold text-natural-sage hover:border-natural-sage">Edit</button>}
@@ -525,7 +533,7 @@ export default function BookDetail() {
         </aside>
       </div>
 
-      {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read Today</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
+      {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read next session</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
 
       {book.status === 'finished' && (
         <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
@@ -605,7 +613,7 @@ export default function BookDetail() {
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
             <BookOpen className="w-8 h-8 text-natural-stone" />
             <p className="text-sm font-bold text-natural-dark">No days read yet</p>
-            <p className="text-xs text-natural-stone">Tap "Read Today" to generate your first AI summary.</p>
+            <p className="text-xs text-natural-stone">Tap "Read next session" to generate your first AI summary.</p>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
@@ -632,14 +640,6 @@ export default function BookDetail() {
                         )}
                         <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
                         <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} onRetry={() => retryReadingLens(log.id)} />
-                        {book.can_edit && book.status === 'active' && !search && log.id === newestLogId && (
-                          <div className="mt-3 flex justify-end">
-                            <button onClick={readToday} disabled={advancing}
-                              className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-natural-sage/40 bg-natural-cream px-4 py-2 text-xs font-bold uppercase tracking-wider text-natural-sage shadow-sm hover:border-natural-sage hover:bg-natural-sage/10 disabled:opacity-50 cursor-pointer">
-                              {advancing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />} Read next session
-                            </button>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -671,9 +671,9 @@ export default function BookDetail() {
       {book.can_edit && book.status === 'active' && !headerReadActionVisible && (
         <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 sm:inset-x-auto sm:bottom-24 sm:right-6">
           <button onClick={readToday} disabled={advancing}
-            aria-label={hasReadToday ? `Read more, session ${sessionCount + 1}` : 'Read today'}
+            aria-label="Read next session"
             className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-natural-dark/20 hover:opacity-90 disabled:opacity-50 cursor-pointer sm:w-auto">
-            {advancing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />} {advancing ? 'Saving…' : hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
+            {advancing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />} {advancing ? 'Saving…' : 'Read next session'}
           </button>
         </div>
       )}

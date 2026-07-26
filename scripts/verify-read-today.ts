@@ -25,7 +25,9 @@ assert.match(detailSource, /new IntersectionObserver\(/);
 assert.match(detailSource, /return \(\) => observer\.disconnect\(\)/);
 assert.match(detailSource, /book\.can_edit && book\.status === 'active' && !headerReadActionVisible/);
 assert.match(detailSource, /Read next session/);
-assert.match(detailSource, /log\.id === newestLogId/);
+assert.doesNotMatch(detailSource, /newestLogId/, "the newest-card action must not remain");
+assert.doesNotMatch(detailSource, /Read Today/, "reading actions should use one continuation label");
+assert.match(detailSource, /Daily target[\s\S]*Forecast/);
 const advanceCalls = [...detailSource.matchAll(/api\.advance\(/g)];
 assert.equal(advanceCalls.length, 1, "all CTAs must reuse readToday instead of making another advance call");
 
