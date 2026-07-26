@@ -120,9 +120,20 @@ export const AI_READER_CONCURRENCY = 4;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const MAX_STR = 600;
+const MAX_STR = 2_000;
+
+/** Keep stored companion prose readable without chopping a sentence mid-word. */
+function truncateProse(value: string): string {
+  if (value.length <= MAX_STR) return value;
+  const window = value.slice(0, MAX_STR);
+  const lastSentence = Math.max(window.lastIndexOf(". "), window.lastIndexOf("! "), window.lastIndexOf("? "), window.lastIndexOf("… "));
+  if (lastSentence >= Math.floor(MAX_STR * 0.6)) return window.slice(0, lastSentence + 1).trim();
+  const lastSpace = window.lastIndexOf(" ");
+  return `${window.slice(0, lastSpace > 0 ? lastSpace : MAX_STR).trim()}…`;
+}
+
 const clean = (v: unknown, fallback = ""): string =>
-  typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, MAX_STR) || fallback : fallback;
+  typeof v === "string" ? truncateProse(v.replace(/\s+/g, " ").trim()) || fallback : fallback;
 
 /** Remove generic report-style lead-ins so session notes begin with the actual movement. */
 export const companionVoice = (value: unknown, fallback = ""): string => {

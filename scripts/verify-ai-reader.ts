@@ -21,6 +21,13 @@ into the dark.","concepts":[]}`);
 assert.equal(recoveredControls.chunk_summary, "Mara walks into the dark.");
 assert.equal(companionVoice("Đoạn văn giới thiệu Ove và sự bướng bỉnh của ông."), "Ove và sự bướng bỉnh của ông.");
 assert.equal(companionVoice("The excerpt discusses Mara's fear."), "Mara's fear.");
+const longCloseReading = `${"Ove follows his ordinary route through the early morning, holding fast to each ritual while the world around him changes. ".repeat(6)}He pauses when the tailless cat refuses to move.`;
+const parsedLongCloseReading = parseChunkAnalysis(JSON.stringify({ close_reading: longCloseReading, chunk_summary: "Fallback." }));
+assert.equal(parsedLongCloseReading.close_reading, longCloseReading);
+const veryLongCloseReading = `${"A complete sentence about Ove and the cat. ".repeat(60)}Final sentence.`;
+const safelyTrimmedCloseReading = parseChunkAnalysis(JSON.stringify({ close_reading: veryLongCloseReading, chunk_summary: "Fallback." })).close_reading;
+assert.ok(safelyTrimmedCloseReading.length <= 2_000);
+assert.match(safelyTrimmedCloseReading, /\.$/);
 
 const chunks = [{ pageStart: 1, pageEnd: 10, analysis: chunk }];
 const wiki = parseSynthesis(JSON.stringify({
