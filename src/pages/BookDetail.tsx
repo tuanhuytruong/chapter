@@ -639,7 +639,7 @@ export default function BookDetail() {
                           </div>
                         )}
                         <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
-                        <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} onRetry={() => retryReadingLens(log.id)} />
+                        <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} isPreparing={enrichmentPending && pendingEnrichmentLogId === log.id} onRetry={() => retryReadingLens(log.id)} />
                       </div>
                     ))}
                   </div>
