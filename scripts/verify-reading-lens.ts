@@ -32,6 +32,8 @@ const sharedLensStart = booksRouteSource.indexOf('booksRouter.get("/:id/reading-
 const sharedLensEnd = booksRouteSource.indexOf('booksRouter.get("/:id/logs/:logId/reading-lens"', sharedLensStart);
 const sharedLensRoute = booksRouteSource.slice(sharedLensStart, sharedLensEnd);
 assert.doesNotMatch(sharedLensRoute, /owner_id/, "Persisted Reading Lens data must be readable by all authenticated readers");
+assert.match(detailSource, /else setLenses\(await api\.getReadingLens\(id\)\)/, "Non-owners must load persisted Reading Lens data into Book Detail");
+assert.doesNotMatch(detailSource.slice(detailSource.indexOf("const load"), detailSource.indexOf("useEffect(() => { load();")), /if \(b\.can_edit\)/, "Loading shared Reading Lens data must not be owner-gated in Book Detail");
 assert.match(booksRouteSource, /reading-lens\/retry", async \(req: Request, res: Response\) => \{\n  const \{ id, logId \} = req\.params;\n  if \(!await ownerCanMutate/, "Reading Lens regeneration must remain owner-only");
 assert.match(lensCardSource, /isPreparing = false/);
 assert.match(lensCardSource, /Reading Lens couldn't be prepared for this session\./);

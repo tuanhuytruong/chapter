@@ -101,15 +101,15 @@ export default function BookDetail() {
       setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
 
-      if (b.can_edit) {
-        try {
-          if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
-          else setLenses(await api.getReadingLens(id));
-        } catch (e: any) {
-          // Companion analysis is non-critical, especially for a fresh book
-          // with no sessions yet. The detail page remains usable.
-          setToast({ type: 'err', msg: `Companion notes unavailable: ${e.message}` });
-        }
+      try {
+        // Persisted companion data is shared read-only. Generation/retry remains
+        // owner-only, but every signed-in reader can see completed analyses.
+        if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
+        else setLenses(await api.getReadingLens(id));
+      } catch (e: any) {
+        // Companion analysis is non-critical, especially for a fresh book
+        // with no sessions yet. The detail page remains usable.
+        setToast({ type: 'err', msg: `Companion notes unavailable: ${e.message}` });
       }
     } catch (e: any) {
       setBook(null);
