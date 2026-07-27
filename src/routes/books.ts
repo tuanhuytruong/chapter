@@ -4,6 +4,7 @@ import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extract
 import { callJsonLLM, callLLM, callNineRouter, parseSummary } from "../llm.js";
 import { buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
+import { processBookForWiki } from "../aiReader.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
@@ -24,6 +25,13 @@ async function ownerCanMutate(req: Request, res: Response, bookId: string): Prom
 // App timezone is Asia/Bangkok (UTC+7) — all "today" logic and daily-summary
 // grouping use this, independent of where the server physically runs.
 const APP_TZ = "Asia/Bangkok";
+const MAX_DAILY_PAGES = 20;
+
+function validDailyPages(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_DAILY_PAGES ? parsed : null;
+}
+
 const today = () => {
   // Returns YYYY-MM-DD for the current date in Asia/Bangkok (UTC+7).
   return new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
@@ -125,6 +133,10 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   if (!["pdf", "epub"].includes(file_type)) {
     return res.status(400).json({ error: "file_type must be 'pdf' or 'epub'" });
   }
+  const parsedDailyPages = daily_pages === undefined ? 3 : validDailyPages(daily_pages);
+  if (parsedDailyPages === null) {
+    return res.status(400).json({ error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}` });
+  }
   const lang = ["auto", "vi", "en"].includes(summary_lang) ? summary_lang : "auto";
   const initialStatus = status === "queued" ? "queued" : "active";
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
@@ -138,7 +150,7 @@ booksRouter.post("/", async (req: Request, res: Response) => {
       return client.query(
         `INSERT INTO books (title, author, file_path, file_type, total_pages, daily_pages, cover_url, summary_lang, summary_mode, reading_experience, owner_id, status, queue_order)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
-        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, daily_pages || 3, cover_url || null, lang, summaryMode, readingExperience, userFrom(req).id, initialStatus, queueOrder]
+        [title, author || "Unknown", resolvedPath, file_type, total_pages || 0, parsedDailyPages, cover_url || null, lang, summaryMode, readingExperience, userFrom(req).id, initialStatus, queueOrder]
       );
     });
     res.status(201).json(rows[0]);
@@ -179,6 +191,11 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   const fields = ["daily_pages", "status", "cover_url", "title", "author", "total_pages", "summary_lang", "summary_mode"];
   if (req.body.status !== undefined && !["active", "paused", "finished", "queued"].includes(req.body.status)) {
     return res.status(400).json({ error: "invalid status" });
+  }
+  if (req.body.daily_pages !== undefined) {
+    const parsedDailyPages = validDailyPages(req.body.daily_pages);
+    if (parsedDailyPages === null) return res.status(400).json({ error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}` });
+    req.body.daily_pages = parsedDailyPages;
   }
   if (req.body.summary_mode !== undefined && !["casual", "deep_reading"].includes(req.body.summary_mode)) {
     return res.status(400).json({ error: "invalid summary_mode" });
@@ -262,6 +279,105 @@ booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Respo
     if (!analysis) return res.status(404).json({ error: "story thread not available" });
     res.json(analysis);
   } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
+});
+
+// ── AI Reader / Book Wiki routes ─────────────────────────
+// GET /api/books/:id/wiki — shared, persisted book wiki (no raw source text).
+booksRouter.get("/:id/wiki", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await query(`SELECT w.book_id, w.schema_version, w.output_language, w.pages_covered, w.overview, w.concepts, w.themes, w.people, w.chapter_map, w.notable_quotes, w.open_questions, w.book_so_far, w.current_position, w.narrative_arc, w.carry_forward_insights, w.reading_path, w.thread_map, w.entity_map, w.connections, w.current_reading_state, w.next_session_context, w.generated_at, w.generation_ms
+      FROM book_wiki w JOIN books b ON b.id=w.book_id WHERE w.book_id=$1`, [id]);
+    if (!rows.length) return res.status(404).json({ error: "wiki not yet generated" });
+    res.json(rows[0]);
+  } catch (e: any) { res.status(503).json({ error: "wiki unavailable", detail: e.message }); }
+});
+
+// GET /api/books/:id/wiki/status — wiki generation status
+booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const [book, logCount, chunkCount, wikiRow, job] = await Promise.all([
+      query("SELECT file_path FROM books WHERE id=$1", [id]),
+      query("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [id]),
+      query("SELECT count(*)::int AS c FROM ai_reader_chunks WHERE book_id=$1", [id]),
+      query("SELECT generated_at, pages_covered, output_language, schema_version FROM book_wiki WHERE book_id=$1", [id]),
+      query("SELECT status, started_at, error_message FROM ai_reader_jobs WHERE book_id=$1", [id]),
+    ]);
+    const bookData = book.rows[0];
+    res.json({
+      hasFile: !!(bookData?.file_path),
+      totalSessions: logCount.rows[0]?.c || 0,
+      chunksProcessed: chunkCount.rows[0]?.c || 0,
+      wikiExists: wikiRow.rows.length > 0,
+      pagesCovered: wikiRow.rows[0]?.pages_covered || 0,
+      wikiGeneratedAt: wikiRow.rows[0]?.generated_at || null,
+      outputLanguage: wikiRow.rows[0]?.output_language || "auto",
+      schemaVersion: wikiRow.rows[0]?.schema_version || 1,
+      jobStatus: job.rows[0]?.status || "idle",
+      jobStartedAt: job.rows[0]?.started_at || null,
+      jobError: job.rows[0]?.error_message || null,
+    });
+  } catch (e: any) { res.status(503).json({ error: "wiki status unavailable", detail: e.message }); }
+});
+
+// GET /api/books/:id/wiki/sessions — shared, safe persisted V2 session analyses (no raw text).
+booksRouter.get("/:id/wiki/sessions", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await query(`SELECT c.log_id, c.page_start, c.page_end, c.chunk_analysis, c.processed_at
+      FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id
+      WHERE c.book_id=$1 ORDER BY c.page_start, c.page_end`, [id]);
+    if (!rows.length) {
+      const exists = await query("SELECT 1 FROM books WHERE id=$1", [id]);
+      if (!exists.rows.length) return res.status(404).json({ error: "book not found" });
+    }
+    res.json(rows);
+  } catch (e: any) { res.status(503).json({ error: "wiki sessions unavailable", detail: e.message }); }
+});
+
+// GET /api/books/:id/wiki/sessions/:logId — one shared, safe persisted session analysis.
+booksRouter.get("/:id/wiki/sessions/:logId", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query(`SELECT c.log_id, c.page_start, c.page_end, c.chunk_analysis, c.processed_at
+      FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id
+      WHERE c.book_id=$1 AND c.log_id=$2`, [req.params.id, req.params.logId]);
+    if (!rows.length) return res.status(404).json({ error: "wiki session not found" });
+    res.json(rows[0]);
+  } catch (e: any) { res.status(503).json({ error: "wiki session unavailable", detail: e.message }); }
+});
+
+// POST /api/books/:id/wiki/regenerate — queue a durable background regeneration.
+// Returning immediately keeps the reader usable and page reloads still see Running.
+booksRouter.post("/:id/wiki/regenerate", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!await ownerCanMutate(req, res, id)) return;
+  try {
+    const claim = await query(
+      `INSERT INTO ai_reader_jobs (book_id, status, started_at, completed_at, error_message)
+       VALUES ($1, 'running', now(), NULL, NULL)
+       ON CONFLICT (book_id) DO UPDATE SET status='running', started_at=now(), completed_at=NULL, error_message=NULL
+       WHERE ai_reader_jobs.status != 'running'
+       RETURNING status`,
+      [id]
+    );
+    if (!claim.rows.length) return res.status(409).json({ error: "AI Reader is already running" });
+    void processBookForWiki(id, true)
+      .then(async (updated) => {
+        await query(
+          "UPDATE ai_reader_jobs SET status='idle', completed_at=now(), error_message=$2 WHERE book_id=$1",
+          [id, updated ? null : "No readable sessions could be processed."]
+        );
+      })
+      .catch(async (error: any) => {
+        console.error(`[ai-reader] Background regeneration failed for ${id}:`, error.message);
+        await query(
+          "UPDATE ai_reader_jobs SET status='failed', completed_at=now(), error_message=$2 WHERE book_id=$1",
+          [id, String(error.message || "Generation failed").slice(0, 300)]
+        );
+      });
+    res.status(202).json({ ok: true, status: "running" });
+  } catch (e: any) { res.status(500).json({ error: "wiki regeneration failed", detail: e.message }); }
 });
 
 // GET /api/books/:id — single book
@@ -526,7 +642,20 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
     if (result.readingExperience === "story") {
       void generateStoryThreadForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto", session: result.session }).catch((error) => console.warn("[story-thread] background analysis unavailable:", error.message));
     } else {
-      void generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" }).catch((error) => console.warn("[reading-lens] background analysis unavailable:", error.message));
+      // Keep the reading transaction responsive. The session is already saved;
+      // enrich it in order so the wiki only synthesizes persisted analyses.
+      void (async () => {
+        try {
+          // The two enrichments use the same persisted source text but do not
+          // depend on each other, so let NineRouter process them concurrently.
+          await Promise.all([
+            generateReadingLensForLog(result.log, { title: result.title, author: result.author, total: result.totalUnits, lang: result.summaryLang || "auto" }),
+            processBookForWiki(result.bookId),
+          ]);
+        } catch (error: any) {
+          console.warn("[reading-enrichment] background analysis unavailable:", error.message);
+        }
+      })();
     }
   }
   return result;

@@ -3,30 +3,25 @@ name: OpenWiki Update
 on:
   workflow_dispatch:
   schedule:
-    # Runs daily at 00:00 UTC (09:00 Bangkok time)
+    # Runs daily at 00:00 UTC (07:00 Bangkok time)
     - cron: "0 0 * * *"
-   
 
 permissions:
   contents: write
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: dev
           persist-credentials: true
 
-      - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "22"
-
       - name: Install OpenWiki
-        run: npm install --global openwiki@0.2.3 mermaid@11.16.0 jsdom@29.1.1
+        run: npm install --global openwiki@latest mermaid@latest jsdom@latest
 
       - name: Run OpenWiki
         run: openwiki code --update --print
@@ -34,8 +29,7 @@ jobs:
           OPENWIKI_PROVIDER: openai-compatible
           OPENAI_COMPATIBLE_BASE_URL: ${{ secrets.NINE_ROUTER_URL }}
           OPENAI_COMPATIBLE_API_KEY: ${{ secrets.NINE_ROUTER_API_KEY }}
-          OPENWIKI_MODEL_ID: qwen3
-          # Disable telemetry in CI
+          OPENWIKI_MODEL_ID: n8n
           OPENWIKI_TELEMETRY_DISABLED: "1"
 
       - name: Commit and push wiki updates

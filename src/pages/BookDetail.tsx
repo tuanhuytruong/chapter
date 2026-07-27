@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
@@ -7,14 +8,13 @@ import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import ReadingLensCard from '../components/ReadingLensCard';
 import StreakHeatmap from '../components/StreakHeatmap';
-import ReadingForecast from '../components/ReadingForecast';
-import ChapterMarkers from '../components/ChapterMarkers';
 import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
 import JourneyView from '../components/JourneyView';
 import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
 import StoryThreadView from '../components/story/StoryThreadView';
+import BookWiki from '../components/BookWiki';
 import { GuideCard } from '../onboarding';
 
 function InlineMarkdown({ text }: { text: string }) {
@@ -54,6 +54,7 @@ export default function BookDetail() {
   const [book, setBook] = useState<BookRow | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [dailyPages, setDailyPages] = useState(20);
@@ -68,7 +69,8 @@ export default function BookDetail() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
-  const [logView, setLogView] = useState<'list' | 'journey'>('list');
+  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader'>('list');
+  const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
@@ -78,16 +80,17 @@ export default function BookDetail() {
   const [storyRetryingLogId, setStoryRetryingLogId] = useState<string | null>(null);
   const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'heatmap' | 'settings' | 'forecast'>('heatmap');
+  const [enrichmentPending, setEnrichmentPending] = useState(false);
+  const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
+    setLoadError(null);
     try {
+      // The book record is the detail page's source of truth. Do not let an
+      // optional companion request make an existing, newly-created book look missing.
       const [b, l] = await Promise.all([api.getBook(id), api.getLog(id)]);
-      const analysisRows = b.can_edit
-        ? b.reading_experience === 'story' ? await api.getStoryThread(id) : await api.getReadingLens(id)
-        : [];
       setBook(b);
       setDailyPages(b.daily_pages);
       setStatus(b.status);
@@ -97,9 +100,20 @@ export default function BookDetail() {
       setSummaryLang(b.summary_lang || 'auto');
       setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
-      setLenses(b.reading_experience === 'analytical' ? analysisRows as ReadingLensRow[] : []);
-      setStoryThread(b.reading_experience === 'story' ? analysisRows as StoryThreadRow[] : []);
+
+      if (b.can_edit) {
+        try {
+          if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
+          else setLenses(await api.getReadingLens(id));
+        } catch (e: any) {
+          // Companion analysis is non-critical, especially for a fresh book
+          // with no sessions yet. The detail page remains usable.
+          setToast({ type: 'err', msg: `Companion notes unavailable: ${e.message}` });
+        }
+      }
     } catch (e: any) {
+      setBook(null);
+      setLoadError(e.message);
       setToast({ type: 'err', msg: e.message });
     } finally {
       setLoading(false);
@@ -107,6 +121,52 @@ export default function BookDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // A reading session is saved immediately; its companion analysis finishes in
+  // the background. Revalidate quietly for a bounded window rather than making
+  // the reader refresh the full page.
+  useEffect(() => {
+    if (!enrichmentPending || !pendingEnrichmentLogId || !id) return;
+    let cancelled = false;
+    const startedAt = Date.now();
+    const tick = async () => {
+      try {
+        const [updatedBook, updatedLogs] = await Promise.all([api.getBook(id), api.getLog(id)]);
+        if (cancelled) return;
+        // Quietly reconcile only changed data. Keeping existing state in place
+        // avoids a route-level loading flash after the reader saves a session.
+        setBook(previous => previous ? { ...previous, ...updatedBook } : updatedBook);
+        setLogs(previous => {
+          const byId = new Map<string, LogRow>(previous.map(log => [log.id, log]));
+          updatedLogs.forEach(log => byId.set(log.id, log));
+          return [...byId.values()].sort((a, b) => `${b.date}-${b.session}`.localeCompare(`${a.date}-${a.session}`));
+        });
+        const analyses = updatedBook.can_edit && updatedBook.reading_experience === 'analytical'
+          ? await api.getReadingLens(id)
+          : [];
+        if (updatedBook.can_edit) {
+          if (updatedBook.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
+          else setLenses(analyses);
+        }
+        const pendingLog = updatedLogs.find(log => log.id === pendingEnrichmentLogId);
+        const lensReady = updatedBook.reading_experience === 'story'
+          ? true
+          : analyses.some(item => item.log_id === pendingEnrichmentLogId);
+        const wiki = await api.getWikiStatus(id);
+        if (lensReady && wiki.wikiExists && wiki.pagesCovered >= (pendingLog?.page_end || 0)) {
+          setEnrichmentPending(false);
+          setPendingEnrichmentLogId(null);
+        }
+      } catch { /* keep the saved reading session usable; retry until timeout */ }
+      if (!cancelled && Date.now() - startedAt >= 180000) {
+        setEnrichmentPending(false);
+        setPendingEnrichmentLogId(null);
+      }
+    };
+    void tick();
+    const interval = window.setInterval(() => { void tick(); }, 7000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [enrichmentPending, id, pendingEnrichmentLogId]);
 
   useEffect(() => {
     if (!id || logs.length === 0) return;
@@ -125,13 +185,23 @@ export default function BookDetail() {
         const nextQueued = books.filter(b => b.status === 'queued').sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999))[0];
         if (nextQueued) setFinishModal(nextQueued);
       }
+      // The API returns the persisted log and updated cursor. Merge those into
+      // the live detail view instead of reloading the route and losing context.
+      setLogs(previous => [result.log, ...previous.filter(log => log.id !== result.log.id)]);
+      setBook(previous => previous ? {
+        ...previous,
+        current_page: result.pageEnd,
+        total_pages: result.totalUnits,
+        status: result.finished ? 'finished' : previous.status,
+      } : previous);
       setToast({
         type: 'ok',
         msg: hasReadToday
-          ? `Session ${sessionCount + 1} done — another summary generated`
-          : 'Read today — summary generated'
+          ? `Session ${result.session} saved — companion notes are preparing`
+          : 'Read today saved — companion notes are preparing'
       });
-      await load();
+      setPendingEnrichmentLogId(result.log.id);
+      setEnrichmentPending(true);
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {
@@ -198,7 +268,8 @@ export default function BookDetail() {
     return <div className="flex justify-center p-16"><Loader2 className="w-8 h-8 text-natural-sage animate-spin" /></div>;
   }
   if (!book) {
-    return <div className="text-center p-16 text-natural-stone font-sans">Book not found. <button onClick={() => navigate('/')} className="text-natural-sage underline">Back to library</button></div>;
+    const missing = loadError?.startsWith('404:');
+    return <div className="text-center p-16 text-natural-stone font-sans">{missing ? 'Book not found.' : 'This book could not be loaded.'} <button onClick={() => navigate('/')} className="text-natural-sage underline">Back to library</button></div>;
   }
 
   const pct = progressPct(book);
@@ -266,8 +337,8 @@ export default function BookDetail() {
   const retryReadingLens = async (logId: string) => {
     if (!id) return;
     try {
-      await api.retryReadingLens(id, logId);
-      await load();
+      const lens = await api.retryReadingLens(id, logId);
+      setLenses(previous => [lens, ...previous.filter(item => item.log_id !== lens.log_id)]);
       setToast({ type: 'ok', msg: 'Reading Lens is ready' });
     } catch (e: any) { setToast({ type: 'err', msg: e.message }); throw e; }
   };
@@ -330,104 +401,64 @@ export default function BookDetail() {
       </div>
 
       {/* Header */}
-      <div className="flex flex-wrap gap-4 rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:flex-nowrap sm:gap-5 sm:p-5">
-        <div className="flex h-[108px] w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-natural-border bg-natural-cream sm:h-32 sm:w-24">
-          {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="w-full h-full object-cover" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
+      <div className="grid gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:grid-cols-[104px_minmax(0,1fr)] sm:gap-4 sm:p-5 lg:grid-cols-[144px_minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
+        <div className="flex h-36 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-natural-stone/25 bg-[#e8e6de] p-1.5 shadow-md shadow-natural-dark/10 sm:h-52 sm:w-36 sm:p-2 lg:row-span-2">
+          {book.cover_url ? <img src={book.cover_url} alt={book.title} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} className="h-full w-full rounded-[1px] object-contain" /> : <BookOpen className="w-8 h-8 text-natural-stone" />}
         </div>
-        <div className="order-2 min-w-0 flex-1 sm:order-none">
-          <h1 className="line-clamp-3 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
+        <div className="order-2 min-w-0 sm:order-none">
+          <h1 className="line-clamp-2 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">{book.title}</h1>
           <p className="mb-2 text-xs italic text-natural-stone">by {book.author}</p>
-          <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="flex items-center gap-1 text-natural-clay font-bold text-sm"><Flame className="w-4 h-4 fill-natural-clay" />{streak}d streak</span>
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="flex items-center gap-1 text-sm font-bold text-natural-clay"><Flame className="h-4 w-4 fill-natural-clay" />{streak}d streak</span>
             {daysToFinish(book) !== null && (
-              <span className="text-[11px] text-natural-stone/70">~{daysToFinish(book)} days left</span>
+              <span className="text-[11px] text-natural-stone">Pace: about {daysToFinish(book)} days left</span>
             )}
-            <span className="text-[11px] text-natural-stone">{logs.length} days read</span>
             <MomentumScore book={book} logs={logs} />
           </div>
-          <div className="h-2 bg-natural-cream rounded-full overflow-hidden mb-1">
+          <div className="h-2 overflow-hidden rounded-full bg-natural-border" aria-label={`${pct}% complete`}>
             <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
           </div>
-          <ChapterMarkers book={book} logs={logs} />
+          <p className="mt-1.5 text-[11px] text-natural-stone">{pct}% complete · {logs.length} reading days</p>
         </div>
-        <div className="order-3 flex w-full flex-col gap-2 sm:order-none sm:w-auto sm:self-start sm:items-end">
+        <aside className="contents" aria-label="Book utilities">
+          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
           {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
-            <div className="flex flex-wrap gap-2 sm:justify-end">
+            <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
                 <CheckCircle className="w-3.5 h-3.5" /> Finished
               </span>
               <button onClick={startReread}
-                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 sm:flex-none cursor-pointer">
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 cursor-pointer">
                 <RotateCcw className="w-3.5 h-3.5" /> Re-read
               </button>
             </div>
           ) : (
             <>
               <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 sm:min-h-0 sm:w-auto sm:justify-start cursor-pointer">
-                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {hasReadToday ? `Read More · Session ${sessionCount + 1}` : 'Read Today'}
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
+                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Saving…' : 'Read next session'}
               </button>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
-                  className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark sm:min-h-0 sm:w-auto cursor-pointer">
+                  className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
                   <CheckCircle className="w-3.5 h-3.5" /> Mark Finished
                 </button>
               )}
             </>
           )}
-        </div>
-      </div>
-
-      {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read Today</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
-
-      {book.status === 'finished' && (
-        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">End-of-book reflection</p>
-              <h2 className="mt-1 text-base font-bold text-natural-dark">What will stay with you?</h2>
-              {!book.reflection_text && <p className="mt-1 text-xs leading-relaxed text-natural-stone">Turn your reading journal into a personal takeaway you can revisit later.</p>}
-            </div>
-            {book.can_edit && (
-              <button onClick={generateReflection} disabled={reflectionLoading} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">
-                {reflectionLoading ? 'Reflecting…' : book.reflection_text ? 'Generate again' : 'Create reflection'}
-              </button>
-            )}
           </div>
-          {book.reflection_text && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{book.reflection_text}</article>}
-        </section>
-      )}
 
-      {/* Reading activity — tabs: Heatmap / Settings / Forecast */}
-      <div className="bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm">
-        {/* Pill tabs */}
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <button onClick={() => setActiveTab('heatmap')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'heatmap' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Heatmap
-          </button>
-          {book.can_edit && <button onClick={() => setActiveTab('settings')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'settings' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Settings
-          </button>}
-          <button onClick={() => setActiveTab('forecast')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${activeTab === 'forecast' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Forecast
-          </button>
-        </div>
+          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
+            <h3 className="mb-2 text-xs font-bold text-natural-dark">Reading Rhythm</h3>
+            <div className="lg:hidden"><StreakHeatmap logs={logs} /></div>
+            <div className="hidden lg:block"><StreakHeatmap logs={logs} windowDays={21} /></div>
+          </section>
 
-        {/* Tab content */}
-        {activeTab === 'heatmap' && (
-          <>
-            <StreakHeatmap logs={logs} />
-          </>
-        )}
-
-        {book.can_edit && activeTab === 'settings' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-natural-dark flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Settings</h3>
-              {!editing && <button onClick={() => setEditing(true)} className="text-[11px] text-natural-sage font-bold">Edit</button>}
+          {book.can_edit && (
+          <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-2">
+            <div className="flex items-center gap-2">
+              <h3 className="flex items-center gap-1.5 text-sm font-bold text-natural-dark"><Settings2 className="h-4 w-4" /> Settings</h3>
+              {!editing && <button onClick={() => setEditing(true)} className="rounded-full border border-natural-border px-2.5 py-1 text-[11px] font-bold text-natural-sage hover:border-natural-sage">Edit</button>}
             </div>
             {editing ? (
               <div className="space-y-3">
@@ -448,7 +479,10 @@ export default function BookDetail() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Pages / day</label>
-                  <input type="number" min={1} value={dailyPages} onChange={e => setDailyPages(Number(e.target.value))} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
+                  <input type="number" min={1} max={20} step={1} inputMode="numeric" value={dailyPages} onFocus={e => e.currentTarget.select()} onChange={e => {
+                    const next = e.currentTarget.valueAsNumber;
+                    if (Number.isFinite(next)) setDailyPages(Math.min(20, Math.max(1, Math.trunc(next))));
+                  }} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>
@@ -486,15 +520,32 @@ export default function BookDetail() {
                 <p>File: <span className="font-mono text-[10px]">{book.file_type.toUpperCase()}</span></p>
               </div>
             )}
-          </div>
-        )}
-
-        {activeTab === 'forecast' && (
-          <div>
-            <ReadingForecast book={book} logs={logs} />
-          </div>
-        )}
+          </section>
+          )}
+        </aside>
       </div>
+
+      {book.can_edit && logs.length === 0 && <GuideCard step="first_session" eyebrow="Your first session" title="Read when you are ready"><p>Tap <strong className="text-natural-dark">Read next session</strong> when you finish a small section. Chapter saves the session first, then prepares its companion notes in the background—there is nothing else to set up.</p></GuideCard>}
+
+      {book.status === 'finished' && (
+        <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">End-of-book reflection</p>
+              <h2 className="mt-1 text-base font-bold text-natural-dark">What will stay with you?</h2>
+              {!book.reflection_text && <p className="mt-1 text-xs leading-relaxed text-natural-stone">Turn your reading journal into a personal takeaway you can revisit later.</p>}
+            </div>
+            {book.can_edit && (
+              <button onClick={generateReflection} disabled={reflectionLoading} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">
+                {reflectionLoading ? 'Reflecting…' : book.reflection_text ? 'Generate again' : 'Create reflection'}
+              </button>
+            )}
+          </div>
+          {book.reflection_text && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{book.reflection_text}</article>}
+        </section>
+      )}
+
+
 
       {book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /></> : <>
       {/* Timeline */}
@@ -528,8 +579,19 @@ export default function BookDetail() {
             className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'journey' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             Journey
           </button>
+          <button onClick={() => { setHasOpenedAiReader(true); setLogView('ai-reader'); }}
+            aria-selected={logView === 'ai-reader'} aria-controls="ai-reader-panel"
+            className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'ai-reader' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
+            AI Reader
+          </button>
         </div>
 
+        {hasOpenedAiReader && (
+          <div id="ai-reader-panel" role="tabpanel" aria-hidden={logView !== 'ai-reader'} hidden={logView !== 'ai-reader'} className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
+            <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
+          </div>
+        )}
+        {logView !== 'ai-reader' && <>
         {book.can_edit && lenses.length >= 3 && (
           <section className="mb-5 rounded-[24px] border border-natural-sage/30 bg-natural-sage/5 p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -543,7 +605,7 @@ export default function BookDetail() {
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
             <BookOpen className="w-8 h-8 text-natural-stone" />
             <p className="text-sm font-bold text-natural-dark">No days read yet</p>
-            <p className="text-xs text-natural-stone">Tap "Read Today" to generate your first AI summary.</p>
+            <p className="text-xs text-natural-stone">Tap "Read next session" to generate your first AI summary.</p>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
@@ -569,7 +631,7 @@ export default function BookDetail() {
                           </div>
                         )}
                         <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
-                        <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} onRetry={() => retryReadingLens(log.id)} />
+                        <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} isPreparing={enrichmentPending && pendingEnrichmentLogId === log.id} onRetry={() => retryReadingLens(log.id)} />
                       </div>
                     ))}
                   </div>
@@ -578,6 +640,7 @@ export default function BookDetail() {
             )}
           </>
         )}
+        </>}
       </div>
 
       {/* Knowledge Map */}
@@ -596,6 +659,16 @@ export default function BookDetail() {
         </div>
       )}
       </>}
+
+      {book.can_edit && book.status === 'active' && createPortal(
+        <button onClick={readToday} disabled={advancing}
+          aria-label={advancing ? 'Saving next session' : 'Read next session'}
+          title={advancing ? 'Saving…' : 'Read next session'}
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-natural-clay text-white shadow-lg shadow-natural-dark/20 transition hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:bottom-6 sm:right-6">
+          {advancing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
+        </button>,
+        document.body
+      )}
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 

@@ -86,8 +86,8 @@ When a user manually clicks "Read Today" on a book and has a linked Telegram acc
 
 ## On-demand operations
 
-### Read All Today
-The `POST /api/books/all/advance` endpoint (used by both the UI "Read All Today" button and the n8n workflow) advances all active books in a single request. It returns a summary of how many were advanced, skipped, or errored.
+### Scheduled all-book advance
+The `POST /api/books/all/advance` endpoint is reserved for the n8n scheduled workflow. It advances all active books in a single request and returns how many were advanced, skipped, or errored. The Library has no bulk-read control; readers advance books individually.
 
 ### Manual "Read Today"
 Per-book advance at `POST /api/books/:id/advance`. Advances one book by its `daily_pages` setting, generates the analysis, and optionally sends Telegram.

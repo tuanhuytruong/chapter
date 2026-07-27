@@ -2,10 +2,15 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown, ScanSearch } from "lucide-react";
 import type { ReadingLensRow } from "../readingLensRepository";
 
-export default function ReadingLensCard({ lens, canEdit, onRetry }: { lens?: ReadingLensRow; canEdit: boolean; onRetry: () => Promise<void> }) {
+export default function ReadingLensCard({ lens, canEdit, isPreparing = false, onRetry }: { lens?: ReadingLensRow; canEdit: boolean; isPreparing?: boolean; onRetry: () => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  if (!lens) return <div className="mt-3 rounded-xl border border-dashed border-natural-border px-3 py-2 text-[11px] text-natural-stone">Reading Lens is preparing quietly in the background.{canEdit && <button className="ml-2 min-h-11 text-natural-sage underline" disabled={retrying} onClick={async () => { setRetrying(true); await onRetry(); setRetrying(false); }}>{retrying ? "Trying…" : "Try again"}</button>}</div>;
+  if (!lens) {
+    const message = isPreparing
+      ? "Reading Lens is preparing quietly in the background."
+      : "Reading Lens couldn't be prepared for this session.";
+    return <div className="mt-3 rounded-xl border border-dashed border-natural-border px-3 py-2 text-[11px] text-natural-stone">{message}{canEdit && !isPreparing && <button className="ml-2 min-h-11 text-natural-sage underline" disabled={retrying} onClick={async () => { setRetrying(true); await onRetry(); setRetrying(false); }}>{retrying ? "Trying…" : "Try again"}</button>}</div>;
+  }
   const a = lens.analysis;
   return <section className="mt-3 rounded-2xl border border-natural-border bg-natural-cream/50 p-3 sm:p-4">
     <button type="button" onClick={() => setOpen(!open)} className="flex min-h-11 w-full items-center gap-2 text-left">

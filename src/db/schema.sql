@@ -191,6 +191,35 @@ CREATE TABLE IF NOT EXISTS chapter.story_state_snapshots (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Migration: additive AI Reader narrative fields (idempotent).
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS schema_version SMALLINT NOT NULL DEFAULT 1;
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS output_language TEXT NOT NULL DEFAULT 'auto';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS book_so_far TEXT NOT NULL DEFAULT '';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS current_position JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS narrative_arc JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS carry_forward_insights JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE chapter.book_wiki ALTER COLUMN output_language SET DEFAULT 'en';
+UPDATE chapter.book_wiki SET output_language = CASE WHEN overview ~ '[ăâđêôơưĂÂĐÊÔƠƯ]' THEN 'vi' ELSE 'en' END WHERE output_language = 'auto';
+ALTER TABLE chapter.book_wiki DROP CONSTRAINT IF EXISTS book_wiki_output_language_check;
+ALTER TABLE chapter.book_wiki ADD CONSTRAINT book_wiki_output_language_check
+  CHECK (output_language IN ('vi', 'en'));
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS reading_path JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS thread_map JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS entity_map JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS connections JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS current_reading_state JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE chapter.book_wiki ADD COLUMN IF NOT EXISTS next_session_context TEXT NOT NULL DEFAULT '';
+
+-- Durable AI Reader job state. This lets the UI retain an honest “Running”
+-- state across page refreshes while generation continues in the background.
+CREATE TABLE IF NOT EXISTS chapter.ai_reader_jobs (
+  book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'running', 'failed')),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  error_message TEXT
+);
+
 -- ───────────────────────────────────────────────────────────
 -- chapter.review_cards (owner derived through the parent book)
 -- ───────────────────────────────────────────────────────────
