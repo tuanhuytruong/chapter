@@ -16,12 +16,39 @@ const clean = (value: unknown, fallback = ""): string =>
 const list = (value: unknown, max: number): string[] =>
   Array.isArray(value) ? value.map((item) => clean(item)).filter(Boolean).slice(0, max) : [];
 
+function escapeRawControlsInStrings(json: string): string {
+  // Recover only literal newlines/tabs in quoted values. Do not guess missing
+  // syntax or accept truncated output: the retry path handles those safely.
+  let output = "";
+  let inString = false;
+  let escaped = false;
+  for (const char of json) {
+    if (inString && !escaped && char === "\n") output += "\\n";
+    else if (inString && !escaped && char === "\r") output += "\\r";
+    else if (inString && !escaped && char === "\t") output += "\\t";
+    else output += char;
+    if (char === '"' && !escaped) inString = !inString;
+    escaped = char === "\\" && !escaped;
+    if (char !== "\\") escaped = false;
+  }
+  return output;
+}
+
 function extractJson(raw: string): unknown {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1] || raw.trim();
   const start = fenced.indexOf("{");
   const end = fenced.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("Reading Lens response did not contain JSON");
-  return JSON.parse(fenced.slice(start, end + 1));
+  const candidate = fenced.slice(start, end + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch (firstError) {
+    try {
+      return JSON.parse(escapeRawControlsInStrings(candidate));
+    } catch {
+      throw firstError;
+    }
+  }
 }
 
 /** Parse untrusted model output into bounded, safe V1 Reading Lens data. */

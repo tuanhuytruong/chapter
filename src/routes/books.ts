@@ -667,11 +667,23 @@ async function advanceBookNow(bookId: string, force: boolean): Promise<any | nul
 async function generateReadingLensForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en" }): Promise<void> {
   if (!log.raw_text?.trim()) return;
   const prompt = buildReadingLensPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text });
-  const raw = process.env.NINE_ROUTER_URL
-    ? await callLLM(prompt.system, prompt.user, 0.2, true, true)
-    : JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
-  const analysis = parseReadingLensAnalysis(raw, log.raw_text);
-  await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+  const fallback = JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
+  // Providers occasionally return an otherwise complete JSON object with a
+  // malformed string. Normalize harmless raw controls first, then make exactly
+  // one fresh strict request for unrecoverable JSON. Never persist guessed data.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const raw = process.env.NINE_ROUTER_URL
+      ? await callLLM(prompt.system, prompt.user, 0.2, true, true, undefined, { priority: "background", traceLabel: `reading-lens:p.${log.page_start}-${log.page_end}:attempt=${attempt}` })
+      : fallback;
+    try {
+      const analysis = parseReadingLensAnalysis(raw, log.raw_text);
+      await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+      return;
+    } catch (error) {
+      if (!(error instanceof SyntaxError) || attempt === 2) throw error;
+      console.warn(`[reading-lens] malformed JSON for p.${log.page_start}-${log.page_end}; retrying once with a fresh provider response`);
+    }
+  }
 }
 
 
