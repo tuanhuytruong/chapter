@@ -21,8 +21,14 @@ export const NINE_ROUTER_BACKGROUND_CONCURRENCY = NINE_ROUTER_MAX_CONCURRENCY > 
   ? NINE_ROUTER_MAX_CONCURRENCY - 1
   : 1;
 export const NINE_ROUTER_DISPATCH_INTERVAL_MS = Math.ceil(1_000 / NINE_ROUTER_MAX_RPS);
-type LlmPriority = "interactive" | "background";
+export type LlmPriority = "interactive" | "background";
 type Waiter = { resolve: () => void; priority: LlmPriority };
+
+/** One trace label per upstream call; never include book text or credentials. */
+export interface LlmCallOptions {
+  priority?: LlmPriority;
+  traceLabel?: string;
+}
 let activeNineRouterCalls = 0;
 let activeBackgroundCalls = 0;
 let nextDispatchAt = 0;
@@ -76,8 +82,10 @@ export async function callLLM(
   strict = false,
   jsonMode = false,
   timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000),
-  priority: LlmPriority = "background"
+  options: LlmCallOptions = {}
 ): Promise<string> {
+  const priority = options.priority || "background";
+  const trace = options.traceLabel ? ` [${options.traceLabel}]` : "";
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
 
@@ -92,16 +100,21 @@ export async function callLLM(
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let resp: Response;
     const queuedAt = Date.now();
     await acquireNineRouterSlot(priority);
     const queueWaitMs = Date.now() - queuedAt;
-    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(180_000, Math.max(5_000, timeoutMs)) : 60_000;
-    timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
-    if (queueWaitMs > 250) console.info(`[llm] ${priority} slot wait ${queueWaitMs}ms`);
+    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(600_000, Math.max(5_000, timeoutMs)) : 60_000;
+    const startedAt = Date.now();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      console.warn(`[llm]${trace} timeout after ${boundedTimeoutMs}ms (queue=${queueWaitMs}ms, priority=${priority})`);
+      controller.abort();
+    }, boundedTimeoutMs);
+    if (queueWaitMs > 250) console.info(`[llm]${trace} ${priority} slot acquired after ${queueWaitMs}ms`);
+    console.info(`[llm]${trace} dispatch model=${model} json=${jsonMode} timeout=${boundedTimeoutMs}ms`);
     try {
-      resp = await fetch(url, {
+      const resp = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -116,18 +129,31 @@ export async function callLLM(
         }),
         signal: controller.signal,
       });
+      const headersMs = Date.now() - startedAt;
+      console.info(`[llm]${trace} response headers HTTP ${resp.status} after ${headersMs}ms`);
+      const body = await resp.text();
+      const totalMs = Date.now() - startedAt;
+      console.info(`[llm]${trace} response body received ${body.length} bytes after ${totalMs}ms`);
+      if (!resp.ok) throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
+      let data: any;
+      try {
+        data = JSON.parse(body);
+      } catch (parseError: any) {
+        throw new Error(`9router response JSON parse failed after ${totalMs}ms: ${parseError.message}`);
+      }
+      const text: string | undefined = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error("9router returned empty content");
+      console.info(`[llm]${trace} assistant content extracted (${text.length} chars) after ${totalMs}ms`);
+      return text.trim();
+    } catch (err: any) {
+      const elapsedMs = Date.now() - startedAt;
+      const reason = timedOut ? `timeout=${boundedTimeoutMs}ms` : "upstream/error";
+      console.error(`[llm]${trace} failed at ${reason} after ${elapsedMs}ms: ${err.message}`);
+      throw err;
     } finally {
       clearTimeout(timer);
       releaseNineRouterSlot(priority);
     }
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
-    }
-    const data = await resp.json();
-    const text: string | undefined = data?.choices?.[0]?.message?.content;
-    if (!text) throw new Error("9router returned empty content");
-    return text.trim();
   } catch (err: any) {
     console.error("[llm] generic call failed:", err.message, strict ? "— surfacing error" : "— using fallback");
     if (strict) throw err;
