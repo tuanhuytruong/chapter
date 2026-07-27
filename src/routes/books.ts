@@ -407,12 +407,13 @@ booksRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/books/:id/log — full history
+// GET /api/books/:id/log — full shared reading history. Readers can inspect
+// one another's sessions in All Readers; mutation routes remain owner-scoped.
 booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
-    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
+    const book = await query("SELECT 1 FROM books WHERE id=$1", [id]);
+    if (!book.rows.length) return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
       "SELECT * FROM reading_log WHERE book_id = $1 ORDER BY date DESC, session DESC",
       [id]

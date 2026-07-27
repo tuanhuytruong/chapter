@@ -104,15 +104,13 @@ async function main() {
   const bookId = book.id;
   await pool.query("INSERT INTO users (id, username, password_hash, display_name) VALUES ($1,$2,$3,$4)", ["00000000-0000-4000-8000-000000000002", "other", "x", "Other"]);
 
-  // Cross-user hardening: a known but non-owner file path cannot be claimed,
-  // and private logs remain unavailable to other authenticated readers.
+  // Cross-user contract: a known non-owner upload cannot be claimed, while
+  // All Readers can see the saved reading history in read-only mode.
   const foreignCreate = await fetch(`${base}/api/books`, {
     method: "POST", headers: { "Content-Type": "application/json", "x-verifier-user": "00000000-0000-4000-8000-000000000002" },
     body: JSON.stringify({ title: "Stolen", file_path: PDF, file_type: "pdf" }),
   });
   assert(foreignCreate.status === 403, "upload path cannot be claimed by another user");
-  const foreignLog = await fetch(`${base}/api/books/${bookId}/log`, { headers: { "x-verifier-user": "00000000-0000-4000-8000-000000000002" } });
-  assert(foreignLog.status === 404, "private reading log is unavailable to another user");
 
   // ── B7: GET list ──
   const list = await (await fetch(`${base}/api/books`)).json();
@@ -141,6 +139,9 @@ async function main() {
   // ── log history ──
   const log = await (await fetch(`${base}/api/books/${bookId}/log`)).json();
   assert(log.length === 3, "B7 GET /:id/log returns all saved sessions");
+  const foreignLogResponse = await fetch(`${base}/api/books/${bookId}/log`, { headers: { "x-verifier-user": "00000000-0000-4000-8000-000000000002" } });
+  const foreignLog = await foreignLogResponse.json();
+  assert(foreignLogResponse.status === 200 && foreignLog.length === 3 && foreignLog[0].summary, "All Readers can view another user's saved sessions read-only");
 
   // ── today's entry (Phase 3 prep) ──
   const today = await (await fetch(`${base}/api/books/${bookId}/log/today`)).json();
