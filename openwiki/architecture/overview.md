@@ -112,7 +112,7 @@ The AI Reader (`src/aiReader.ts`, `scripts/run-ai-reader.ts`) is a separate offl
 2. After all chunks are analysed, calls the LLM to **synthesise** a single `book_wiki` blob containing overview, narrative arc, continuity maps, and session handoff context.
 3. Stores the result in `chapter.book_wiki` (per book, upserted) and each chunk in `chapter.ai_reader_chunks`.
 
-Designed for nightly PM2 cron. Uses batched LLM calls (`AI_READER_BATCH_SIZE = 5`, `AI_READER_CONCURRENCY = 4`) to stay within token limits while processing books with many sessions.
+Designed for nightly PM2 cron. Uses batched LLM calls (`AI_READER_BATCH_SIZE = 5`, `AI_READER_CONCURRENCY = 2`) to stay within token limits while processing books with many sessions. The shared NineRouter dispatcher separately paces all provider request starts at 5/sec and permits up to 30 in-flight calls by default, with Read Today dispatched before background work.
 
 ## Reading Rhythm
 

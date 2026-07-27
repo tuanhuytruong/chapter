@@ -6,41 +6,60 @@
  * verified end-to-end. On e7240ubt, point NINE_ROUTER_URL at localhost:20128.
  */
 
-// Shared process-local provider scheduler. Reader-facing summaries always drain
-// before retryable background analysis; at least one of four slots remains free
-// for an interactive request while background work is active.
-const NINE_ROUTER_CONCURRENCY = 4;
-const NINE_ROUTER_BACKGROUND_CONCURRENCY = 3;
+// Shared process-local provider scheduler. It separates the provider's request-start
+// rate from its in-flight capacity: starts are evenly paced (5/sec by default),
+// while up to 30 calls may wait for a response. Reader-facing summaries always
+// dispatch before retryable background analysis, and one active slot stays reserved.
+function positiveEnv(name: string, fallback: number, upperBound: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? Math.min(upperBound, Math.floor(value)) : fallback;
+}
+
+export const NINE_ROUTER_MAX_RPS = positiveEnv("NINE_ROUTER_MAX_RPS", 5, 100);
+export const NINE_ROUTER_MAX_CONCURRENCY = positiveEnv("NINE_ROUTER_MAX_CONCURRENCY", 30, 100);
+export const NINE_ROUTER_BACKGROUND_CONCURRENCY = NINE_ROUTER_MAX_CONCURRENCY > 1
+  ? NINE_ROUTER_MAX_CONCURRENCY - 1
+  : 1;
+export const NINE_ROUTER_DISPATCH_INTERVAL_MS = Math.ceil(1_000 / NINE_ROUTER_MAX_RPS);
 type LlmPriority = "interactive" | "background";
+type Waiter = { resolve: () => void; priority: LlmPriority };
 let activeNineRouterCalls = 0;
 let activeBackgroundCalls = 0;
-const interactiveWaiters: Array<() => void> = [];
-const backgroundWaiters: Array<() => void> = [];
+let nextDispatchAt = 0;
+let dispatchTimer: ReturnType<typeof setTimeout> | undefined;
+const interactiveWaiters: Waiter[] = [];
+const backgroundWaiters: Waiter[] = [];
 
 function drainNineRouterQueue(): void {
-  while (activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
-    const interactive = interactiveWaiters.shift();
-    if (interactive) { activeNineRouterCalls++; interactive(); continue; }
-    if (activeBackgroundCalls >= NINE_ROUTER_BACKGROUND_CONCURRENCY) return;
-    const background = backgroundWaiters.shift();
-    if (!background) return;
-    activeNineRouterCalls++;
-    activeBackgroundCalls++;
-    background();
+  if (dispatchTimer || activeNineRouterCalls >= NINE_ROUTER_MAX_CONCURRENCY) return;
+  const waiter = interactiveWaiters[0]
+    || (activeBackgroundCalls < NINE_ROUTER_BACKGROUND_CONCURRENCY ? backgroundWaiters[0] : undefined);
+  if (!waiter) return;
+
+  const delay = Math.max(0, nextDispatchAt - Date.now());
+  if (delay > 0) {
+    dispatchTimer = setTimeout(() => {
+      dispatchTimer = undefined;
+      drainNineRouterQueue();
+    }, delay);
+    return;
   }
+
+  const next = interactiveWaiters.shift()
+    || (activeBackgroundCalls < NINE_ROUTER_BACKGROUND_CONCURRENCY ? backgroundWaiters.shift() : undefined);
+  if (!next) return;
+  activeNineRouterCalls++;
+  if (next.priority === "background") activeBackgroundCalls++;
+  nextDispatchAt = Date.now() + NINE_ROUTER_DISPATCH_INTERVAL_MS;
+  next.resolve();
+  drainNineRouterQueue();
 }
 
 async function acquireNineRouterSlot(priority: LlmPriority): Promise<void> {
-  if (priority === "interactive" && activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
-    activeNineRouterCalls++;
-    return;
-  }
-  if (priority === "background" && activeNineRouterCalls < NINE_ROUTER_CONCURRENCY && activeBackgroundCalls < NINE_ROUTER_BACKGROUND_CONCURRENCY && interactiveWaiters.length === 0) {
-    activeNineRouterCalls++;
-    activeBackgroundCalls++;
-    return;
-  }
-  await new Promise<void>((resolve) => (priority === "interactive" ? interactiveWaiters : backgroundWaiters).push(resolve));
+  await new Promise<void>((resolve) => {
+    (priority === "interactive" ? interactiveWaiters : backgroundWaiters).push({ resolve, priority });
+    drainNineRouterQueue();
+  });
 }
 
 function releaseNineRouterSlot(priority: LlmPriority): void {

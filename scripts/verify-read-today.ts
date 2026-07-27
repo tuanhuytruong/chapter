@@ -32,7 +32,12 @@ assert.match(detailSource, /\{advancing \? 'Reading…' : 'Read next session'\}/
 assert.match(detailSource, /aria-label=\{advancing \? 'Reading next session' : 'Read next session'\}/);
 assert.doesNotMatch(detailSource, /Saving(?:…| next session)/, "Read Today must use reader-facing wording while saving");
 
-assert.match(llmSource, /const NINE_ROUTER_BACKGROUND_CONCURRENCY = 3/);
+assert.match(llmSource, /export const NINE_ROUTER_MAX_RPS = positiveEnv\("NINE_ROUTER_MAX_RPS", 5, 100\)/);
+assert.match(llmSource, /export const NINE_ROUTER_MAX_CONCURRENCY = positiveEnv\("NINE_ROUTER_MAX_CONCURRENCY", 30, 100\)/);
+assert.match(llmSource, /export const NINE_ROUTER_BACKGROUND_CONCURRENCY = NINE_ROUTER_MAX_CONCURRENCY > 1[\s\S]*?NINE_ROUTER_MAX_CONCURRENCY - 1[\s\S]*?: 1/);
+assert.match(llmSource, /export const NINE_ROUTER_DISPATCH_INTERVAL_MS = Math\.ceil\(1_000 \/ NINE_ROUTER_MAX_RPS\)/);
+assert.match(llmSource, /const delay = Math\.max\(0, nextDispatchAt - Date\.now\(\)\)/);
+assert.match(llmSource, /const next = interactiveWaiters\.shift\(\)[\s\S]*backgroundWaiters\.shift\(\)/);
 assert.match(llmSource, /await acquireNineRouterSlot\("interactive"\)/);
 assert.match(llmSource, /NINE_ROUTER_INTERACTIVE_TIMEOUT_MS \|\| 25_000/);
 assert.match(llmSource, /signal: controller\.signal/);

@@ -32,6 +32,9 @@ cp .env.example .env.local
 | `NINE_ROUTER_URL` | Yes | 9router API endpoint (e.g. `http://localhost:20128/v1/chat/completions`) |
 | `NINE_ROUTER_API_KEY` | Yes | API key for 9router |
 | `NINE_ROUTER_MODEL` | No | Model name (default `n8n`) |
+| `NINE_ROUTER_MAX_RPS` | No | Provider request-start cap; default `5`, dispatched evenly every 200ms |
+| `NINE_ROUTER_MAX_CONCURRENCY` | No | Maximum in-flight provider calls; default `30` (raise toward 50 only after monitoring) |
+| `NINE_ROUTER_INTERACTIVE_TIMEOUT_MS` | No | Read Today upstream timeout; default `25000` |
 | `TELEGRAM_BOT_TOKEN` | Yes | Telegram bot token from BotFather |
 | `TELEGRAM_BOT_USERNAME` | For linking | Bot username (needed for deep link generation) |
 | `TELEGRAM_WEBHOOK_SECRET` | For linking | Secret token for webhook endpoint |
