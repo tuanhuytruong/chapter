@@ -134,7 +134,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
       {canEdit && (!log.summary || isFallbackSummary(log.summary)) && log.raw_text && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">
-          <span className="flex-1 text-[11px] text-natural-stone">{isFallbackSummary(log.summary) ? 'This session used a temporary summary because NineRouter was unavailable.' : 'Summary unavailable for this session.'}</span>
+          <span className="flex-1 text-[11px] text-natural-stone">{isFallbackSummary(log.summary) ? 'This session uses a temporary summary because the AI service was unavailable.' : 'Summary unavailable for this session.'}</span>
           <button onClick={retrySummary} disabled={retrying} className="min-h-9 rounded-full bg-natural-sage px-3 text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-50">
             {retrying ? 'Regenerating…' : 'Regenerate summary'}
           </button>

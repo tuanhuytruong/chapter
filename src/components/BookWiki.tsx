@@ -117,7 +117,9 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
 }
 function ReadingMap({ wiki, onSession, openItem, setOpenItem }: { wiki: BookWikiData; onSession: (id: string) => void; openItem: string | null; setOpenItem: (value: string | null) => void }) {
   const threads = (wiki.thread_map || []).map((item) => ({ ...item, detail: item.evolution?.map((e) => `${pageLabel(e.page_start, e.page_start)}: ${e.note}`).join("\n") }));
-  const entities = (wiki.entity_map || []).map((item) => ({ ...item, detail: [item.current_state, item.appearances?.map((e) => `${pageLabel(e.page_start, e.page_start)}: ${e.note}`).join(" · ")].filter(Boolean).join(" ") }));
+  // Preserve each page appearance as its own editorial line rather than
+  // compressing a person's history into one dense run-on paragraph.
+  const entities = (wiki.entity_map || []).map((item) => ({ ...item, detail: [item.current_state, item.appearances?.map((e) => `${pageLabel(e.page_start, e.page_start)}: ${e.note}`).join("\n")].filter(Boolean).join("\n") }));
   return <section className="space-y-3 rounded-2xl border border-natural-border bg-white/45 p-4">
     <div><h2 className="text-xs font-bold text-natural-dark">Reading map</h2><p className="mt-1 text-[11px] text-natural-stone">Follow the path, then open each thread or force where it changes.</p></div>
     {wiki.reading_path?.length ? <ol className="space-y-2">{wiki.reading_path.map((entry) => <li key={entry.log_id}><button onClick={() => onSession(entry.log_id)} className="w-full border-l-2 border-natural-sage/40 py-1 pl-3 text-left"><span className="text-xs font-semibold text-natural-dark">{entry.title} <small className="ml-1 text-[10px] font-bold text-natural-stone">{pageLabel(entry.page_start, entry.page_end)}</small></span><p className="mt-0.5 text-[11px] leading-relaxed text-natural-stone">{entry.turning_point || entry.summary}</p></button></li>)}</ol> : null}
