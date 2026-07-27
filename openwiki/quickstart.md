@@ -31,11 +31,13 @@ The server auto-creates the `chapter` schema tables on boot. Visit `http://local
 - **Filter + Sort + Search** — All / Active / Finished / Paused; sort by recent, title, progress, streak
 - **Book Detail** — reading-log timeline, GitHub-style streak heatmap, expandable raw text, edit/delete
 - **AI Daily Summary** — extract next chunk (PDF/EPUB) → LLM → save summary, key insights, quote
-- **Four analysis modes**:
+- **Five analysis modes**:
   - [Casual](reading-engine.md#casual-mode-summary_mode--casual) — warm 3–5 sentence narrative summary
   - [Deep Reading](reading-engine.md#deep-reading-mode-summary_mode--deep_reading) — structured section-by-section analysis
   - [Reading Lens](reading-engine.md#reading-lens-analysis-srcreadinglensts) — argument mapping for non-fiction (analytical)
   - [Story Thread](reading-engine.md#story-thread-analysis-srcstorythreadts) — character/plot tracking for fiction
+  - [AI Reader Wiki](reading-engine.md#ai-reader--book-wiki-synthesis-srcreaderts) — batch pipeline synthesises a persistent book wiki (concepts, themes, character maps, narrative arc)
+- **Reading Rhythm** — streak tracking with milestone titles (3, 7, 14, 30, 100 days), 14-day heatmap data
 - **Today Dashboard** — view active book, weekly goal, due reviews at a glance
 - **Spaced-Repetition Reviews** — review key insights on an expanding schedule (1–3–7–14–30 days)
 - **Achievements** — 10 gamification milestones (streaks, pages, insights)
@@ -81,21 +83,26 @@ chapter/
 │   ├── achievements.ts         # Gamification milestone evaluation
 │   ├── weekly-goal.ts          # Weekly goal tracking
 │   ├── calendar.ts             # Calendar date utilities
+│   ├── aiReader.ts             # AI Reader batch analysis + wiki synthesis
+│   ├── readingLensRepository.ts # Reading Lens DB access
+│   ├── readingUnits.ts         # Unit label formatting helpers
+│   ├── reading-rhythm.ts       # Reading streak + milestone calculation
 │   ├── types.ts                # Shared TypeScript types
 │   ├── App.tsx                 # React router + layout
 │   ├── api.ts                  # Frontend API client
 │   ├── pages/                  # Library, BookDetail, Today, Insights, etc.
 │   └── components/             # BookCard, DaySummary, JourneyDrawer, etc.
 ├── n8n/chapter-daily-summary.json  # n8n workflow import
-├── scripts/                    # Verification + user management scripts
-├── migrations/                 # SQL migration files
+├── scripts/                    # Verification + user management + AI Reader run scripts
+├── migrations/                 # SQL migration files (10)
+├── .github/workflows/          # CI — OpenWiki daily update workflow
 ├── ecosystem.config.cjs        # PM2 config
 └── update.sh                   # Deploy script
 ```
 
 ## Project history
 
-Built over ~10 days (July 15–25, 2026) by a single developer + AI agent. The repository has 128 commits on a linear `dev` branch, rapidly evolving from core backend through multi-user support, AI analysis modes, Telegram integration, gamification, and polish.
+Built over ~12 days (July 15–26, 2026) by a single developer + AI agent. The repository has 130+ commits on a linear `dev` branch, rapidly evolving from core backend through multi-user support, AI analysis modes, Telegram integration, gamification, AI Reader wiki synthesis, and polish.
 
 ## Backlog
 

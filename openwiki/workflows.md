@@ -92,6 +92,24 @@ The `POST /api/books/all/advance` endpoint is reserved for the n8n scheduled wor
 ### Manual "Read Today"
 Per-book advance at `POST /api/books/:id/advance`. Advances one book by its `daily_pages` setting, generates the analysis, and optionally sends Telegram.
 
+## AI Reader batch job
+
+The `scripts/run-ai-reader.ts` script is a separate pipeline from the daily n8n cron. It processes all books that have uploaded files and LLM-analysed reading logs, then synthesises a persistent per-book wiki:
+
+1. For each book, finds reading-log sessions not yet processed (or all sessions with `--force`).
+2. Extracts text for each session using the existing extractor.
+3. Runs **chunk analysis** (LLM) — extracts concepts, themes, people, close reading, threads, entities, and evidence per session.
+4. Runs **synthesis** (LLM) — merges all chunk analyses into a single `book_wiki` row with narrative arc, continuity maps, and session handoff context.
+
+Designed for nightly PM2 cron or manual invocation:
+```bash
+npx tsx scripts/run-ai-reader.ts                 # all books
+npx tsx scripts/run-ai-reader.ts --book-id <id>  # single book
+npx tsx scripts/run-ai-reader.ts --force          # reprocess all chunks
+```
+
+The AI Reader operates independently of the daily advance cron — it consumes already-generated reading logs and does not trigger new advances.
+
 ## Verification scripts
 
 | Script | Purpose |
@@ -102,5 +120,8 @@ Per-book advance at `POST /api/books/:id/advance`. Advances one book by its `dai
 | `scripts/verify-phase1.mjs` | End-to-end test of the core reading pipeline |
 | `scripts/verify-story-thread.ts` | Tests story thread analysis pipeline |
 | `scripts/verify-onboarding.ts` | Tests onboarding progress endpoints |
+| `scripts/verify-ai-reader.ts` | Tests AI Reader chunk analysis + synthesis parsing |
+| `scripts/verify-reading-rhythm.ts` | Tests reading rhythm streak + milestone calculation |
+| `scripts/verify-read-today.ts` | Tests Read Today button DOM constraints and enrichment flow |
 
 Run with `tsx scripts/<name>.ts` or `tsx scripts/<name>.mjs`.
