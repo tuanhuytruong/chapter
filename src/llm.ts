@@ -249,11 +249,12 @@ ${input.extractedText}`;
 }
 
 /** Call 9router. Returns raw assistant text. */
-export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
+export async function callNineRouter(input: AdvanceLLMInput, strict = false): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
 
   if (!url) {
+    if (strict) throw new Error("NineRouter is not configured");
     console.warn("[llm] NINE_ROUTER_URL not set — using mock");
     return mockResponse(input);
   }
@@ -300,7 +301,8 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
     if (!text) throw new Error("9router returned empty content");
     return text;
   } catch (err: any) {
-    console.error("[llm] 9router interactive summary failed:", err.message, "— using mock");
+    console.error("[llm] 9router interactive summary failed:", err.message, strict ? "— surfacing error" : "— using mock");
+    if (strict) throw err;
     return mockResponse(input);
   }
 }

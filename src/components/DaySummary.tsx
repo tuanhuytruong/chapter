@@ -53,6 +53,10 @@ function InlineMarkdown({ text, highlight }: { text: string; highlight?: string 
     : <React.Fragment key={index}>{highlight ? <HighlightText text={part} query={highlight} /> : part}</React.Fragment>)}</>;
 }
 
+function isFallbackSummary(summary: string | null): boolean {
+  return Boolean(summary && /\[mock (?:summary|Deep Reading)\s*—/i.test(summary));
+}
+
 function DeepReadingSummary({ text, highlight }: { text: string; highlight?: string }) {
   const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
   if (!sections.length) return <p className="text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={text} highlight={highlight} /></p>;
@@ -128,11 +132,11 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
       {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
 
-      {canEdit && !log.summary && log.raw_text && (
+      {canEdit && (!log.summary || isFallbackSummary(log.summary)) && log.raw_text && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">
-          <span className="flex-1 text-[11px] text-natural-stone">Summary unavailable for this session.</span>
+          <span className="flex-1 text-[11px] text-natural-stone">{isFallbackSummary(log.summary) ? 'This session used a temporary summary because NineRouter was unavailable.' : 'Summary unavailable for this session.'}</span>
           <button onClick={retrySummary} disabled={retrying} className="min-h-9 rounded-full bg-natural-sage px-3 text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-50">
-            {retrying ? 'Retrying…' : 'Retry summary'}
+            {retrying ? 'Regenerating…' : 'Regenerate summary'}
           </button>
           {retryError && <p className="w-full text-[10px] text-red-600">{retryError}</p>}
         </div>

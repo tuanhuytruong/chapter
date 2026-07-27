@@ -722,6 +722,9 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
       const analysis = await getStoryThreadAnalysis(id, logId);
       return res.json(analysis || entry);
     }
+    // A retry must never overwrite a visible fallback with another fallback.
+    // Surface an upstream timeout so the owner can retry later with the original
+    // persisted summary still intact.
     const raw = await callNineRouter({
       title: book.title,
       author: book.author,
@@ -732,7 +735,7 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
       fileType: book.file_type,
       lang: book.summary_lang || "auto",
       summaryMode: book.summary_mode || "casual",
-    });
+    }, true);
     const parsed = parseSummary(raw, book.summary_mode || "casual");
     const { rows } = await query(
       `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,

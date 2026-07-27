@@ -6,6 +6,7 @@ const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.
 const booksSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
 const llmSource = readFileSync(new URL("../src/llm.ts", import.meta.url), "utf8");
 const aiReaderSource = readFileSync(new URL("../src/aiReader.ts", import.meta.url), "utf8");
+const daySummarySource = readFileSync(new URL("../src/components/DaySummary.tsx", import.meta.url), "utf8");
 
 assert.match(apiSource, /export interface AdvanceResult[\s\S]*log: LogRow;[\s\S]*readingExperience:/);
 assert.match(apiSource, /advance: \(id: string\) =>\s*req<AdvanceResult>/);
@@ -42,6 +43,11 @@ assert.match(llmSource, /await acquireNineRouterSlot\("interactive"\)/);
 assert.match(llmSource, /NINE_ROUTER_INTERACTIVE_TIMEOUT_MS \|\| 25_000/);
 assert.match(llmSource, /signal: controller\.signal/);
 assert.match(llmSource, /releaseNineRouterSlot\("interactive"\)/);
+assert.match(llmSource, /export async function callNineRouter\(input: AdvanceLLMInput, strict = false\)/);
+assert.match(booksSource, /callNineRouter\(\{[\s\S]*?summaryMode: book\.summary_mode \|\| "casual",[\s\S]*?\}, true\)/);
+assert.match(daySummarySource, /function isFallbackSummary\(summary: string \| null\)/);
+assert.match(daySummarySource, /\(!log\.summary \|\| isFallbackSummary\(log\.summary\)\)/);
+assert.match(daySummarySource, /Regenerate summary/);
 assert.match(booksSource, /SELECT \* FROM books WHERE id=\$1 FOR UPDATE/);
 assert.match(booksSource, /const activeAdvances = new Map/);
 assert.match(booksSource, /EPUB has a persisted unit cursor[\s\S]*ensureEpubReadingUnits\(client, preflightBooks\[0\]\)/);
