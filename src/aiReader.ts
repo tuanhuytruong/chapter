@@ -116,7 +116,9 @@ export interface ChunkInput {
 // NineRouter can process four requests concurrently. Each request contains at
 // most five independent saved sessions to avoid paying one round-trip per log.
 export const AI_READER_BATCH_SIZE = 5;
-export const AI_READER_CONCURRENCY = 4;
+// Keep one provider slot reserved for Read Today. AI Reader is retryable and
+// intentionally yields capacity to reader-facing summaries.
+export const AI_READER_CONCURRENCY = 2;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -273,14 +275,17 @@ async function analyseBatchResilient(inputs: ChunkInput[]): Promise<ChunkAnalysi
     // refuses to publish until every saved session is present.
     if (inputs.length === 1) throw batchError;
     console.warn(`[ai-reader] Batch retrying as ${inputs.length} single sessions: ${(batchError as Error).message}`);
-    const singleResults = await Promise.all(inputs.map(async (input) => {
+    const singleResults: ChunkAnalysis[] = [];
+    // Keep fallback retry traffic deliberately serial and low-priority. A batch
+    // failure must not fan out enough work to starve Read Today of provider slots.
+    for (const input of inputs) {
       try {
-        return await analyseChunkBatch([input]);
+        singleResults.push(...await analyseChunkBatch([input]));
       } catch (singleError) {
         throw new Error(`Session p.${input.pageStart}–${input.pageEnd} failed after batch fallback: ${(singleError as Error).message}`);
       }
-    }));
-    return singleResults.flat();
+    }
+    return singleResults;
   }
 }
 

@@ -6,25 +6,47 @@
  * verified end-to-end. On e7240ubt, point NINE_ROUTER_URL at localhost:20128.
  */
 
-// Shared process-local capacity guard. It covers every route using 9router, so
-// an AI Reader rebuild cannot exceed the provider's four-request budget when a
-// reader simultaneously requests a summary or Reading Lens analysis.
+// Shared process-local provider scheduler. Reader-facing summaries always drain
+// before retryable background analysis; at least one of four slots remains free
+// for an interactive request while background work is active.
 const NINE_ROUTER_CONCURRENCY = 4;
+const NINE_ROUTER_BACKGROUND_CONCURRENCY = 3;
+type LlmPriority = "interactive" | "background";
 let activeNineRouterCalls = 0;
-const nineRouterWaiters: Array<() => void> = [];
+let activeBackgroundCalls = 0;
+const interactiveWaiters: Array<() => void> = [];
+const backgroundWaiters: Array<() => void> = [];
 
-async function acquireNineRouterSlot(): Promise<void> {
-  if (activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
+function drainNineRouterQueue(): void {
+  while (activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
+    const interactive = interactiveWaiters.shift();
+    if (interactive) { activeNineRouterCalls++; interactive(); continue; }
+    if (activeBackgroundCalls >= NINE_ROUTER_BACKGROUND_CONCURRENCY) return;
+    const background = backgroundWaiters.shift();
+    if (!background) return;
+    activeNineRouterCalls++;
+    activeBackgroundCalls++;
+    background();
+  }
+}
+
+async function acquireNineRouterSlot(priority: LlmPriority): Promise<void> {
+  if (priority === "interactive" && activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
     activeNineRouterCalls++;
     return;
   }
-  await new Promise<void>((resolve) => nineRouterWaiters.push(resolve));
-  activeNineRouterCalls++;
+  if (priority === "background" && activeNineRouterCalls < NINE_ROUTER_CONCURRENCY && activeBackgroundCalls < NINE_ROUTER_BACKGROUND_CONCURRENCY && interactiveWaiters.length === 0) {
+    activeNineRouterCalls++;
+    activeBackgroundCalls++;
+    return;
+  }
+  await new Promise<void>((resolve) => (priority === "interactive" ? interactiveWaiters : backgroundWaiters).push(resolve));
 }
 
-function releaseNineRouterSlot(): void {
+function releaseNineRouterSlot(priority: LlmPriority): void {
   activeNineRouterCalls--;
-  nineRouterWaiters.shift()?.();
+  if (priority === "background") activeBackgroundCalls--;
+  drainNineRouterQueue();
 }
 
 /** Generic 9router call with arbitrary system + user prompts. Returns text. */
@@ -34,7 +56,8 @@ export async function callLLM(
   temperature = 0.7,
   strict = false,
   jsonMode = false,
-  timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000)
+  timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000),
+  priority: LlmPriority = "background"
 ): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
@@ -52,9 +75,12 @@ export async function callLLM(
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     let resp: Response;
-    await acquireNineRouterSlot();
+    const queuedAt = Date.now();
+    await acquireNineRouterSlot(priority);
+    const queueWaitMs = Date.now() - queuedAt;
     const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(180_000, Math.max(5_000, timeoutMs)) : 60_000;
     timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
+    if (queueWaitMs > 250) console.info(`[llm] ${priority} slot wait ${queueWaitMs}ms`);
     try {
       resp = await fetch(url, {
         method: "POST",
@@ -73,7 +99,7 @@ export async function callLLM(
       });
     } finally {
       clearTimeout(timer);
-      releaseNineRouterSlot();
+      releaseNineRouterSlot(priority);
     }
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
@@ -218,9 +244,16 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
 
-    await acquireNineRouterSlot();
+    const queuedAt = Date.now();
+    await acquireNineRouterSlot("interactive");
+    const queueWaitMs = Date.now() - queuedAt;
+    const controller = new AbortController();
+    const timeoutMs = Number(process.env.NINE_ROUTER_INTERACTIVE_TIMEOUT_MS || 25_000);
+    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(55_000, Math.max(5_000, timeoutMs)) : 25_000;
+    const timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
     let resp: Response;
     try {
+      if (queueWaitMs > 250) console.info(`[llm] interactive summary slot wait ${queueWaitMs}ms`);
       resp = await fetch(url, {
         method: "POST",
         headers,
@@ -233,9 +266,11 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
           temperature: 0.7,
           stream: false,
         }),
+        signal: controller.signal,
       });
     } finally {
-      releaseNineRouterSlot();
+      clearTimeout(timer);
+      releaseNineRouterSlot("interactive");
     }
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
@@ -246,7 +281,7 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
     if (!text) throw new Error("9router returned empty content");
     return text;
   } catch (err: any) {
-    console.error("[llm] 9router call failed:", err.message, "— using mock");
+    console.error("[llm] 9router interactive summary failed:", err.message, "— using mock");
     return mockResponse(input);
   }
 }

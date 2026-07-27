@@ -54,7 +54,7 @@ assert.match(prompt, /Never reveal, predict, or hint at events beyond page 10/);
 assert.match(prompt, /entirely in English/);
 
 assert.equal(AI_READER_BATCH_SIZE, 5);
-assert.equal(AI_READER_CONCURRENCY, 4);
+assert.equal(AI_READER_CONCURRENCY, 2, "AI Reader yields provider capacity to interactive Read Today");
 const batchInputs = Array.from({ length: 5 }, (_, index) => ({ title: "Test", author: "Author", pageStart: index * 10 + 1, pageEnd: index * 10 + 10, totalPages: 100, lang: "en" as const, text: `Session ${index + 1} source text.` }));
 const batchPrompt = buildChunkBatchPrompt(batchInputs);
 assert.match(batchPrompt, /SESSION 1/);

@@ -547,109 +547,98 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   }
 });
 
-/** Core: extract next chunk, call LLM, persist. Supports multi-session. */
-async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
-  const result: any = await withTransaction(async (client) => {
-    const bRes = await client.query("SELECT * FROM books WHERE id = $1", [bookId]);
-    const book = bRes.rows[0];
-    if (!book) return null;
-    if (book.status !== "active" && !force) return null;
-
+/** Reserve the next session in a short transaction; never hold a DB lock across extraction or LLM work. */
+async function reserveAdvance(bookId: string, force: boolean): Promise<any | null> {
+  return withTransaction(async (client) => {
+    const { rows: books } = await client.query("SELECT * FROM books WHERE id=$1 FOR UPDATE", [bookId]);
+    const book = books[0];
+    if (!book || (book.status !== "active" && !force)) return null;
     const dateStr = today();
-
-    // Find the last session for today (if any) — supports multi-session reading
-    const lastSession = await client.query(
-      `SELECT page_end, session FROM reading_log
-       WHERE book_id=$1 AND date=$2
-       ORDER BY session DESC LIMIT 1`,
+    const { rows: pending } = await client.query(
+      `SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 AND raw_text IS NULL ORDER BY session DESC LIMIT 1`,
       [bookId, dateStr]
     );
-
-    const sessionNum = lastSession.rows.length ? lastSession.rows[0].session + 1 : 1;
-    const start = lastSession.rows.length
-      ? lastSession.rows[0].page_end + 1   // continue from last session's end
-      : book.current_page + 1;             // first session: use book cursor
-
-    let end: number;
-    let text: string;
-    let chapterTitle: string | null;
-    let totalPages: number;
-
-    if (book.file_type === "epub") {
-      totalPages = await ensureEpubReadingUnits(client, book);
-      if (start > totalPages) return { bookId, skipped: true, reason: "book finished" };
-      end = Math.min(start + Math.max(1, book.daily_pages) - 1, totalPages);
-      const { rows: units } = await client.query(
-        `SELECT unit_index, title, raw_text FROM book_reading_units
-         WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`,
-        [bookId, start, end]
-      );
-      if (!units.length) throw new Error("EPUB reading chunk not found");
-      text = units.map((unit: any) => unit.raw_text).join("\n\n");
-      chapterTitle = units.find((unit: any) => unit.title)?.title || null;
-    } else {
-      end = Math.min(start + book.daily_pages - 1, book.total_pages || start + book.daily_pages);
-      if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
-      const extracted = await extractRange(book.file_path, book.file_type, start, end);
-      text = extracted.text;
-      totalPages = book.total_pages || extracted.totalUnits;
-      chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
-    }
-
-    // Story books do not invoke the analytical summary pipeline. Their compatible
-    // log fields are filled by Story Thread only after this transaction commits.
-    const parsed = book.reading_experience === "story"
-      ? { summary: "Story Thread analysis is being prepared.", key_insights: [], quote: null }
-      : parseSummary(await callNineRouter({
-        title: book.title, author: book.author, start, end, total: totalPages,
-        extractedText: text, fileType: book.file_type,
-        lang: (book.summary_lang as "auto" | "vi" | "en") || "auto", summaryMode: book.summary_mode || "casual",
-      }), book.summary_mode || "casual");
-
-    // Update book cursor — always advances regardless of session count
-    const newCurrent = end;
-    const finished = newCurrent >= (totalPages || newCurrent);
-    await client.query(
-      `UPDATE books SET current_page=$1, total_pages=$2, status=CASE WHEN $3 THEN 'finished' ELSE status END WHERE id=$4`,
-      [newCurrent, totalPages, finished, bookId]
+    if (pending[0]) return { book, dateStr, log: pending[0], start: pending[0].page_start, end: pending[0].page_end, resumed: true };
+    const { rows: prior } = await client.query(
+      `SELECT page_end, session FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session DESC LIMIT 1`, [bookId, dateStr]
     );
-
-    const ins = await client.query(
-      `INSERT INTO reading_log (book_id, date, session, page_start, page_end, raw_text, summary, key_insights, quote, chapter_title)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [bookId, dateStr, sessionNum, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
+    const start = prior[0] ? prior[0].page_end + 1 : book.current_page + 1;
+    if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
+    const end = Math.min(start + Math.max(1, book.daily_pages) - 1, book.total_pages || start + Math.max(1, book.daily_pages) - 1);
+    const session = prior[0] ? prior[0].session + 1 : 1;
+    const { rows } = await client.query(
+      `INSERT INTO reading_log (book_id,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [bookId, dateStr, session, start, end, "Reading session is being prepared."]
     );
+    await client.query("UPDATE books SET current_page=$1 WHERE id=$2", [end, bookId]);
+    return { book, dateStr, log: rows[0], start, end, resumed: false };
+  });
+}
 
-    // Story sessions intentionally never seed analytical spaced-review cards.
+// Same-book requests may arrive from two tabs before either client disables its
+// CTA. Share the in-flight reservation/result instead of processing a pending
+// row twice; a later retry starts a new process after this promise settles.
+const activeAdvances = new Map<string, Promise<any | null>>();
+
+/** Core: reserve atomically, then extract/call LLM outside any DB transaction. */
+async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
+  const active = activeAdvances.get(bookId);
+  if (active) return active;
+  const running = advanceBookNow(bookId, force);
+  activeAdvances.set(bookId, running);
+  try {
+    return await running;
+  } finally {
+    if (activeAdvances.get(bookId) === running) activeAdvances.delete(bookId);
+  }
+}
+
+async function advanceBookNow(bookId: string, force: boolean): Promise<any | null> {
+  // EPUB has a persisted unit cursor. Initialize it before reserving the range
+  // so a new or stale total_pages value cannot reserve beyond the real last unit.
+  const { rows: preflightBooks } = await query("SELECT * FROM books WHERE id=$1", [bookId]);
+  if (preflightBooks[0]?.file_type === "epub") {
+    await withTransaction(async (client) => { await ensureEpubReadingUnits(client, preflightBooks[0]); });
+  }
+  const reservation = await reserveAdvance(bookId, force);
+  if (!reservation || reservation.skipped) return reservation;
+  const { book, dateStr, log, start, end } = reservation;
+  let text: string;
+  let chapterTitle: string | null;
+  let totalPages = book.total_pages;
+  if (book.file_type === "epub") {
+    // EPUB unit initialization is retained for existing books; the row lock has
+    // already been released before this potentially expensive work begins.
+    await withTransaction(async (client) => { totalPages = await ensureEpubReadingUnits(client, book); });
+    const { rows: units } = await query(`SELECT unit_index,title,raw_text FROM book_reading_units WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`, [bookId, start, end]);
+    if (!units.length) throw new Error("EPUB reading chunk not found");
+    text = units.map((unit: any) => unit.raw_text).join("\n\n");
+    chapterTitle = units.find((unit: any) => unit.title)?.title || null;
+  } else {
+    const extracted = await extractRange(book.file_path, book.file_type, start, end);
+    text = extracted.text;
+    totalPages = book.total_pages || extracted.totalUnits;
+    chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
+  }
+  const parsed = book.reading_experience === "story"
+    ? { summary: "Story Thread analysis is being prepared.", key_insights: [], quote: null }
+    : parseSummary(await callNineRouter({ title: book.title, author: book.author, start, end, total: totalPages, extractedText: text, fileType: book.file_type, lang: (book.summary_lang as "auto" | "vi" | "en") || "auto", summaryMode: book.summary_mode || "casual" }), book.summary_mode || "casual");
+  const result: any = await withTransaction(async (client) => {
+    const finished = end >= totalPages;
+    const { rows } = await client.query(
+      `UPDATE reading_log SET raw_text=$1,summary=$2,key_insights=$3,quote=$4,chapter_title=$5 WHERE id=$6 AND book_id=$7 RETURNING *`,
+      [text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle, log.id, bookId]
+    );
+    if (!rows[0]) throw new Error("reserved reading session was not found");
+    await client.query(`UPDATE books SET current_page=$1,total_pages=$2,status=CASE WHEN $3 THEN 'finished' ELSE status END WHERE id=$4`, [end, totalPages, finished, bookId]);
     if (book.reading_experience !== "story") {
-    // Seed only the insights produced by this new session. The source log/index
-    // unique constraint makes this idempotent and deliberately avoids backfill.
-    const firstDue = reviewOutcome(1, false, dateStr).dueDate;
-    for (const [insightIndex, insight] of parsed.key_insights.entries()) {
-      const trimmed = insight.trim();
-      if (!trimmed) continue;
-      await client.query(
-        `INSERT INTO review_cards (book_id, log_id, insight_index, insight, due_date)
-         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id, insight_index) DO NOTHING`,
-        [bookId, ins.rows[0].id, insightIndex, trimmed, firstDue]
-      );
+      const firstDue = reviewOutcome(1, false, dateStr).dueDate;
+      for (const [insightIndex, insight] of parsed.key_insights.entries()) {
+        const trimmed = insight.trim();
+        if (trimmed) await client.query(`INSERT INTO review_cards (book_id,log_id,insight_index,insight,due_date) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id,insight_index) DO NOTHING`, [bookId, rows[0].id, insightIndex, trimmed, firstDue]);
+      }
     }
-    }
-
-    return {
-      bookId,
-      title: book.title,
-      author: book.author,
-      summaryLang: book.summary_lang || "auto",
-      date: dateStr,
-      session: sessionNum,
-      pageStart: start,
-      pageEnd: end,
-      totalUnits: totalPages,
-      finished,
-      log: ins.rows[0],
-      readingExperience: book.reading_experience || "analytical",
-    };
+    return { bookId, title: book.title, author: book.author, summaryLang: book.summary_lang || "auto", date: dateStr, session: rows[0].session, pageStart: start, pageEnd: end, totalUnits: totalPages, finished, log: rows[0], readingExperience: book.reading_experience || "analytical" };
   });
   if (result?.log?.raw_text) {
     // Enrichment starts only after the reading transaction commits.
