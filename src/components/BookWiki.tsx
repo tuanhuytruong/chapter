@@ -50,12 +50,13 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
   const [regenerating, setRegenerating] = useState(false);
   const [openSession, setOpenSession] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   const fetchReader = useCallback(async () => {
     try {
       const [nextWiki, nextStatus, nextSessions] = await Promise.all([
-        req<BookWikiData>(`/api/books/${bookId}/wiki`).catch(() => null),
-        req<WikiStatus>(`/api/books/${bookId}/wiki/status`).catch(() => null),
+        req<BookWikiData>(`/api/books/${bookId}/wiki`),
+        req<WikiStatus>(`/api/books/${bookId}/wiki/status`),
         // V2 is optional while rolling out. A missing endpoint deliberately falls back to V1.
         req<ReaderSession[] | { sessions?: ReaderSession[] }>(`/api/books/${bookId}/wiki/sessions`).catch(() => null),
       ]);
@@ -72,7 +73,8 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
           summary: analysis?.close_reading || analysis?.session_summary || analysis?.chunk_summary || analysis?.summary,
         } as ReaderSession;
       }) ?? null);
-    } finally { setLoading(false); }
+    } catch (error: any) { setRequestError(error.message || "AI Reader could not be loaded."); }
+    finally { setLoading(false); }
   }, [bookId]);
   useEffect(() => { void fetchReader(); }, [fetchReader]);
   const running = status?.jobStatus === "running";
@@ -87,6 +89,7 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
   const isVietnamese = wiki?.output_language === "vi";
 
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div>;
+  if (requestError) return <div className="rounded-2xl border border-natural-clay/30 bg-natural-clay/10 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">AI Reader is unavailable</p><p className="mt-1 text-[11px] text-natural-stone">{requestError}</p><button onClick={() => { setRequestError(null); setLoading(true); void fetchReader(); }} className="mt-4 min-h-11 rounded-full border border-natural-sage/40 px-4 text-xs font-bold text-natural-sage">Try again</button></div>;
   if (!status?.hasFile || status.totalSessions === 0) return <Empty message={!status?.hasFile ? "Upload a PDF or EPUB to enable the AI Reader." : "The AI Reader will begin after your first reading session."} />;
   if (!wiki) return <div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">{running ? "AI Reader is reading" : "AI Reader is preparing"}</p><p className="mt-1 text-[11px] text-natural-stone">{status?.jobError || "Your saved sessions will appear here when processing finishes."}</p>{canEdit && <button onClick={refresh} disabled={running || regenerating} className="mt-4 min-h-11 rounded-full border border-natural-sage/40 px-4 text-xs font-bold text-natural-sage disabled:opacity-50">{running || regenerating ? "Running…" : "Run AI Reader now"}</button>}</div>;
 

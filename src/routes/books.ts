@@ -43,15 +43,14 @@ function progressPct(b: any): number {
   return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
 }
 
-// Resolve a book file path. If the user supplies an absolute path (starts with
-// "/") we keep it as-is (backward compatible). Otherwise we treat the value as
-// a filename/relative path inside CHAPTER_BOOKS_DIR so the user only has to
-// type e.g. "atomic-habits.pdf".
-function resolveBookPath(input: string): string {
-  const p = input.trim();
-  if (p.startsWith("/")) return p;
-  const dir = config.booksDir.replace(/\/+$/, "");
-  return `${dir}/${p}`;
+// Registration accepts only a path whose ownership was recorded by POST /upload.
+// Normalization prevents aliases from bypassing the registry lookup; upload itself
+// is the sole code path that can register a path.
+function normalizeUploadPath(input: string): string {
+  const candidate = input.trim();
+  return path.isAbsolute(candidate)
+    ? path.resolve(candidate)
+    : path.resolve(config.booksDir, candidate);
 }
 
 /** Build an EPUB map only once. Chunk indices are persisted and become the
@@ -83,7 +82,7 @@ booksRouter.get("/", async (req: Request, res: Response) => {
     const scope = req.query.scope || "mine";
     if (scope !== "mine" && scope !== "all") return res.status(400).json({ error: "scope must be 'mine' or 'all'" });
     const { rows } = await query(
-      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
+      `SELECT b.id, b.title, b.author, b.file_type, b.total_pages, b.daily_pages, b.current_page, b.status, b.summary_lang, b.reading_experience, b.summary_mode, b.cover_url, CASE WHEN b.owner_id=$1 THEN b.reflection_text ELSE NULL END AS reflection_text, CASE WHEN b.owner_id=$1 THEN b.reflection_at ELSE NULL END AS reflection_at, b.queue_order, b.created_at, b.owner_id, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
        FROM books b LEFT JOIN users u ON u.id=b.owner_id
        WHERE ($2 = 'all' OR b.owner_id = $1)
        ORDER BY u.display_name NULLS LAST, b.created_at DESC`,
@@ -141,9 +140,20 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const initialStatus = status === "queued" ? "queued" : "active";
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
   const readingExperience = ["analytical", "story"].includes(reading_experience) ? reading_experience : "analytical";
-  const resolvedPath = resolveBookPath(file_path);
+  const resolvedPath = normalizeUploadPath(file_path);
   try {
     const { rows } = await withTransaction(async (client) => {
+      // Claim first inside this transaction. The affected-row check prevents two
+      // simultaneous create requests from attaching the same upload twice.
+      const claim = await client.query(
+        "UPDATE uploaded_files SET claimed_at=now() WHERE owner_id=$1 AND file_path=$2 AND claimed_at IS NULL RETURNING file_path",
+        [userFrom(req).id, resolvedPath]
+      );
+      if (!claim.rows.length) {
+        const error: any = new Error("file_path must refer to one of your unclaimed uploads");
+        error.statusCode = 403;
+        throw error;
+      }
       const queueOrder = initialStatus === "queued"
         ? Number((await client.query("SELECT COALESCE(MAX(queue_order), 0) + 1 AS next FROM books WHERE owner_id=$1 AND status='queued'", [userFrom(req).id])).rows[0].next)
         : null;
@@ -155,7 +165,8 @@ booksRouter.post("/", async (req: Request, res: Response) => {
     });
     res.status(201).json(rows[0]);
   } catch (e: any) {
-    res.status(503).json({ error: "DB unavailable", detail: e.message });
+    const statusCode = Number.isInteger(e?.statusCode) ? e.statusCode : 503;
+    res.status(statusCode).json({ error: statusCode === 403 ? e.message : "DB unavailable", detail: statusCode === 403 ? undefined : e.message });
   }
 });
 
@@ -255,7 +266,7 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ ok: true, deletedFile: filePath || null });
+    res.json({ ok: true });
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
@@ -385,7 +396,7 @@ booksRouter.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { rows } = await query(
-      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $2) AS can_edit
+      `SELECT b.id, b.title, b.author, b.file_type, b.total_pages, b.daily_pages, b.current_page, b.status, b.summary_lang, b.reading_experience, b.summary_mode, b.cover_url, CASE WHEN b.owner_id=$2 THEN b.reflection_text ELSE NULL END AS reflection_text, CASE WHEN b.owner_id=$2 THEN b.reflection_at ELSE NULL END AS reflection_at, b.queue_order, b.created_at, b.owner_id, u.display_name AS owner_name, (b.owner_id = $2) AS can_edit
        FROM books b LEFT JOIN users u ON u.id=b.owner_id WHERE b.id = $1`,
       [id, userFrom(req).id]
     );
@@ -400,6 +411,8 @@ booksRouter.get("/:id", async (req: Request, res: Response) => {
 booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
       "SELECT * FROM reading_log WHERE book_id = $1 ORDER BY date DESC, session DESC",
       [id]
@@ -688,6 +701,8 @@ async function generateStoryThreadForLog(log: any, book: { title: string; author
 booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
       "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session ASC",
       [id, today()]

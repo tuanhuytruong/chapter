@@ -12,7 +12,7 @@ import { resolve } from "path";
 import { execSync } from "child_process";
 
 // 1) Spin up an in-memory Postgres compatible with `pg`
-const db = newDb();
+const db = newDb({ autoCreateForeignKeyIndices: true });
 db.public.registerFunction({
   name: "gen_random_uuid",
   implementation: () => crypto.randomUUID(),
@@ -29,8 +29,21 @@ db.public.registerFunction({ name: "now", implementation: () => new Date(), impu
 let schema = readFileSync(resolve(process.cwd(), "src/db/schema.sql"), "utf8");
 schema = schema
   .replace(/CREATE SCHEMA IF NOT EXISTS chapter;/g, "")
-  .replace(/chapter\./g, "");
-db.public.query(schema);
+  .replace(/chapter\./g, "")
+  // pg-mem does not implement PostgreSQL's ALTER TABLE constraint lifecycle.
+  .replace(/ALTER TABLE[\s\S]*?ADD CONSTRAINT[\s\S]*?;/g, "")
+  .replace(/DROP INDEX IF EXISTS[^;]+;/g, "")
+  .replace(/CREATE INDEX IF NOT EXISTS[^;]+;/g, "")
+  .replace(/,?\s*UNIQUE \(book_id, date\)\s*(?:--[^\n]*)?/g, "");
+for (const statement of schema.replace(/--[^\n]*/g, "").replace(/COLLATE "default"/g, "").split(";").map((value) => value.trim()).filter(Boolean)) {
+  // pg-mem intentionally does not cover Postgres's idempotent constraint and
+  // index DDL; the fresh-table CREATE statements above cover this verifier.
+  if (/^ALTER TABLE/i.test(statement) || /^CREATE INDEX/i.test(statement) || /^DROP INDEX/i.test(statement)) continue;
+  db.public.query(statement);
+}
+// Columns normally added by idempotent production migrations.
+db.public.query("ALTER TABLE books ADD COLUMN owner_id UUID REFERENCES users(id); ALTER TABLE books ADD COLUMN queue_order INT; ALTER TABLE reading_log ADD COLUMN notes TEXT; ALTER TABLE reading_log ADD COLUMN chapter_title TEXT; ALTER TABLE reading_log ADD COLUMN session INT NOT NULL DEFAULT 1;");
+db.public.query("ALTER TABLE book_wiki ADD COLUMN schema_version SMALLINT NOT NULL DEFAULT 1; ALTER TABLE book_wiki ADD COLUMN output_language TEXT NOT NULL DEFAULT 'en'; ALTER TABLE book_wiki ADD COLUMN book_so_far TEXT NOT NULL DEFAULT ''; ALTER TABLE book_wiki ADD COLUMN current_position JSONB NOT NULL DEFAULT '{}'; ALTER TABLE book_wiki ADD COLUMN narrative_arc JSONB NOT NULL DEFAULT '[]'; ALTER TABLE book_wiki ADD COLUMN carry_forward_insights JSONB NOT NULL DEFAULT '[]'; ALTER TABLE book_wiki ADD COLUMN reading_path JSONB NOT NULL DEFAULT '[]'; ALTER TABLE book_wiki ADD COLUMN thread_map JSONB NOT NULL DEFAULT '[]'; ALTER TABLE book_wiki ADD COLUMN entity_map JSONB NOT NULL DEFAULT '[]'; ALTER TABLE book_wiki ADD COLUMN connections JSONB NOT NULL DEFAULT '[]'; ALTER TABLE book_wiki ADD COLUMN current_reading_state JSONB NOT NULL DEFAULT '{}'; ALTER TABLE book_wiki ADD COLUMN next_session_context TEXT NOT NULL DEFAULT '';");
 
 // 4) Expose a pg-compatible Pool to our db layer
 const PgPool = db.adapters.createPg().Pool;
@@ -46,6 +59,11 @@ import express from "express";
 
 const app = express();
 app.use(express.json());
+app.use((req, _res, next) => {
+  const id = req.header("x-verifier-user") || "00000000-0000-4000-8000-000000000001";
+  req.session = { user: { id, username: id.endsWith("2") ? "other" : "verifier", displayName: "Verifier" } };
+  next();
+});
 app.use("/api/books", booksRouter);
 
 const server = app.listen(0);
@@ -65,6 +83,8 @@ function assert(cond, msg) {
 }
 
 async function main() {
+  await pool.query("INSERT INTO users (id, username, password_hash, display_name) VALUES ($1,$2,$3,$4)", ["00000000-0000-4000-8000-000000000001", "verifier", "x", "Verifier"]);
+  await pool.query("INSERT INTO uploaded_files (file_path, owner_id) VALUES ($1,$2)", [PDF, "00000000-0000-4000-8000-000000000001"]);
   // ── B7: register a book ──
   const reg = await fetch(`${base}/api/books`, {
     method: "POST",
@@ -79,8 +99,20 @@ async function main() {
     }),
   });
   const book = await reg.json();
+  if (!book.id) console.error("registration response:", reg.status, book);
   assert(book.id, "B7 POST /api/books returns id");
   const bookId = book.id;
+  await pool.query("INSERT INTO users (id, username, password_hash, display_name) VALUES ($1,$2,$3,$4)", ["00000000-0000-4000-8000-000000000002", "other", "x", "Other"]);
+
+  // Cross-user hardening: a known but non-owner file path cannot be claimed,
+  // and private logs remain unavailable to other authenticated readers.
+  const foreignCreate = await fetch(`${base}/api/books`, {
+    method: "POST", headers: { "Content-Type": "application/json", "x-verifier-user": "00000000-0000-4000-8000-000000000002" },
+    body: JSON.stringify({ title: "Stolen", file_path: PDF, file_type: "pdf" }),
+  });
+  assert(foreignCreate.status === 403, "upload path cannot be claimed by another user");
+  const foreignLog = await fetch(`${base}/api/books/${bookId}/log`, { headers: { "x-verifier-user": "00000000-0000-4000-8000-000000000002" } });
+  assert(foreignLog.status === 404, "private reading log is unavailable to another user");
 
   // ── B7: GET list ──
   const list = await (await fetch(`${base}/api/books`)).json();
@@ -96,23 +128,23 @@ async function main() {
   console.log("   summary:", advRes.log.summary.slice(0, 90) + "...");
   console.log("   insights:", advRes.log.key_insights);
 
-  // ── B6 idempotency: second advance same day skipped ──
+  // ── Multi-session: a second intentional advance continues after the first ──
   const adv2 = await fetch(`${base}/api/books/${bookId}/advance`, { method: "POST" });
   const adv2Res = await adv2.json();
-  assert(adv2Res.skipped === true, "B6 idempotent: repeat advance skipped");
+  assert(adv2Res.pageStart === 4 && adv2Res.session === 2, "multi-session advance continues at page 4");
 
-  // ── B6: all/advance over active books ──
+  // ── B6: all/advance remains scoped to the authenticated owner ──
   const all = await fetch(`${base}/api/books/all/advance`, { method: "POST" });
   const allRes = await all.json();
-  assert(allRes.advanced === 1, "B6 /all/advance advanced 1 (idempotent, no dup)");
+  assert(allRes.advanced === 1, "B6 /all/advance processes the owner's active book");
 
   // ── log history ──
   const log = await (await fetch(`${base}/api/books/${bookId}/log`)).json();
-  assert(log.length === 1, "B7 GET /:id/log returns 1 entry");
+  assert(log.length === 3, "B7 GET /:id/log returns all saved sessions");
 
   // ── today's entry (Phase 3 prep) ──
   const today = await (await fetch(`${base}/api/books/${bookId}/log/today`)).json();
-  assert(today.id, "Phase3 GET /:id/log/today returns entry");
+  assert(Array.isArray(today) && today.length === 3, "Phase3 GET /:id/log/today returns sessions");
 
   // ── PATCH status ──
   const patch = await fetch(`${base}/api/books/${bookId}`, {

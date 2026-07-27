@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run verify:phase1
+      - run: npm run verify:reading-lens
+      - run: npm run verify:story-thread
+      - run: npm run verify:onboarding
+      - run: npm run verify:ai-reader
+      - run: npm run verify:reading-rhythm
+      - run: npm run verify:read-today
+# verify:9router intentionally stays out of CI: it requires external secrets.

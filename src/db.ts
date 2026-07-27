@@ -127,7 +127,7 @@ export async function ensureSchema(): Promise<void> {
  * A missing relation means the deployment is only partially migrated and must fail
  * fast rather than turning Today, Review, or Momentum into a misleading 503. */
 export async function verifyCoreSchema(): Promise<void> {
-  const required = ["books", "reading_log", "review_cards", "weekly_reading_goals", "story_thread_analyses", "story_state_snapshots", "onboarding_progress"];
+  const required = ["books", "reading_log", "uploaded_files", "review_cards", "weekly_reading_goals", "story_thread_analyses", "story_state_snapshots", "onboarding_progress"];
   const { rows } = await query<{ relation: string | null }>(
     "SELECT to_regclass('chapter.' || unnest($1::text[])) AS relation",
     [required]

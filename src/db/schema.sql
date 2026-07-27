@@ -14,6 +14,19 @@
 
 CREATE SCHEMA IF NOT EXISTS chapter;
 
+-- Bootstrap identities before tables that reference an owner. This is also kept
+-- here (not only in a deployment migration) so an empty database is usable.
+CREATE TABLE IF NOT EXISTS chapter.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  avatar_url TEXT,
+  telegram_chat_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+
 -- ───────────────────────────────────────────────────────────
 -- chapter.session (express-session via connect-pg-simple)
 -- ───────────────────────────────────────────────────────────
@@ -51,6 +64,17 @@ CREATE TABLE IF NOT EXISTS chapter.books (
 );
 
 CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
+
+-- Upload ownership is separate from books while a file is waiting to be saved.
+-- A claimed file remains recorded so another user cannot attach it later.
+CREATE TABLE IF NOT EXISTS chapter.uploaded_files (
+  file_path TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_owner_unclaimed
+  ON chapter.uploaded_files (owner_id) WHERE claimed_at IS NULL;
 
 -- Per-reader, dismissible onboarding milestones. Content remains in the client.
 CREATE TABLE IF NOT EXISTS chapter.onboarding_progress (
@@ -189,6 +213,27 @@ CREATE TABLE IF NOT EXISTS chapter.story_state_snapshots (
   last_log_id UUID REFERENCES chapter.reading_log(id) ON DELETE SET NULL,
   state JSONB NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- AI Reader base tables must be created before their additive fields below.
+CREATE TABLE IF NOT EXISTS chapter.ai_reader_chunks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  page_start INT NOT NULL,
+  page_end INT NOT NULL,
+  chunk_analysis JSONB NOT NULL,
+  processed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (log_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_reader_chunks_book ON chapter.ai_reader_chunks (book_id, processed_at ASC);
+CREATE TABLE IF NOT EXISTS chapter.book_wiki (
+  book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
+  pages_covered INT NOT NULL DEFAULT 0,
+  overview TEXT NOT NULL DEFAULT '',
+  concepts JSONB NOT NULL DEFAULT '[]', themes JSONB NOT NULL DEFAULT '[]', people JSONB NOT NULL DEFAULT '[]',
+  chapter_map JSONB NOT NULL DEFAULT '[]', notable_quotes JSONB NOT NULL DEFAULT '[]', open_questions JSONB NOT NULL DEFAULT '[]',
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT now(), generation_ms INT
 );
 
 -- Migration: additive AI Reader narrative fields (idempotent).

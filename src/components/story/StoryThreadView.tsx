@@ -64,6 +64,7 @@ export default function StoryThreadView({ analyses, logs, onRetry, retryingLogId
       {state.readerMemory.length ? <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-natural-dark">{state.readerMemory.map((memory, index) => <li key={index}>• {memory}</li>)}</ul> : <p className="mt-2 text-xs text-natural-stone">Your reader memory will gather the details that help you return to the story.</p>}
     </section>
 
+    {pendingLogs.length > 0 && onRetry && <section className="rounded-2xl border border-dashed border-natural-border p-4"><p className="text-xs text-natural-stone">Some saved sessions still need Story Thread analysis.</p><button onClick={() => onRetry(pendingLogs[0].id)} disabled={retryingLogId === pendingLogs[0].id} className="mt-3 min-h-11 rounded-full border border-natural-sage px-4 py-2 text-xs font-bold text-natural-sage disabled:opacity-50">{retryingLogId === pendingLogs[0].id ? 'Preparing…' : 'Prepare next session'}</button></section>}
     <section>
       <h3 className="mb-3 text-sm font-bold text-natural-dark">Reading sessions</h3>
       <div className="space-y-3">{[...analyses].reverse().map((item) => <div key={item.id}><SessionStory item={item} log={logById.get(item.log_id)} /></div>)}</div>
