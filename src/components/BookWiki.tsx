@@ -54,13 +54,18 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
 
   const fetchReader = useCallback(async () => {
     try {
-      const [nextWiki, nextStatus, nextSessions] = await Promise.all([
-        req<BookWikiData>(`/api/books/${bookId}/wiki`),
+      // Status is the durable baseline. A book without a generated wiki is a normal,
+      // shared read-only state—not a failed AI Reader tab for another reader.
+      const [nextStatus, wikiResult, nextSessions] = await Promise.all([
         req<WikiStatus>(`/api/books/${bookId}/wiki/status`),
+        req<BookWikiData>(`/api/books/${bookId}/wiki`).catch((error: Error) => {
+          if (error.message.startsWith("404:")) return null;
+          throw error;
+        }),
         // V2 is optional while rolling out. A missing endpoint deliberately falls back to V1.
         req<ReaderSession[] | { sessions?: ReaderSession[] }>(`/api/books/${bookId}/wiki/sessions`).catch(() => null),
       ]);
-      setWiki(nextWiki); setStatus(nextStatus);
+      setRequestError(null); setWiki(wikiResult); setStatus(nextStatus);
       const rawSessions = Array.isArray(nextSessions) ? nextSessions : nextSessions?.sessions ?? null;
       setSessions(rawSessions?.map((row: any) => {
         const analysis = row?.chunk_analysis && typeof row.chunk_analysis === "object" ? row.chunk_analysis : row;
@@ -91,7 +96,13 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div>;
   if (requestError) return <div className="rounded-2xl border border-natural-clay/30 bg-natural-clay/10 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">AI Reader is unavailable</p><p className="mt-1 text-[11px] text-natural-stone">{requestError}</p><button onClick={() => { setRequestError(null); setLoading(true); void fetchReader(); }} className="mt-4 min-h-11 rounded-full border border-natural-sage/40 px-4 text-xs font-bold text-natural-sage">Try again</button></div>;
   if (!status?.hasFile || status.totalSessions === 0) return <Empty message={!status?.hasFile ? "Upload a PDF or EPUB to enable the AI Reader." : "The AI Reader will begin after your first reading session."} />;
-  if (!wiki) return <div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">{running ? "AI Reader is reading" : "AI Reader is preparing"}</p><p className="mt-1 text-[11px] text-natural-stone">{status?.jobError || "Your saved sessions will appear here when processing finishes."}</p>{canEdit && <button onClick={refresh} disabled={running || regenerating} className="mt-4 min-h-11 rounded-full border border-natural-sage/40 px-4 text-xs font-bold text-natural-sage disabled:opacity-50">{running || regenerating ? "Running…" : "Run AI Reader now"}</button>}</div>;
+  if (!wiki) {
+    const message = status?.jobError
+      || (running ? "The owner is preparing this reading map. It will appear here when processing finishes." : canEdit
+        ? "Your saved sessions will appear here when processing finishes."
+        : "The owner has not generated a shared AI Reader map for this book yet.");
+    return <div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">{running ? "AI Reader is reading" : canEdit ? "AI Reader is preparing" : "AI Reader is not available yet"}</p><p className="mt-1 text-[11px] text-natural-stone">{message}</p>{canEdit && <button onClick={refresh} disabled={running || regenerating} className="mt-4 min-h-11 rounded-full border border-natural-sage/40 px-4 text-xs font-bold text-natural-sage disabled:opacity-50">{running || regenerating ? "Running…" : "Run AI Reader now"}</button>}</div>;
+  }
 
   return <div className="space-y-4">
     <header className="flex flex-wrap items-start justify-between gap-3"><div><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-natural-sage"><Brain className="h-4 w-4" />AI Reader</p><p className="mt-1 text-xs text-natural-stone">A drillable reading map built from saved sessions—not raw source text.</p></div>{canEdit && <button onClick={refresh} disabled={running || regenerating} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-natural-border px-3 text-[11px] font-bold text-natural-stone disabled:opacity-50">{running || regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}{running ? "Reading…" : "Refresh"}</button>}</header>
