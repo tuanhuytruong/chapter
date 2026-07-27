@@ -53,16 +53,16 @@ const prompt = buildSynthesisPrompt({ title: "Test", author: "Author", totalPage
 assert.match(prompt, /Never reveal, predict, or hint at events beyond page 10/);
 assert.match(prompt, /entirely in English/);
 
-assert.equal(AI_READER_BATCH_SIZE, 5);
+assert.equal(AI_READER_BATCH_SIZE, 2, "Two sessions stay below the provider's observed connection cutoff");
 assert.equal(AI_READER_CONCURRENCY, 2, "AI Reader yields provider capacity to interactive Read Today");
-const batchInputs = Array.from({ length: 5 }, (_, index) => ({ title: "Test", author: "Author", pageStart: index * 10 + 1, pageEnd: index * 10 + 10, totalPages: 100, lang: "en" as const, text: `Session ${index + 1} source text.` }));
+const batchInputs = Array.from({ length: 2 }, (_, index) => ({ title: "Test", author: "Author", pageStart: index * 10 + 1, pageEnd: index * 10 + 10, totalPages: 100, lang: "en" as const, text: `Session ${index + 1} source text.` }));
 const batchPrompt = buildChunkBatchPrompt(batchInputs);
 assert.match(batchPrompt, /SESSION 1/);
-assert.match(batchPrompt, /SESSION 5/);
-assert.throws(() => buildChunkBatchPrompt([...batchInputs, batchInputs[0]]), /1–5 sessions/);
-const batchAnalyses = parseChunkBatchAnalysis(JSON.stringify({ analyses: batchInputs.map((_, index) => ({ session: index + 1, chunk_summary: `Session ${index + 1}`, concepts: [], themes: [], people: [], notable_quotes: [] })) }), 5);
-assert.equal(batchAnalyses.length, 5);
-assert.equal(batchAnalyses[4].chunk_summary, "Session 5");
+assert.match(batchPrompt, /SESSION 2/);
+assert.throws(() => buildChunkBatchPrompt([...batchInputs, batchInputs[0]]), /1–2 sessions/);
+const batchAnalyses = parseChunkBatchAnalysis(JSON.stringify({ analyses: batchInputs.map((_, index) => ({ session: index + 1, chunk_summary: `Session ${index + 1}`, concepts: [], themes: [], people: [], notable_quotes: [] })) }), 2);
+assert.equal(batchAnalyses.length, 2);
+assert.equal(batchAnalyses[1].chunk_summary, "Session 2");
 assert.throws(() => parseChunkBatchAnalysis(JSON.stringify({ analyses: [{ session: 2 }] }), 1), /preserve session order/);
 
 // Consecutive one-page sessions must contribute all the way through page 3,

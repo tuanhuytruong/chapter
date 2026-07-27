@@ -113,9 +113,10 @@ export interface ChunkInput {
   text: string;
 }
 
-// NineRouter can process four requests concurrently. Each request contains at
-// most five independent saved sessions to avoid paying one round-trip per log.
-export const AI_READER_BATCH_SIZE = 5;
+// Keep structured output bounded below the provider's observed five-minute
+// connection cutoff. Two sessions per request retain batching while reducing
+// prompt/output size and making a failed batch cheaper to recover.
+export const AI_READER_BATCH_SIZE = 2;
 // Keep one provider slot reserved for Read Today. AI Reader is retryable and
 // intentionally yields capacity to reader-facing summaries.
 export const AI_READER_CONCURRENCY = 2;
