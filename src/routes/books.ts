@@ -428,7 +428,9 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
 booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    // Persisted Reading Lens analyses are shared read-only with every signed-in
+    // reader. Owner checks remain on every retry/generation mutation below.
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND reading_experience='analytical'", [id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
     res.json(await listReadingLensAnalyses(id));
   } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
@@ -437,7 +439,7 @@ booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
 booksRouter.get("/:id/logs/:logId/reading-lens", async (req: Request, res: Response) => {
   const { id, logId } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND reading_experience='analytical'", [id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
     const analysis = await getReadingLensAnalysisForLog(id, logId);
     if (!analysis) return res.status(404).json({ error: "reading lens not available" });

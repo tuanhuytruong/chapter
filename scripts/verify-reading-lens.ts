@@ -27,6 +27,12 @@ assert.throws(() => parseReadingLensAnalysis("not json", source));
 
 const lensCardSource = readFileSync(new URL("../src/components/ReadingLensCard.tsx", import.meta.url), "utf8");
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+const booksRouteSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
+const sharedLensStart = booksRouteSource.indexOf('booksRouter.get("/:id/reading-lens"');
+const sharedLensEnd = booksRouteSource.indexOf('booksRouter.get("/:id/logs/:logId/reading-lens"', sharedLensStart);
+const sharedLensRoute = booksRouteSource.slice(sharedLensStart, sharedLensEnd);
+assert.doesNotMatch(sharedLensRoute, /owner_id/, "Persisted Reading Lens data must be readable by all authenticated readers");
+assert.match(booksRouteSource, /reading-lens\/retry", async \(req: Request, res: Response\) => \{\n  const \{ id, logId \} = req\.params;\n  if \(!await ownerCanMutate/, "Reading Lens regeneration must remain owner-only");
 assert.match(lensCardSource, /isPreparing = false/);
 assert.match(lensCardSource, /Reading Lens couldn't be prepared for this session\./);
 assert.match(lensCardSource, /canEdit && !isPreparing/);
