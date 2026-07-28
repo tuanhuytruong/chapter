@@ -66,7 +66,7 @@ async function retainPendingArchive(id: string, audioPath: string, durationS: nu
 }
 
 export async function generatePodcast(id: string): Promise<void> {
-  const current = (await query<any>(`SELECT p.*,b.title AS book_title,b.author,b.summary_lang FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1`, [id])).rows[0] as PodcastRow & any;
+  const current = (await query<any>(`SELECT p.*,b.title AS book_title,b.author,b.summary_lang,COALESCE(u.display_name, u.username) AS user_name FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.id=$1`, [id])).rows[0] as PodcastRow & any;
   if (!current || current.status === "ready" || current.status === "archive_pending") return;
   let audioPath: string | undefined;
   try {
@@ -83,7 +83,7 @@ export async function generatePodcast(id: string): Promise<void> {
     const audio = await synthesizePodcast(script, current.voice_model); audioPath = audio.filePath;
     await query("UPDATE podcasts SET status='archiving',duration_s=$2,updated_at=now() WHERE id=$1", [id, audio.durationS]);
     try {
-      const archived = await archivePodcast(audio.filePath, config.podcastTelegramArchiveChatId, current.book_title, current.chapter_title, audio.durationS);
+      const archived = await archivePodcast(audio.filePath, config.podcastTelegramArchiveChatId, current.user_name, current.book_title, current.chapter_title, audio.durationS);
       await fs.mkdir(config.podcastCacheDir, { recursive: true });
       const cachePath = path.join(config.podcastCacheDir, `${id}.mp3`); await fs.rename(audio.filePath, cachePath); audioPath = undefined;
       await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,error_message=NULL,updated_at=now() WHERE id=$1`, [id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, cacheExpiresAt()]);
@@ -96,13 +96,13 @@ export async function generatePodcast(id: string): Promise<void> {
 }
 
 export async function retryPendingPodcastArchives(): Promise<void> {
-  const { rows } = await query<any>("SELECT p.*,b.title AS book_title FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.status='archive_pending' AND p.local_cache_path IS NOT NULL AND p.local_cache_until > now()");
+  const { rows } = await query<any>("SELECT p.*,b.title AS book_title,COALESCE(u.display_name, u.username) AS user_name FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.status='archive_pending' AND p.local_cache_path IS NOT NULL AND p.local_cache_until > now()");
   if (!rows.length) return;
   logPodcastArchiveConfig(config.podcastTelegramArchiveChatId);
   try { await verifyPodcastArchive(config.podcastTelegramArchiveChatId); } catch (error: any) { console.warn("[podcast] archive retry preflight failed:", error.message); return; }
   for (const episode of rows) {
     try {
-      const archived = await archivePodcast(episode.local_cache_path, config.podcastTelegramArchiveChatId, episode.book_title, episode.chapter_title, episode.duration_s || 1);
+      const archived = await archivePodcast(episode.local_cache_path, config.podcastTelegramArchiveChatId, episode.user_name, episode.book_title, episode.chapter_title, episode.duration_s || 1);
       await query("UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,error_message=NULL,updated_at=now() WHERE id=$1", [episode.id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId]);
       console.info(`[podcast] archived cached episode ${episode.id}`);
     } catch (error: any) { console.warn(`[podcast] archive retry failed for ${episode.id}:`, error.message); }

@@ -82,7 +82,7 @@ export async function buildEpubReadingUnits(filePath: string): Promise<EpubReadi
     try { html = await epub.getChapter(item.id) || ""; } catch { continue; }
     const paragraphs = htmlToParagraphs(html);
     if (!paragraphs.length) continue;
-    const title = item.title || null;
+    const title = item.title ? String(item.title).trim().slice(0, 70) || null : null;
     // Never combine chunks across spine items: a title can repeat or be absent,
     // while the EPUB spine gives each chapter/document a durable boundary.
     flush();

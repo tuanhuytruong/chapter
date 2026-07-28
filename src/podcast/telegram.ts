@@ -40,14 +40,20 @@ export function logPodcastArchiveConfig(chatId: string) {
   console.info(`[podcast] archive configuration: configured=${Boolean(chatId)} rawLength=${raw.length} normalizedLength=${normalized.length} idSuffix=${chatId ? archiveSuffix(chatId) : "none"} quoteWrapped=${quoteWrapped} hiddenChars=${hiddenChars}`);
 }
 
-export async function archivePodcast(filePath: string, chatId: string, title: string, chapterTitle: string | null, durationS: number): Promise<TelegramArchiveResult> {
+export function archiveFilename(userName: string | null, bookTitle: string, chapterTitle: string | null): string {
+  const part = (value: string | null | undefined, fallback: string) => String(value || fallback)
+    .replace(/[\/:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, 15).trim() || fallback;
+  return `${part(userName, "Reader")} - ${part(bookTitle, "Book")} - ... - ${part(chapterTitle, "Chapter")}.mp3`;
+}
+
+export async function archivePodcast(filePath: string, chatId: string, userName: string | null, title: string, chapterTitle: string | null, durationS: number): Promise<TelegramArchiveResult> {
   const cfg = getTelegramConfig();
   if (!cfg) throw new Error("Telegram archive bot is not configured");
   if (!chatId) throw new Error("Podcast archive destination is not configured");
   const bytes = await fs.readFile(filePath);
   const form = new FormData();
   form.set("chat_id", chatId);
-  form.set("audio", new Blob([bytes], { type: "audio/mpeg" }), "chapter-podcast.mp3");
+  form.set("audio", new Blob([bytes], { type: "audio/mpeg" }), archiveFilename(userName, title, chapterTitle));
   form.set("title", chapterTitle || title);
   form.set("performer", "Chapter");
   form.set("duration", String(Math.max(1, durationS)));
