@@ -1,8 +1,8 @@
 ---
 type: Concept
 title: Chapter — Reading Engine
-description: Text extraction (PDF/EPUB), LLM integration with 9router, and five analysis modes — Casual, Deep Reading, Reading Lens, Story Thread, and AI Reader wiki synthesis.
-tags: [reading-engine, llm, extraction, pdf, epub, summary, ai-reader]
+description: Text extraction (PDF/EPUB), LLM integration, and six analysis modes — Casual, Deep Reading, Reading Lens, Story Thread, AI Reader, and Book Wiki synthesis.
+tags: [reading-engine, llm, extraction, pdf, epub, summary, ai-reader, book-wiki]
 ---
 
 # Reading Engine
@@ -42,7 +42,23 @@ sequenceDiagram
         Route->>Route: mergeStoryState(prev, analysis)
         Route->>DB: UPSERT story_thread_analyses
     end
+
+    alt reading_experience = "ai_reader"
+        Route->>LLM: callJsonLLM(aiReaderChunkPrompt)
+        LLM-->>Route: JSON chunk analysis
+        Route->>DB: UPSERT ai_reader_chunks
+        Route->>Route: updateBookWiki(book_id)
+        Route->>DB: UPSERT book_wiki
+    end
 ```
+
+## AI Reader & Wiki Synthesis (`src/aiReader.ts`)
+
+Introduced as part of the `ai_reader` expansion, this feature synthesizes continuous reading sessions into a book-level knowledge base.
+
+- **`ai_reader_chunks`**: Stores per-log analysis (`concepts`, `themes`, `people`, `chunk_summary`) for every session processed.
+- **`book_wiki`**: An aggregate entity maintained for each book, containing the evolving `overview`, `concepts`, `themes`, `people`, and a `chapter_map`. The `chapter_map` is built by synthesizing processed `ai_reader_chunks`.
+- **Flow**: When a log is finalized, the engine performs chunk analysis, upserts it, then triggers a full wiki re-synthesis using the `book_id`.
 
 ## Text extraction (`src/extractor.ts`)
 

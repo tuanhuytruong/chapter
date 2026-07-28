@@ -61,6 +61,7 @@ Chapter calls a 9router-compatible endpoint (OpenAI `/v1/chat/completions` forma
 - **Story Thread** — character/plot tracking (fiction)
 - **End-of-book reflection** — synthesized reflection
 - **AI Reader** — batch chunk analysis and book wiki synthesis (via `src/aiReader.ts`)
+- **Book Wiki** — synthesized knowledge base including concepts, themes, and chapter maps (via `src/aiReader.ts`)
 
 When the LLM endpoint is unreachable, a deterministic fallback message is returned to keep the pipeline verifiable end-to-end.
 
