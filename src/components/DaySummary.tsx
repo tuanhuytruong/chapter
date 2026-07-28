@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, FileText, RotateCcw, StickyNote } from 'lucide-react';
 import type { LogRow, SummaryMode } from '../types';
 import { api } from '../api';
 
@@ -122,22 +122,26 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           )}
         </div>
         <div className="flex items-center gap-1">
+          {canEdit && log.raw_text && (
+            <button onClick={retrySummary} disabled={retrying} aria-label={`Retry summary for session ${log.session}`} title="Retry summary" className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark disabled:opacity-50">
+              <RotateCcw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} />
+            </button>
+          )}
           {log.raw_text && (
-            <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
+            <button onClick={() => setOpen(o => !o)} aria-label={open ? 'Collapse source text' : 'Expand source text'} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           )}
         </div>
       </div>
 
+      {retryError && <p className="text-[10px] text-red-600">{retryError}</p>}
+
       {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
 
       {canEdit && (!log.summary || isFallbackSummary(log.summary)) && log.raw_text && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">
-          <span className="flex-1 text-[11px] text-natural-stone">{isFallbackSummary(log.summary) ? 'This session uses a temporary summary because the AI service was unavailable.' : 'Summary unavailable for this session.'}</span>
-          <button onClick={retrySummary} disabled={retrying} className="min-h-9 rounded-full bg-natural-sage px-3 text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-50">
-            {retrying ? 'Regenerating…' : 'Regenerate summary'}
-          </button>
+          <span className="flex-1 text-[11px] text-natural-stone">{isFallbackSummary(log.summary) ? 'This session uses a temporary summary because the AI service was unavailable. Use the retry button above when ready.' : 'Summary unavailable for this session. Use the retry button above when ready.'}</span>
           {retryError && <p className="w-full text-[10px] text-red-600">{retryError}</p>}
         </div>
       )}
