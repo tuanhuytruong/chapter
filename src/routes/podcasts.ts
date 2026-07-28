@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { query, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
-import { createPodcast, podcastPublic, prunePodcastCache, retryPendingPodcastArchives } from "../podcast/generate.js";
+import { createPodcast, podcastPublic, prunePodcastCache, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
 
 export const podcastsRouter = Router();
@@ -48,6 +48,23 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
   } catch (error: any) { console.warn("[podcast] catalog failed:", error.message); res.status(500).json({ error: "Podcast catalog unavailable" }); }
 });
 
+// Shared Book Detail read: only safe, persisted episode metadata is exposed.
+podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query<CatalogBook>("SELECT id,title,author,cover_url,summary_lang,reading_round FROM books WHERE id=$1 AND file_type='epub'", [req.params.bookId]);
+    const book = rows[0];
+    if (!book) return res.status(404).json({ error: "Podcast book not found" });
+    await ensureChapterUnits(book);
+    const [units, episodes] = await Promise.all([
+      query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, sum(char_count)::int AS char_count
+        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
+      query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
+    ]);
+    const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
+    res.json({ ...book, chapters: units.rows.map((unit) => ({ ...unit, episode: byChapter.get(unit.chapter_key) || null })) });
+  } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
+});
+
 podcastsRouter.post("/", async (req: Request, res: Response) => {
   const { book_id, chapter_key, voice_gender } = req.body || {};
   if (typeof book_id !== "string" || typeof chapter_key !== "string" || (voice_gender && voice_gender !== "female" && voice_gender !== "male")) {
@@ -57,9 +74,14 @@ podcastsRouter.post("/", async (req: Request, res: Response) => {
   catch (error: any) { res.status(error.code === "VOICE_REQUIRED" ? 409 : 400).json({ error: error.message }); }
 });
 
+podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
+  try { res.status(202).json(await regeneratePodcast(userFrom(req).id, req.params.id)); }
+  catch (error: any) { res.status(404).json({ error: "Podcast episode unavailable" }); }
+});
+
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
   try {
-    const episode = await owned(req.params.id, userFrom(req).id);
+    const episode = (await query<any>("SELECT p.* FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1", [req.params.id])).rows[0];
     const locallyPlayable = episode?.local_cache_path && episode?.local_cache_until && new Date(episode.local_cache_until) > new Date();
     if (!episode || (episode.status !== "ready" && episode.status !== "archive_pending") || (!locallyPlayable && !episode.tg_file_id)) return res.status(404).end();
     let data: Buffer;

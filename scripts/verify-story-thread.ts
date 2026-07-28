@@ -36,6 +36,9 @@ assert.equal(secondState.characterPulse.find((character) => character.name.toLow
 assert.deepEqual(secondState.readerMemory, ["Mara is carrying a sealed letter.", "The watchman has noticed Mara."]);
 const prompt = buildStoryThreadPrompt({ title: "Test", author: "Author", start: 1, end: 2, total: 10, lang: "en", sourceText: "Mara accepts the sealed letter.", priorState: secondState });
 assert.match(prompt.system, /JSON only/);
+assert.match(prompt.system, /warm reading-companion recap/);
+assert.match(prompt.system, /2–3 connected paragraphs/);
+assert.match(prompt.system, /Đoạn này/);
 assert.match(prompt.user, /Current reading text/);
 
 // Boundary fixtures: Story must remain isolated from analytical enrichment.

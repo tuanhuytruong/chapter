@@ -30,8 +30,8 @@ export default function Login() {
           <h1 className="font-bold text-xl text-natural-dark">Welcome to Chapter</h1>
           <p className="text-xs text-natural-stone">Sign in to your reading shelf.</p>
         </div>
-        <label className="block text-xs font-bold text-natural-dark">Username<input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} className="mt-1.5 w-full rounded-xl border border-natural-border bg-white px-3 py-2.5" /></label>
-        <label className="block text-xs font-bold text-natural-dark">Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 w-full rounded-xl border border-natural-border bg-white px-3 py-2.5" /></label>
+        <label className="block text-xs font-bold text-natural-dark">Username<input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Your username" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label>
+        <label className="block text-xs font-bold text-natural-dark">Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label>
         {error && <p className="text-xs text-red-600">{error}</p>}
         <button disabled={submitting} className="w-full rounded-full bg-natural-sage py-2.5 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-60">{submitting ? <Loader2 className="mx-auto w-4 h-4 animate-spin" /> : "Sign in"}</button>
       </form>

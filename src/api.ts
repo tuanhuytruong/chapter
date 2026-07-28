@@ -55,7 +55,6 @@ export interface PodcastEpisode {
   word_count: number | null;
   duration_s: number | null;
   script_text: string | null;
-  error_message?: string | null;
   created_at: string;
 }
 
@@ -135,8 +134,10 @@ export const api = {
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
   getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
+  getBookPodcast: (bookId: string) => req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
   createPodcast: (bookId: string, chapterKey: string, voiceGender?: "female" | "male") =>
     req<PodcastEpisode>("/api/podcasts", { method: "POST", body: JSON.stringify({ book_id: bookId, chapter_key: chapterKey, voice_gender: voiceGender }) }),
+  regeneratePodcast: (episodeId: string) => req<PodcastEpisode>(`/api/podcasts/${episodeId}/regenerate`, { method: "POST" }),
   getOnboarding: () => req<{ dismissed_steps: string[] }>("/api/onboarding"),
   saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>

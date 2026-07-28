@@ -56,6 +56,24 @@ export async function archivePodcast(filePath: string, chatId: string, title: st
   return { fileId: body.result.audio.file_id as string, fileUniqueId: body.result.audio.file_unique_id as string | null, messageId: Number(body.result.message_id) };
 }
 
+/** Best-effort cleanup for an app-managed archive message. Callers must never expose failures. */
+export async function deleteArchivedPodcast(chatId: string | null, messageId: number | null): Promise<boolean> {
+  if (!chatId || !messageId) return false;
+  const cfg = getTelegramConfig();
+  if (!cfg) return false;
+  try {
+    await telegramJson(`${api}/bot${cfg.botToken}/deleteMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
+    });
+    return true;
+  } catch (error: any) {
+    console.info(`[podcast] archive delete skipped: ${String(error.message || error).slice(0, 160)}`);
+    return false;
+  }
+}
+
 export async function downloadArchivedPodcast(fileId: string): Promise<Buffer> {
   const cfg = getTelegramConfig();
   if (!cfg) throw new Error("Telegram archive bot is not configured");

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
+import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw, Headphones } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow, ReadingLensRow, StoryThreadRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
@@ -15,6 +15,7 @@ import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
 import StoryThreadView from '../components/story/StoryThreadView';
 import BookWiki from '../components/BookWiki';
+import PodcastPanel from '../components/PodcastPanel';
 import { GuideCard } from '../onboarding';
 
 function InlineMarkdown({ text }: { text: string }) {
@@ -69,7 +70,7 @@ export default function BookDetail() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
-  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader'>('list');
+  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader' | 'podcast'>('list');
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
@@ -347,9 +348,9 @@ export default function BookDetail() {
     if (!id) return;
     setStoryRetryingLogId(logId);
     try {
-      await api.retryStoryThread(id, logId);
-      await load();
-      setToast({ type: 'ok', msg: 'Story Thread is ready' });
+      const refreshed = await api.retryStoryThread(id, logId);
+      setStoryThread(previous => [...previous.filter(item => item.log_id !== refreshed.log_id), refreshed].sort((a, b) => a.generated_at.localeCompare(b.generated_at)));
+      setToast({ type: 'ok', msg: 'Story recap refreshed' });
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
       throw e;
@@ -434,10 +435,15 @@ export default function BookDetail() {
             </div>
           ) : (
             <>
-              <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
-                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Reading…' : 'Read next session'}
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark disabled:cursor-not-allowed disabled:opacity-45">
+                  <Headphones className="w-3.5 h-3.5" /> Podcast
+                </button>
+                <button onClick={readToday} disabled={advancing || book.status === 'finished'}
+                  className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:flex-none">
+                  {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Reading…' : 'Read next'}
+                </button>
+              </div>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
                   className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
@@ -547,7 +553,7 @@ export default function BookDetail() {
 
 
 
-      {book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /></> : <>
+      {logView === 'podcast' ? <PodcastPanel bookId={book.id} canEdit={Boolean(book.can_edit)} isEpub={book.file_type === 'epub'} onClose={() => setLogView('list')} /> : book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} canEdit={Boolean(book.can_edit)} /></> : <>
       {/* Timeline */}
       <div>
         <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">

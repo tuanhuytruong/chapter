@@ -9,12 +9,11 @@ import Momentum from './pages/Momentum';
 import Today from './pages/Today';
 import Achievements from './pages/Achievements';
 import Account from './pages/Account';
-import Podcasts from './pages/Podcasts';
 import Profile from './pages/Profile';
 import { presetFromAvatarValue } from './avatar-presets';
 import AnimalAvatar from './components/AnimalAvatar';
 import JourneyDrawer from './components/JourneyDrawer';
-import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X, Headphones } from 'lucide-react';
+import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X } from 'lucide-react';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './AuthContext';
 import { OnboardingProvider } from './onboarding';
@@ -62,7 +61,6 @@ function Layout() {
               <NavLink to="/today" aria-label="Today" className={({ isActive }) => primaryLink(isActive)}><Sparkles className="h-3.5 w-3.5" /><span>Today</span></NavLink>
               <NavLink to="/" end aria-label="Library" className={({ isActive }) => primaryLink(isActive)}><BookMarked className="h-3.5 w-3.5" /><span>Library</span></NavLink>
               <NavLink to="/review" aria-label="Review" className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Review</span></NavLink>
-              <NavLink to="/podcasts" aria-label="Podcasts" className={({ isActive }) => primaryLink(isActive)}><Headphones className="h-3.5 w-3.5" /><span>Podcasts</span></NavLink>
             </nav>
 
             <div className="hidden shrink-0 items-center gap-2 sm:flex">
@@ -79,7 +77,6 @@ function Layout() {
             <NavLink to="/today" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Sparkles className="h-3.5 w-3.5" />Today</NavLink>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><BookMarked className="h-3.5 w-3.5" />Library</NavLink>
             <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Review</NavLink>
-            <NavLink to="/podcasts" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Headphones className="h-3.5 w-3.5" />Listen</NavLink>
           </nav>
           {mobileMenuOpen && <div className="border-t border-natural-border py-2 sm:hidden">
             <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} /><span>Profile</span></NavLink>
@@ -107,7 +104,6 @@ function AppRoutes() {
     <Route path="/books/:id" element={<BookDetail />} />
     <Route path="/insights" element={<Insights />} />
     <Route path="/review" element={<Review />} />
-    <Route path="/podcasts" element={<Podcasts />} />
     <Route path="/calendar" element={<ReadingCalendar />} />
     <Route path="/momentum" element={<Momentum />} />
     <Route path="/achievements" element={<Achievements />} />
