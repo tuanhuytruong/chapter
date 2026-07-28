@@ -45,6 +45,20 @@ export interface AdvanceResult {
   readingExperience: "analytical" | "story";
 }
 
+export interface PodcastEpisode {
+  id: string;
+  log_id: string | null;
+  chapter_title: string | null;
+  status: "queued" | "scripting" | "synthesizing" | "archiving" | "ready" | "failed";
+  language: "vi" | "en";
+  voice_model: string;
+  word_count: number | null;
+  duration_s: number | null;
+  script_text: string | null;
+  error_message?: string | null;
+  created_at: string;
+}
+
 const BASE = "/api/books";
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
@@ -101,6 +115,9 @@ export const api = {
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
+  getPodcasts: (bookId: string) => req<PodcastEpisode[]>(`/api/podcasts/books/${bookId}`),
+  createPodcast: (bookId: string, logId: string, voiceGender?: "female" | "male") =>
+    req<PodcastEpisode>("/api/podcasts", { method: "POST", body: JSON.stringify({ book_id: bookId, log_id: logId, voice_gender: voiceGender }) }),
   getOnboarding: () => req<{ dismissed_steps: string[] }>("/api/onboarding"),
   saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>

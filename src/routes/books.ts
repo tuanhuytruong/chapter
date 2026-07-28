@@ -66,9 +66,9 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
   if (!units.length) throw new Error("EPUB has no readable text");
   for (const unit of units) {
     await client.query(
-      `INSERT INTO book_reading_units (book_id, unit_index, title, raw_text, char_count)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [book.id, unit.unitIndex, unit.title, unit.rawText, unit.rawText.length]
+      `INSERT INTO book_reading_units (book_id, unit_index, title, spine_index, chapter_key, raw_text, char_count)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [book.id, unit.unitIndex, unit.title, unit.spineIndex, unit.chapterKey, unit.rawText, unit.rawText.length]
     );
   }
   await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [units.length, book.id]);

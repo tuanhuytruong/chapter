@@ -23,8 +23,14 @@ CREATE TABLE IF NOT EXISTS chapter.users (
   display_name TEXT NOT NULL,
   avatar_url TEXT,
   telegram_chat_id TEXT,
+  podcast_voice_gender TEXT CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS podcast_voice_gender TEXT;
+ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_podcast_voice_gender_check;
+ALTER TABLE chapter.users ADD CONSTRAINT users_podcast_voice_gender_check
+  CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male'));
 
 
 -- ───────────────────────────────────────────────────────────
@@ -125,12 +131,18 @@ CREATE TABLE IF NOT EXISTS chapter.book_reading_units (
   book_id     UUID NOT NULL REFERENCES chapter.books (id) ON DELETE CASCADE,
   unit_index  INT NOT NULL,
   title       TEXT,
+  spine_index INT,
+  chapter_key TEXT,
   raw_text    TEXT NOT NULL,
   char_count  INT NOT NULL,
   UNIQUE (book_id, unit_index)
 );
 CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_unit
   ON chapter.book_reading_units (book_id, unit_index);
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS spine_index INT;
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS chapter_key TEXT;
+CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_chapter
+  ON chapter.book_reading_units (book_id, chapter_key, unit_index);
 
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_log
@@ -176,6 +188,37 @@ ALTER TABLE chapter.reading_log
 DROP INDEX IF EXISTS idx_reading_log_book_date;
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
+
+-- Podcast episodes are private owner-scoped jobs. Telegram identifiers stay
+-- server-side and are never included in reader-facing API responses. It follows
+-- reading_log so the foreign key is valid on a clean database bootstrap.
+CREATE TABLE IF NOT EXISTS chapter.podcasts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  log_id UUID REFERENCES chapter.reading_log(id) ON DELETE SET NULL,
+  reading_round INT NOT NULL DEFAULT 1,
+  chapter_key TEXT NOT NULL,
+  chapter_title TEXT,
+  language TEXT NOT NULL CHECK (language IN ('vi', 'en')),
+  voice_model TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'ready', 'failed')),
+  script_text TEXT,
+  word_count INT,
+  duration_s INT,
+  tg_file_id TEXT,
+  tg_file_unique_id TEXT,
+  tg_chat_id TEXT,
+  tg_message_id BIGINT,
+  local_cache_path TEXT,
+  local_cache_until TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (book_id, chapter_key, reading_round)
+);
+CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
 
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_lens_analyses (versioned structured session analysis)

@@ -28,6 +28,8 @@ type Waiter = { resolve: () => void; priority: LlmPriority };
 export interface LlmCallOptions {
   priority?: LlmPriority;
   traceLabel?: string;
+  /** Optional feature-specific provider alias; defaults to NINE_ROUTER_MODEL. */
+  model?: string;
 }
 let activeNineRouterCalls = 0;
 let activeBackgroundCalls = 0;
@@ -87,7 +89,7 @@ export async function callLLM(
   const priority = options.priority || "background";
   const trace = options.traceLabel ? ` [${options.traceLabel}]` : "";
   const url = process.env.NINE_ROUTER_URL;
-  const model = process.env.NINE_ROUTER_MODEL || "qwen3";
+  const model = options.model || process.env.NINE_ROUTER_MODEL || "qwen3";
 
   if (!url) {
     if (strict) throw new Error("NineRouter is not configured");

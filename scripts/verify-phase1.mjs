@@ -31,9 +31,15 @@ schema = schema
   .replace(/CREATE SCHEMA IF NOT EXISTS chapter;/g, "")
   .replace(/chapter\./g, "")
   // pg-mem does not implement PostgreSQL's ALTER TABLE constraint lifecycle.
-  .replace(/ALTER TABLE[\s\S]*?ADD CONSTRAINT[\s\S]*?;/g, "")
+  // Strip each ALTER statement independently; a non-greedy multi-statement
+  // expression can accidentally swallow later CREATE TABLE declarations.
+  .replace(/ALTER TABLE[^;]+;/g, "")
   .replace(/DROP INDEX IF EXISTS[^;]+;/g, "")
   .replace(/CREATE INDEX IF NOT EXISTS[^;]+;/g, "")
+  .replace(/UPDATE book_wiki[^;]+;/g, "")
+  // The Podcast table is covered by its dedicated verifier; omit it here so
+  // pg-mem's simplified ALTER handling cannot disturb its reading_log FK.
+  .replace(/CREATE TABLE IF NOT EXISTS podcasts \([\s\S]*?\);/g, "")
   .replace(/,?\s*UNIQUE \(book_id, date\)\s*(?:--[^\n]*)?/g, "");
 for (const statement of schema.replace(/--[^\n]*/g, "").replace(/COLLATE "default"/g, "").split(";").map((value) => value.trim()).filter(Boolean)) {
   // pg-mem intentionally does not cover Postgres's idempotent constraint and

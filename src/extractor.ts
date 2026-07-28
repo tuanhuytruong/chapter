@@ -32,6 +32,9 @@ export interface ExtractResult {
 export interface EpubReadingUnit {
   unitIndex: number;
   title: string | null;
+  /** Stable identity of the EPUB spine item that owns this chunk. */
+  spineIndex: number;
+  chapterKey: string;
   rawText: string;
 }
 
@@ -62,29 +65,43 @@ export async function buildEpubReadingUnits(filePath: string): Promise<EpubReadi
   const units: EpubReadingUnit[] = [];
   let pending: string[] = [];
   let pendingTitle: string | null = null;
+  let pendingSpineIndex = 0;
+  let pendingChapterKey = "";
 
   const flush = () => {
     const rawText = pending.join("\n\n").trim();
-    if (rawText) units.push({ unitIndex: units.length + 1, title: pendingTitle, rawText });
+    if (rawText) units.push({ unitIndex: units.length + 1, title: pendingTitle, spineIndex: pendingSpineIndex, chapterKey: pendingChapterKey, rawText });
     pending = [];
     pendingTitle = null;
+    pendingSpineIndex = 0;
+    pendingChapterKey = "";
   };
 
-  for (const item of epub.flow as any[]) {
+  for (const [spineIndex, item] of (epub.flow as any[]).entries()) {
     let html = "";
     try { html = await epub.getChapter(item.id) || ""; } catch { continue; }
     const paragraphs = htmlToParagraphs(html);
     if (!paragraphs.length) continue;
     const title = item.title || null;
+    // Never combine chunks across spine items: a title can repeat or be absent,
+    // while the EPUB spine gives each chapter/document a durable boundary.
+    flush();
+    pendingTitle = title;
+    pendingSpineIndex = spineIndex;
+    pendingChapterKey = `${spineIndex}:${String(item.id || item.href || "untitled")}`;
 
     for (const paragraph of paragraphs) {
       const currentLength = pending.reduce((n, p) => n + p.length, 0);
       if (pending.length && currentLength >= EPUB_MIN_CHARS && currentLength + paragraph.length > EPUB_TARGET_CHARS) flush();
       if (!pendingTitle) pendingTitle = title;
+      if (!pendingChapterKey) {
+        pendingSpineIndex = spineIndex;
+        pendingChapterKey = `${spineIndex}:${String(item.id || item.href || "untitled")}`;
+      }
       pending.push(paragraph);
     }
+    flush();
   }
-  flush();
   return units;
 }
 
