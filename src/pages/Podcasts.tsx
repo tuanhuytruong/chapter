@@ -16,11 +16,13 @@ export default function Podcasts() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState<string | null>(null);
   const [voiceTarget, setVoiceTarget] = useState<{ bookId: string; chapterKey: string } | null>(null);
-  const [expandedBookId, setExpandedBookId] = useState<string | null>(null);
+  // `undefined` means the initial automatic expansion has not happened yet;
+  // `null` is an intentional user collapse and must stay collapsed.
+  const [expandedBookId, setExpandedBookId] = useState<string | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const refresh = async () => { setLoading(true); try { setBooks(await api.getPodcastCatalog()); setError(null); } catch (e: any) { setError(e.message); } finally { setLoading(false); } };
   useEffect(() => { void refresh(); }, []);
-  useEffect(() => { if (!books.length || expandedBookId) return; const preferred = books.find((book) => book.chapters.some((chapter) => ["failed", "archive_pending"].includes(chapter.episode?.status || ""))) || books[0]; setExpandedBookId(preferred.id); }, [books, expandedBookId]);
+  useEffect(() => { if (!books.length || expandedBookId !== undefined) return; const preferred = books.find((book) => book.chapters.some((chapter) => ["failed", "archive_pending"].includes(chapter.episode?.status || ""))) || books[0]; setExpandedBookId(preferred.id); }, [books, expandedBookId]);
   useEffect(() => { if (!books.some((book) => book.chapters.some((chapter) => chapter.episode && pending.has(chapter.episode.status)))) return; const timer = window.setInterval(() => void refresh(), 5000); return () => window.clearInterval(timer); }, [books]);
   const creatingKey = useMemo(() => creating, [creating]);
   const create = async (bookId: string, chapterKey: string, gender?: "female" | "male") => {

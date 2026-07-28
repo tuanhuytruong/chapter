@@ -33,7 +33,11 @@ export async function verifyPodcastArchive(chatId: string): Promise<void> {
 }
 
 export function logPodcastArchiveConfig(chatId: string) {
-  console.info(`[podcast] archive configuration: configured=${Boolean(chatId)}${chatId ? ` idSuffix=${archiveSuffix(chatId)}` : ""}`);
+  const raw = process.env.PODCAST_TELEGRAM_ARCHIVE_CHAT_ID ?? "";
+  const normalized = raw.trim();
+  const quoteWrapped = /^['\"].*['\"]$/.test(raw);
+  const hiddenChars = raw !== normalized || /[\r\n\t]/.test(raw);
+  console.info(`[podcast] archive configuration: configured=${Boolean(chatId)} rawLength=${raw.length} normalizedLength=${normalized.length} idSuffix=${chatId ? archiveSuffix(chatId) : "none"} quoteWrapped=${quoteWrapped} hiddenChars=${hiddenChars}`);
 }
 
 export async function archivePodcast(filePath: string, chatId: string, title: string, chapterTitle: string | null, durationS: number): Promise<TelegramArchiveResult> {

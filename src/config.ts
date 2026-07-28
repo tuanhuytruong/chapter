@@ -3,6 +3,13 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
+function optionalEnv(name: string): string {
+  const raw = process.env[name] ?? "";
+  const trimmed = raw.trim();
+  // dotenv removes normal .env quotes, while PM2/shell injection can retain them.
+  return /^(['"]).*\1$/.test(trimmed) ? trimmed.slice(1, -1).trim() : trimmed;
+}
+
 export const config = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   nineRouterUrl:
@@ -13,7 +20,7 @@ export const config = {
   telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME ?? "",
   telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "",
   telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
-  podcastTelegramArchiveChatId: process.env.PODCAST_TELEGRAM_ARCHIVE_CHAT_ID ?? "",
+  podcastTelegramArchiveChatId: optionalEnv("PODCAST_TELEGRAM_ARCHIVE_CHAT_ID"),
   podcastCacheDir: process.env.PODCAST_CACHE_DIR ?? "/opt/chapter/workspace/podcast-cache",
   podcastCacheTtlHours: Number(process.env.PODCAST_CACHE_TTL_HOURS ?? 48),
   podcastLlmModel: process.env.PODCAST_LLM_MODEL ?? "",
