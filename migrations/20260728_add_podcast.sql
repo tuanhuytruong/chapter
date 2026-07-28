@@ -15,12 +15,18 @@ CREATE TABLE IF NOT EXISTS chapter.podcasts (
   book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE, log_id UUID REFERENCES chapter.reading_log(id) ON DELETE SET NULL,
   reading_round INT NOT NULL DEFAULT 1, chapter_key TEXT NOT NULL, chapter_title TEXT,
   language TEXT NOT NULL CHECK (language IN ('vi', 'en')), voice_model TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'ready', 'failed')),
+  status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed')),
   script_text TEXT, word_count INT, duration_s INT, tg_file_id TEXT, tg_file_unique_id TEXT, tg_chat_id TEXT, tg_message_id BIGINT,
   local_cache_path TEXT, local_cache_until TIMESTAMPTZ, error_message TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (book_id, chapter_key, reading_round)
 );
+-- Existing Podcast installations need this constraint refresh to permit a protected
+-- local-only episode while Telegram archive retry is pending.
+ALTER TABLE chapter.podcasts DROP CONSTRAINT IF EXISTS podcasts_status_check;
+ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
+  CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed'));
+
 CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
 

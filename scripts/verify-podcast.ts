@@ -10,7 +10,7 @@ const db = newDb();
 db.public.registerFunction({ name: "gen_random_uuid", implementation: () => crypto.randomUUID(), impure: true });
 db.public.none(`
   CREATE TABLE users (id uuid primary key, username text, password_hash text, display_name text, podcast_voice_gender text);
-  CREATE TABLE books (id uuid primary key, owner_id uuid not null references users(id), title text, author text, file_type text, summary_lang text, reading_round int default 1, file_path text, created_at timestamptz default now(), total_pages int);
+  CREATE TABLE books (id uuid primary key, owner_id uuid not null references users(id), title text, author text, cover_url text, file_type text, summary_lang text, reading_round int default 1, file_path text, created_at timestamptz default now(), total_pages int);
   CREATE TABLE reading_log (id uuid primary key, book_id uuid references books(id), page_start int, page_end int);
   CREATE TABLE book_reading_units (book_id uuid, unit_index int, title text, spine_index int, chapter_key text, raw_text text, char_count int);
   CREATE TABLE podcasts (id uuid primary key, user_id uuid references users(id), book_id uuid references books(id), log_id uuid references reading_log(id), reading_round int, chapter_key text, chapter_title text, language text, voice_model text, status text, script_text text, word_count int, duration_s int, tg_file_id text, tg_file_unique_id text, tg_chat_id text, tg_message_id bigint, local_cache_path text, local_cache_until timestamptz, error_message text, created_at timestamptz default now(), updated_at timestamptz default now(), UNIQUE(book_id,chapter_key,reading_round));
@@ -45,6 +45,12 @@ try {
   const partial = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { Range: "bytes=2-7" } });
   assert(partial.status === 206 && partial.headers.get("content-range") === `bytes 2-7/${audio.length}`, "audio proxy serves HTTP Range responses");
   assert(Buffer.compare(Buffer.from(await partial.arrayBuffer()), audio.subarray(2, 8)) === 0, "audio proxy returns exactly requested bytes");
+  await pool.query("UPDATE podcasts SET status='archive_pending',tg_file_id=NULL WHERE id=$1", [episode]);
+  const pendingAudio = await fetch(`${base}/api/podcasts/${episode}/audio`);
+  assert(pendingAudio.status === 200 && Buffer.compare(Buffer.from(await pendingAudio.arrayBuffer()), audio) === 0, "archive-pending episode remains privately playable from local cache");
+  const pendingCatalog = await fetch(`${base}/api/podcasts/catalog`);
+  const pendingJson = await pendingCatalog.json() as any[];
+  assert(pendingJson[0].chapters[0].episode.status === "archive_pending" && !('tg_file_id' in pendingJson[0].chapters[0].episode), "archive-pending state is public without exposing archive metadata");
   const foreign = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { "x-user": other } });
   assert(foreign.status === 404, "audio proxy enforces owner-only playback");
   console.log("PODCAST_ROUTE_FIXTURES_OK");

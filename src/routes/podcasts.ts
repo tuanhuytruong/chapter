@@ -3,12 +3,12 @@ import fs from "fs/promises";
 import { query, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
-import { createPodcast, podcastPublic, prunePodcastCache } from "../podcast/generate.js";
+import { createPodcast, podcastPublic, prunePodcastCache, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
 
 export const podcastsRouter = Router();
 
-type CatalogBook = { id: string; title: string; author: string | null; summary_lang: string | null; reading_round: number };
+type CatalogBook = { id: string; title: string; author: string | null; cover_url: string | null; summary_lang: string | null; reading_round: number };
 
 async function ensureChapterUnits(book: CatalogBook): Promise<void> {
   const count = await query<{ count: number }>("SELECT count(*)::int AS count FROM book_reading_units WHERE book_id=$1", [book.id]);
@@ -32,7 +32,7 @@ async function owned(id: string, userId: string) { return (await query<any>("SEL
 podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
   try {
     const ownerId = userFrom(req).id;
-    const { rows: books } = await query<CatalogBook>("SELECT id,title,author,summary_lang,reading_round FROM books WHERE owner_id=$1 AND file_type='epub' ORDER BY created_at DESC", [ownerId]);
+    const { rows: books } = await query<CatalogBook>("SELECT id,title,author,cover_url,summary_lang,reading_round FROM books WHERE owner_id=$1 AND file_type='epub' ORDER BY created_at DESC", [ownerId]);
     for (const book of books) await ensureChapterUnits(book);
     const result = [] as any[];
     for (const book of books) {
@@ -59,10 +59,15 @@ podcastsRouter.post("/", async (req: Request, res: Response) => {
 
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
   try {
-    const episode = await owned(req.params.id, userFrom(req).id); if (!episode || episode.status !== "ready") return res.status(404).end();
+    const episode = await owned(req.params.id, userFrom(req).id);
+    const locallyPlayable = episode?.local_cache_path && episode?.local_cache_until && new Date(episode.local_cache_until) > new Date();
+    if (!episode || (episode.status !== "ready" && episode.status !== "archive_pending") || (!locallyPlayable && !episode.tg_file_id)) return res.status(404).end();
     let data: Buffer;
-    try { data = episode.local_cache_path && episode.local_cache_until && new Date(episode.local_cache_until) > new Date() ? await fs.readFile(episode.local_cache_path) : await downloadArchivedPodcast(episode.tg_file_id); }
-    catch { data = await downloadArchivedPodcast(episode.tg_file_id); }
+    try { data = locallyPlayable ? await fs.readFile(episode.local_cache_path) : await downloadArchivedPodcast(episode.tg_file_id); }
+    catch {
+      if (!episode.tg_file_id) return res.status(503).json({ error: "Podcast audio is temporarily unavailable" });
+      data = await downloadArchivedPodcast(episode.tg_file_id);
+    }
     const range = req.header("range"); res.setHeader("Accept-Ranges", "bytes"); res.setHeader("Content-Type", "audio/mpeg"); res.setHeader("Cache-Control", "private, no-store");
     if (!range) { res.setHeader("Content-Length", data.length); return res.status(200).end(data); }
     const match = /^bytes=(\d*)-(\d*)$/.exec(range); if (!match) return res.status(416).end();
@@ -73,4 +78,10 @@ podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
 });
 
 let timer: ReturnType<typeof setInterval> | undefined;
-export function startPodcastMaintenance() { if (!timer) { void prunePodcastCache().catch(() => undefined); timer = setInterval(() => void prunePodcastCache().catch(() => undefined), 60 * 60 * 1000); timer.unref(); } }
+export function startPodcastMaintenance() {
+  if (timer) return;
+  const maintain = async () => { await prunePodcastCache(); await retryPendingPodcastArchives(); };
+  void maintain().catch((error) => console.warn("[podcast] maintenance failed:", error.message));
+  timer = setInterval(() => void maintain().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), 60 * 60 * 1000);
+  timer.unref();
+}

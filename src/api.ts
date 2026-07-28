@@ -49,7 +49,7 @@ export interface PodcastEpisode {
   id: string;
   log_id: string | null;
   chapter_title: string | null;
-  status: "queued" | "scripting" | "synthesizing" | "archiving" | "ready" | "failed";
+  status: "queued" | "scripting" | "synthesizing" | "archiving" | "archive_pending" | "ready" | "failed";
   language: "vi" | "en";
   voice_model: string;
   word_count: number | null;
@@ -72,6 +72,7 @@ export interface PodcastCatalogBook {
   id: string;
   title: string;
   author: string | null;
+  cover_url?: string | null;
   summary_lang: string | null;
   reading_round: number;
   chapters: PodcastChapter[];

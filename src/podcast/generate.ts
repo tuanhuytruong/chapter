@@ -5,12 +5,14 @@ import { callLLM } from "../llm.js";
 import { config } from "../config.js";
 import { podcastPrompt, validatePodcastScript } from "./prompt.js";
 import { synthesizePodcast } from "./tts.js";
-import { archivePodcast } from "./telegram.js";
+import { archivePodcast, logPodcastArchiveConfig, verifyPodcastArchive } from "./telegram.js";
 
-export type PodcastRow = { id: string; book_id: string; log_id: string | null; chapter_key: string; chapter_title: string | null; status: string; language: "vi" | "en"; voice_model: string; script_text: string | null };
+export type PodcastRow = { id: string; book_id: string; log_id: string | null; chapter_key: string; chapter_title: string | null; status: string; language: "vi" | "en"; voice_model: string; script_text: string | null; local_cache_path: string | null; local_cache_until: string | null };
 const voices = { vi: { female: "edge-tts/vi-VN-HoaiMyNeural", male: "edge-tts/vi-VN-NamMinhNeural" }, en: { female: "edge-tts/en-US-JennyNeural", male: "edge-tts/en-US-ChristopherNeural" } } as const;
+const cacheExpiresAt = () => new Date(Date.now() + Math.max(1, config.podcastCacheTtlHours) * 3600000);
 
 function resolvedLanguage(value: string | null): "vi" | "en" { return value === "vi" ? "vi" : "en"; }
+function safeArchiveMessage(error: unknown) { return `Archive pending: ${String(error instanceof Error ? error.message : error).slice(0, 700)}`; }
 export function podcastPublic(row: any) { const { tg_file_id, tg_file_unique_id, tg_chat_id, tg_message_id, local_cache_path, local_cache_until, user_id, book_id, chapter_key, ...safe } = row; return safe; }
 
 export async function createPodcast(ownerId: string, bookId: string, chapterKey: string, gender?: "female" | "male"): Promise<any> {
@@ -32,11 +34,20 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
   return podcastPublic(inserted.rows[0]);
 }
 
+async function retainPendingArchive(id: string, audioPath: string, durationS: number, error: unknown): Promise<void> {
+  await fs.mkdir(config.podcastCacheDir, { recursive: true });
+  const cachePath = path.join(config.podcastCacheDir, `${id}.mp3`);
+  await fs.rename(audioPath, cachePath);
+  await query("UPDATE podcasts SET status='archive_pending',duration_s=$2,local_cache_path=$3,local_cache_until=$4,error_message=$5,updated_at=now() WHERE id=$1", [id, durationS, cachePath, cacheExpiresAt(), safeArchiveMessage(error)]);
+}
+
 export async function generatePodcast(id: string): Promise<void> {
   const current = (await query<any>(`SELECT p.*,b.title AS book_title,b.author,b.summary_lang FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1`, [id])).rows[0] as PodcastRow & any;
-  if (!current || current.status === "ready") return;
+  if (!current || current.status === "ready" || current.status === "archive_pending") return;
   let audioPath: string | undefined;
   try {
+    logPodcastArchiveConfig(config.podcastTelegramArchiveChatId);
+    await verifyPodcastArchive(config.podcastTelegramArchiveChatId);
     await query("UPDATE podcasts SET status='scripting',error_message=NULL,updated_at=now() WHERE id=$1", [id]);
     const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [current.book_id, current.chapter_key]);
     const chapterText = units.rows.map((row) => row.raw_text).join("\n\n"); if (!chapterText) throw new Error("No raw EPUB text exists for this chapter");
@@ -47,13 +58,37 @@ export async function generatePodcast(id: string): Promise<void> {
     await query("UPDATE podcasts SET status='synthesizing',script_text=$2,word_count=$3,updated_at=now() WHERE id=$1", [id, script, script.split(/\s+/).length]);
     const audio = await synthesizePodcast(script, current.voice_model); audioPath = audio.filePath;
     await query("UPDATE podcasts SET status='archiving',duration_s=$2,updated_at=now() WHERE id=$1", [id, audio.durationS]);
-    if (!config.podcastTelegramArchiveChatId) throw new Error("Podcast Telegram archive chat is not configured");
-    const archived = await archivePodcast(audio.filePath, config.podcastTelegramArchiveChatId, current.book_title, current.chapter_title, audio.durationS);
-    const expires = new Date(Date.now() + Math.max(1, config.podcastCacheTtlHours) * 3600000);
-    const cachePath = path.join(config.podcastCacheDir, `${id}.mp3`); await fs.rename(audio.filePath, cachePath); audioPath = undefined;
-    await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,updated_at=now() WHERE id=$1`, [id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, expires]);
+    try {
+      const archived = await archivePodcast(audio.filePath, config.podcastTelegramArchiveChatId, current.book_title, current.chapter_title, audio.durationS);
+      await fs.mkdir(config.podcastCacheDir, { recursive: true });
+      const cachePath = path.join(config.podcastCacheDir, `${id}.mp3`); await fs.rename(audio.filePath, cachePath); audioPath = undefined;
+      await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,error_message=NULL,updated_at=now() WHERE id=$1`, [id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, cacheExpiresAt()]);
+    } catch (error) {
+      await retainPendingArchive(id, audio.filePath, audio.durationS, error); audioPath = undefined;
+      console.warn(`[podcast] archive pending for ${id}; protected local playback remains available:`, safeArchiveMessage(error));
+    }
   } catch (error: any) { await query("UPDATE podcasts SET status='failed',error_message=$2,updated_at=now() WHERE id=$1", [id, String(error.message || error).slice(0, 1000)]).catch(() => undefined); throw error; }
   finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
 }
 
-export async function prunePodcastCache(): Promise<void> { const expired = await query<any>("SELECT id,local_cache_path FROM podcasts WHERE local_cache_until < now() AND local_cache_path IS NOT NULL"); for (const row of expired.rows) { await fs.unlink(row.local_cache_path).catch(() => undefined); await query("UPDATE podcasts SET local_cache_path=NULL,local_cache_until=NULL WHERE id=$1", [row.id]); } }
+export async function retryPendingPodcastArchives(): Promise<void> {
+  const { rows } = await query<any>("SELECT p.*,b.title AS book_title FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.status='archive_pending' AND p.local_cache_path IS NOT NULL AND p.local_cache_until > now()");
+  if (!rows.length) return;
+  logPodcastArchiveConfig(config.podcastTelegramArchiveChatId);
+  try { await verifyPodcastArchive(config.podcastTelegramArchiveChatId); } catch (error: any) { console.warn("[podcast] archive retry preflight failed:", error.message); return; }
+  for (const episode of rows) {
+    try {
+      const archived = await archivePodcast(episode.local_cache_path, config.podcastTelegramArchiveChatId, episode.book_title, episode.chapter_title, episode.duration_s || 1);
+      await query("UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,error_message=NULL,updated_at=now() WHERE id=$1", [episode.id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId]);
+      console.info(`[podcast] archived cached episode ${episode.id}`);
+    } catch (error: any) { console.warn(`[podcast] archive retry failed for ${episode.id}:`, error.message); }
+  }
+}
+
+export async function prunePodcastCache(): Promise<void> {
+  const expired = await query<any>("SELECT id,local_cache_path,status FROM podcasts WHERE local_cache_until < now() AND local_cache_path IS NOT NULL");
+  for (const row of expired.rows) {
+    await fs.unlink(row.local_cache_path).catch(() => undefined);
+    await query("UPDATE podcasts SET local_cache_path=NULL,local_cache_until=NULL,status=CASE WHEN status='archive_pending' THEN 'failed' ELSE status END,error_message=CASE WHEN status='archive_pending' THEN 'Archive was unavailable before the protected local copy expired. Try again.' ELSE error_message END,updated_at=now() WHERE id=$1", [row.id]);
+  }
+}
