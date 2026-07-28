@@ -27,7 +27,7 @@ export default function SortMenu({ value, onChange }: { value: Sort; onChange(va
 
   return <div ref={rootRef} className="relative min-w-0 sm:w-auto">
     <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((current) => !current)}
-      className="flex min-h-11 w-full items-center gap-2 rounded-2xl border border-natural-border bg-natural-cream px-3 py-2 text-left text-xs font-medium text-natural-dark shadow-sm transition hover:border-natural-sage/45 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 sm:w-auto">
+      className="flex min-h-11 w-full items-center gap-2 rounded-2xl border border-natural-border bg-natural-cream px-3 py-2 text-left font-sans text-xs font-medium text-natural-dark shadow-sm transition hover:border-natural-sage/45 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 sm:w-auto">
       <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-natural-sage" />
       <span className="min-w-0 flex-1 truncate">{selected.label}</span>
       <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`} />

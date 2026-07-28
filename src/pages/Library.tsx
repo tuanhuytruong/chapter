@@ -119,7 +119,7 @@ export default function Library() {
         </div>
         {scope === "mine" && <div>
           <button onClick={() => setShowAdd(true)}
-            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Add Book
           </button>
         </div>}

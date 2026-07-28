@@ -435,13 +435,13 @@ export default function BookDetail() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-2 lg:ml-auto lg:w-full">
-                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark disabled:cursor-not-allowed disabled:opacity-45">
+              <div className="flex flex-nowrap justify-end gap-2">
+                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark disabled:cursor-not-allowed disabled:opacity-45">
                   <Headphones className="w-3.5 h-3.5" /> Podcast
                 </button>
                 <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                  className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
-                  {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Reading…' : 'Read next session'}
+                  className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer">
+                  {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Reading…' : 'Read now'}
                 </button>
               </div>
               {pct >= 85 && book.status === 'active' && (

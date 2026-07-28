@@ -20,6 +20,7 @@
 body {
   background-color: var(--color-natural-bg);
   color: var(--color-natural-dark);
+  font-family: var(--font-sans);
 }
 
 .safe-bottom {
