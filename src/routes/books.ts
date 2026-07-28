@@ -276,7 +276,7 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
 booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='story'", [id, userFrom(req).id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
     res.json(await listStoryThreadAnalyses(id));
   } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
@@ -284,7 +284,7 @@ booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
 booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Response) => {
   const { id, logId } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='story'", [id, userFrom(req).id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
     const analysis = await getStoryThreadAnalysis(id, logId);
     if (!analysis) return res.status(404).json({ error: "story thread not available" });

@@ -59,6 +59,24 @@ export interface PodcastEpisode {
   created_at: string;
 }
 
+export interface PodcastChapter {
+  chapter_key: string;
+  chapter_title: string | null;
+  start_unit: number;
+  end_unit: number;
+  char_count: number;
+  episode: PodcastEpisode | null;
+}
+
+export interface PodcastCatalogBook {
+  id: string;
+  title: string;
+  author: string | null;
+  summary_lang: string | null;
+  reading_round: number;
+  chapters: PodcastChapter[];
+}
+
 const BASE = "/api/books";
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
@@ -115,9 +133,9 @@ export const api = {
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
-  getPodcasts: (bookId: string) => req<PodcastEpisode[]>(`/api/podcasts/books/${bookId}`),
-  createPodcast: (bookId: string, logId: string, voiceGender?: "female" | "male") =>
-    req<PodcastEpisode>("/api/podcasts", { method: "POST", body: JSON.stringify({ book_id: bookId, log_id: logId, voice_gender: voiceGender }) }),
+  getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
+  createPodcast: (bookId: string, chapterKey: string, voiceGender?: "female" | "male") =>
+    req<PodcastEpisode>("/api/podcasts", { method: "POST", body: JSON.stringify({ book_id: bookId, chapter_key: chapterKey, voice_gender: voiceGender }) }),
   getOnboarding: () => req<{ dismissed_steps: string[] }>("/api/onboarding"),
   saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>

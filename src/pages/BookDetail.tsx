@@ -15,7 +15,6 @@ import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
 import StoryThreadView from '../components/story/StoryThreadView';
 import BookWiki from '../components/BookWiki';
-import PodcastPanel from '../components/PodcastPanel';
 import { GuideCard } from '../onboarding';
 
 function InlineMarkdown({ text }: { text: string }) {
@@ -70,7 +69,7 @@ export default function BookDetail() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
-  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader' | 'podcast'>('list');
+  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader'>('list');
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
@@ -585,10 +584,6 @@ export default function BookDetail() {
             className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'ai-reader' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
             AI Reader
           </button>
-          <button onClick={() => setLogView('podcast')}
-            className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === 'podcast' ? 'bg-natural-sage text-white' : 'bg-natural-cream text-natural-stone border border-natural-border'}`}>
-            Podcast
-          </button>
         </div>
 
         {hasOpenedAiReader && (
@@ -596,7 +591,7 @@ export default function BookDetail() {
             <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
           </div>
         )}
-        {logView === 'podcast' ? <PodcastPanel bookId={book.id} logs={logs} epub={book.file_type === 'epub'} canEdit={!!book.can_edit} /> : logView !== 'ai-reader' && <>
+        {logView !== 'ai-reader' && <>
         {book.can_edit && lenses.length >= 3 && (
           <section className="mb-5 rounded-[24px] border border-natural-sage/30 bg-natural-sage/5 p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

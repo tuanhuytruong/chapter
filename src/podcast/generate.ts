@@ -13,9 +13,9 @@ const voices = { vi: { female: "edge-tts/vi-VN-HoaiMyNeural", male: "edge-tts/vi
 function resolvedLanguage(value: string | null): "vi" | "en" { return value === "vi" ? "vi" : "en"; }
 export function podcastPublic(row: any) { const { tg_file_id, tg_file_unique_id, tg_chat_id, tg_message_id, local_cache_path, local_cache_until, user_id, book_id, chapter_key, ...safe } = row; return safe; }
 
-export async function createPodcast(ownerId: string, bookId: string, logId: string, gender?: "female" | "male"): Promise<any> {
-  const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round,rl.id AS log_id,rl.page_start,rl.page_end,u.podcast_voice_gender
-    FROM books b JOIN reading_log rl ON rl.book_id=b.id JOIN users u ON u.id=b.owner_id WHERE b.id=$1 AND b.owner_id=$2 AND rl.id=$3`, [bookId, ownerId, logId]);
+export async function createPodcast(ownerId: string, bookId: string, chapterKey: string, gender?: "female" | "male"): Promise<any> {
+  const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round,u.podcast_voice_gender
+    FROM books b JOIN users u ON u.id=b.owner_id WHERE b.id=$1 AND b.owner_id=$2`, [bookId, ownerId]);
   const source = rows[0]; if (!source) throw new Error("Book chapter was not found"); if (source.file_type !== "epub") throw new Error("Podcast is available for EPUB books only");
   let voiceGender = source.podcast_voice_gender as "female" | "male" | null;
   if (!voiceGender && gender) {
@@ -23,11 +23,11 @@ export async function createPodcast(ownerId: string, bookId: string, logId: stri
     voiceGender = (await query<{ podcast_voice_gender: "female" | "male" | null }>("SELECT podcast_voice_gender FROM users WHERE id=$1", [ownerId])).rows[0]?.podcast_voice_gender || null;
   }
   if (!voiceGender) { const error: any = new Error("Choose a narrator voice before creating your first episode"); error.code = "VOICE_REQUIRED"; throw error; }
-  const units = await query<any>(`SELECT chapter_key,title FROM book_reading_units WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 AND chapter_key IS NOT NULL ORDER BY unit_index LIMIT 1`, [bookId, source.page_start, source.page_end]);
-  const unit = units.rows[0]; if (!unit) throw new Error("This EPUB needs to be re-indexed before Podcast can use its chapter boundary");
+  const unit = (await query<any>(`SELECT chapter_key, title FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index LIMIT 1`, [bookId, chapterKey])).rows[0];
+  if (!unit) throw new Error("This EPUB chapter needs to be indexed before Podcast can use it");
   const language = resolvedLanguage(source.summary_lang); const voice = voices[language][voiceGender];
   const inserted = await query<any>(`INSERT INTO podcasts (user_id,book_id,log_id,reading_round,chapter_key,chapter_title,language,voice_model,status)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'queued') ON CONFLICT (book_id,chapter_key,reading_round) DO UPDATE SET log_id=EXCLUDED.log_id,updated_at=now() RETURNING *`, [ownerId, bookId, logId, source.reading_round || 1, unit.chapter_key, unit.title, language, voice]);
+    VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,'queued') ON CONFLICT (book_id,chapter_key,reading_round) DO UPDATE SET status='queued',error_message=NULL,updated_at=now() RETURNING *`, [ownerId, bookId, source.reading_round || 1, unit.chapter_key, unit.title, language, voice]);
   void generatePodcast(inserted.rows[0].id).catch((error) => console.warn("[podcast] background generation failed:", error.message));
   return podcastPublic(inserted.rows[0]);
 }
