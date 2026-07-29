@@ -6,6 +6,7 @@ import path from "path";
 import { setPool } from "../src/db.ts";
 import { podcastsRouter } from "../src/routes/podcasts.ts";
 import { archiveFilename } from "../src/podcast/telegram.ts";
+import { podcastPrompt } from "../src/podcast/prompt.ts";
 
 const db = newDb();
 db.public.registerFunction({ name: "gen_random_uuid", implementation: () => crypto.randomUUID(), impure: true });
@@ -59,5 +60,8 @@ try {
   assert(sharedBook.status === 200 && sharedJson.chapters.length === 2, "book-scoped podcast view is available to a shared reader");
   assert(!('tg_file_id' in sharedJson.chapters[0].episode) && !('error_message' in sharedJson.chapters[0].episode), "shared podcast view keeps archive and operational details private");
   assert(archiveFilename("Huy/Truong", "A deliberately long book title", "A deliberately long chapter title") === "Huy Truong - A deliberately - ... - A deliberately.mp3", "Telegram filename uses safe user, book, and chapter prefixes");
+  const narrationPrompt = podcastPrompt({ title: "Book", author: "Author", chapterTitle: "Chapter Two", language: "vi", chapterText: "A chapter-local scene." }).system;
+  assert(narrationPrompt.includes("standalone episode") && narrationPrompt.includes("Start directly in an immediate situation"), "Podcast prompt requires chapter-local standalone narration");
+  assert(narrationPrompt.includes("front matter") && narrationPrompt.includes("Khi gấp lại những dòng giới thiệu này"), "Podcast prompt blocks generic introductory-page framing");
   console.log("PODCAST_ROUTE_FIXTURES_OK");
 } finally { server.close(); await rm(cache, { recursive: true, force: true }); await pool.end(); }
