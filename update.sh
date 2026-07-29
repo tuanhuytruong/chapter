@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# update.sh — Chapter app deploy on e7240ubt (PM2)
+# update.sh — Chapter app deployment helper (PM2)
 # Run on the server after `git clone` / first time, and on every update.
 set -euo pipefail
 
 APP_NAME="chapter"
 APP_DIR="${CHAPTER_APP_DIR:-/opt/chapter}"
 BRANCH="${BRANCH:-dev}"
-PORT="${PORT:-3000}"
+# Time allowed for a restarted Node process to finish schema/bootstrap work and
+# bind its HTTP listener. Override for unusually slow hosts if necessary.
+HEALTH_RETRIES="${HEALTH_RETRIES:-20}"
+HEALTH_RETRY_DELAY_SECONDS="${HEALTH_RETRY_DELAY_SECONDS:-1}"
 
 cd "$APP_DIR"
 
@@ -62,11 +65,27 @@ fi
 echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots, chapter.podcasts"
 echo ""
 echo "Health check:"
-HEALTH_URL="http://localhost:${PORT}/health"
-HEALTH_STATUS="$(curl -sS -m 5 -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)"
-if [ "$HEALTH_STATUS" = "200" ]; then
-  echo "GET /health -> HTTP 200"
-else
-  echo "GET /health -> HTTP ${HEALTH_STATUS:-000} (server not healthy)" >&2
-  exit 1
-fi
+# Read the production listener port from the PM2 ecosystem file. This avoids a
+# shell/.env PORT value accidentally probing a different port than PM2 serves.
+PM2_PORT="$(node -e "const app=require('./ecosystem.config.cjs').apps.find((item) => item.name === process.argv[1]); if (!app) process.exit(1); process.stdout.write(String(app.env_production?.PORT ?? 3000));" "$APP_NAME")"
+HEALTH_PORT="${HEALTH_PORT:-$PM2_PORT}"
+HEALTH_URL="http://127.0.0.1:${HEALTH_PORT}/health"
+HEALTH_STATUS="000"
+
+for attempt in $(seq 1 "$HEALTH_RETRIES"); do
+  HEALTH_STATUS="$(curl -sS -m 3 -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || true)"
+  if [ "$HEALTH_STATUS" = "200" ]; then
+    echo "GET /health -> HTTP 200 (ready after ${attempt}/${HEALTH_RETRIES} attempt(s))"
+    exit 0
+  fi
+
+  if [ "$attempt" -lt "$HEALTH_RETRIES" ]; then
+    echo "GET /health -> HTTP ${HEALTH_STATUS:-000}; waiting ${HEALTH_RETRY_DELAY_SECONDS}s for startup (${attempt}/${HEALTH_RETRIES})"
+    sleep "$HEALTH_RETRY_DELAY_SECONDS"
+  fi
+done
+
+echo "GET /health -> HTTP ${HEALTH_STATUS:-000} after ${HEALTH_RETRIES} attempt(s) (server not healthy)" >&2
+echo "Recent PM2 logs for $APP_NAME:" >&2
+pm2 logs "$APP_NAME" --lines 30 --nostream >&2 || true
+exit 1
