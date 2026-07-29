@@ -31,6 +31,8 @@ The server auto-creates the `chapter` schema tables on boot. Visit `http://local
 - **Filter + Sort + Search** — All / Active / Finished / Paused; sort by recent, title, progress, streak
 - **Book Detail** — reading-log timeline, GitHub-style streak heatmap, expandable raw text, edit/delete
 - **AI Daily Summary** — extract next chunk (PDF/EPUB) → LLM → save summary, key insights, quote
+- **Podcasts** — AI-generated audio summaries delivered via Telegram
+- **Multi-user** — shelf-per-user with optional "All Readers" view, Telegram account linking
 - **Five analysis modes**:
   - [Casual](reading-engine.md#casual-mode-summary_mode--casual) — warm 3–5 sentence narrative summary
   - [Deep Reading](reading-engine.md#deep-reading-mode-summary_mode--deep_reading) — structured section-by-section analysis

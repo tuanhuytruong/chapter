@@ -62,8 +62,12 @@ Chapter calls a 9router-compatible endpoint (OpenAI `/v1/chat/completions` forma
 - **End-of-book reflection** — synthesized reflection
 - **AI Reader** — batch chunk analysis and book wiki synthesis (via `src/aiReader.ts`)
 - **Book Wiki** — synthesized knowledge base including concepts, themes, and chapter maps (via `src/aiReader.ts`)
+- **Podcast** — AI-generated audio summaries using `src/podcast/tts.ts`
 
 When the LLM endpoint is unreachable, a deterministic fallback message is returned to keep the pipeline verifiable end-to-end.
+
+### Podcast integration (`src/podcast/`)
+A module for generating, storing, and serving audio podcast versions of summaries. Features include TTS synthesis, podcast metadata management, and integrated UI for playback in the `Podcasts` tab.
 
 ### Telegram integration
 Two integration modes:

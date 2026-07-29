@@ -92,6 +92,9 @@ The `POST /api/books/all/advance` endpoint is reserved for the n8n scheduled wor
 ### Manual "Read Today"
 Per-book advance at `POST /api/books/:id/advance`. Advances one book by its `daily_pages` setting, generates the analysis, and optionally sends Telegram.
 
+### Podcast Delivery
+The podcast module (`src/podcast/`) generates AI-powered audio summaries that are delivered to Telegram upon completion of the generation job.
+
 ## AI Reader batch job
 
 The `scripts/run-ai-reader.ts` script is a separate pipeline from the daily n8n cron. It processes all books that have uploaded files and LLM-analysed reading logs, then synthesises a persistent per-book wiki:
