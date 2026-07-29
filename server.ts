@@ -9,6 +9,7 @@ dotenv.config({ path: ".env.local" });
 import { booksRouter } from "./src/routes/books.js";
 import { reviewsRouter } from "./src/routes/reviews.js";
 import { uploadRouter } from "./src/routes/upload.js";
+import { podcastsRouter, startPodcastMaintenance } from "./src/routes/podcasts.js";
 import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
@@ -76,10 +77,10 @@ app.post("/api/auth/logout", (req, res) => req.session.destroy(() => res.status(
 app.use("/api", requireAuth);
 app.get("/api/auth/profile", async (req: Request, res: Response) => {
   try {
-    const { rows } = await query<{ username: string; display_name: string; avatar_url: string | null }>("SELECT username, display_name, avatar_url FROM users WHERE id=$1", [userFrom(req).id]);
+    const { rows } = await query<{ username: string; display_name: string; avatar_url: string | null; podcast_voice_gender: "female" | "male" | null }>("SELECT username, display_name, avatar_url, podcast_voice_gender FROM users WHERE id=$1", [userFrom(req).id]);
     const profile = rows[0];
     if (!profile) return res.status(404).json({ error: "Profile not found" });
-    res.json({ username: profile.username, displayName: profile.display_name, avatarUrl: profile.avatar_url || null });
+    res.json({ username: profile.username, displayName: profile.display_name, avatarUrl: profile.avatar_url || null, podcastVoiceGender: profile.podcast_voice_gender || null });
   } catch { res.status(500).json({ error: "Could not load profile" }); }
 });
 app.patch("/api/auth/profile", async (req: Request, res: Response) => {
@@ -155,6 +156,7 @@ app.patch("/api/onboarding", async (req: Request, res: Response) => {
 app.use("/api/books", booksRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/podcasts", podcastsRouter);
 
 // ── Personal achievements (derived; no duplicate achievement state) ─
 app.get("/api/achievements", async (req: Request, res: Response) => {
@@ -320,6 +322,7 @@ async function startServer() {
     try {
       await ensureSchema();
       await verifyCoreSchema();
+      startPodcastMaintenance();
     } catch (e: any) {
       console.error("[db] schema bootstrap failed; refusing to start:", e.message);
       process.exitCode = 1;

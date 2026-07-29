@@ -113,10 +113,13 @@ export interface ChunkInput {
   text: string;
 }
 
-// NineRouter can process four requests concurrently. Each request contains at
-// most five independent saved sessions to avoid paying one round-trip per log.
-export const AI_READER_BATCH_SIZE = 5;
-export const AI_READER_CONCURRENCY = 4;
+// Keep structured output bounded below the provider's observed five-minute
+// connection cutoff. Two sessions per request retain batching while reducing
+// prompt/output size and making a failed batch cheaper to recover.
+export const AI_READER_BATCH_SIZE = 2;
+// Keep one provider slot reserved for Read Today. AI Reader is retryable and
+// intentionally yields capacity to reader-facing summaries.
+export const AI_READER_CONCURRENCY = 2;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -256,12 +259,26 @@ export function parseChunkBatchAnalysis(raw: string, expectedCount: number): Chu
 }
 export async function analyseChunk(opts: ChunkInput): Promise<ChunkAnalysis> { return (await analyseChunkBatch([opts]))[0]; }
 
-// V2 structured notes can be much slower than daily-summary calls. Allow a
-// longer, bounded provider window here without changing global app latency.
-const AI_READER_TIMEOUT_MS = 150_000;
+// Structured notes may be queued inside the provider even after Chapter has
+// dispatched them. Keep this configurable and bounded separately from Read Today.
+export const AI_READER_TIMEOUT_MS = (() => {
+  const value = Number(process.env.NINE_ROUTER_AI_READER_TIMEOUT_MS || 360_000);
+  return Number.isFinite(value) ? Math.min(600_000, Math.max(30_000, value)) : 360_000;
+})();
+
+function batchTraceLabel(inputs: ChunkInput[], stage: "chunk" | "synthesis" = "chunk"): string {
+  const first = inputs[0];
+  const last = inputs.at(-1) || first;
+  return `ai-reader:${stage}:p.${first?.pageStart ?? 0}-${last?.pageEnd ?? 0}:n=${inputs.length}`;
+}
+
 export async function analyseChunkBatch(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> {
-  const raw = await callLLM(CHUNK_SYSTEM, buildChunkBatchPrompt(inputs), 0.3, true, true, AI_READER_TIMEOUT_MS);
-  return parseChunkBatchAnalysis(raw, inputs.length);
+  const traceLabel = batchTraceLabel(inputs);
+  const raw = await callLLM(CHUNK_SYSTEM, buildChunkBatchPrompt(inputs), 0.3, true, true, AI_READER_TIMEOUT_MS, { priority: "background", traceLabel });
+  console.info(`[ai-reader] ${traceLabel} provider content received; validating structured JSON`);
+  const analyses = parseChunkBatchAnalysis(raw, inputs.length);
+  console.info(`[ai-reader] ${traceLabel} validation passed (${analyses.length}/${inputs.length} analyses)`);
+  return analyses;
 }
 
 async function analyseBatchResilient(inputs: ChunkInput[]): Promise<ChunkAnalysis[]> {
@@ -273,14 +290,17 @@ async function analyseBatchResilient(inputs: ChunkInput[]): Promise<ChunkAnalysi
     // refuses to publish until every saved session is present.
     if (inputs.length === 1) throw batchError;
     console.warn(`[ai-reader] Batch retrying as ${inputs.length} single sessions: ${(batchError as Error).message}`);
-    const singleResults = await Promise.all(inputs.map(async (input) => {
+    const singleResults: ChunkAnalysis[] = [];
+    // Keep fallback retry traffic deliberately serial and low-priority. A batch
+    // failure must not fan out enough work to starve Read Today of provider slots.
+    for (const input of inputs) {
       try {
-        return await analyseChunkBatch([input]);
+        singleResults.push(...await analyseChunkBatch([input]));
       } catch (singleError) {
         throw new Error(`Session p.${input.pageStart}–${input.pageEnd} failed after batch fallback: ${(singleError as Error).message}`);
       }
-    }));
-    return singleResults.flat();
+    }
+    return singleResults;
   }
 }
 
@@ -437,8 +457,12 @@ export async function synthesiseWiki(opts: {
   chunks: ChunkForSynthesis[];
 }): Promise<Omit<BookWiki, "pages_covered">> {
   const prompt = buildSynthesisPrompt(opts);
-  const raw = await callLLM(SYNTHESIS_SYSTEM, prompt, 0.3, true, true, AI_READER_TIMEOUT_MS);
-  return parseSynthesis(raw, opts.chunks, { pagesCovered: opts.pagesCovered, lang: opts.lang });
+  const traceLabel = `ai-reader:synthesis:p.1-${opts.pagesCovered}:n=${opts.chunks.length}`;
+  const raw = await callLLM(SYNTHESIS_SYSTEM, prompt, 0.3, true, true, AI_READER_TIMEOUT_MS, { priority: "background", traceLabel });
+  console.info(`[ai-reader] ${traceLabel} provider content received; validating wiki JSON`);
+  const wiki = parseSynthesis(raw, opts.chunks, { pagesCovered: opts.pagesCovered, lang: opts.lang });
+  console.info(`[ai-reader] ${traceLabel} validation passed`);
+  return wiki;
 }
 
 /**
@@ -526,7 +550,10 @@ async function processBookForWikiNow(bookId: string, force = false): Promise<boo
     while (nextBatch < batches.length) {
       const batch = batches[nextBatch++];
       try {
+        const range = `p.${batch[0].log.page_start}–${batch.at(-1)?.log.page_end}`;
+        console.info(`[ai-reader] Batch ${range} analysis started (${batch.length} saved sessions)`);
         const analyses = await analyseBatchResilient(batch.map((item) => item.input));
+        console.info(`[ai-reader] Batch ${range} analysis validated; persisting ${analyses.length} chunks`);
         await Promise.all(batch.map(async ({ log }, index) => {
           const analysis = analyses[index];
           await query(
@@ -539,6 +566,7 @@ async function processBookForWikiNow(bookId: string, force = false): Promise<boo
           );
           processedIds.add(log.id);
         }));
+        console.info(`[ai-reader] Batch ${range} persisted ${analyses.length} chunks`);
       } catch (err: any) {
         console.error(`[ai-reader] Batch p.${batch[0].log.page_start}–${batch.at(-1)?.log.page_end} failed: ${err.message}`);
       }

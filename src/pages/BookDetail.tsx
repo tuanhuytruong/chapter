@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw } from 'lucide-react';
+import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw, Headphones } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { BookRow, LogRow, ReadingLensRow, StoryThreadRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
@@ -15,6 +15,7 @@ import MindMap from '../components/MindMap';
 import type { MindMapData } from '../components/MindMap';
 import StoryThreadView from '../components/story/StoryThreadView';
 import BookWiki from '../components/BookWiki';
+import PodcastPanel from '../components/PodcastPanel';
 import { GuideCard } from '../onboarding';
 
 function InlineMarkdown({ text }: { text: string }) {
@@ -69,7 +70,7 @@ export default function BookDetail() {
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
-  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader'>('list');
+  const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader' | 'podcast'>('list');
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
@@ -101,15 +102,15 @@ export default function BookDetail() {
       setSummaryMode(b.summary_mode || 'casual');
       setLogs(l);
 
-      if (b.can_edit) {
-        try {
-          if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
-          else setLenses(await api.getReadingLens(id));
-        } catch (e: any) {
-          // Companion analysis is non-critical, especially for a fresh book
-          // with no sessions yet. The detail page remains usable.
-          setToast({ type: 'err', msg: `Companion notes unavailable: ${e.message}` });
-        }
+      try {
+        // Persisted companion data is shared read-only. Generation/retry remains
+        // owner-only, but every signed-in reader can see completed analyses.
+        if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
+        else setLenses(await api.getReadingLens(id));
+      } catch (e: any) {
+        // Companion analysis is non-critical, especially for a fresh book
+        // with no sessions yet. The detail page remains usable.
+        setToast({ type: 'err', msg: `Companion notes unavailable: ${e.message}` });
       }
     } catch (e: any) {
       setBook(null);
@@ -347,9 +348,9 @@ export default function BookDetail() {
     if (!id) return;
     setStoryRetryingLogId(logId);
     try {
-      await api.retryStoryThread(id, logId);
-      await load();
-      setToast({ type: 'ok', msg: 'Story Thread is ready' });
+      const refreshed = await api.retryStoryThread(id, logId);
+      setStoryThread(previous => [...previous.filter(item => item.log_id !== refreshed.log_id), refreshed].sort((a, b) => a.generated_at.localeCompare(b.generated_at)));
+      setToast({ type: 'ok', msg: 'Story recap refreshed' });
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
       throw e;
@@ -422,7 +423,7 @@ export default function BookDetail() {
         </div>
         <aside className="contents" aria-label="Book utilities">
           <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
-          {!book.can_edit ? <span className="text-xs text-natural-stone">Read-only · {book.owner_name || 'another reader'}</span> : book.status === 'finished' ? (
+          {book.can_edit && book.status === 'finished' ? (
             <div className="flex flex-wrap gap-2">
               <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
                 <CheckCircle className="w-3.5 h-3.5" /> Finished
@@ -434,10 +435,15 @@ export default function BookDetail() {
             </div>
           ) : (
             <>
-              <button onClick={readToday} disabled={advancing || book.status === 'finished'}
-                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer lg:w-auto">
-                {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Saving…' : 'Read next session'}
-              </button>
+              <div className="flex flex-nowrap justify-end gap-2">
+                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark disabled:cursor-not-allowed disabled:opacity-45">
+                  <Headphones className="w-3.5 h-3.5" /> Podcast
+                </button>
+                <button onClick={readToday} disabled={!book.can_edit || advancing || book.status === 'finished'} title={!book.can_edit ? 'This shared book is read-only.' : undefined}
+                  className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer">
+                  {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Reading…' : 'Read now'}
+                </button>
+              </div>
               {pct >= 85 && book.status === 'active' && (
                 <button onClick={markFinished}
                   className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer">
@@ -547,7 +553,7 @@ export default function BookDetail() {
 
 
 
-      {book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} /></> : <>
+      {logView === 'podcast' ? <PodcastPanel bookId={book.id} canEdit={Boolean(book.can_edit)} isEpub={book.file_type === 'epub'} onClose={() => setLogView('list')} /> : book.reading_experience === 'story' ? <><GuideCard step="story_thread" eyebrow="Story Thread" title="Continuity grows with each session"><p>After you read, Chapter quietly follows the events, people, and unresolved threads from only the story you have reached so far. Your Story choice stays fixed so that continuity remains trustworthy.</p></GuideCard><StoryThreadView analyses={storyThread} logs={logs} onRetry={retryStoryThread} retryingLogId={storyRetryingLogId} canEdit={Boolean(book.can_edit)} /></> : <>
       {/* Timeline */}
       <div>
         <div className="mb-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -662,8 +668,8 @@ export default function BookDetail() {
 
       {book.can_edit && book.status === 'active' && createPortal(
         <button onClick={readToday} disabled={advancing}
-          aria-label={advancing ? 'Saving next session' : 'Read next session'}
-          title={advancing ? 'Saving…' : 'Read next session'}
+          aria-label={advancing ? 'Reading next session' : 'Read next session'}
+          title={advancing ? 'Reading…' : 'Read next session'}
           className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-natural-clay text-white shadow-lg shadow-natural-dark/20 transition hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:bottom-6 sm:right-6">
           {advancing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
         </button>,

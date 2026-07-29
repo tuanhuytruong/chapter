@@ -1,0 +1,67 @@
+import { newDb } from "pg-mem";
+import express from "express";
+import { mkdtemp, writeFile, rm } from "fs/promises";
+import { tmpdir } from "os";
+import path from "path";
+import { setPool } from "../src/db.ts";
+import { podcastsRouter } from "../src/routes/podcasts.ts";
+import { archiveFilename } from "../src/podcast/telegram.ts";
+import { podcastPrompt } from "../src/podcast/prompt.ts";
+
+const db = newDb();
+db.public.registerFunction({ name: "gen_random_uuid", implementation: () => crypto.randomUUID(), impure: true });
+db.public.none(`
+  CREATE TABLE users (id uuid primary key, username text, password_hash text, display_name text, podcast_voice_gender text);
+  CREATE TABLE books (id uuid primary key, owner_id uuid not null references users(id), title text, author text, cover_url text, file_type text, summary_lang text, reading_round int default 1, file_path text, created_at timestamptz default now(), total_pages int);
+  CREATE TABLE reading_log (id uuid primary key, book_id uuid references books(id), page_start int, page_end int);
+  CREATE TABLE book_reading_units (book_id uuid, unit_index int, title text, spine_index int, chapter_key text, raw_text text, char_count int);
+  CREATE TABLE podcasts (id uuid primary key, user_id uuid references users(id), book_id uuid references books(id), log_id uuid references reading_log(id), reading_round int, chapter_key text, chapter_title text, language text, voice_model text, status text, script_text text, word_count int, duration_s int, tg_file_id text, tg_file_unique_id text, tg_chat_id text, tg_message_id bigint, local_cache_path text, local_cache_until timestamptz, error_message text, created_at timestamptz default now(), updated_at timestamptz default now(), UNIQUE(book_id,chapter_key,reading_round));
+`);
+const pool = new (db.adapters.createPg().Pool)();
+setPool(pool as any);
+const owner = "00000000-0000-4000-8000-000000000001";
+const other = "00000000-0000-4000-8000-000000000002";
+const book = "10000000-0000-4000-8000-000000000001";
+const episode = "30000000-0000-4000-8000-000000000001";
+const cache = await mkdtemp(path.join(tmpdir(), "chapter-podcast-"));
+const audioPath = path.join(cache, "episode.mp3");
+const audio = Buffer.from("0123456789podcast-audio");
+await writeFile(audioPath, audio);
+await pool.query("INSERT INTO users VALUES ($1,'owner','x','Owner', 'female'),($2,'other','x','Other', 'male')", [owner, other]);
+await pool.query("INSERT INTO books (id,owner_id,title,author,file_type,summary_lang,reading_round,file_path) VALUES ($1,$2,'Book','Author','epub','en',1,'/no-file.epub')", [book, owner]);
+await pool.query("INSERT INTO book_reading_units VALUES ($1,1,'Chapter One',0,'0:chapter-one','The first part.',15),($1,2,'Chapter One',0,'0:chapter-one','The second part.',16),($1,3,'Chapter Two',1,'1:chapter-two','The next chapter.',17)", [book]);
+await pool.query("INSERT INTO podcasts (id,user_id,book_id,reading_round,chapter_key,chapter_title,language,voice_model,status,script_text,duration_s,local_cache_path,local_cache_until) VALUES ($1,$2,$3,1,'0:chapter-one','Chapter One','en','edge-tts/en-US-JennyNeural','ready','Transcript',2,$4,now() + interval '1 hour')", [episode, owner, book, audioPath]);
+
+const app = express(); app.use(express.json());
+app.use((req: any, _res, next) => { const id = req.header("x-user") || owner; req.session = { user: { id, username: "test", displayName: "Test" } }; req.user = req.session.user; next(); });
+app.use("/api/podcasts", podcastsRouter);
+const server = app.listen(0); await new Promise<void>((resolve) => server.once("listening", resolve));
+const base = `http://127.0.0.1:${(server.address() as any).port}`;
+const assert = (value: any, message: string) => { if (!value) throw new Error(message); console.log(`✅ ${message}`); };
+try {
+  const catalogResponse = await fetch(`${base}/api/podcasts/catalog`);
+  const catalog = await catalogResponse.json() as any[];
+  assert(catalogResponse.status === 200 && catalog[0].chapters.length === 2, "catalog groups EPUB units into stable complete chapters");
+  assert(catalog[0].chapters[0].episode && !('chapter_key' in catalog[0].chapters[0].episode), "catalog hides internal archive and chapter identity metadata");
+  assert(!('tg_file_id' in catalog[0].chapters[0].episode) && !('local_cache_path' in catalog[0].chapters[0].episode), "catalog keeps Telegram and cache identifiers private");
+  const partial = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { Range: "bytes=2-7" } });
+  assert(partial.status === 206 && partial.headers.get("content-range") === `bytes 2-7/${audio.length}`, "audio proxy serves HTTP Range responses");
+  assert(Buffer.compare(Buffer.from(await partial.arrayBuffer()), audio.subarray(2, 8)) === 0, "audio proxy returns exactly requested bytes");
+  await pool.query("UPDATE podcasts SET status='archive_pending',tg_file_id=NULL WHERE id=$1", [episode]);
+  const pendingAudio = await fetch(`${base}/api/podcasts/${episode}/audio`);
+  assert(pendingAudio.status === 200 && Buffer.compare(Buffer.from(await pendingAudio.arrayBuffer()), audio) === 0, "archive-pending episode remains privately playable from local cache");
+  const pendingCatalog = await fetch(`${base}/api/podcasts/catalog`);
+  const pendingJson = await pendingCatalog.json() as any[];
+  assert(pendingJson[0].chapters[0].episode.status === "archive_pending" && !('tg_file_id' in pendingJson[0].chapters[0].episode), "archive-pending state is public without exposing archive metadata");
+  const foreign = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { "x-user": other } });
+  assert(foreign.status === 200, "ready audio is safely playable by a signed-in shared reader");
+  const sharedBook = await fetch(`${base}/api/podcasts/books/${book}`, { headers: { "x-user": other } });
+  const sharedJson = await sharedBook.json() as any;
+  assert(sharedBook.status === 200 && sharedJson.chapters.length === 2, "book-scoped podcast view is available to a shared reader");
+  assert(!('tg_file_id' in sharedJson.chapters[0].episode) && !('error_message' in sharedJson.chapters[0].episode), "shared podcast view keeps archive and operational details private");
+  assert(archiveFilename("Huy/Truong", "A deliberately long book title", "A deliberately long chapter title") === "Huy Truong - A deliberately - ... - A deliberately.mp3", "Telegram filename uses safe user, book, and chapter prefixes");
+  const narrationPrompt = podcastPrompt({ title: "Book", author: "Author", chapterTitle: "Chapter Two", language: "vi", chapterText: "A chapter-local scene." }).system;
+  assert(narrationPrompt.includes("standalone episode") && narrationPrompt.includes("Start directly in an immediate situation"), "Podcast prompt requires chapter-local standalone narration");
+  assert(narrationPrompt.includes("front matter") && narrationPrompt.includes("Khi gấp lại những dòng giới thiệu này"), "Podcast prompt blocks generic introductory-page framing");
+  console.log("PODCAST_ROUTE_FIXTURES_OK");
+} finally { server.close(); await rm(cache, { recursive: true, force: true }); await pool.end(); }

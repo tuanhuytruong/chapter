@@ -43,15 +43,14 @@ function progressPct(b: any): number {
   return Math.min(100, Math.round((b.current_page / b.total_pages) * 100));
 }
 
-// Resolve a book file path. If the user supplies an absolute path (starts with
-// "/") we keep it as-is (backward compatible). Otherwise we treat the value as
-// a filename/relative path inside CHAPTER_BOOKS_DIR so the user only has to
-// type e.g. "atomic-habits.pdf".
-function resolveBookPath(input: string): string {
-  const p = input.trim();
-  if (p.startsWith("/")) return p;
-  const dir = config.booksDir.replace(/\/+$/, "");
-  return `${dir}/${p}`;
+// Registration accepts only a path whose ownership was recorded by POST /upload.
+// Normalization prevents aliases from bypassing the registry lookup; upload itself
+// is the sole code path that can register a path.
+function normalizeUploadPath(input: string): string {
+  const candidate = input.trim();
+  return path.isAbsolute(candidate)
+    ? path.resolve(candidate)
+    : path.resolve(config.booksDir, candidate);
 }
 
 /** Build an EPUB map only once. Chunk indices are persisted and become the
@@ -67,9 +66,9 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
   if (!units.length) throw new Error("EPUB has no readable text");
   for (const unit of units) {
     await client.query(
-      `INSERT INTO book_reading_units (book_id, unit_index, title, raw_text, char_count)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [book.id, unit.unitIndex, unit.title, unit.rawText, unit.rawText.length]
+      `INSERT INTO book_reading_units (book_id, unit_index, title, spine_index, chapter_key, raw_text, char_count)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [book.id, unit.unitIndex, unit.title, unit.spineIndex, unit.chapterKey, unit.rawText, unit.rawText.length]
     );
   }
   await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [units.length, book.id]);
@@ -83,7 +82,7 @@ booksRouter.get("/", async (req: Request, res: Response) => {
     const scope = req.query.scope || "mine";
     if (scope !== "mine" && scope !== "all") return res.status(400).json({ error: "scope must be 'mine' or 'all'" });
     const { rows } = await query(
-      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
+      `SELECT b.id, b.title, b.author, b.file_type, b.total_pages, b.daily_pages, b.current_page, b.status, b.summary_lang, b.reading_experience, b.summary_mode, b.cover_url, CASE WHEN b.owner_id=$1 THEN b.reflection_text ELSE NULL END AS reflection_text, CASE WHEN b.owner_id=$1 THEN b.reflection_at ELSE NULL END AS reflection_at, b.queue_order, b.created_at, b.owner_id, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
        FROM books b LEFT JOIN users u ON u.id=b.owner_id
        WHERE ($2 = 'all' OR b.owner_id = $1)
        ORDER BY u.display_name NULLS LAST, b.created_at DESC`,
@@ -141,9 +140,20 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const initialStatus = status === "queued" ? "queued" : "active";
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode) ? summary_mode : "casual";
   const readingExperience = ["analytical", "story"].includes(reading_experience) ? reading_experience : "analytical";
-  const resolvedPath = resolveBookPath(file_path);
+  const resolvedPath = normalizeUploadPath(file_path);
   try {
     const { rows } = await withTransaction(async (client) => {
+      // Claim first inside this transaction. The affected-row check prevents two
+      // simultaneous create requests from attaching the same upload twice.
+      const claim = await client.query(
+        "UPDATE uploaded_files SET claimed_at=now() WHERE owner_id=$1 AND file_path=$2 AND claimed_at IS NULL RETURNING file_path",
+        [userFrom(req).id, resolvedPath]
+      );
+      if (!claim.rows.length) {
+        const error: any = new Error("file_path must refer to one of your unclaimed uploads");
+        error.statusCode = 403;
+        throw error;
+      }
       const queueOrder = initialStatus === "queued"
         ? Number((await client.query("SELECT COALESCE(MAX(queue_order), 0) + 1 AS next FROM books WHERE owner_id=$1 AND status='queued'", [userFrom(req).id])).rows[0].next)
         : null;
@@ -155,7 +165,8 @@ booksRouter.post("/", async (req: Request, res: Response) => {
     });
     res.status(201).json(rows[0]);
   } catch (e: any) {
-    res.status(503).json({ error: "DB unavailable", detail: e.message });
+    const statusCode = Number.isInteger(e?.statusCode) ? e.statusCode : 503;
+    res.status(statusCode).json({ error: statusCode === 403 ? e.message : "DB unavailable", detail: statusCode === 403 ? undefined : e.message });
   }
 });
 
@@ -255,7 +266,7 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    res.json({ ok: true, deletedFile: filePath || null });
+    res.json({ ok: true });
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
@@ -265,7 +276,7 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
 booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='story'", [id, userFrom(req).id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
     res.json(await listStoryThreadAnalyses(id));
   } catch (e: any) { res.status(503).json({ error: "story thread unavailable", detail: e.message }); }
@@ -273,7 +284,7 @@ booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
 booksRouter.get("/:id/logs/:logId/story-thread", async (req: Request, res: Response) => {
   const { id, logId } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience=story", [id, userFrom(req).id]);
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='story'", [id, userFrom(req).id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "story book not found" });
     const analysis = await getStoryThreadAnalysis(id, logId);
     if (!analysis) return res.status(404).json({ error: "story thread not available" });
@@ -385,7 +396,7 @@ booksRouter.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { rows } = await query(
-      `SELECT b.*, u.display_name AS owner_name, (b.owner_id = $2) AS can_edit
+      `SELECT b.id, b.title, b.author, b.file_type, b.total_pages, b.daily_pages, b.current_page, b.status, b.summary_lang, b.reading_experience, b.summary_mode, b.cover_url, CASE WHEN b.owner_id=$2 THEN b.reflection_text ELSE NULL END AS reflection_text, CASE WHEN b.owner_id=$2 THEN b.reflection_at ELSE NULL END AS reflection_at, b.queue_order, b.created_at, b.owner_id, u.display_name AS owner_name, (b.owner_id = $2) AS can_edit
        FROM books b LEFT JOIN users u ON u.id=b.owner_id WHERE b.id = $1`,
       [id, userFrom(req).id]
     );
@@ -396,10 +407,13 @@ booksRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/books/:id/log — full history
+// GET /api/books/:id/log — full shared reading history. Readers can inspect
+// one another's sessions in All Readers; mutation routes remain owner-scoped.
 booksRouter.get("/:id/log", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const book = await query("SELECT 1 FROM books WHERE id=$1", [id]);
+    if (!book.rows.length) return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
       "SELECT * FROM reading_log WHERE book_id = $1 ORDER BY date DESC, session DESC",
       [id]
@@ -414,7 +428,9 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
 booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    // Persisted Reading Lens analyses are shared read-only with every signed-in
+    // reader. Owner checks remain on every retry/generation mutation below.
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND reading_experience='analytical'", [id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
     res.json(await listReadingLensAnalyses(id));
   } catch (e: any) { res.status(503).json({ error: "reading lens unavailable", detail: e.message }); }
@@ -423,7 +439,7 @@ booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
 booksRouter.get("/:id/logs/:logId/reading-lens", async (req: Request, res: Response) => {
   const { id, logId } = req.params;
   try {
-    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='analytical'", [id, userFrom(req).id]);
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND reading_experience='analytical'", [id]);
     if (!allowed.rows.length) return res.status(404).json({ error: "analytical book not found" });
     const analysis = await getReadingLensAnalysisForLog(id, logId);
     if (!analysis) return res.status(404).json({ error: "reading lens not available" });
@@ -533,109 +549,98 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   }
 });
 
-/** Core: extract next chunk, call LLM, persist. Supports multi-session. */
-async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
-  const result: any = await withTransaction(async (client) => {
-    const bRes = await client.query("SELECT * FROM books WHERE id = $1", [bookId]);
-    const book = bRes.rows[0];
-    if (!book) return null;
-    if (book.status !== "active" && !force) return null;
-
+/** Reserve the next session in a short transaction; never hold a DB lock across extraction or LLM work. */
+async function reserveAdvance(bookId: string, force: boolean): Promise<any | null> {
+  return withTransaction(async (client) => {
+    const { rows: books } = await client.query("SELECT * FROM books WHERE id=$1 FOR UPDATE", [bookId]);
+    const book = books[0];
+    if (!book || (book.status !== "active" && !force)) return null;
     const dateStr = today();
-
-    // Find the last session for today (if any) — supports multi-session reading
-    const lastSession = await client.query(
-      `SELECT page_end, session FROM reading_log
-       WHERE book_id=$1 AND date=$2
-       ORDER BY session DESC LIMIT 1`,
+    const { rows: pending } = await client.query(
+      `SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 AND raw_text IS NULL ORDER BY session DESC LIMIT 1`,
       [bookId, dateStr]
     );
-
-    const sessionNum = lastSession.rows.length ? lastSession.rows[0].session + 1 : 1;
-    const start = lastSession.rows.length
-      ? lastSession.rows[0].page_end + 1   // continue from last session's end
-      : book.current_page + 1;             // first session: use book cursor
-
-    let end: number;
-    let text: string;
-    let chapterTitle: string | null;
-    let totalPages: number;
-
-    if (book.file_type === "epub") {
-      totalPages = await ensureEpubReadingUnits(client, book);
-      if (start > totalPages) return { bookId, skipped: true, reason: "book finished" };
-      end = Math.min(start + Math.max(1, book.daily_pages) - 1, totalPages);
-      const { rows: units } = await client.query(
-        `SELECT unit_index, title, raw_text FROM book_reading_units
-         WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`,
-        [bookId, start, end]
-      );
-      if (!units.length) throw new Error("EPUB reading chunk not found");
-      text = units.map((unit: any) => unit.raw_text).join("\n\n");
-      chapterTitle = units.find((unit: any) => unit.title)?.title || null;
-    } else {
-      end = Math.min(start + book.daily_pages - 1, book.total_pages || start + book.daily_pages);
-      if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
-      const extracted = await extractRange(book.file_path, book.file_type, start, end);
-      text = extracted.text;
-      totalPages = book.total_pages || extracted.totalUnits;
-      chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
-    }
-
-    // Story books do not invoke the analytical summary pipeline. Their compatible
-    // log fields are filled by Story Thread only after this transaction commits.
-    const parsed = book.reading_experience === "story"
-      ? { summary: "Story Thread analysis is being prepared.", key_insights: [], quote: null }
-      : parseSummary(await callNineRouter({
-        title: book.title, author: book.author, start, end, total: totalPages,
-        extractedText: text, fileType: book.file_type,
-        lang: (book.summary_lang as "auto" | "vi" | "en") || "auto", summaryMode: book.summary_mode || "casual",
-      }), book.summary_mode || "casual");
-
-    // Update book cursor — always advances regardless of session count
-    const newCurrent = end;
-    const finished = newCurrent >= (totalPages || newCurrent);
-    await client.query(
-      `UPDATE books SET current_page=$1, total_pages=$2, status=CASE WHEN $3 THEN 'finished' ELSE status END WHERE id=$4`,
-      [newCurrent, totalPages, finished, bookId]
+    if (pending[0]) return { book, dateStr, log: pending[0], start: pending[0].page_start, end: pending[0].page_end, resumed: true };
+    const { rows: prior } = await client.query(
+      `SELECT page_end, session FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session DESC LIMIT 1`, [bookId, dateStr]
     );
-
-    const ins = await client.query(
-      `INSERT INTO reading_log (book_id, date, session, page_start, page_end, raw_text, summary, key_insights, quote, chapter_title)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [bookId, dateStr, sessionNum, start, end, text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle]
+    const start = prior[0] ? prior[0].page_end + 1 : book.current_page + 1;
+    if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
+    const end = Math.min(start + Math.max(1, book.daily_pages) - 1, book.total_pages || start + Math.max(1, book.daily_pages) - 1);
+    const session = prior[0] ? prior[0].session + 1 : 1;
+    const { rows } = await client.query(
+      `INSERT INTO reading_log (book_id,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [bookId, dateStr, session, start, end, "Reading session is being prepared."]
     );
+    await client.query("UPDATE books SET current_page=$1 WHERE id=$2", [end, bookId]);
+    return { book, dateStr, log: rows[0], start, end, resumed: false };
+  });
+}
 
-    // Story sessions intentionally never seed analytical spaced-review cards.
+// Same-book requests may arrive from two tabs before either client disables its
+// CTA. Share the in-flight reservation/result instead of processing a pending
+// row twice; a later retry starts a new process after this promise settles.
+const activeAdvances = new Map<string, Promise<any | null>>();
+
+/** Core: reserve atomically, then extract/call LLM outside any DB transaction. */
+async function advanceBook(bookId: string, force: boolean): Promise<any | null> {
+  const active = activeAdvances.get(bookId);
+  if (active) return active;
+  const running = advanceBookNow(bookId, force);
+  activeAdvances.set(bookId, running);
+  try {
+    return await running;
+  } finally {
+    if (activeAdvances.get(bookId) === running) activeAdvances.delete(bookId);
+  }
+}
+
+async function advanceBookNow(bookId: string, force: boolean): Promise<any | null> {
+  // EPUB has a persisted unit cursor. Initialize it before reserving the range
+  // so a new or stale total_pages value cannot reserve beyond the real last unit.
+  const { rows: preflightBooks } = await query("SELECT * FROM books WHERE id=$1", [bookId]);
+  if (preflightBooks[0]?.file_type === "epub") {
+    await withTransaction(async (client) => { await ensureEpubReadingUnits(client, preflightBooks[0]); });
+  }
+  const reservation = await reserveAdvance(bookId, force);
+  if (!reservation || reservation.skipped) return reservation;
+  const { book, dateStr, log, start, end } = reservation;
+  let text: string;
+  let chapterTitle: string | null;
+  let totalPages = book.total_pages;
+  if (book.file_type === "epub") {
+    // EPUB unit initialization is retained for existing books; the row lock has
+    // already been released before this potentially expensive work begins.
+    await withTransaction(async (client) => { totalPages = await ensureEpubReadingUnits(client, book); });
+    const { rows: units } = await query(`SELECT unit_index,title,raw_text FROM book_reading_units WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`, [bookId, start, end]);
+    if (!units.length) throw new Error("EPUB reading chunk not found");
+    text = units.map((unit: any) => unit.raw_text).join("\n\n");
+    chapterTitle = units.find((unit: any) => unit.title)?.title || null;
+  } else {
+    const extracted = await extractRange(book.file_path, book.file_type, start, end);
+    text = extracted.text;
+    totalPages = book.total_pages || extracted.totalUnits;
+    chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
+  }
+  const parsed = book.reading_experience === "story"
+    ? { summary: "Story Thread analysis is being prepared.", key_insights: [], quote: null }
+    : parseSummary(await callNineRouter({ title: book.title, author: book.author, start, end, total: totalPages, extractedText: text, fileType: book.file_type, lang: (book.summary_lang as "auto" | "vi" | "en") || "auto", summaryMode: book.summary_mode || "casual" }), book.summary_mode || "casual");
+  const result: any = await withTransaction(async (client) => {
+    const finished = end >= totalPages;
+    const { rows } = await client.query(
+      `UPDATE reading_log SET raw_text=$1,summary=$2,key_insights=$3,quote=$4,chapter_title=$5 WHERE id=$6 AND book_id=$7 RETURNING *`,
+      [text, parsed.summary, parsed.key_insights, parsed.quote, chapterTitle, log.id, bookId]
+    );
+    if (!rows[0]) throw new Error("reserved reading session was not found");
+    await client.query(`UPDATE books SET current_page=$1,total_pages=$2,status=CASE WHEN $3 THEN 'finished' ELSE status END WHERE id=$4`, [end, totalPages, finished, bookId]);
     if (book.reading_experience !== "story") {
-    // Seed only the insights produced by this new session. The source log/index
-    // unique constraint makes this idempotent and deliberately avoids backfill.
-    const firstDue = reviewOutcome(1, false, dateStr).dueDate;
-    for (const [insightIndex, insight] of parsed.key_insights.entries()) {
-      const trimmed = insight.trim();
-      if (!trimmed) continue;
-      await client.query(
-        `INSERT INTO review_cards (book_id, log_id, insight_index, insight, due_date)
-         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id, insight_index) DO NOTHING`,
-        [bookId, ins.rows[0].id, insightIndex, trimmed, firstDue]
-      );
+      const firstDue = reviewOutcome(1, false, dateStr).dueDate;
+      for (const [insightIndex, insight] of parsed.key_insights.entries()) {
+        const trimmed = insight.trim();
+        if (trimmed) await client.query(`INSERT INTO review_cards (book_id,log_id,insight_index,insight,due_date) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (log_id,insight_index) DO NOTHING`, [bookId, rows[0].id, insightIndex, trimmed, firstDue]);
+      }
     }
-    }
-
-    return {
-      bookId,
-      title: book.title,
-      author: book.author,
-      summaryLang: book.summary_lang || "auto",
-      date: dateStr,
-      session: sessionNum,
-      pageStart: start,
-      pageEnd: end,
-      totalUnits: totalPages,
-      finished,
-      log: ins.rows[0],
-      readingExperience: book.reading_experience || "analytical",
-    };
+    return { bookId, title: book.title, author: book.author, summaryLang: book.summary_lang || "auto", date: dateStr, session: rows[0].session, pageStart: start, pageEnd: end, totalUnits: totalPages, finished, log: rows[0], readingExperience: book.reading_experience || "analytical" };
   });
   if (result?.log?.raw_text) {
     // Enrichment starts only after the reading transaction commits.
@@ -664,11 +669,23 @@ async function advanceBook(bookId: string, force: boolean): Promise<any | null> 
 async function generateReadingLensForLog(log: any, book: { title: string; author: string; total: number; lang: "auto" | "vi" | "en" }): Promise<void> {
   if (!log.raw_text?.trim()) return;
   const prompt = buildReadingLensPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text });
-  const raw = process.env.NINE_ROUTER_URL
-    ? await callLLM(prompt.system, prompt.user, 0.2, true, true)
-    : JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
-  const analysis = parseReadingLensAnalysis(raw, log.raw_text);
-  await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+  const fallback = JSON.stringify({ coreArgument: "Not established in this reading.", argumentMap: [], assumptionsAndLimits: [], keyConcepts: [], questionsToCarryForward: [], durableInsights: [], quote: null, confidenceNotes: ["Reading Lens is running with a local fallback."] });
+  // Providers occasionally return an otherwise complete JSON object with a
+  // malformed string. Normalize harmless raw controls first, then make exactly
+  // one fresh strict request for unrecoverable JSON. Never persist guessed data.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const raw = process.env.NINE_ROUTER_URL
+      ? await callLLM(prompt.system, prompt.user, 0.2, true, true, undefined, { priority: "background", traceLabel: `reading-lens:p.${log.page_start}-${log.page_end}:attempt=${attempt}` })
+      : fallback;
+    try {
+      const analysis = parseReadingLensAnalysis(raw, log.raw_text);
+      await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+      return;
+    } catch (error) {
+      if (!(error instanceof SyntaxError) || attempt === 2) throw error;
+      console.warn(`[reading-lens] malformed JSON for p.${log.page_start}-${log.page_end}; retrying once with a fresh provider response`);
+    }
+  }
 }
 
 
@@ -688,6 +705,8 @@ async function generateStoryThreadForLog(log: any, book: { title: string; author
 booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const allowed = await query("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [id, userFrom(req).id]);
+    if (!allowed.rows.length) return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
       "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session ASC",
       [id, today()]
@@ -717,6 +736,9 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
       const analysis = await getStoryThreadAnalysis(id, logId);
       return res.json(analysis || entry);
     }
+    // A retry must never overwrite a visible fallback with another fallback.
+    // Surface an upstream timeout so the owner can retry later with the original
+    // persisted summary still intact.
     const raw = await callNineRouter({
       title: book.title,
       author: book.author,
@@ -727,7 +749,7 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
       fileType: book.file_type,
       lang: book.summary_lang || "auto",
       summaryMode: book.summary_mode || "casual",
-    });
+    }, true);
     const parsed = parseSummary(raw, book.summary_mode || "casual");
     const { rows } = await query(
       `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,

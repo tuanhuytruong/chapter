@@ -1,5 +1,6 @@
 // Telegram push helper for the daily reading-summary delivery (Phase 3).
 // Uses the Bot API directly via fetch — no extra dependency.
+import { config } from "./config.js";
 
 const TG_API = "https://api.telegram.org";
 
@@ -14,7 +15,7 @@ export interface TelegramConfig {
 
 /** Bot credentials are server-wide; each recipient chat ID lives on users.telegram_chat_id. */
 export function getTelegramConfig(): TelegramConfig | null {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botToken = config.telegramBotToken;
   if (!botToken) return null;
   return { botToken };
 }

@@ -9,7 +9,7 @@ export default function ReadingLensCard({ lens, canEdit, isPreparing = false, on
     const message = isPreparing
       ? "Reading Lens is preparing quietly in the background."
       : "Reading Lens couldn't be prepared for this session.";
-    return <div className="mt-3 rounded-xl border border-dashed border-natural-border px-3 py-2 text-[11px] text-natural-stone">{message}{canEdit && !isPreparing && <button className="ml-2 min-h-11 text-natural-sage underline" disabled={retrying} onClick={async () => { setRetrying(true); await onRetry(); setRetrying(false); }}>{retrying ? "Trying…" : "Try again"}</button>}</div>;
+    return <div className="mt-3 rounded-xl border border-dashed border-natural-border px-3 py-2 text-[11px] text-natural-stone">{message}{canEdit && !isPreparing && <button className="ml-2 min-h-11 text-natural-sage underline" disabled={retrying} onClick={async () => { setRetrying(true); try { await onRetry(); } finally { setRetrying(false); } }}>{retrying ? "Trying…" : "Try again"}</button>}</div>;
   }
   const a = lens.analysis;
   return <section className="mt-3 rounded-2xl border border-natural-border bg-natural-cream/50 p-3 sm:p-4">

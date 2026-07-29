@@ -29,15 +29,21 @@ cp .env.example .env.local
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql://user:pass@localhost:5432/dwh`) |
-| `NINE_ROUTER_URL` | Yes | 9router API endpoint (e.g. `https://9router-ubt.mrl.asia/v1/chat/completions`) |
+| `NINE_ROUTER_URL` | Yes | 9router API endpoint (e.g. `http://localhost:20128/v1/chat/completions`) |
 | `NINE_ROUTER_API_KEY` | Yes | API key for 9router |
 | `NINE_ROUTER_MODEL` | No | Model name (default `n8n`) |
+| `NINE_ROUTER_MAX_RPS` | No | Provider request-start cap; default `5`, dispatched evenly every 200ms |
+| `NINE_ROUTER_MAX_CONCURRENCY` | No | Maximum in-flight provider calls; default `30` (raise toward 50 only after monitoring) |
+| `NINE_ROUTER_INTERACTIVE_TIMEOUT_MS` | No | Read Today upstream timeout; default `25000` |
+| `NINE_ROUTER_AI_READER_TIMEOUT_MS` | No | Structured AI Reader/background request deadline; default `360000` (minimum `30000`, maximum `600000`) |
 | `TELEGRAM_BOT_TOKEN` | Yes | Telegram bot token from BotFather |
 | `TELEGRAM_BOT_USERNAME` | For linking | Bot username (needed for deep link generation) |
 | `TELEGRAM_WEBHOOK_SECRET` | For linking | Secret token for webhook endpoint |
 | `TELEGRAM_CHAT_ID` | For n8n | Chat ID for cron delivery |
 | `CHAPTER_BOOKS_DIR` | Yes | Directory for book files (default `/opt/chapter/workspace/books`) |
 | `SESSION_SECRET` | Yes | Express session signing secret |
+| `ADMIN_TOKEN` | No | Reserved for administrative operations |
+| `ADMIN_USERNAME` | No | Existing account that receives a deleted user's books |
 | `PORT` | No | Server port (default `3000`) |
 | `NODE_ENV` | No | `production` enables secure cookies |
 
@@ -117,6 +123,19 @@ In production, the server serves `dist/index.html` and static assets from `dist/
 | `verify-achievements.ts` | `tsx scripts/verify-achievements.ts` | Tests achievement calculation |
 | `verify-review-ui.ts` | `tsx scripts/verify-review-ui.ts` | Tests review card rendering |
 | `verify-summary-mode.ts` | `tsx scripts/verify-summary-mode.ts` | Tests deep reading vs casual |
+| `verify-ai-reader.ts` | `npm run verify:ai-reader` | Tests AI Reader chunk analysis + synthesis parsing |
+| `verify-reading-rhythm.ts` | `npm run verify:reading-rhythm` | Tests reading rhythm streak + milestone calculation |
+| `verify-read-today.ts` | `npm run verify:read-today` | Tests Read Today button DOM constraints |
+
+### AI Reader batch job
+
+```bash
+npx tsx scripts/run-ai-reader.ts                 # all books
+npx tsx scripts/run-ai-reader.ts --book-id <id>  # single book
+npx tsx scripts/run-ai-reader.ts --force          # reprocess all chunks
+```
+
+No npm script is registered for this — invoke directly with `npx tsx`.
 
 ### User management scripts
 
@@ -152,6 +171,20 @@ Current migrations:
 - `20260724_add_summary_mode.sql` — Summary mode column
 - `20260724_remove_community.sql` — Drops community feature
 - `20260724_telegram_linking.sql` — Telegram link columns
+- `20260726_add_ai_reader.sql` — `ai_reader_chunks` + `book_wiki` tables
+- `20260726_expand_ai_reader_narrative.sql` — Narrative arc, output language, AI reader job tracking
+- `20260726_ai_reader_continuity_map_v2.sql` — V2 continuity maps and resolved language enforcement
+
+## CI / OpenWiki workflow
+
+A scheduled GitHub Actions workflow (`.github/workflows/openwiki-update.yml`) runs daily at 00:00 UTC (07:00 Bangkok time):
+
+1. Checks out the `dev` branch on the self-hosted runner
+2. Installs OpenWiki CLI + Mermaid + jsdom
+3. Runs `openwiki code --update --print` with the project's LLM configuration
+4. Commits any wiki changes back to the `dev` branch
+
+The workflow is triggered on schedule and via `workflow_dispatch` for manual runs.
 
 ## Health check
 

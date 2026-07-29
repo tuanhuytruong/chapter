@@ -19,7 +19,8 @@
     "verify:onboarding": "tsx scripts/verify-onboarding.ts",
     "verify:ai-reader": "tsx scripts/verify-ai-reader.ts",
     "verify:reading-rhythm": "tsx scripts/verify-reading-rhythm.ts",
-    "verify:read-today": "tsx scripts/verify-read-today.ts"
+    "verify:read-today": "tsx scripts/verify-read-today.ts",
+    "verify:podcast": "tsx scripts/verify-podcast.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -52,7 +53,6 @@
     "pg-mem": "^3.0.14",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "typescript": "~5.8.2"
   }
 }

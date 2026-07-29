@@ -60,8 +60,14 @@ Chapter calls a 9router-compatible endpoint (OpenAI `/v1/chat/completions` forma
 - **Reading Lens** — analytical argument mapping (non-fiction)
 - **Story Thread** — character/plot tracking (fiction)
 - **End-of-book reflection** — synthesized reflection
+- **AI Reader** — batch chunk analysis and book wiki synthesis (via `src/aiReader.ts`)
+- **Book Wiki** — synthesized knowledge base including concepts, themes, and chapter maps (via `src/aiReader.ts`)
+- **Podcast** — AI-generated audio summaries using `src/podcast/tts.ts`
 
 When the LLM endpoint is unreachable, a deterministic fallback message is returned to keep the pipeline verifiable end-to-end.
+
+### Podcast integration (`src/podcast/`)
+A module for generating, storing, and serving audio podcast versions of summaries. Features include TTS synthesis, podcast metadata management, and integrated UI for playback in the `Podcasts` tab.
 
 ### Telegram integration
 Two integration modes:
@@ -102,6 +108,20 @@ sequenceDiagram
         Express->>TG: sendMessage (formatted summary)
     end
 ```
+
+## AI Reader batch pipeline
+
+The AI Reader (`src/aiReader.ts`, `scripts/run-ai-reader.ts`) is a separate offline pipeline that runs independently from the daily advance cron. It processes all accumulated reading logs to build a persistent per-book wiki:
+
+1. For each unprocessed reading-log session, extracts source text and calls the LLM for **chunk analysis** (concepts, themes, characters, close reading, threads, entities, evidence).
+2. After all chunks are analysed, calls the LLM to **synthesise** a single `book_wiki` blob containing overview, narrative arc, continuity maps, and session handoff context.
+3. Stores the result in `chapter.book_wiki` (per book, upserted) and each chunk in `chapter.ai_reader_chunks`.
+
+Designed for nightly PM2 cron. Uses batched LLM calls (`AI_READER_BATCH_SIZE = 5`, `AI_READER_CONCURRENCY = 2`) to stay within token limits while processing books with many sessions. The shared NineRouter dispatcher separately paces all provider request starts at 5/sec and permits up to 30 in-flight calls by default, with Read Today dispatched before background work.
+
+## Reading Rhythm
+
+The `src/reading-rhythm.ts` module computes streak data for the UI's 14-day heatmap and milestone system. It operates entirely in-process on reading-log dates — no additional DB tables or LLM calls. Milestones: 3 ("Finding a rhythm"), 7, 14, 30, and 100 days.
 
 ## Multi-user model
 Books are owned by users (`owner_id` foreign key). The library route supports two scopes:

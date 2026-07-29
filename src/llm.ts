@@ -6,25 +6,74 @@
  * verified end-to-end. On e7240ubt, point NINE_ROUTER_URL at localhost:20128.
  */
 
-// Shared process-local capacity guard. It covers every route using 9router, so
-// an AI Reader rebuild cannot exceed the provider's four-request budget when a
-// reader simultaneously requests a summary or Reading Lens analysis.
-const NINE_ROUTER_CONCURRENCY = 4;
-let activeNineRouterCalls = 0;
-const nineRouterWaiters: Array<() => void> = [];
-
-async function acquireNineRouterSlot(): Promise<void> {
-  if (activeNineRouterCalls < NINE_ROUTER_CONCURRENCY) {
-    activeNineRouterCalls++;
-    return;
-  }
-  await new Promise<void>((resolve) => nineRouterWaiters.push(resolve));
-  activeNineRouterCalls++;
+// Shared process-local provider scheduler. It separates the provider's request-start
+// rate from its in-flight capacity: starts are evenly paced (5/sec by default),
+// while up to 30 calls may wait for a response. Reader-facing summaries always
+// dispatch before retryable background analysis, and one active slot stays reserved.
+function positiveEnv(name: string, fallback: number, upperBound: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? Math.min(upperBound, Math.floor(value)) : fallback;
 }
 
-function releaseNineRouterSlot(): void {
+export const NINE_ROUTER_MAX_RPS = positiveEnv("NINE_ROUTER_MAX_RPS", 5, 100);
+export const NINE_ROUTER_MAX_CONCURRENCY = positiveEnv("NINE_ROUTER_MAX_CONCURRENCY", 30, 100);
+export const NINE_ROUTER_BACKGROUND_CONCURRENCY = NINE_ROUTER_MAX_CONCURRENCY > 1
+  ? NINE_ROUTER_MAX_CONCURRENCY - 1
+  : 1;
+export const NINE_ROUTER_DISPATCH_INTERVAL_MS = Math.ceil(1_000 / NINE_ROUTER_MAX_RPS);
+export type LlmPriority = "interactive" | "background";
+type Waiter = { resolve: () => void; priority: LlmPriority };
+
+/** One trace label per upstream call; never include book text or credentials. */
+export interface LlmCallOptions {
+  priority?: LlmPriority;
+  traceLabel?: string;
+  /** Optional feature-specific provider alias; defaults to NINE_ROUTER_MODEL. */
+  model?: string;
+}
+let activeNineRouterCalls = 0;
+let activeBackgroundCalls = 0;
+let nextDispatchAt = 0;
+let dispatchTimer: ReturnType<typeof setTimeout> | undefined;
+const interactiveWaiters: Waiter[] = [];
+const backgroundWaiters: Waiter[] = [];
+
+function drainNineRouterQueue(): void {
+  if (dispatchTimer || activeNineRouterCalls >= NINE_ROUTER_MAX_CONCURRENCY) return;
+  const waiter = interactiveWaiters[0]
+    || (activeBackgroundCalls < NINE_ROUTER_BACKGROUND_CONCURRENCY ? backgroundWaiters[0] : undefined);
+  if (!waiter) return;
+
+  const delay = Math.max(0, nextDispatchAt - Date.now());
+  if (delay > 0) {
+    dispatchTimer = setTimeout(() => {
+      dispatchTimer = undefined;
+      drainNineRouterQueue();
+    }, delay);
+    return;
+  }
+
+  const next = interactiveWaiters.shift()
+    || (activeBackgroundCalls < NINE_ROUTER_BACKGROUND_CONCURRENCY ? backgroundWaiters.shift() : undefined);
+  if (!next) return;
+  activeNineRouterCalls++;
+  if (next.priority === "background") activeBackgroundCalls++;
+  nextDispatchAt = Date.now() + NINE_ROUTER_DISPATCH_INTERVAL_MS;
+  next.resolve();
+  drainNineRouterQueue();
+}
+
+async function acquireNineRouterSlot(priority: LlmPriority): Promise<void> {
+  await new Promise<void>((resolve) => {
+    (priority === "interactive" ? interactiveWaiters : backgroundWaiters).push({ resolve, priority });
+    drainNineRouterQueue();
+  });
+}
+
+function releaseNineRouterSlot(priority: LlmPriority): void {
   activeNineRouterCalls--;
-  nineRouterWaiters.shift()?.();
+  if (priority === "background") activeBackgroundCalls--;
+  drainNineRouterQueue();
 }
 
 /** Generic 9router call with arbitrary system + user prompts. Returns text. */
@@ -34,10 +83,13 @@ export async function callLLM(
   temperature = 0.7,
   strict = false,
   jsonMode = false,
-  timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000)
+  timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000),
+  options: LlmCallOptions = {}
 ): Promise<string> {
+  const priority = options.priority || "background";
+  const trace = options.traceLabel ? ` [${options.traceLabel}]` : "";
   const url = process.env.NINE_ROUTER_URL;
-  const model = process.env.NINE_ROUTER_MODEL || "qwen3";
+  const model = options.model || process.env.NINE_ROUTER_MODEL || "qwen3";
 
   if (!url) {
     if (strict) throw new Error("NineRouter is not configured");
@@ -50,13 +102,21 @@ export async function callLLM(
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let resp: Response;
-    await acquireNineRouterSlot();
-    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(180_000, Math.max(5_000, timeoutMs)) : 60_000;
-    timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
+    const queuedAt = Date.now();
+    await acquireNineRouterSlot(priority);
+    const queueWaitMs = Date.now() - queuedAt;
+    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(600_000, Math.max(5_000, timeoutMs)) : 60_000;
+    const startedAt = Date.now();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      console.warn(`[llm]${trace} timeout after ${boundedTimeoutMs}ms (queue=${queueWaitMs}ms, priority=${priority})`);
+      controller.abort();
+    }, boundedTimeoutMs);
+    if (queueWaitMs > 250) console.info(`[llm]${trace} ${priority} slot acquired after ${queueWaitMs}ms`);
+    console.info(`[llm]${trace} dispatch model=${model} json=${jsonMode} timeout=${boundedTimeoutMs}ms`);
     try {
-      resp = await fetch(url, {
+      const resp = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -71,18 +131,31 @@ export async function callLLM(
         }),
         signal: controller.signal,
       });
+      const headersMs = Date.now() - startedAt;
+      console.info(`[llm]${trace} response headers HTTP ${resp.status} after ${headersMs}ms`);
+      const body = await resp.text();
+      const totalMs = Date.now() - startedAt;
+      console.info(`[llm]${trace} response body received ${body.length} bytes after ${totalMs}ms`);
+      if (!resp.ok) throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
+      let data: any;
+      try {
+        data = JSON.parse(body);
+      } catch (parseError: any) {
+        throw new Error(`9router response JSON parse failed after ${totalMs}ms: ${parseError.message}`);
+      }
+      const text: string | undefined = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error("9router returned empty content");
+      console.info(`[llm]${trace} assistant content extracted (${text.length} chars) after ${totalMs}ms`);
+      return text.trim();
+    } catch (err: any) {
+      const elapsedMs = Date.now() - startedAt;
+      const reason = timedOut ? `timeout=${boundedTimeoutMs}ms` : "upstream/error";
+      console.error(`[llm]${trace} failed at ${reason} after ${elapsedMs}ms: ${err.message}`);
+      throw err;
     } finally {
       clearTimeout(timer);
-      releaseNineRouterSlot();
+      releaseNineRouterSlot(priority);
     }
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
-    }
-    const data = await resp.json();
-    const text: string | undefined = data?.choices?.[0]?.message?.content;
-    if (!text) throw new Error("9router returned empty content");
-    return text.trim();
   } catch (err: any) {
     console.error("[llm] generic call failed:", err.message, strict ? "— surfacing error" : "— using fallback");
     if (strict) throw err;
@@ -204,11 +277,12 @@ ${input.extractedText}`;
 }
 
 /** Call 9router. Returns raw assistant text. */
-export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
+export async function callNineRouter(input: AdvanceLLMInput, strict = false): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
 
   if (!url) {
+    if (strict) throw new Error("NineRouter is not configured");
     console.warn("[llm] NINE_ROUTER_URL not set — using mock");
     return mockResponse(input);
   }
@@ -218,9 +292,16 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
 
-    await acquireNineRouterSlot();
+    const queuedAt = Date.now();
+    await acquireNineRouterSlot("interactive");
+    const queueWaitMs = Date.now() - queuedAt;
+    const controller = new AbortController();
+    const timeoutMs = Number(process.env.NINE_ROUTER_INTERACTIVE_TIMEOUT_MS || 25_000);
+    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(55_000, Math.max(5_000, timeoutMs)) : 25_000;
+    const timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
     let resp: Response;
     try {
+      if (queueWaitMs > 250) console.info(`[llm] interactive summary slot wait ${queueWaitMs}ms`);
       resp = await fetch(url, {
         method: "POST",
         headers,
@@ -233,9 +314,11 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
           temperature: 0.7,
           stream: false,
         }),
+        signal: controller.signal,
       });
     } finally {
-      releaseNineRouterSlot();
+      clearTimeout(timer);
+      releaseNineRouterSlot("interactive");
     }
     if (!resp.ok) {
       const body = await resp.text().catch(() => "");
@@ -246,7 +329,8 @@ export async function callNineRouter(input: AdvanceLLMInput): Promise<string> {
     if (!text) throw new Error("9router returned empty content");
     return text;
   } catch (err: any) {
-    console.error("[llm] 9router call failed:", err.message, "— using mock");
+    console.error("[llm] 9router interactive summary failed:", err.message, strict ? "— surfacing error" : "— using mock");
+    if (strict) throw err;
     return mockResponse(input);
   }
 }

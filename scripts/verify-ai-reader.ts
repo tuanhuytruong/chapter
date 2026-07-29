@@ -53,16 +53,16 @@ const prompt = buildSynthesisPrompt({ title: "Test", author: "Author", totalPage
 assert.match(prompt, /Never reveal, predict, or hint at events beyond page 10/);
 assert.match(prompt, /entirely in English/);
 
-assert.equal(AI_READER_BATCH_SIZE, 5);
-assert.equal(AI_READER_CONCURRENCY, 4);
-const batchInputs = Array.from({ length: 5 }, (_, index) => ({ title: "Test", author: "Author", pageStart: index * 10 + 1, pageEnd: index * 10 + 10, totalPages: 100, lang: "en" as const, text: `Session ${index + 1} source text.` }));
+assert.equal(AI_READER_BATCH_SIZE, 2, "Two sessions stay below the provider's observed connection cutoff");
+assert.equal(AI_READER_CONCURRENCY, 2, "AI Reader yields provider capacity to interactive Read Today");
+const batchInputs = Array.from({ length: 2 }, (_, index) => ({ title: "Test", author: "Author", pageStart: index * 10 + 1, pageEnd: index * 10 + 10, totalPages: 100, lang: "en" as const, text: `Session ${index + 1} source text.` }));
 const batchPrompt = buildChunkBatchPrompt(batchInputs);
 assert.match(batchPrompt, /SESSION 1/);
-assert.match(batchPrompt, /SESSION 5/);
-assert.throws(() => buildChunkBatchPrompt([...batchInputs, batchInputs[0]]), /1–5 sessions/);
-const batchAnalyses = parseChunkBatchAnalysis(JSON.stringify({ analyses: batchInputs.map((_, index) => ({ session: index + 1, chunk_summary: `Session ${index + 1}`, concepts: [], themes: [], people: [], notable_quotes: [] })) }), 5);
-assert.equal(batchAnalyses.length, 5);
-assert.equal(batchAnalyses[4].chunk_summary, "Session 5");
+assert.match(batchPrompt, /SESSION 2/);
+assert.throws(() => buildChunkBatchPrompt([...batchInputs, batchInputs[0]]), /1–2 sessions/);
+const batchAnalyses = parseChunkBatchAnalysis(JSON.stringify({ analyses: batchInputs.map((_, index) => ({ session: index + 1, chunk_summary: `Session ${index + 1}`, concepts: [], themes: [], people: [], notable_quotes: [] })) }), 2);
+assert.equal(batchAnalyses.length, 2);
+assert.equal(batchAnalyses[1].chunk_summary, "Session 2");
 assert.throws(() => parseChunkBatchAnalysis(JSON.stringify({ analyses: [{ session: 2 }] }), 1), /preserve session order/);
 
 // Consecutive one-page sessions must contribute all the way through page 3,
@@ -74,12 +74,29 @@ assert.match(threeSessionPrompt, /3 entries/);
 const aiReaderSource = readFileSync(new URL("../src/aiReader.ts", import.meta.url), "utf8");
 assert.match(aiReaderSource, /const activeBookProcesses = new Map/);
 assert.match(aiReaderSource, /WHERE book_wiki\.pages_covered <= EXCLUDED\.pages_covered/);
-assert.match(aiReaderSource, /const AI_READER_TIMEOUT_MS = 150_000/);
+assert.match(aiReaderSource, /NINE_ROUTER_AI_READER_TIMEOUT_MS \|\| 360_000/);
+assert.match(aiReaderSource, /Math\.min\(600_000, Math\.max\(30_000, value\)\)/);
+assert.match(aiReaderSource, /return `ai-reader:\$\{stage\}:p\./);
+assert.match(aiReaderSource, /provider content received; validating structured JSON/);
+assert.match(aiReaderSource, /analysis validated; persisting/);
+assert.match(aiReaderSource, /persisted \$\{analyses\.length\} chunks/);
 assert.match(aiReaderSource, /Batch retrying as \$\{inputs\.length\} single sessions/);
+const llmSource = readFileSync(new URL("../src/llm.ts", import.meta.url), "utf8");
+assert.match(llmSource, /response headers HTTP \$\{resp\.status\} after/);
+assert.match(llmSource, /response body received \$\{body\.length\} bytes after/);
+assert.match(llmSource, /assistant content extracted/);
+assert.match(llmSource, /timeout after \$\{boundedTimeoutMs\}ms/);
+assert.match(llmSource, /Math\.min\(600_000, Math\.max\(5_000, timeoutMs\)\)/);
 const bookRoutes = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
 const sharedReaderRoutes = bookRoutes.slice(bookRoutes.indexOf('// ── AI Reader / Book Wiki routes'), bookRoutes.indexOf('// POST /api/books/:id/wiki/regenerate'));
 assert.doesNotMatch(sharedReaderRoutes, /owner_id=\$2/);
 assert.match(bookRoutes, /booksRouter\.post\("\/:id\/wiki\/regenerate"[\s\S]*?ownerCanMutate/);
+const bookWikiComponent = readFileSync(new URL("../src/components/BookWiki.tsx", import.meta.url), "utf8");
+assert.match(bookWikiComponent, /req<BookWikiData>\(`\/api\/books\/\$\{bookId\}\/wiki`\)\.catch/);
+assert.match(bookWikiComponent, /if \(error\.message\.startsWith\("404:"\)\) return null/);
+assert.match(bookWikiComponent, /The owner has not generated a shared AI Reader map for this book yet\./);
+assert.match(bookWikiComponent, /\{canEdit && <button onClick=\{refresh\}/);
+assert.match(bookWikiComponent, /\.join\("\\n"\)\]\.filter\(Boolean\)\.join\("\\n"\)/, "entity page appearances stay on individual lines");
 
 const migration = readFileSync(new URL("../migrations/20260726_expand_ai_reader_narrative.sql", import.meta.url), "utf8");
 const v2Migration = readFileSync(new URL("../migrations/20260726_ai_reader_continuity_map_v2.sql", import.meta.url), "utf8");

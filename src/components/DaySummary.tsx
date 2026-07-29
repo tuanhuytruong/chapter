@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, StickyNote } from 'lucide-react';
+import { ChevronDown, ChevronUp, Quote, FileText, RotateCcw, StickyNote } from 'lucide-react';
 import type { LogRow, SummaryMode } from '../types';
 import { api } from '../api';
 
@@ -51,6 +51,10 @@ function InlineMarkdown({ text, highlight }: { text: string; highlight?: string 
   return <>{parts.map((part, index) => part.startsWith('**') && part.endsWith('**')
     ? <strong key={index} className="font-bold text-natural-dark">{highlight ? <HighlightText text={part.slice(2, -2)} query={highlight} /> : part.slice(2, -2)}</strong>
     : <React.Fragment key={index}>{highlight ? <HighlightText text={part} query={highlight} /> : part}</React.Fragment>)}</>;
+}
+
+function isFallbackSummary(summary: string | null): boolean {
+  return Boolean(summary && /\[mock (?:summary|Deep Reading)\s*—/i.test(summary));
 }
 
 function DeepReadingSummary({ text, highlight }: { text: string; highlight?: string }) {
@@ -110,7 +114,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>
           <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Session {log.session}</span>
           {log.chapter_title ? (
-            <span className="text-[10px] text-natural-sage font-sans bg-natural-cream px-2 py-0.5 rounded-full max-w-[200px] truncate" title={log.chapter_title}>
+            <span className="text-[10px] text-natural-sage font-sans bg-natural-cream px-2 py-0.5 rounded-full max-w-[480px] truncate" title={log.chapter_title}>
               📑 {log.chapter_title}
             </span>
           ) : (
@@ -118,22 +122,26 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           )}
         </div>
         <div className="flex items-center gap-1">
+          {canEdit && log.raw_text && (
+            <button onClick={retrySummary} disabled={retrying} aria-label={`Retry summary for session ${log.session}`} title="Retry summary" className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark disabled:opacity-50">
+              <RotateCcw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} />
+            </button>
+          )}
           {log.raw_text && (
-            <button onClick={() => setOpen(o => !o)} className="text-natural-stone hover:text-natural-dark">
+            <button onClick={() => setOpen(o => !o)} aria-label={open ? 'Collapse source text' : 'Expand source text'} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           )}
         </div>
       </div>
 
+      {retryError && <p className="text-[10px] text-red-600">{retryError}</p>}
+
       {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
 
-      {canEdit && !log.summary && log.raw_text && (
+      {canEdit && (!log.summary || isFallbackSummary(log.summary)) && log.raw_text && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">
-          <span className="flex-1 text-[11px] text-natural-stone">Summary unavailable for this session.</span>
-          <button onClick={retrySummary} disabled={retrying} className="min-h-9 rounded-full bg-natural-sage px-3 text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-50">
-            {retrying ? 'Retrying…' : 'Retry summary'}
-          </button>
+          <span className="flex-1 text-[11px] text-natural-stone">{isFallbackSummary(log.summary) ? 'This session uses a temporary summary because the AI service was unavailable. Use the retry button above when ready.' : 'Summary unavailable for this session. Use the retry button above when ready.'}</span>
           {retryError && <p className="w-full text-[10px] text-red-600">{retryError}</p>}
         </div>
       )}

@@ -45,6 +45,38 @@ export interface AdvanceResult {
   readingExperience: "analytical" | "story";
 }
 
+export interface PodcastEpisode {
+  id: string;
+  log_id: string | null;
+  chapter_title: string | null;
+  status: "queued" | "scripting" | "synthesizing" | "archiving" | "archive_pending" | "ready" | "failed";
+  language: "vi" | "en";
+  voice_model: string;
+  word_count: number | null;
+  duration_s: number | null;
+  script_text: string | null;
+  created_at: string;
+}
+
+export interface PodcastChapter {
+  chapter_key: string;
+  chapter_title: string | null;
+  start_unit: number;
+  end_unit: number;
+  char_count: number;
+  episode: PodcastEpisode | null;
+}
+
+export interface PodcastCatalogBook {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_url?: string | null;
+  summary_lang: string | null;
+  reading_round: number;
+  chapters: PodcastChapter[];
+}
+
 const BASE = "/api/books";
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
@@ -101,6 +133,11 @@ export const api = {
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
+  getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
+  getBookPodcast: (bookId: string) => req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
+  createPodcast: (bookId: string, chapterKey: string, voiceGender?: "female" | "male") =>
+    req<PodcastEpisode>("/api/podcasts", { method: "POST", body: JSON.stringify({ book_id: bookId, chapter_key: chapterKey, voice_gender: voiceGender }) }),
+  regeneratePodcast: (episodeId: string) => req<PodcastEpisode>(`/api/podcasts/${episodeId}/regenerate`, { method: "POST" }),
   getOnboarding: () => req<{ dismissed_steps: string[] }>("/api/onboarding"),
   saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>

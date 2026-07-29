@@ -14,6 +14,25 @@
 
 CREATE SCHEMA IF NOT EXISTS chapter;
 
+-- Bootstrap identities before tables that reference an owner. This is also kept
+-- here (not only in a deployment migration) so an empty database is usable.
+CREATE TABLE IF NOT EXISTS chapter.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  avatar_url TEXT,
+  telegram_chat_id TEXT,
+  podcast_voice_gender TEXT CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS podcast_voice_gender TEXT;
+ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_podcast_voice_gender_check;
+ALTER TABLE chapter.users ADD CONSTRAINT users_podcast_voice_gender_check
+  CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male'));
+
+
 -- ───────────────────────────────────────────────────────────
 -- chapter.session (express-session via connect-pg-simple)
 -- ───────────────────────────────────────────────────────────
@@ -51,6 +70,17 @@ CREATE TABLE IF NOT EXISTS chapter.books (
 );
 
 CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
+
+-- Upload ownership is separate from books while a file is waiting to be saved.
+-- A claimed file remains recorded so another user cannot attach it later.
+CREATE TABLE IF NOT EXISTS chapter.uploaded_files (
+  file_path TEXT PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_uploaded_files_owner_unclaimed
+  ON chapter.uploaded_files (owner_id) WHERE claimed_at IS NULL;
 
 -- Per-reader, dismissible onboarding milestones. Content remains in the client.
 CREATE TABLE IF NOT EXISTS chapter.onboarding_progress (
@@ -101,12 +131,18 @@ CREATE TABLE IF NOT EXISTS chapter.book_reading_units (
   book_id     UUID NOT NULL REFERENCES chapter.books (id) ON DELETE CASCADE,
   unit_index  INT NOT NULL,
   title       TEXT,
+  spine_index INT,
+  chapter_key TEXT,
   raw_text    TEXT NOT NULL,
   char_count  INT NOT NULL,
   UNIQUE (book_id, unit_index)
 );
 CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_unit
   ON chapter.book_reading_units (book_id, unit_index);
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS spine_index INT;
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS chapter_key TEXT;
+CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_chapter
+  ON chapter.book_reading_units (book_id, chapter_key, unit_index);
 
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_log
@@ -153,6 +189,40 @@ DROP INDEX IF EXISTS idx_reading_log_book_date;
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
 
+-- Podcast episodes are private owner-scoped jobs. Telegram identifiers stay
+-- server-side and are never included in reader-facing API responses. It follows
+-- reading_log so the foreign key is valid on a clean database bootstrap.
+CREATE TABLE IF NOT EXISTS chapter.podcasts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  log_id UUID REFERENCES chapter.reading_log(id) ON DELETE SET NULL,
+  reading_round INT NOT NULL DEFAULT 1,
+  chapter_key TEXT NOT NULL,
+  chapter_title TEXT,
+  language TEXT NOT NULL CHECK (language IN ('vi', 'en')),
+  voice_model TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed')),
+  script_text TEXT,
+  word_count INT,
+  duration_s INT,
+  tg_file_id TEXT,
+  tg_file_unique_id TEXT,
+  tg_chat_id TEXT,
+  tg_message_id BIGINT,
+  local_cache_path TEXT,
+  local_cache_until TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (book_id, chapter_key, reading_round)
+);
+ALTER TABLE chapter.podcasts DROP CONSTRAINT IF EXISTS podcasts_status_check;
+ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
+  CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed'));
+CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
+
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_lens_analyses (versioned structured session analysis)
 -- ───────────────────────────────────────────────────────────
@@ -189,6 +259,27 @@ CREATE TABLE IF NOT EXISTS chapter.story_state_snapshots (
   last_log_id UUID REFERENCES chapter.reading_log(id) ON DELETE SET NULL,
   state JSONB NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- AI Reader base tables must be created before their additive fields below.
+CREATE TABLE IF NOT EXISTS chapter.ai_reader_chunks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  page_start INT NOT NULL,
+  page_end INT NOT NULL,
+  chunk_analysis JSONB NOT NULL,
+  processed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (log_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_reader_chunks_book ON chapter.ai_reader_chunks (book_id, processed_at ASC);
+CREATE TABLE IF NOT EXISTS chapter.book_wiki (
+  book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
+  pages_covered INT NOT NULL DEFAULT 0,
+  overview TEXT NOT NULL DEFAULT '',
+  concepts JSONB NOT NULL DEFAULT '[]', themes JSONB NOT NULL DEFAULT '[]', people JSONB NOT NULL DEFAULT '[]',
+  chapter_map JSONB NOT NULL DEFAULT '[]', notable_quotes JSONB NOT NULL DEFAULT '[]', open_questions JSONB NOT NULL DEFAULT '[]',
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT now(), generation_ms INT
 );
 
 -- Migration: additive AI Reader narrative fields (idempotent).
