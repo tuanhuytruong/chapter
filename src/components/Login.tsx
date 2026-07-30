@@ -1,9 +1,11 @@
 import { FormEvent, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { BookMarked, Loader2 } from "lucide-react";
 import { useAuth } from "../AuthContext";
 
 export default function Login() {
   const { login } = useAuth();
+  const [params] = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -31,9 +33,12 @@ export default function Login() {
           <p className="text-xs text-natural-stone">Sign in to your reading shelf.</p>
         </div>
         <label className="block text-xs font-bold text-natural-dark">Username<input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Your username" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label>
-        <label className="block text-xs font-bold text-natural-dark">Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label>
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        <div><label className="block text-xs font-bold text-natural-dark">Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label><div className="mt-1.5 flex justify-end"><Link to="/forgot-password" className="text-xs font-bold text-natural-sage underline">Forgot password?</Link></div></div>
+        {params.get("auth_error") === "google" && <p role="alert" className="text-xs text-red-600">Google sign-in could not be completed. Please try again.</p>}
+        {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
         <button disabled={submitting} className="w-full rounded-full bg-natural-sage py-2.5 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-60">{submitting ? <Loader2 className="mx-auto w-4 h-4 animate-spin" /> : "Sign in"}</button>
+        <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-natural-stone"><span className="h-px flex-1 bg-natural-border" />or<span className="h-px flex-1 bg-natural-border" /></div>
+        <button type="button" onClick={() => window.location.assign("/api/auth/google?intent=login")} className="min-h-11 w-full rounded-full border border-natural-border bg-natural-bg text-xs font-bold text-natural-dark hover:border-natural-sage/60">Continue with Google</button>
       </form>
     </main>
   );

@@ -31,4 +31,10 @@ export const config = {
   podcastTtsMaxChars: Number(process.env.PODCAST_TTS_MAX_CHARS ?? 12_000),
   port: Number(process.env.PORT ?? 3000),
   booksDir: process.env.CHAPTER_BOOKS_DIR ?? "/opt/chapter/workspace/books",
+  appUrl: optionalEnv("APP_URL") || "http://localhost:3000",
+  googleClientId: optionalEnv("GOOGLE_CLIENT_ID"),
+  googleClientSecret: optionalEnv("GOOGLE_CLIENT_SECRET"),
+  resendApiKey: optionalEnv("RESEND_API_KEY"),
+  resendFrom: optionalEnv("RESEND_FROM") || "Chapter <no-reply@account.mrl.asia>",
+  passwordResetTtlMinutes: Math.min(60, Math.max(15, Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 45))),
 };

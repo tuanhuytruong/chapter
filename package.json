@@ -22,7 +22,8 @@
     "verify:read-today": "tsx scripts/verify-read-today.ts",
     "verify:library": "tsx scripts/verify-library-shelf-switcher.ts",
     "verify:quotes": "tsx scripts/verify-quotes-archive.ts",
-    "verify:podcast": "tsx scripts/verify-podcast.ts"
+    "verify:podcast": "tsx scripts/verify-podcast.ts",
+    "verify:auth": "tsx scripts/verify-auth-upgrade.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -33,6 +34,7 @@
     "epub": "^2.1.1",
     "express": "^4.21.2",
     "express-session": "^1.19.0",
+    "google-auth-library": "^11.0.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.2.0",
@@ -41,6 +43,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.18.1",
+    "resend": "^6.18.1",
     "vite": "^6.2.3"
   },
   "devDependencies": {

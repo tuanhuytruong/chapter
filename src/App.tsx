@@ -16,6 +16,8 @@ import AnimalAvatar from './components/AnimalAvatar';
 import JourneyDrawer from './components/JourneyDrawer';
 import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X } from 'lucide-react';
 import Login from './components/Login';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import { AuthProvider, useAuth } from './AuthContext';
 import { OnboardingProvider } from './onboarding';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -101,7 +103,7 @@ function Layout() {
 function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Login />;
+  if (!user) return <BrowserRouter><Routes><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="*" element={<Login />} /></Routes></BrowserRouter>;
   return <OnboardingProvider><BrowserRouter><Routes><Route element={<Layout />}>
     <Route path="/" element={<Library />} />
     <Route path="/today" element={<Today />} />
