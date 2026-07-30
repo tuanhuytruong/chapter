@@ -20,6 +20,7 @@
     "verify:ai-reader": "tsx scripts/verify-ai-reader.ts",
     "verify:reading-rhythm": "tsx scripts/verify-reading-rhythm.ts",
     "verify:read-today": "tsx scripts/verify-read-today.ts",
+    "verify:library": "tsx scripts/verify-library-shelf-switcher.ts",
     "verify:podcast": "tsx scripts/verify-podcast.ts"
   },
   "dependencies": {
