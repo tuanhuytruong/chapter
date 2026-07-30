@@ -142,7 +142,7 @@ export default function Library() {
       </div>
 
       <div className="border-b border-natural-border">
-        <div className="-mb-px flex gap-1 overflow-x-auto whitespace-nowrap" role="group" aria-label="Shelf filters">
+        <div className="-mb-px flex w-full min-w-max gap-1 overflow-x-auto whitespace-nowrap" role="group" aria-label="Shelf filters">
           {FILTERS.filter((item) => scope === 'mine' || item.id !== 'queued').map((item) => {
             const count = statusCounts[item.id];
             return <button key={item.id} type="button" onClick={() => setFilter(item.id)} aria-pressed={filter === item.id}
@@ -150,7 +150,7 @@ export default function Library() {
               {item.label}{count > 0 && <span className="ml-1.5 tabular-nums text-[10px] text-natural-stone">{count}</span>}
             </button>;
           })}
-          <button type="button" onClick={() => changeScope(scope === 'mine' ? 'all' : 'mine')} className="ml-2 flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-3 font-sans text-xs font-bold text-natural-stone transition hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset">
+          <button type="button" onClick={() => changeScope(scope === 'mine' ? 'all' : 'mine')} className="ml-auto flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-3 font-sans text-xs font-bold text-natural-stone transition hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset">
             {scope === 'mine' ? <>Explore readers <ArrowRight className="h-3.5 w-3.5" /></> : <><ArrowLeft className="h-3.5 w-3.5" /> Back to my shelf</>}
           </button>
         </div>
