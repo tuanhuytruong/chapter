@@ -142,7 +142,16 @@ export const api = {
   saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>
     req<WeeklyGoalRow>("/api/goals/weekly", { method: "PUT", body: JSON.stringify({ metric, target }) }),
-  getAllQuotes: () => req<QuoteCard[]>("/api/quotes"),
+  getQuotes: (query: QuoteQuery = {}) => {
+    const params = new URLSearchParams();
+    if (query.limit) params.set("limit", String(query.limit));
+    if (query.offset) params.set("offset", String(query.offset));
+    if (query.q?.trim()) params.set("q", query.q.trim());
+    if (query.bookId) params.set("bookId", query.bookId);
+    if (query.sort) params.set("sort", query.sort);
+    const suffix = params.toString();
+    return req<QuotePage>(`/api/quotes${suffix ? `?${suffix}` : ""}`);
+  },
   getStats: () => req<{
     velocity: { date: string; pages_read: number }[];
     insights: { insight: string; freq: number }[];
@@ -204,6 +213,26 @@ export interface QuoteCard {
   book_id: string;
   title: string;
   author: string;
+}
+
+export interface QuoteBookOption {
+  id: string;
+  title: string;
+  author: string;
+}
+
+export interface QuoteQuery {
+  limit?: number;
+  offset?: number;
+  q?: string;
+  bookId?: string;
+  sort?: 'newest' | 'oldest' | 'mixed';
+}
+
+export interface QuotePage {
+  items: QuoteCard[];
+  total: number;
+  books: QuoteBookOption[];
 }
 
 export function progressPct(b: BookRow): number {

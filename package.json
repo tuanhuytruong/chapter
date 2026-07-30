@@ -21,6 +21,7 @@
     "verify:reading-rhythm": "tsx scripts/verify-reading-rhythm.ts",
     "verify:read-today": "tsx scripts/verify-read-today.ts",
     "verify:library": "tsx scripts/verify-library-shelf-switcher.ts",
+    "verify:quotes": "tsx scripts/verify-quotes-archive.ts",
     "verify:podcast": "tsx scripts/verify-podcast.ts"
   },
   "dependencies": {

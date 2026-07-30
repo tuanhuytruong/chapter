@@ -138,12 +138,7 @@ export default function Library() {
           <h1 className="font-sans text-2xl font-bold text-natural-dark">{scope === 'mine' ? 'My Shelf' : 'All Readers'}</h1>
           <p className="font-sans text-xs text-natural-stone">{scope === 'mine' ? 'Your reading, at your pace' : 'Browse shared shelves — books are read-only.'}</p>
         </div>
-        <div className="flex items-center gap-3">
-          {scope === 'mine' && <button onClick={() => setShowAdd(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark"><Plus className="h-3.5 w-3.5" /> Add Book</button>}
-          <button onClick={() => changeScope(scope === 'mine' ? 'all' : 'mine')} className="flex min-h-11 items-center gap-1.5 font-sans text-xs font-bold text-natural-stone transition hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-offset-2">
-            {scope === 'mine' ? <>Explore readers <ArrowRight className="h-3.5 w-3.5" /></> : <><ArrowLeft className="h-3.5 w-3.5" /> Back to my shelf</>}
-          </button>
-        </div>
+        {scope === 'mine' && <button onClick={() => setShowAdd(true)} className="flex min-h-11 items-center justify-center gap-1.5 self-start rounded-full bg-natural-sage px-4 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark sm:self-auto"><Plus className="h-3.5 w-3.5" /> Add Book</button>}
       </div>
 
       <div className="border-b border-natural-border">
@@ -155,6 +150,9 @@ export default function Library() {
               {item.label}{count > 0 && <span className="ml-1.5 tabular-nums text-[10px] text-natural-stone">{count}</span>}
             </button>;
           })}
+          <button type="button" onClick={() => changeScope(scope === 'mine' ? 'all' : 'mine')} className="ml-2 flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-3 font-sans text-xs font-bold text-natural-stone transition hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset">
+            {scope === 'mine' ? <>Explore readers <ArrowRight className="h-3.5 w-3.5" /></> : <><ArrowLeft className="h-3.5 w-3.5" /> Back to my shelf</>}
+          </button>
         </div>
       </div>
 
@@ -175,7 +173,7 @@ export default function Library() {
             : scope === 'all' ? <div className="space-y-6">{readerGroups.map((group) => <section key={group.name} className="space-y-3"><h2 className="font-sans text-sm font-bold text-natural-dark">{group.name}'s shelf <span className="font-normal text-natural-stone">({group.books.length})</span></h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.books.map((book) => <BookCard key={book.id} book={book} streak={streaks[book.id]} readOnly />)}</div></section>)}</div>
               : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{visible.map((book) => <BookCard key={book.id} book={book} streak={streaks[book.id]} />)}</div>}
 
-      <div className="border-t border-natural-border pt-10"><QuoteWall /></div>
+      {scope === 'mine' && <div className="border-t border-natural-border pt-8"><QuoteWall /></div>}
       {showAdd && <AddBookModal onClose={() => setShowAdd(false)} onAdded={load} onToast={setToast} />}
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
     </div>

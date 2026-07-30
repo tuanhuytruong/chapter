@@ -188,17 +188,55 @@ app.get("/api/achievements", async (req: Request, res: Response) => {
   } catch (e: any) { res.status(503).json({ error: "achievements unavailable", detail: e.message }); }
 });
 
-// ── Quote Wall ────────────────────────────────────────────
-app.get("/api/quotes", async (_req: Request, res: Response) => {
+// ── Saved lines ───────────────────────────────────────────
+app.get("/api/quotes", async (req: Request, res: Response) => {
+  const requestedLimit = Number.parseInt(String(req.query.limit || "12"), 10);
+  const requestedOffset = Number.parseInt(String(req.query.offset || "0"), 10);
+  const limit = Number.isFinite(requestedLimit) ? Math.min(24, Math.max(1, requestedLimit)) : 12;
+  const offset = Number.isFinite(requestedOffset) ? Math.max(0, requestedOffset) : 0;
+  const q = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 120) : "";
+  const bookId = typeof req.query.bookId === "string" ? req.query.bookId.trim() : "";
+  const sort = req.query.sort === "oldest" || req.query.sort === "mixed" ? req.query.sort : "newest";
+  const ownerId = userFrom(req).id;
+  const params: unknown[] = [ownerId];
+  const filters = ["b.owner_id=$1", "rl.quote IS NOT NULL", "btrim(rl.quote) <> ''"];
+
+  if (bookId) {
+    params.push(bookId);
+    filters.push(`rl.book_id=$${params.length}`);
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`(rl.quote ILIKE $${params.length} OR b.title ILIKE $${params.length} OR b.author ILIKE $${params.length})`);
+  }
+
+  const where = filters.join(" AND ");
+  const orderBy = sort === "oldest"
+    ? "rl.date ASC, rl.created_at ASC"
+    : sort === "mixed"
+      ? "md5(rl.book_id::text || rl.date::text || rl.quote), rl.date DESC"
+      : "rl.date DESC, rl.created_at DESC";
+
   try {
-    const { rows } = await query(
-      `SELECT rl.quote, rl.date, rl.book_id, b.title, b.author
-       FROM chapter.reading_log rl
-       JOIN chapter.books b ON b.id = rl.book_id
-       WHERE rl.quote IS NOT NULL AND btrim(rl.quote) <> ''
-       ORDER BY rl.date DESC`
-    );
-    res.json(rows);
+    const pageParams = [...params, limit, offset];
+    const [itemsResult, totalResult, booksResult] = await Promise.all([
+      query(`SELECT rl.quote, rl.date, rl.book_id, b.title, b.author
+             FROM chapter.reading_log rl
+             JOIN chapter.books b ON b.id = rl.book_id
+             WHERE ${where}
+             ORDER BY ${orderBy}
+             LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, pageParams),
+      query(`SELECT COUNT(*)::int AS total
+             FROM chapter.reading_log rl
+             JOIN chapter.books b ON b.id = rl.book_id
+             WHERE ${where}`, params),
+      query(`SELECT DISTINCT b.id, b.title, b.author
+             FROM chapter.reading_log rl
+             JOIN chapter.books b ON b.id = rl.book_id
+             WHERE b.owner_id=$1 AND rl.quote IS NOT NULL AND btrim(rl.quote) <> ''
+             ORDER BY b.title ASC`, [ownerId]),
+    ]);
+    res.json({ items: itemsResult.rows, total: totalResult.rows[0]?.total || 0, books: booksResult.rows });
   } catch (e: any) {
     res.status(500).json({ error: "Failed to fetch quotes", detail: e.message });
   }
