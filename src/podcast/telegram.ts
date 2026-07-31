@@ -9,11 +9,23 @@ function archiveSuffix(chatId: string) {
   return chatId.length >= 4 ? `…${chatId.slice(-4)}` : "configured";
 }
 
-async function telegramJson(url: string, init: RequestInit) {
-  const response = await fetch(url, init);
-  const body: any = await response.json().catch(() => ({}));
-  if (!response.ok || !body.ok) throw new Error(body.description || `Telegram request failed (${response.status})`);
-  return body;
+async function telegramJson(url: string, init: RequestInit, retrySafe = false) {
+  // DNS/TLS occasionally flakes on the host. Only retry read-only Telegram calls:
+  // repeating sendAudio could create duplicate archive messages.
+  const attempts = retrySafe ? 3 : 1;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, { ...init, signal: AbortSignal.timeout(20_000) });
+      const body: any = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.description || `Telegram request failed (${response.status})`);
+      return body;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+    }
+  }
+  throw lastError;
 }
 
 /** Server-only archive diagnostic. Never return this result to the browser. */
@@ -26,7 +38,7 @@ export async function verifyPodcastArchive(chatId: string): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId }),
-    });
+    }, true);
   } catch (error: any) {
     throw new Error(`Podcast archive preflight failed for ${archiveSuffix(chatId)}: ${String(error.message || error)}`);
   }
@@ -40,10 +52,12 @@ export function logPodcastArchiveConfig(chatId: string) {
   console.info(`[podcast] archive configuration: configured=${Boolean(chatId)} rawLength=${raw.length} normalizedLength=${normalized.length} idSuffix=${chatId ? archiveSuffix(chatId) : "none"} quoteWrapped=${quoteWrapped} hiddenChars=${hiddenChars}`);
 }
 
-export function archiveFilename(userName: string | null, bookTitle: string, chapterTitle: string | null): string {
-  const part = (value: string | null | undefined, fallback: string) => String(value || fallback)
-    .replace(/[\/:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, 15).trim() || fallback;
-  return `${part(userName, "Reader")} - ${part(bookTitle, "Book")} - ... - ${part(chapterTitle, "Chapter")}.mp3`;
+export function archiveFilename(_userName: string | null, bookTitle: string, chapterTitle: string | null): string {
+  // Telegram's visible filename should describe the recording, not the account
+  // that requested it. Keep one readable, safe shape without artificial ellipses.
+  const part = (value: string | null | undefined, fallback: string, max = 72) => String(value || fallback)
+    .replace(/[\/:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, max).trim() || fallback;
+  return `${part(bookTitle, "Book")} — ${part(chapterTitle, "Chapter")}.mp3`;
 }
 
 export async function archivePodcast(filePath: string, chatId: string, userName: string | null, title: string, chapterTitle: string | null, durationS: number): Promise<TelegramArchiveResult> {
@@ -51,13 +65,30 @@ export async function archivePodcast(filePath: string, chatId: string, userName:
   if (!cfg) throw new Error("Telegram archive bot is not configured");
   if (!chatId) throw new Error("Podcast archive destination is not configured");
   const bytes = await fs.readFile(filePath);
-  const form = new FormData();
-  form.set("chat_id", chatId);
-  form.set("audio", new Blob([bytes], { type: "audio/mpeg" }), archiveFilename(userName, title, chapterTitle));
-  form.set("title", chapterTitle || title);
-  form.set("performer", "Chapter");
-  form.set("duration", String(Math.max(1, durationS)));
-  const body = await telegramJson(`${api}/bot${cfg.botToken}/sendAudio`, { method: "POST", body: form });
+  const makeForm = () => {
+    const form = new FormData();
+    form.set("chat_id", chatId);
+    form.set("audio", new Blob([bytes], { type: "audio/mpeg" }), archiveFilename(userName, title, chapterTitle));
+    form.set("title", chapterTitle || title);
+    form.set("performer", "Chapter");
+    form.set("duration", String(Math.max(1, durationS)));
+    return form;
+  };
+  // A network reset can happen after the request has left the host. One retry is
+  // acceptable for this private archive: at worst it creates a duplicate archive
+  // message, while preserving the audio that the reader explicitly requested.
+  let body: any;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      body = await telegramJson(`${api}/bot${cfg.botToken}/sendAudio`, { method: "POST", body: makeForm() });
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+  }
+  if (!body) throw lastError;
   if (!body.result?.audio?.file_id) throw new Error("Telegram archive did not return an audio file identifier");
   return { fileId: body.result.audio.file_id as string, fileUniqueId: body.result.audio.file_unique_id as string | null, messageId: Number(body.result.message_id) };
 }
