@@ -349,8 +349,10 @@ export default function BookDetail() {
     setStoryRetryingLogId(logId);
     try {
       const refreshed = await api.retryStoryThread(id, logId);
-      setStoryThread(previous => [...previous.filter(item => item.log_id !== refreshed.log_id), refreshed].sort((a, b) => a.generated_at.localeCompare(b.generated_at)));
-      setToast({ type: 'ok', msg: 'Story recap refreshed' });
+      setStoryThread(refreshed);
+      const lastLogId = refreshed.at(-1)?.log_id;
+      const lastSession = logs.find((log) => log.id === lastLogId)?.session;
+      setToast({ type: 'ok', msg: refreshed.length > 1 && lastSession ? `Story continuity rebuilt through session ${lastSession}` : 'Story recap refreshed' });
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
       throw e;
@@ -436,11 +438,11 @@ export default function BookDetail() {
           ) : (
             <>
               <div className="flex flex-nowrap justify-end gap-2">
-                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark disabled:cursor-not-allowed disabled:opacity-45">
+                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:cursor-not-allowed disabled:opacity-45">
                   <Headphones className="w-3.5 h-3.5" /> Podcast
                 </button>
                 <button onClick={readToday} disabled={!book.can_edit || advancing || book.status === 'finished'} title={!book.can_edit ? 'This shared book is read-only.' : undefined}
-                  className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer">
+                  className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-transform duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer">
                   {advancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />} {advancing ? 'Reading…' : 'Read now'}
                 </button>
               </div>
@@ -670,7 +672,7 @@ export default function BookDetail() {
         <button onClick={readToday} disabled={advancing}
           aria-label={advancing ? 'Reading next session' : 'Read next session'}
           title={advancing ? 'Reading…' : 'Read next session'}
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-natural-clay text-white shadow-lg shadow-natural-dark/20 transition hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:bottom-6 sm:right-6">
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-natural-clay text-white shadow-lg shadow-natural-dark/20 transition-transform duration-150 hover:scale-105 hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 sm:bottom-6 sm:right-6">
           {advancing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
         </button>,
         document.body

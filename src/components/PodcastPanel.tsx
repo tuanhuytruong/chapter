@@ -56,9 +56,10 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       await podcastApi.createPodcast(bookId, chapter.chapter_key, gender);
       setVoiceTarget(null);
       await refresh();
-    } catch {
-      // Keep the panel calm: a later refresh will reflect any accepted request.
+    } catch (error: any) {
+      // Restore the chapter state and give the reader a concrete response.
       await refresh();
+      window.alert(error?.message || "Podcast could not be started. Please try again.");
     } finally {
       setWorkingKey(null);
     }
@@ -71,8 +72,9 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       await podcastApi.regeneratePodcast(regenerateTarget.id);
       setRegenerateTarget(null);
       await refresh();
-    } catch {
+    } catch (error: any) {
       await refresh();
+      window.alert(error?.message || "Podcast could not be regenerated. Please try again.");
     } finally {
       setWorkingKey(null);
     }
@@ -105,12 +107,12 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast narrator</p>
             <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Choose your narrator once</h2>
             <p className="mt-2 text-sm leading-6 text-natural-stone">Your choice will be used for future chapter episodes.</p>
-            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void create(voiceTarget, "female")} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white">Female voice</button><button type="button" onClick={() => void create(voiceTarget, "male")} className="min-h-11 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark">Male voice</button><button type="button" onClick={() => setVoiceTarget(null)} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Not now</button></div>
+            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void create(voiceTarget, "female")} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">Female voice</button><button type="button" onClick={() => void create(voiceTarget, "male")} className="min-h-11 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45">Male voice</button><button type="button" onClick={() => setVoiceTarget(null)} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Not now</button></div>
           </> : <>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast episode</p>
             <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Regenerate this episode?</h2>
             <p className="mt-2 text-sm leading-6 text-natural-stone">The current recording will be replaced when the new one is ready.</p>
-            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void regenerate()} disabled={workingKey === regenerateTarget?.id} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white disabled:opacity-60">{workingKey === regenerateTarget?.id ? "Starting…" : "Regenerate"}</button><button type="button" onClick={() => setRegenerateTarget(null)} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Keep current</button></div>
+            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void regenerate()} disabled={workingKey === regenerateTarget?.id} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{workingKey === regenerateTarget?.id ? "Starting…" : "Regenerate"}</button><button type="button" onClick={() => setRegenerateTarget(null)} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Keep current</button></div>
           </>}
         </div>
       </div>, document.body
@@ -124,5 +126,5 @@ function ChapterRow({ chapter, number, canEdit, working, onCreate, onRegenerate 
   const ready = isReady(episode);
   const label = chapter.chapter_title || `Chapter ${number}`;
 
-  return <article className="py-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><h3 className="text-sm font-bold text-natural-dark">{label}</h3><p className="mt-0.5 text-[11px] text-natural-stone">Sections {chapter.start_unit}–{chapter.end_unit}{ready && duration(episode?.duration_s || null) ? ` · ${duration(episode?.duration_s || null)}` : ""}</p></div>{canEdit && !ready && <button type="button" onClick={onCreate} disabled={working || running} className="min-h-11 shrink-0 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark disabled:opacity-60">{working || running ? "Preparing…" : episode?.status === "failed" ? "Try again" : "Create"}</button>}{canEdit && ready && <button type="button" onClick={onRegenerate} aria-label={`Regenerate ${label}`} title="Regenerate episode" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-natural-stone transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40"><RotateCcw className="h-3.5 w-3.5" /></button>}</div>{running && <p className="mt-2 text-xs text-natural-stone">Preparing this chapter episode…</p>}{ready && <div className="mt-3"><audio className="w-full" controls preload="metadata" src={`/api/podcasts/${episode?.id}/audio`} /><details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-natural-stone">Read transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-natural-dark">{episode?.script_text}</p></details></div>}{!canEdit && !ready && <p className="mt-2 text-xs text-natural-stone">This episode is not available yet.</p>}</article>;
+  return <article className="py-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><h3 className="text-sm font-bold text-natural-dark">{label}</h3><p className="mt-0.5 text-[11px] text-natural-stone">Sections {chapter.start_unit}–{chapter.end_unit}{ready && duration(episode?.duration_s || null) ? ` · ${duration(episode?.duration_s || null)}` : ""}</p></div>{canEdit && !ready && <button type="button" onClick={onCreate} disabled={working || running} className="min-h-11 shrink-0 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{working || running ? "Preparing…" : episode?.status === "failed" ? "Try again" : "Create"}</button>}{canEdit && ready && <button type="button" onClick={onRegenerate} aria-label={`Regenerate ${label}`} title="Regenerate episode" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-natural-stone transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40"><RotateCcw className="h-3.5 w-3.5" /></button>}</div>{running && <p className="mt-2 text-xs text-natural-stone">Preparing this chapter episode…</p>}{ready && <div className="mt-3"><audio className="w-full" controls preload="metadata" src={`/api/podcasts/${episode?.id}/audio`} /><details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-natural-stone">Read transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-natural-dark">{episode?.script_text}</p></details></div>}{!canEdit && !ready && <p className="mt-2 text-xs text-natural-stone">This episode is not available yet.</p>}</article>;
 }
