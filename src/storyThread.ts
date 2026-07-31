@@ -13,7 +13,18 @@ export type StoryAnalysis = {
 export type StoryState = Pick<StoryAnalysis, "threads" | "characterPulse" | "readerMemory">;
 
 const MAX_TEXT = 900;
+/** A single reading range can contain enough PDF text to overwhelm the provider.
+ * Keep the complete start/end context while bounding request size deterministically. */
+export const STORY_THREAD_MAX_SOURCE_CHARS = 24_000;
 const clean = (value: unknown, fallback = ""): string => typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, MAX_TEXT) || fallback : fallback;
+
+export function boundStoryThreadSource(sourceText: string): string {
+  const text = sourceText.trim();
+  if (text.length <= STORY_THREAD_MAX_SOURCE_CHARS) return text;
+  const first = Math.floor(STORY_THREAD_MAX_SOURCE_CHARS * 0.55);
+  const last = STORY_THREAD_MAX_SOURCE_CHARS - first;
+  return `${text.slice(0, first)}\n\n[Middle of this reading range omitted for provider length; do not infer events from it.]\n\n${text.slice(-last)}`;
+}
 const strings = (value: unknown, max: number): string[] => Array.isArray(value) ? value.map((item) => clean(item)).filter(Boolean).slice(0, max) : [];
 const status = (value: unknown): StoryThread["status"] => ["open", "escalating", "resolved", "uncertain"].includes(String(value)) ? value as StoryThread["status"] : "uncertain";
 

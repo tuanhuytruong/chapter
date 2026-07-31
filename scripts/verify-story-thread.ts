@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildStoryThreadPrompt, mergeStoryState, parseStoryThreadAnalysis, storyCompatSummary } from "../src/storyThread.js";
+import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
 
 const raw = JSON.stringify({
   storyRecap: "Mara accepts the sealed letter and leaves before dawn.",
@@ -40,12 +40,17 @@ assert.match(prompt.system, /warm reading-companion recap/);
 assert.match(prompt.system, /2–3 connected paragraphs/);
 assert.match(prompt.system, /Đoạn này/);
 assert.match(prompt.user, /Current reading text/);
+const overlongSource = "A".repeat(STORY_THREAD_MAX_SOURCE_CHARS + 5000);
+const boundedSource = boundStoryThreadSource(overlongSource);
+assert.ok(boundedSource.length < overlongSource.length && boundedSource.includes("Middle of this reading range omitted"));
 
 // Boundary fixtures: Story must remain isolated from analytical enrichment.
 const routeSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
 const serverSource = readFileSync(new URL("../server.ts", import.meta.url), "utf8");
 assert.match(routeSource, /if \(book\.reading_experience !== "story"\)[\s\S]*INSERT INTO review_cards/);
 assert.match(routeSource, /result\.readingExperience === "story"\)[\s\S]*generateStoryThreadForLog[\s\S]*else[\s\S]*generateReadingLensForLog/);
+assert.match(routeSource, /boundStoryThreadSource\(log\.raw_text\)/);
+assert.match(routeSource, /NINE_ROUTER_STORY_THREAD_TIMEOUT_MS \|\| 180_000/);
 assert.match(routeSource, /reading_experience='analytical'/);
 assert.match(routeSource, /Story Thread books do not use Reading Lens/);
 assert.match(serverSource, /Story Thread books do not use Knowledge Maps/);
