@@ -5,8 +5,11 @@ import type { CalendarLogRow } from "./calendar";
 import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
 import type { AchievementsResponse } from "./achievements";
 
+export type MembershipTier = "free" | "plus" | "deep_reader";
+export type MembershipPlan = { tier: MembershipTier; name: string; tagline: string; monthlyPrice: string | null; annualPrice: string | null; annualLabel: string | null; checkoutAvailable: false; benefits: Array<{ label: string; availableNow: boolean }> };
+export interface MembershipPlansResponse { policyVersion: number; checkoutAvailable: false; plans: MembershipPlan[]; }
 export interface EntitlementsResponse {
-  subscription: { tier: "free" | "plus" | "deep_reader"; status: string; active: boolean; source: string; periodEnd: string | null };
+  subscription: { tier: MembershipTier; status: string; active: boolean; source: string; periodEnd: string | null };
   features: Record<string, { available: boolean; usage: { used: number; reserved: number; limit: number | "unlimited" | "unavailable"; remaining: number | null } }>;
   policyVersion: number;
 }
@@ -140,6 +143,7 @@ export const api = {
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
   getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
+  getMembershipPlans: () => req<MembershipPlansResponse>("/api/entitlements/plans"),
   getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
   getBookPodcast: (bookId: string) => req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
   createPodcast: (bookId: string, chapterKey: string, voiceGender?: "female" | "male") =>

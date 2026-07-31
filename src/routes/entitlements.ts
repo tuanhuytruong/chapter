@@ -1,10 +1,14 @@
 import { Router, type Request, type Response } from "express";
 import { query } from "../db.js";
-import { effectiveEntitlement, ENTITLEMENT_POLICY_VERSION, featureKeys, quotaFor, type FeatureKey } from "../entitlements.js";
+import { effectiveEntitlement, ENTITLEMENT_POLICY_VERSION, featureKeys, membershipPlans, quotaFor, type FeatureKey } from "../entitlements.js";
 import { usageSummary } from "../usage.js";
 import { requireAuth, userFrom } from "../auth.js";
 
 export const entitlementsRouter = Router();
+
+entitlementsRouter.get("/plans", (_req: Request, res: Response) => {
+  res.json({ policyVersion: ENTITLEMENT_POLICY_VERSION, checkoutAvailable: false, plans: membershipPlans() });
+});
 
 entitlementsRouter.get("/me", requireAuth, async (req: Request, res: Response) => {
   try {

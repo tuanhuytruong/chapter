@@ -9,6 +9,7 @@ import Momentum from './pages/Momentum';
 import Today from './pages/Today';
 import Achievements from './pages/Achievements';
 import Account from './pages/Account';
+import Pricing from './pages/Pricing';
 import Profile from './pages/Profile';
 import Quotes from './pages/Quotes';
 import { presetFromAvatarValue } from './avatar-presets';
@@ -115,6 +116,7 @@ function AppRoutes() {
     <Route path="/achievements" element={<Achievements />} />
     <Route path="/profile" element={<Profile />} />
     <Route path="/account" element={<Account />} />
+    <Route path="/pricing" element={<Pricing />} />
     <Route path="/quotes" element={<Quotes />} />
     <Route path="*" element={<Library />} />
   </Route></Routes></BrowserRouter></OnboardingProvider>;

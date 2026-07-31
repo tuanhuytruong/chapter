@@ -6,17 +6,51 @@ export type FeatureKey = "ai_reader_generation" | "reading_lens_generation" | "p
 export type SubscriptionRow = { tier: Tier; status: SubscriptionStatus; current_period_end: string | Date | null; granted_by: GrantSource };
 export type EffectiveEntitlement = { tier: Tier; status: SubscriptionStatus; active: boolean; source: GrantSource; periodEnd: string | null };
 export type Quota = number | "unlimited" | "unavailable";
+export type BillingPeriod = "month" | "year";
+export type MembershipBenefit = { label: string; availableNow: boolean };
+export type MembershipPlan = {
+  tier: Tier;
+  name: string;
+  tagline: string;
+  monthlyPrice: string | null;
+  annualPrice: string | null;
+  annualLabel: string | null;
+  benefits: readonly MembershipBenefit[];
+  checkoutAvailable: false;
+};
 
 const FEATURES: readonly FeatureKey[] = ["ai_reader_generation", "reading_lens_generation", "podcast_chapter_generation", "podcast_recap_generation", "markdown_export", "monthly_review_generation", "ask_my_reading", "cross_book_connections", "priority_ai_queue"];
-export const ENTITLEMENT_POLICY_VERSION = 1;
+export const ENTITLEMENT_POLICY_VERSION = 2;
 
 // Phase 0 establishes the contract without changing existing feature behavior.
 // Phase 1 replaces these internal limits with approved customer-facing policy.
 const QUOTAS: Record<Tier, Record<FeatureKey, Quota>> = {
+  // Phase 1 is presentation-only: current generators remain unchanged until a
+  // later phase ships feature enforcement and direct API contracts together.
   free: { ai_reader_generation: "unlimited", reading_lens_generation: "unlimited", podcast_chapter_generation: "unlimited", podcast_recap_generation: "unavailable", markdown_export: "unlimited", monthly_review_generation: "unavailable", ask_my_reading: "unavailable", cross_book_connections: "unavailable", priority_ai_queue: "unavailable" },
   plus: { ai_reader_generation: "unlimited", reading_lens_generation: "unlimited", podcast_chapter_generation: "unlimited", podcast_recap_generation: "unavailable", markdown_export: "unlimited", monthly_review_generation: "unavailable", ask_my_reading: "unavailable", cross_book_connections: "unavailable", priority_ai_queue: "unavailable" },
   deep_reader: { ai_reader_generation: 20, reading_lens_generation: 20, podcast_chapter_generation: 10, podcast_recap_generation: 4, markdown_export: "unlimited", monthly_review_generation: 1, ask_my_reading: 30, cross_book_connections: 12, priority_ai_queue: "unlimited" },
 };
+
+const MEMBERSHIP_PLANS: readonly MembershipPlan[] = [
+  { tier: "free", name: "Free", tagline: "Start Reading", monthlyPrice: null, annualPrice: null, annualLabel: null, checkoutAvailable: false, benefits: [
+    { label: "Library, progress, notes and quote archive", availableNow: true },
+    { label: "Reading logs, goals, streaks and quiet milestones", availableNow: true },
+    { label: "Basic reading summaries", availableNow: true },
+  ] },
+  { tier: "plus", name: "Reader Plus", tagline: "Read Consistently", monthlyPrice: "59k/month", annualPrice: "599k/year", annualLabel: "Save 109k with annual", checkoutAvailable: false, benefits: [
+    { label: "Higher AI and chapter-podcast capacity", availableNow: false },
+    { label: "Advanced stats and Markdown export", availableNow: false },
+    { label: "Monthly Reading Review and light priority queueing", availableNow: false },
+  ] },
+  { tier: "deep_reader", name: "Deep Reader", tagline: "Understand What You Read", monthlyPrice: "149k/month", annualPrice: "1.39m/year", annualLabel: "Save 398k with annual", checkoutAvailable: false, benefits: [
+    { label: "Everything in Reader Plus", availableNow: false },
+    { label: "Full Book Wiki, Reading Lens and Reading Map", availableNow: false },
+    { label: "Cross-book connections, sourced questions and recap podcast", availableNow: false },
+  ] },
+];
+
+export function membershipPlans(): readonly MembershipPlan[] { return MEMBERSHIP_PLANS; }
 
 function validTier(value: unknown): value is Tier { return value === "free" || value === "plus" || value === "deep_reader"; }
 function validStatus(value: unknown): value is SubscriptionStatus { return value === "active" || value === "trialing" || value === "canceled" || value === "past_due" || value === "expired"; }
