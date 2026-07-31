@@ -3,9 +3,33 @@
 # Run on the server after `git clone` / first time, and on every update.
 set -euo pipefail
 
-APP_NAME="chapter"
-APP_DIR="${CHAPTER_APP_DIR:-/opt/chapter}"
-BRANCH="${BRANCH:-dev}"
+# This script is release-folder local. Run it from /opt/chapter or /opt/chapter-dev;
+# the sibling .env.local selects the branch, PM2 process, port, and APP_ENV.
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$APP_DIR"
+
+if [ ! -f .env.local ]; then
+  echo "Missing $APP_DIR/.env.local" >&2
+  exit 1
+fi
+set -a; source .env.local; set +a
+
+APP_NAME="${CHAPTER_PM2_NAME:?CHAPTER_PM2_NAME must be set in .env.local}"
+BRANCH="${CHAPTER_BRANCH:?CHAPTER_BRANCH must be set in .env.local}"
+HEALTH_PORT="${PORT:?PORT must be set in .env.local}"
+APP_ENV="${APP_ENV:?APP_ENV must be set in .env.local}"
+if [ "$APP_ENV" != "prd" ] && [ "$APP_ENV" != "dev" ]; then
+  echo "APP_ENV must be prd or dev" >&2
+  exit 1
+fi
+if [ "$APP_NAME" = "chapter-prd" ] && [ "$APP_ENV" != "prd" ]; then
+  echo "chapter-prd must use APP_ENV=prd" >&2
+  exit 1
+fi
+if [ "$APP_NAME" = "chapter-dev" ] && [ "$APP_ENV" != "dev" ]; then
+  echo "chapter-dev must use APP_ENV=dev" >&2
+  exit 1
+fi
 # Time allowed for a restarted Node process to finish schema/bootstrap work and
 # bind its HTTP listener. Override for unusually slow hosts if necessary.
 HEALTH_RETRIES="${HEALTH_RETRIES:-20}"
@@ -65,10 +89,9 @@ fi
 echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots, chapter.podcasts"
 echo ""
 echo "Health check:"
-# Read the production listener port from the PM2 ecosystem file. This avoids a
-# shell/.env PORT value accidentally probing a different port than PM2 serves.
-PM2_PORT="$(node -e "const app=require('./ecosystem.config.cjs').apps.find((item) => item.name === process.argv[1]); if (!app) process.exit(1); process.stdout.write(String(app.env_production?.PORT ?? 3000));" "$APP_NAME")"
-HEALTH_PORT="${HEALTH_PORT:-$PM2_PORT}"
+# PORT is release-folder local and loaded from .env.local above, so the health
+# probe always targets the same listener that this process starts.
+HEALTH_PORT="${HEALTH_PORT:-$PORT}"
 HEALTH_URL="http://127.0.0.1:${HEALTH_PORT}/health"
 HEALTH_STATUS="000"
 

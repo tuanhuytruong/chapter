@@ -23,10 +23,11 @@ import { isAvatarPresetValue } from "./src/avatar-presets.js";
 import { newOpaqueToken, normalizeEmail, passwordError, pkceChallenge, randomUrlToken, safeUsername, sha256, tokenHash } from "./src/auth-identity.js";
 import { sendPasswordResetEmail } from "./src/email.js";
 
-// Ensure the port is 3000
-const PORT = 3000;
+// Each release folder owns its listener through .env.local (3000 PRD / 3001 DEV).
+const PORT = config.port;
 
 const app = express();
+const APP_ENV = config.appEnv;
 // Production deployments terminate TLS at the reverse proxy. Trust that single
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
@@ -78,7 +79,7 @@ app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== "string" || typeof password !== "string") return res.status(400).json({ error: "username and password required" });
   try {
-    const { rows } = await query<any>("SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE username=$1", [username.trim()]);
+    const { rows } = await query<any>("SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE username=$1 AND environment=$2", [username.trim(), APP_ENV]);
     const row = rows[0];
     if (!row?.password_hash || !await bcrypt.compare(password, row.password_hash)) return res.status(401).json({ error: "Invalid username or password" });
     res.json({ user: await establishSession(req, row) });
@@ -89,7 +90,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   if (!email) return res.status(202).json(genericRecoveryResponse);
   try {
-    const { rows } = await query<any>("SELECT id, email FROM users WHERE lower(email)=lower($1) AND email_verified_at IS NOT NULL", [email]);
+    const { rows } = await query<any>("SELECT id, email FROM users WHERE lower(email)=lower($1) AND email_verified_at IS NOT NULL AND environment=$2", [email, APP_ENV]);
     const user = rows[0];
     if (user) {
       const rawToken = newOpaqueToken();
@@ -152,10 +153,10 @@ app.get("/api/auth/google/callback", async (req, res) => {
       const conflict = (await query<any>("SELECT id FROM users WHERE google_sub=$1 AND id<>$2", [payload.sub, row.id])).rows[0]; if (conflict) throw new Error("link conflict");
       await query("UPDATE users SET google_sub=$1, email=COALESCE(email,$2), email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$3", [payload.sub, email, row.id]);
     } else {
-      row = (await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE google_sub=$1", [payload.sub])).rows[0]
-        || (await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE lower(email)=lower($1)", [email])).rows[0];
+      row = (await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE google_sub=$1 AND environment=$2", [payload.sub, APP_ENV])).rows[0]
+        || (await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE lower(email)=lower($1) AND environment=$2", [email, APP_ENV])).rows[0];
       if (row) await query("UPDATE users SET google_sub=$1, email=$2, email_verified_at=now() WHERE id=$3", [payload.sub, email, row.id]);
-      else row = (await query<any>("INSERT INTO users (username, password_hash, email, google_sub, email_verified_at, display_name, avatar_url) VALUES ($1,NULL,$2,$3,now(),$4,$5) RETURNING id, username, display_name, avatar_url", [safeUsername(email), email, payload.sub, payload.name?.slice(0, 60) || email.split("@")[0], payload.picture || null])).rows[0];
+      else row = (await query<any>("INSERT INTO users (username, environment, password_hash, email, google_sub, email_verified_at, display_name, avatar_url) VALUES ($1,$2,NULL,$3,$4,now(),$5,$6) RETURNING id, username, display_name, avatar_url", [safeUsername(email), APP_ENV, email, payload.sub, payload.name?.slice(0, 60) || email.split("@")[0], payload.picture || null])).rows[0];
     }
     await establishSession(req, row); res.redirect(`${config.appUrl}/`);
   } catch { res.redirect(`${config.appUrl}/login?auth_error=google`); }

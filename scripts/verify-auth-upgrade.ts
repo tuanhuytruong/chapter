@@ -6,6 +6,8 @@ const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
 const checks: Array<[string, string, RegExp]> = [
   ["schema", "src/db/schema.sql", /password_reset_tokens[\s\S]*token_hash TEXT NOT NULL UNIQUE/],
   ["schema", "src/db/schema.sql", /ALTER COLUMN password_hash DROP NOT NULL/],
+  ["schema", "src/db/schema.sql", /environment TEXT NOT NULL DEFAULT 'prd'/],
+  ["schema", "src/db/schema.sql", /users_environment_check CHECK \(environment IN \('prd', 'dev'\)\)/],
   ["server", "server.ts", /app\.post\("\/api\/auth\/forgot-password"/],
   ["server", "server.ts", /tokenHash\(rawToken\)/],
   ["server", "server.ts", /req\.session\.regenerate/],

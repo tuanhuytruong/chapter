@@ -13,7 +13,14 @@ function optionalEnv(name: string): string {
   return /^(['"]).*\1$/.test(trimmed) ? trimmed.slice(1, -1).trim() : trimmed;
 }
 
+function appEnvironment(): "prd" | "dev" {
+  const value = optionalEnv("APP_ENV") || "prd";
+  if (value !== "prd" && value !== "dev") throw new Error("APP_ENV must be exactly 'prd' or 'dev'");
+  return value;
+}
+
 export const config = {
+  appEnv: appEnvironment(),
   databaseUrl: process.env.DATABASE_URL ?? "",
   nineRouterUrl:
     process.env.NINE_ROUTER_URL ?? "https://9router-ubt.mrl.asia/v1/chat/completions",

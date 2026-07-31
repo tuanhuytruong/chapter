@@ -19,6 +19,7 @@ CREATE SCHEMA IF NOT EXISTS chapter;
 CREATE TABLE IF NOT EXISTS chapter.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT NOT NULL UNIQUE,
+  environment TEXT NOT NULL DEFAULT 'prd' CHECK (environment IN ('prd', 'dev')),
   password_hash TEXT,
   email TEXT,
   google_sub TEXT,
@@ -32,6 +33,11 @@ CREATE TABLE IF NOT EXISTS chapter.users (
 );
 
 ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS podcast_voice_gender TEXT;
+-- Runtime APP_ENV is enforced at authentication; legacy accounts remain production.
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS environment TEXT NOT NULL DEFAULT 'prd';
+ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_environment_check;
+ALTER TABLE chapter.users ADD CONSTRAINT users_environment_check CHECK (environment IN ('prd', 'dev'));
+CREATE INDEX IF NOT EXISTS idx_users_environment ON chapter.users (environment);
 ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS google_sub TEXT;
 ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
