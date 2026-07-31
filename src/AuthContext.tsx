@@ -11,6 +11,7 @@ interface AuthValue {
   user: CurrentUser | null;
   loading: boolean;
   login(username: string, password: string): Promise<void>;
+  completePasswordReset(token: string, newPassword: string, confirmPassword: string): Promise<void>;
   updateUser(user: CurrentUser): void;
   logout(): Promise<void>;
 }
@@ -46,6 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await authRequest("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ username, password }),
+      });
+      setUser(data.user);
+    },
+    async completePasswordReset(token, newPassword, confirmPassword) {
+      const data = await authRequest("/api/auth/reset-password", {
+        method: "POST", body: JSON.stringify({ token, newPassword, confirmPassword }),
       });
       setUser(data.user);
     },

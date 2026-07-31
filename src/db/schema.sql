@@ -19,7 +19,12 @@ CREATE SCHEMA IF NOT EXISTS chapter;
 CREATE TABLE IF NOT EXISTS chapter.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
+  environment TEXT NOT NULL DEFAULT 'prd' CHECK (environment IN ('prd', 'dev')),
+  password_hash TEXT,
+  email TEXT,
+  google_sub TEXT,
+  email_verified_at TIMESTAMPTZ,
+  password_changed_at TIMESTAMPTZ,
   display_name TEXT NOT NULL,
   avatar_url TEXT,
   telegram_chat_id TEXT,
@@ -28,6 +33,32 @@ CREATE TABLE IF NOT EXISTS chapter.users (
 );
 
 ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS podcast_voice_gender TEXT;
+-- Runtime APP_ENV is enforced at authentication; legacy accounts remain production.
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS environment TEXT NOT NULL DEFAULT 'prd';
+ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_environment_check;
+ALTER TABLE chapter.users ADD CONSTRAINT users_environment_check CHECK (environment IN ('prd', 'dev'));
+CREATE INDEX IF NOT EXISTS idx_users_environment ON chapter.users (environment);
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+ALTER TABLE chapter.users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ;
+ALTER TABLE chapter.users ALTER COLUMN password_hash DROP NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_normalized_unique
+  ON chapter.users (lower(email)) WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique
+  ON chapter.users (google_sub) WHERE google_sub IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS chapter.password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  requested_ip_hash TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS password_reset_tokens_active_lookup
+  ON chapter.password_reset_tokens (user_id, expires_at DESC) WHERE used_at IS NULL;
 ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_podcast_voice_gender_check;
 ALTER TABLE chapter.users ADD CONSTRAINT users_podcast_voice_gender_check
   CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male'));

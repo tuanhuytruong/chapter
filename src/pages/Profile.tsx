@@ -4,7 +4,7 @@ import { useAuth } from "../AuthContext";
 import { AVATAR_PRESETS, avatarValueForPreset, presetFromAvatarValue, type AvatarPresetId } from "../avatar-presets";
 import AnimalAvatar from "../components/AnimalAvatar";
 
-type ProfileResponse = { username: string; displayName: string; avatarUrl: string | null };
+type ProfileResponse = { username: string; displayName: string; avatarUrl: string | null; email: string | null; googleConnected: boolean; hasPassword: boolean };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...init });
@@ -20,11 +20,13 @@ export default function Profile() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<ProfileResponse | null>(null);
 
   useEffect(() => {
     void request<ProfileResponse>("/api/auth/profile").then((profile) => {
       setDisplayName(profile.displayName);
       setAvatar(presetFromAvatarValue(profile.avatarUrl)?.id || "otter");
+      setIdentity(profile);
     }).catch(() => setError("Could not load your profile."));
   }, []);
 
@@ -48,6 +50,6 @@ export default function Profile() {
       {error && <p role="alert" className="text-xs text-red-700">{error}</p>}{saved && <p className="inline-flex items-center gap-1.5 text-xs font-bold text-natural-sage"><Check className="h-4 w-4" /> Profile saved</p>}
       <button disabled={busy} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-natural-sage px-4 font-sans text-xs font-bold text-white hover:bg-natural-sage-dark disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save profile</button>
     </form>
-    <section className="rounded-3xl border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6"><div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-natural-sage/10 text-natural-sage"><UserRound className="h-5 w-5" /></div><div><h2 className="font-sans text-sm font-bold text-natural-dark">Keep it simple</h2><p className="mt-1 text-xs leading-relaxed text-natural-stone">Your username stays fixed. You can return here whenever you want to change the name and companion shown inside Chapter.</p></div></div></section>
+    <section className="rounded-3xl border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6"><div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-natural-sage/10 text-natural-sage"><UserRound className="h-5 w-5" /></div><div><h2 className="font-sans text-sm font-bold text-natural-dark">Sign-in methods</h2><p className="mt-1 text-xs leading-relaxed text-natural-stone">{identity?.hasPassword ? "Password connected" : "You sign in with Google"}{identity?.googleConnected ? " · Google connected" : ""}</p>{identity?.email && <p className="mt-1 text-xs text-natural-stone">Recovery email: {identity.email}</p>}{!identity?.googleConnected && <button type="button" onClick={() => window.location.assign("/api/auth/google?intent=link")} className="mt-4 min-h-10 rounded-full border border-natural-border px-4 font-sans text-xs font-bold text-natural-dark hover:border-natural-sage/60">Connect Google</button>}{!identity?.email && <p className="mt-3 text-xs leading-relaxed text-natural-stone">Connect Google to add a verified email for password recovery.</p>}</div></div></section>
   </main>;
 }

@@ -21,6 +21,8 @@ export const NINE_ROUTER_BACKGROUND_CONCURRENCY = NINE_ROUTER_MAX_CONCURRENCY > 
   ? NINE_ROUTER_MAX_CONCURRENCY - 1
   : 1;
 export const NINE_ROUTER_DISPATCH_INTERVAL_MS = Math.ceil(1_000 / NINE_ROUTER_MAX_RPS);
+export const NINE_ROUTER_MAX_ATTEMPTS = 3;
+const NINE_ROUTER_RETRY_DELAYS_MS = [300, 700] as const;
 export type LlmPriority = "interactive" | "background";
 type Waiter = { resolve: () => void; priority: LlmPriority };
 
@@ -30,6 +32,8 @@ export interface LlmCallOptions {
   traceLabel?: string;
   /** Optional feature-specific provider alias; defaults to NINE_ROUTER_MODEL. */
   model?: string;
+  /** Internal retry counter; callers should not set this. */
+  attempt?: number;
 }
 let activeNineRouterCalls = 0;
 let activeBackgroundCalls = 0;
@@ -74,6 +78,26 @@ function releaseNineRouterSlot(priority: LlmPriority): void {
   activeNineRouterCalls--;
   if (priority === "background") activeBackgroundCalls--;
   drainNineRouterQueue();
+}
+
+class NineRouterHttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = "NineRouterHttpError";
+  }
+}
+
+function retryableNineRouterError(error: unknown): boolean {
+  if (error instanceof NineRouterHttpError) return error.status === 429 || error.status >= 500;
+  const message = error instanceof Error ? error.message : String(error);
+  const status = message.match(/^9router HTTP (\d{3})/)?.[1];
+  return message === "9router returned empty content" || message === "9router returned blank content"
+    || status === "429" || (status !== undefined && Number(status) >= 500)
+    || message.includes("aborted") || message.includes("fetch failed") || message.includes("network");
+}
+
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Generic 9router call with arbitrary system + user prompts. Returns text. */
@@ -136,7 +160,7 @@ export async function callLLM(
       const body = await resp.text();
       const totalMs = Date.now() - startedAt;
       console.info(`[llm]${trace} response body received ${body.length} bytes after ${totalMs}ms`);
-      if (!resp.ok) throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
+      if (!resp.ok) throw new Error(`9router HTTP ${resp.status}`);
       let data: any;
       try {
         data = JSON.parse(body);
@@ -145,6 +169,7 @@ export async function callLLM(
       }
       const text: string | undefined = data?.choices?.[0]?.message?.content;
       if (!text) throw new Error("9router returned empty content");
+      if (!text.trim()) throw new Error("9router returned blank content");
       console.info(`[llm]${trace} assistant content extracted (${text.length} chars) after ${totalMs}ms`);
       return text.trim();
     } catch (err: any) {
@@ -157,6 +182,13 @@ export async function callLLM(
       releaseNineRouterSlot(priority);
     }
   } catch (err: any) {
+    const attempt = options.attempt || 1;
+    if (retryableNineRouterError(err) && attempt < NINE_ROUTER_MAX_ATTEMPTS) {
+      const delayMs = NINE_ROUTER_RETRY_DELAYS_MS[attempt - 1] || NINE_ROUTER_RETRY_DELAYS_MS.at(-1)!;
+      console.warn(`[llm]${trace} attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} failed (${err.message}); retrying in ${delayMs}ms`);
+      await pause(delayMs);
+      return callLLM(system, user, temperature, strict, jsonMode, timeoutMs, { ...options, attempt: attempt + 1 });
+    }
     console.error("[llm] generic call failed:", err.message, strict ? "— surfacing error" : "— using fallback");
     if (strict) throw err;
     return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
@@ -277,7 +309,7 @@ ${input.extractedText}`;
 }
 
 /** Call 9router. Returns raw assistant text. */
-export async function callNineRouter(input: AdvanceLLMInput, strict = false): Promise<string> {
+export async function callNineRouter(input: AdvanceLLMInput, strict = false, attempt = 1): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
 
@@ -299,10 +331,10 @@ export async function callNineRouter(input: AdvanceLLMInput, strict = false): Pr
     const timeoutMs = Number(process.env.NINE_ROUTER_INTERACTIVE_TIMEOUT_MS || 25_000);
     const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(55_000, Math.max(5_000, timeoutMs)) : 25_000;
     const timer = setTimeout(() => controller.abort(), boundedTimeoutMs);
-    let resp: Response;
     try {
       if (queueWaitMs > 250) console.info(`[llm] interactive summary slot wait ${queueWaitMs}ms`);
-      resp = await fetch(url, {
+      console.info(`[llm] interactive summary dispatch attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} model=${model}`);
+      const resp = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -316,19 +348,29 @@ export async function callNineRouter(input: AdvanceLLMInput, strict = false): Pr
         }),
         signal: controller.signal,
       });
+      const body = await resp.text();
+      if (!resp.ok) throw new Error(`9router HTTP ${resp.status}`);
+      let data: any;
+      try {
+        data = JSON.parse(body);
+      } catch (parseError: any) {
+        throw new Error(`9router response JSON parse failed: ${parseError.message}`);
+      }
+      const text: string | undefined = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error("9router returned empty content");
+      if (!text.trim()) throw new Error("9router returned blank content");
+      return text.trim();
     } finally {
       clearTimeout(timer);
       releaseNineRouterSlot("interactive");
     }
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      throw new Error(`9router HTTP ${resp.status} ${body.slice(0, 200)}`);
-    }
-    const data = await resp.json();
-    const text: string | undefined = data?.choices?.[0]?.message?.content;
-    if (!text) throw new Error("9router returned empty content");
-    return text;
   } catch (err: any) {
+    if (retryableNineRouterError(err) && attempt < NINE_ROUTER_MAX_ATTEMPTS) {
+      const delayMs = NINE_ROUTER_RETRY_DELAYS_MS[attempt - 1] || NINE_ROUTER_RETRY_DELAYS_MS.at(-1)!;
+      console.warn(`[llm] interactive summary attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} failed (${err.message}); retrying in ${delayMs}ms`);
+      await pause(delayMs);
+      return callNineRouter(input, strict, attempt + 1);
+    }
     console.error("[llm] 9router interactive summary failed:", err.message, strict ? "— surfacing error" : "— using mock");
     if (strict) throw err;
     return mockResponse(input);

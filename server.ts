@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import session from "express-session";
 import pgSession from "connect-pg-simple";
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
@@ -19,11 +20,14 @@ import { achievementResponse } from "./src/achievements.js";
 import { config } from "./src/config.js";
 import { createLinkToken, deepLink, linkExpiresAt, telegramUpdate } from "./src/telegram-link.js";
 import { isAvatarPresetValue } from "./src/avatar-presets.js";
+import { newOpaqueToken, normalizeEmail, passwordError, pkceChallenge, randomUrlToken, safeUsername, sha256, tokenHash } from "./src/auth-identity.js";
+import { sendPasswordResetEmail } from "./src/email.js";
 
-// Ensure the port is 3000
-const PORT = 3000;
+// Each release folder owns its listener through .env.local (3000 PRD / 3001 DEV).
+const PORT = config.port;
 
 const app = express();
+const APP_ENV = config.appEnv;
 // Production deployments terminate TLS at the reverse proxy. Trust that single
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
@@ -58,29 +62,114 @@ app.post("/api/telegram/webhook", async (req: Request, res: Response) => {
   }
 });
 
+async function establishSession(req: Request, row: { id: string; username: string; display_name: string; avatar_url?: string | null }) {
+  await new Promise<void>((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()));
+  req.session.user = { id: row.id, username: row.username, displayName: row.display_name, avatarUrl: row.avatar_url || avatarFor(row.username) };
+  await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+  return req.session.user;
+}
+
+function authConfigured() { return Boolean(config.googleClientId && config.googleClientSecret); }
+function googleRedirectUri() { return `${config.appUrl.replace(/\/$/, "")}/api/auth/google/callback`; }
+const genericRecoveryResponse = { ok: true, message: "If an account matches this email, we’ve sent a reset link." };
+
 app.get("/api/auth/session", (req, res) => res.json({ user: req.session.user || null }));
 app.get("/api/auth/me", (req, res) => res.json({ user: req.session.user || null }));
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body || {};
-  if (!username || !password) return res.status(400).json({ error: "username and password required" });
+  if (typeof username !== "string" || typeof password !== "string") return res.status(400).json({ error: "username and password required" });
   try {
-    const result = await query("SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE username=$1", [username]);
-    const row = result.rows[0];
-    if (!row || !await bcrypt.compare(password, row.password_hash)) return res.status(401).json({ error: "Invalid username or password" });
-    req.session.user = { id: row.id, username: row.username, displayName: row.display_name, avatarUrl: row.avatar_url || avatarFor(row.username) };
-    res.json({ user: req.session.user });
-  } catch (e: any) {
-    res.status(503).json({ error: "Authentication service unavailable", detail: e.message });
-  }
+    const { rows } = await query<any>("SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE username=$1 AND environment=$2", [username.trim(), APP_ENV]);
+    const row = rows[0];
+    if (!row?.password_hash || !await bcrypt.compare(password, row.password_hash)) return res.status(401).json({ error: "Invalid username or password" });
+    res.json({ user: await establishSession(req, row) });
+  } catch { res.status(503).json({ error: "Authentication service unavailable" }); }
 });
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  if (!email) return res.status(202).json(genericRecoveryResponse);
+  try {
+    const { rows } = await query<any>("SELECT id, email FROM users WHERE lower(email)=lower($1) AND email_verified_at IS NOT NULL AND environment=$2", [email, APP_ENV]);
+    const user = rows[0];
+    if (user) {
+      const rawToken = newOpaqueToken();
+      await query("UPDATE password_reset_tokens SET used_at=now() WHERE user_id=$1 AND used_at IS NULL", [user.id]);
+      await query("INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip_hash) VALUES ($1, $2, now() + ($3 || ' minutes')::interval, $4)", [user.id, tokenHash(rawToken), String(config.passwordResetTtlMinutes), sha256(req.ip || "")]);
+      try { await sendPasswordResetEmail({ to: user.email, resetUrl: `${config.appUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(rawToken)}` }); }
+      catch { await query("UPDATE password_reset_tokens SET used_at=now() WHERE token_hash=$1", [tokenHash(rawToken)]); console.error("[auth] password reset email delivery failed"); }
+    }
+  } catch { console.error("[auth] password reset request unavailable"); }
+  res.status(202).json(genericRecoveryResponse);
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  const { token, newPassword, confirmPassword } = req.body || {};
+  if (typeof token !== "string" || !token || passwordError(newPassword) || newPassword !== confirmPassword) return res.status(400).json({ error: "Use a matching password between 10 and 256 characters." });
+  try {
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const { rows } = await query<any>(`WITH consumed AS (
+      UPDATE password_reset_tokens SET used_at=now()
+      WHERE token_hash=$1 AND used_at IS NULL AND expires_at > now()
+      RETURNING user_id
+    ), updated AS (
+      UPDATE users SET password_hash=$2, password_changed_at=now()
+      WHERE id=(SELECT user_id FROM consumed)
+      RETURNING id, username, display_name, avatar_url
+    ), revoked AS (
+      DELETE FROM chapter.session WHERE sess->'user'->>'id'=(SELECT id::text FROM updated)
+    ) SELECT * FROM updated`, [tokenHash(token), passwordHash]);
+    const user = rows[0];
+    if (!user) return res.status(400).json({ error: "This reset link is invalid or has expired." });
+    res.json({ user: await establishSession(req, user) });
+  } catch { res.status(503).json({ error: "Password reset is unavailable. Please try again." }); }
+});
+
+app.get("/api/auth/google", (req, res) => {
+  const intent = req.query.intent === "link" ? "link" : "login";
+  if (!authConfigured() || (intent === "link" && !req.session.user)) return res.redirect(`${config.appUrl}/login?auth_error=google`);
+  const state = randomUrlToken(), nonce = randomUrlToken(), verifier = randomUrlToken();
+  req.session.googleAuth = { state, nonce, verifier, intent, userId: intent === "link" ? req.session.user!.id : undefined, expiresAt: Date.now() + 10 * 60_000 };
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.search = new URLSearchParams({ client_id: config.googleClientId, redirect_uri: googleRedirectUri(), response_type: "code", scope: "openid email profile", state, nonce, code_challenge: pkceChallenge(verifier), code_challenge_method: "S256", prompt: "select_account" }).toString();
+  res.redirect(url.toString());
+});
+
+app.get("/api/auth/google/callback", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const pending = req.session.googleAuth; delete req.session.googleAuth;
+  if (!pending || pending.expiresAt < Date.now() || req.query.state !== pending.state || typeof req.query.code !== "string" || !authConfigured()) return res.redirect(`${config.appUrl}/login?auth_error=google`);
+  try {
+    const client = new OAuth2Client(config.googleClientId, config.googleClientSecret, googleRedirectUri());
+    const { tokens } = await client.getToken({ code: req.query.code, codeVerifier: pending.verifier, redirect_uri: googleRedirectUri() });
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token || "", audience: config.googleClientId });
+    const payload = ticket.getPayload();
+    const email = normalizeEmail(payload?.email);
+    if (!payload?.sub || !email || !payload.email_verified || payload.nonce !== pending.nonce) throw new Error("invalid Google identity");
+    let row: any;
+    if (pending.intent === "link") {
+      const { rows } = await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE id=$1", [pending.userId]); row = rows[0];
+      if (!row) throw new Error("link account missing");
+      const conflict = (await query<any>("SELECT id FROM users WHERE google_sub=$1 AND id<>$2", [payload.sub, row.id])).rows[0]; if (conflict) throw new Error("link conflict");
+      await query("UPDATE users SET google_sub=$1, email=COALESCE(email,$2), email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$3", [payload.sub, email, row.id]);
+    } else {
+      row = (await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE google_sub=$1 AND environment=$2", [payload.sub, APP_ENV])).rows[0]
+        || (await query<any>("SELECT id, username, display_name, avatar_url FROM users WHERE lower(email)=lower($1) AND environment=$2", [email, APP_ENV])).rows[0];
+      if (row) await query("UPDATE users SET google_sub=$1, email=$2, email_verified_at=now() WHERE id=$3", [payload.sub, email, row.id]);
+      else row = (await query<any>("INSERT INTO users (username, environment, password_hash, email, google_sub, email_verified_at, display_name, avatar_url) VALUES ($1,$2,NULL,$3,$4,now(),$5,$6) RETURNING id, username, display_name, avatar_url", [safeUsername(email), APP_ENV, email, payload.sub, payload.name?.slice(0, 60) || email.split("@")[0], payload.picture || null])).rows[0];
+    }
+    await establishSession(req, row); res.redirect(`${config.appUrl}/`);
+  } catch { res.redirect(`${config.appUrl}/login?auth_error=google`); }
+});
+
 app.post("/api/auth/logout", (req, res) => req.session.destroy(() => res.status(204).end()));
 app.use("/api", requireAuth);
 app.get("/api/auth/profile", async (req: Request, res: Response) => {
   try {
-    const { rows } = await query<{ username: string; display_name: string; avatar_url: string | null; podcast_voice_gender: "female" | "male" | null }>("SELECT username, display_name, avatar_url, podcast_voice_gender FROM users WHERE id=$1", [userFrom(req).id]);
+    const { rows } = await query<{ username: string; display_name: string; avatar_url: string | null; podcast_voice_gender: "female" | "male" | null; email: string | null; google_sub: string | null; password_hash: string | null }>("SELECT username, display_name, avatar_url, podcast_voice_gender, email, google_sub, password_hash FROM users WHERE id=$1", [userFrom(req).id]);
     const profile = rows[0];
     if (!profile) return res.status(404).json({ error: "Profile not found" });
-    res.json({ username: profile.username, displayName: profile.display_name, avatarUrl: profile.avatar_url || null, podcastVoiceGender: profile.podcast_voice_gender || null });
+    res.json({ username: profile.username, displayName: profile.display_name, avatarUrl: profile.avatar_url || null, podcastVoiceGender: profile.podcast_voice_gender || null, email: profile.email, googleConnected: Boolean(profile.google_sub), hasPassword: Boolean(profile.password_hash) });
   } catch { res.status(500).json({ error: "Could not load profile" }); }
 });
 app.patch("/api/auth/profile", async (req: Request, res: Response) => {
@@ -188,17 +277,55 @@ app.get("/api/achievements", async (req: Request, res: Response) => {
   } catch (e: any) { res.status(503).json({ error: "achievements unavailable", detail: e.message }); }
 });
 
-// ── Quote Wall ────────────────────────────────────────────
-app.get("/api/quotes", async (_req: Request, res: Response) => {
+// ── Saved lines ───────────────────────────────────────────
+app.get("/api/quotes", async (req: Request, res: Response) => {
+  const requestedLimit = Number.parseInt(String(req.query.limit || "12"), 10);
+  const requestedOffset = Number.parseInt(String(req.query.offset || "0"), 10);
+  const limit = Number.isFinite(requestedLimit) ? Math.min(24, Math.max(1, requestedLimit)) : 12;
+  const offset = Number.isFinite(requestedOffset) ? Math.max(0, requestedOffset) : 0;
+  const q = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 120) : "";
+  const bookId = typeof req.query.bookId === "string" ? req.query.bookId.trim() : "";
+  const sort = req.query.sort === "oldest" || req.query.sort === "mixed" ? req.query.sort : "newest";
+  const ownerId = userFrom(req).id;
+  const params: unknown[] = [ownerId];
+  const filters = ["b.owner_id=$1", "rl.quote IS NOT NULL", "btrim(rl.quote) <> ''"];
+
+  if (bookId) {
+    params.push(bookId);
+    filters.push(`rl.book_id=$${params.length}`);
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    filters.push(`(rl.quote ILIKE $${params.length} OR b.title ILIKE $${params.length} OR b.author ILIKE $${params.length})`);
+  }
+
+  const where = filters.join(" AND ");
+  const orderBy = sort === "oldest"
+    ? "rl.date ASC, rl.created_at ASC"
+    : sort === "mixed"
+      ? "md5(rl.book_id::text || rl.date::text || rl.quote), rl.date DESC"
+      : "rl.date DESC, rl.created_at DESC";
+
   try {
-    const { rows } = await query(
-      `SELECT rl.quote, rl.date, rl.book_id, b.title, b.author
-       FROM chapter.reading_log rl
-       JOIN chapter.books b ON b.id = rl.book_id
-       WHERE rl.quote IS NOT NULL AND btrim(rl.quote) <> ''
-       ORDER BY rl.date DESC`
-    );
-    res.json(rows);
+    const pageParams = [...params, limit, offset];
+    const [itemsResult, totalResult, booksResult] = await Promise.all([
+      query(`SELECT rl.quote, rl.date, rl.book_id, b.title, b.author
+             FROM chapter.reading_log rl
+             JOIN chapter.books b ON b.id = rl.book_id
+             WHERE ${where}
+             ORDER BY ${orderBy}
+             LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, pageParams),
+      query(`SELECT COUNT(*)::int AS total
+             FROM chapter.reading_log rl
+             JOIN chapter.books b ON b.id = rl.book_id
+             WHERE ${where}`, params),
+      query(`SELECT DISTINCT b.id, b.title, b.author
+             FROM chapter.reading_log rl
+             JOIN chapter.books b ON b.id = rl.book_id
+             WHERE b.owner_id=$1 AND rl.quote IS NOT NULL AND btrim(rl.quote) <> ''
+             ORDER BY b.title ASC`, [ownerId]),
+    ]);
+    res.json({ items: itemsResult.rows, total: totalResult.rows[0]?.total || 0, books: booksResult.rows });
   } catch (e: any) {
     res.status(500).json({ error: "Failed to fetch quotes", detail: e.message });
   }

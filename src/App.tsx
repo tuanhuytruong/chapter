@@ -10,11 +10,14 @@ import Today from './pages/Today';
 import Achievements from './pages/Achievements';
 import Account from './pages/Account';
 import Profile from './pages/Profile';
+import Quotes from './pages/Quotes';
 import { presetFromAvatarValue } from './avatar-presets';
 import AnimalAvatar from './components/AnimalAvatar';
 import JourneyDrawer from './components/JourneyDrawer';
 import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X } from 'lucide-react';
 import Login from './components/Login';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import { AuthProvider, useAuth } from './AuthContext';
 import { OnboardingProvider } from './onboarding';
 import useSwipeNav from './hooks/useSwipeNav';
@@ -52,9 +55,12 @@ function Layout() {
       <header className="sticky top-0 z-40 border-b border-natural-border bg-natural-bg">
         <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between gap-3 sm:h-20">
-            <NavLink to="/" className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-natural-sage text-white"><BookMarked className="h-4 w-4" /></div>
-              <div className="min-w-0"><span className="font-sans text-lg font-bold tracking-tight text-natural-dark sm:text-xl">Chapter</span><span className="hidden font-mono text-[9px] uppercase leading-none tracking-widest text-natural-stone sm:block">AI Reading Companion</span></div>
+            <NavLink to="/" aria-label="Chapter — Read less. Learn more." className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
+              <img src="/chapter-book-mark.svg" alt="" className="h-9 w-9 shrink-0 sm:h-11 sm:w-11" />
+              <div className="min-w-0 leading-none">
+                <span className="block font-serif text-[1.35rem] font-bold tracking-tight text-natural-dark sm:text-[1.65rem]">chapter</span>
+                <span className="hidden pt-1 font-sans text-[9px] font-medium tracking-[0.08em] text-natural-stone sm:block">Read less. Learn more.</span>
+              </div>
             </NavLink>
 
             <nav className="hidden shrink-0 items-center gap-6 font-sans text-xs font-semibold uppercase tracking-widest sm:flex" aria-label="Primary navigation">
@@ -97,7 +103,7 @@ function Layout() {
 function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Login />;
+  if (!user) return <BrowserRouter><Routes><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="*" element={<Login />} /></Routes></BrowserRouter>;
   return <OnboardingProvider><BrowserRouter><Routes><Route element={<Layout />}>
     <Route path="/" element={<Library />} />
     <Route path="/today" element={<Today />} />
@@ -109,6 +115,7 @@ function AppRoutes() {
     <Route path="/achievements" element={<Achievements />} />
     <Route path="/profile" element={<Profile />} />
     <Route path="/account" element={<Account />} />
+    <Route path="/quotes" element={<Quotes />} />
     <Route path="*" element={<Library />} />
   </Route></Routes></BrowserRouter></OnboardingProvider>;
 }

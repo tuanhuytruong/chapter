@@ -87,6 +87,8 @@ assert.match(llmSource, /response body received \$\{body\.length\} bytes after/)
 assert.match(llmSource, /assistant content extracted/);
 assert.match(llmSource, /timeout after \$\{boundedTimeoutMs\}ms/);
 assert.match(llmSource, /Math\.min\(600_000, Math\.max\(5_000, timeoutMs\)\)/);
+assert.match(llmSource, /export const NINE_ROUTER_MAX_ATTEMPTS = 3/);
+assert.match(llmSource, /attempt=\$\{attempt\}\/\$\{NINE_ROUTER_MAX_ATTEMPTS\} failed/);
 const bookRoutes = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
 const sharedReaderRoutes = bookRoutes.slice(bookRoutes.indexOf('// ── AI Reader / Book Wiki routes'), bookRoutes.indexOf('// POST /api/books/:id/wiki/regenerate'));
 assert.doesNotMatch(sharedReaderRoutes, /owner_id=\$2/);

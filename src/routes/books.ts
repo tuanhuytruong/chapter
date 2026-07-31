@@ -84,9 +84,9 @@ booksRouter.get("/", async (req: Request, res: Response) => {
     const { rows } = await query(
       `SELECT b.id, b.title, b.author, b.file_type, b.total_pages, b.daily_pages, b.current_page, b.status, b.summary_lang, b.reading_experience, b.summary_mode, b.cover_url, CASE WHEN b.owner_id=$1 THEN b.reflection_text ELSE NULL END AS reflection_text, CASE WHEN b.owner_id=$1 THEN b.reflection_at ELSE NULL END AS reflection_at, b.queue_order, b.created_at, b.owner_id, u.display_name AS owner_name, (b.owner_id = $1) AS can_edit
        FROM books b LEFT JOIN users u ON u.id=b.owner_id
-       WHERE ($2 = 'all' OR b.owner_id = $1)
+       WHERE u.environment=$3 AND ($2 = 'all' OR b.owner_id = $1)
        ORDER BY u.display_name NULLS LAST, b.created_at DESC`,
-      [userFrom(req).id, scope]
+      [userFrom(req).id, scope, config.appEnv]
     );
     res.json(rows);
   } catch (e: any) {

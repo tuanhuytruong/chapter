@@ -13,7 +13,14 @@ function optionalEnv(name: string): string {
   return /^(['"]).*\1$/.test(trimmed) ? trimmed.slice(1, -1).trim() : trimmed;
 }
 
+function appEnvironment(): "prd" | "dev" {
+  const value = optionalEnv("APP_ENV") || "prd";
+  if (value !== "prd" && value !== "dev") throw new Error("APP_ENV must be exactly 'prd' or 'dev'");
+  return value;
+}
+
 export const config = {
+  appEnv: appEnvironment(),
   databaseUrl: process.env.DATABASE_URL ?? "",
   nineRouterUrl:
     process.env.NINE_ROUTER_URL ?? "https://9router-ubt.mrl.asia/v1/chat/completions",
@@ -31,4 +38,10 @@ export const config = {
   podcastTtsMaxChars: Number(process.env.PODCAST_TTS_MAX_CHARS ?? 12_000),
   port: Number(process.env.PORT ?? 3000),
   booksDir: process.env.CHAPTER_BOOKS_DIR ?? "/opt/chapter/workspace/books",
+  appUrl: optionalEnv("APP_URL") || "http://localhost:3000",
+  googleClientId: optionalEnv("GOOGLE_CLIENT_ID"),
+  googleClientSecret: optionalEnv("GOOGLE_CLIENT_SECRET"),
+  resendApiKey: optionalEnv("RESEND_API_KEY"),
+  resendFrom: optionalEnv("RESEND_FROM") || "Chapter <no-reply@account.mrl.asia>",
+  passwordResetTtlMinutes: Math.min(60, Math.max(15, Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 45))),
 };
