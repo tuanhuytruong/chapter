@@ -142,15 +142,15 @@ export default function Library() {
       </div>
 
       <div className="border-b border-natural-border">
-        <div className="-mb-px flex w-full min-w-max gap-1 overflow-x-auto whitespace-nowrap" role="group" aria-label="Shelf filters">
+        <div className="-mb-px flex w-full flex-wrap items-center gap-x-0" role="group" aria-label="Shelf filters">
           {FILTERS.filter((item) => scope === 'mine' || item.id !== 'queued').map((item) => {
             const count = statusCounts[item.id];
             return <button key={item.id} type="button" onClick={() => setFilter(item.id)} aria-pressed={filter === item.id}
-              className={`shrink-0 border-b-2 px-3 py-3 font-sans text-xs font-semibold uppercase tracking-widest transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset ${filter === item.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
-              {item.label}{count > 0 && <span className="ml-1.5 tabular-nums text-[10px] text-natural-stone">{count}</span>}
+              className={`min-h-11 border-b-2 px-2.5 py-3 font-sans text-[11px] font-semibold uppercase tracking-[0.11em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset sm:px-3 sm:text-xs sm:tracking-widest ${filter === item.id ? 'border-natural-dark text-natural-dark' : 'border-transparent text-natural-stone hover:text-natural-dark'}`}>
+              {item.label}{count > 0 && <span className="ml-1 tabular-nums text-[10px] text-natural-stone sm:ml-1.5">{count}</span>}
             </button>;
           })}
-          <button type="button" onClick={() => changeScope(scope === 'mine' ? 'all' : 'mine')} className="ml-auto flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-3 font-sans text-xs font-bold text-natural-stone transition hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset">
+          <button type="button" onClick={() => changeScope(scope === 'mine' ? 'all' : 'mine')} className="flex min-h-11 basis-full items-center gap-1.5 border-b-2 border-transparent px-2.5 py-3 font-sans text-[11px] font-bold text-natural-stone transition hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-inset sm:ml-auto sm:basis-auto sm:px-3 sm:text-xs">
             {scope === 'mine' ? <>Explore readers <ArrowRight className="h-3.5 w-3.5" /></> : <><ArrowLeft className="h-3.5 w-3.5" /> Back to my shelf</>}
           </button>
         </div>
