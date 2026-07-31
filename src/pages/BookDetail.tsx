@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw, Headphones } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
+import type { UpgradePrompt } from '../api';
 import type { BookRow, LogRow, ReadingLensRow, StoryThreadRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
@@ -16,6 +17,7 @@ import type { MindMapData } from '../components/MindMap';
 import StoryThreadView from '../components/story/StoryThreadView';
 import BookWiki from '../components/BookWiki';
 import PodcastPanel from '../components/PodcastPanel';
+import { ContextualUpgradeCard } from '../components/ContextualUpgradeCard';
 import { GuideCard } from '../onboarding';
 
 function InlineMarkdown({ text }: { text: string }) {
@@ -84,6 +86,7 @@ export default function BookDetail() {
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<string | null>(null);
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(null);
 
   const openPodcast = () => {
     setOpeningPodcast(true);
@@ -131,6 +134,23 @@ export default function BookDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Phase 2 prompts are advisory only and owner-scoped. Failure must never
+  // interrupt reading, summaries, or shared read-only views.
+  useEffect(() => {
+    if (!id || !book?.can_edit) { setUpgradePrompt(null); return; }
+    let cancelled = false;
+    void api.getUpgradePrompts(id)
+      .then(({ prompt }) => { if (!cancelled) setUpgradePrompt(prompt); })
+      .catch(() => { if (!cancelled) setUpgradePrompt(null); });
+    return () => { cancelled = true; };
+  }, [id, book?.can_edit, logs.length, lenses.length]);
+
+  const dismissUpgradePrompt = async (key: string) => {
+    setUpgradePrompt(null);
+    try { await api.dismissUpgradePrompt(key); }
+    catch { setToast({ type: 'err', msg: 'Could not save this preference. Please try again.' }); }
+  };
 
   // A reading session is saved immediately; its companion analysis finishes in
   // the background. Revalidate quietly for a bounded window rather than making
@@ -606,6 +626,7 @@ export default function BookDetail() {
         {hasOpenedAiReader && (
           <div id="ai-reader-panel" role="tabpanel" aria-hidden={logView !== 'ai-reader'} hidden={logView !== 'ai-reader'} className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
             <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
+            {book.can_edit && upgradePrompt && <ContextualUpgradeCard prompt={upgradePrompt} onDismiss={dismissUpgradePrompt} />}
           </div>
         )}
         {logView !== 'ai-reader' && <>

@@ -8,6 +8,18 @@ import type { AchievementsResponse } from "./achievements";
 export type MembershipTier = "free" | "plus" | "deep_reader";
 export type MembershipPlan = { tier: MembershipTier; name: string; tagline: string; monthlyPrice: string | null; annualPrice: string | null; annualLabel: string | null; checkoutAvailable: false; benefits: Array<{ label: string; availableNow: boolean }> };
 export interface MembershipPlansResponse { policyVersion: number; checkoutAvailable: false; plans: MembershipPlan[]; }
+
+export interface UpgradePrompt {
+  key: string;
+  targetTier: "plus" | "deep_reader";
+  message: string;
+  feature?: string;
+  context: { bookId: string };
+}
+export interface UpgradePromptsResponse {
+  prompt: UpgradePrompt | null;
+}
+
 export interface EntitlementsResponse {
   subscription: { tier: MembershipTier; status: string; active: boolean; source: string; periodEnd: string | null };
   features: Record<string, { available: boolean; usage: { used: number; reserved: number; limit: number | "unlimited" | "unavailable"; remaining: number | null } }>;
@@ -144,6 +156,8 @@ export const api = {
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
   getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
   getMembershipPlans: () => req<MembershipPlansResponse>("/api/entitlements/plans"),
+  getUpgradePrompts: (bookId: string) => req<UpgradePromptsResponse>(`/api/entitlements/prompts?bookId=${encodeURIComponent(bookId)}`),
+  dismissUpgradePrompt: (key: string) => req<void>(`/api/entitlements/prompts/${encodeURIComponent(key)}`, { method: "PATCH", body: JSON.stringify({ action: "dismiss" }) }),
   getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
   getBookPodcast: (bookId: string) => req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
   createPodcast: (bookId: string, chapterKey: string, voiceGender?: "female" | "male") =>

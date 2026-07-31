@@ -401,6 +401,20 @@ CREATE INDEX IF NOT EXISTS usage_events_owner_period_feature
   ON chapter.usage_events (user_id, period_key, feature_key);
 
 -- ───────────────────────────────────────────────────────────
+-- chapter.membership_prompt_state (owner-scoped prompt dismissals)
+-- ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS chapter.membership_prompt_state (
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  prompt_key TEXT NOT NULL CHECK (prompt_key IN ('reading_map_depth', 'book_wiki_depth', 'quota_reached')),
+  shown_at TIMESTAMPTZ,
+  dismissed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (owner_id, prompt_key)
+);
+CREATE INDEX IF NOT EXISTS idx_membership_prompt_state_owner
+  ON chapter.membership_prompt_state (owner_id);
+
+-- ───────────────────────────────────────────────────────────
 -- chapter.weekly_reading_goals (one personal target per reader)
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chapter.weekly_reading_goals (

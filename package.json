@@ -18,6 +18,7 @@
     "grant-subscription": "tsx scripts/subscription.ts grant",
     "expire-subscription": "tsx scripts/subscription.ts expire",
     "verify:entitlements": "tsx scripts/verify-entitlements.ts",
+    "verify:upgrade-prompts": "tsx scripts/verify-upgrade-prompts.ts",
     "verify:story-thread": "tsx scripts/verify-story-thread.ts",
     "verify:onboarding": "tsx scripts/verify-onboarding.ts",
     "verify:ai-reader": "tsx scripts/verify-ai-reader.ts",
