@@ -71,6 +71,7 @@ export default function BookDetail() {
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState('');
   const [logView, setLogView] = useState<'list' | 'journey' | 'ai-reader' | 'podcast'>('list');
+  const [openingPodcast, setOpeningPodcast] = useState(false);
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
@@ -83,6 +84,14 @@ export default function BookDetail() {
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<string | null>(null);
+
+  const openPodcast = () => {
+    setOpeningPodcast(true);
+    window.requestAnimationFrame(() => {
+      setLogView('podcast');
+      window.setTimeout(() => setOpeningPodcast(false), 180);
+    });
+  };
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -438,8 +447,8 @@ export default function BookDetail() {
           ) : (
             <>
               <div className="flex flex-nowrap justify-end gap-2">
-                <button onClick={() => setLogView('podcast')} disabled={book.file_type !== 'epub'} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:cursor-not-allowed disabled:opacity-45">
-                  <Headphones className="w-3.5 h-3.5" /> Podcast
+                <button onClick={openPodcast} disabled={book.file_type !== 'epub' || openingPodcast} title={book.file_type !== 'epub' ? 'Podcast currently supports EPUB books only.' : 'Listen by chapter'} className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark transition-all duration-150 active:scale-[0.94] active:bg-natural-sage/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:cursor-not-allowed disabled:opacity-45">
+                  {openingPodcast ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Headphones className="w-3.5 h-3.5" />} {openingPodcast ? 'Opening…' : 'Podcast'}
                 </button>
                 <button onClick={readToday} disabled={!book.can_edit || advancing || book.status === 'finished'} title={!book.can_edit ? 'This shared book is read-only.' : undefined}
                   className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-transform duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer">
