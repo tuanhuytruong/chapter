@@ -37,6 +37,7 @@ HEALTH_RETRY_DELAY_SECONDS="${HEALTH_RETRY_DELAY_SECONDS:-1}"
 # Non-interactive SSH shells may not include npm's user-global bin directory.
 PM2_BIN="${PM2_BIN:-$(command -v pm2 || true)}"
 if [ -z "$PM2_BIN" ] && [ -x "$HOME/.npm-global/bin/pm2" ]; then PM2_BIN="$HOME/.npm-global/bin/pm2"; fi
+if [ -z "$PM2_BIN" ] && [ -x "$HOME/.npm-global/node_modules/pm2/bin/pm2" ]; then PM2_BIN="$HOME/.npm-global/node_modules/pm2/bin/pm2"; fi
 if [ -z "$PM2_BIN" ]; then
   echo "pm2 is not installed or not on PATH" >&2
   exit 1
