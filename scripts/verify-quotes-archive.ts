@@ -22,6 +22,11 @@ assert.match(wall, /limit: 3/);
 assert.match(wall, /Lines to return to/);
 assert.doesNotMatch(wall, /columns-1/);
 assert.match(quotes, /const PAGE_SIZE = 12/);
+assert.match(quotes, /function QuoteFilterMenu/);
+assert.match(quotes, /aria-haspopup="menu"/);
+assert.match(quotes, /sm:grid-cols-\[minmax\(0,1fr\)_minmax\(10rem,13rem\)_minmax\(9\.5rem,10\.5rem\)\]/);
+assert.doesNotMatch(quotes, /<select id="quote-book"/);
+assert.doesNotMatch(quotes, /<select id="quote-sort"/);
 assert.match(quotes, /Load more/);
 assert.match(app, /<Route path="\/quotes" element=\{<Quotes \/>\} \/>/);
 
