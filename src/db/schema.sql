@@ -363,6 +363,44 @@ CREATE TABLE IF NOT EXISTS chapter.review_cards (
 CREATE INDEX IF NOT EXISTS idx_review_cards_due ON chapter.review_cards (due_date, book_id);
 
 -- ───────────────────────────────────────────────────────────
+-- Membership entitlement and auditable AI usage (Phase 0)
+-- Provider-neutral state: payment integration is intentionally deferred.
+-- ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS chapter.subscriptions (
+  user_id UUID PRIMARY KEY REFERENCES chapter.users(id) ON DELETE CASCADE,
+  tier TEXT NOT NULL CHECK (tier IN ('free','plus','deep_reader')) DEFAULT 'free',
+  status TEXT NOT NULL CHECK (status IN ('active','trialing','canceled','past_due','expired')) DEFAULT 'active',
+  current_period_end TIMESTAMPTZ,
+  provider TEXT,
+  provider_customer_id TEXT,
+  provider_subscription_id TEXT,
+  granted_by TEXT NOT NULL CHECK (granted_by IN ('payment','trial','admin','founding')) DEFAULT 'admin',
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_provider_subscription_unique
+  ON chapter.subscriptions (provider, provider_subscription_id)
+  WHERE provider IS NOT NULL AND provider_subscription_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS chapter.usage_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  feature_key TEXT NOT NULL,
+  period_key TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('reserved','consumed','released','adjustment')),
+  quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  request_key TEXT NOT NULL,
+  resource_type TEXT,
+  resource_id TEXT,
+  detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, feature_key, period_key, event_type, request_key)
+);
+CREATE INDEX IF NOT EXISTS usage_events_owner_period_feature
+  ON chapter.usage_events (user_id, period_key, feature_key);
+
+-- ───────────────────────────────────────────────────────────
 -- chapter.weekly_reading_goals (one personal target per reader)
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS chapter.weekly_reading_goals (

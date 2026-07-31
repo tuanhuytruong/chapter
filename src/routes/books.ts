@@ -5,6 +5,7 @@ import { callLLM, callNineRouter, parseSummary } from "../llm.js";
 import { boundStoryThreadSource, buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
 import { processBookForWiki } from "../aiReader.js";
+import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
@@ -364,6 +365,7 @@ booksRouter.post("/:id/wiki/regenerate", async (req: Request, res: Response) => 
   const { id } = req.params;
   if (!await ownerCanMutate(req, res, id)) return;
   try {
+    await observeEntitledGeneration(userFrom(req).id, "ai_reader_generation");
     const claim = await query(
       `INSERT INTO ai_reader_jobs (book_id, status, started_at, completed_at, error_message)
        VALUES ($1, 'running', now(), NULL, NULL)
@@ -454,6 +456,7 @@ booksRouter.post("/:id/logs/:logId/reading-lens/retry", async (req: Request, res
     const [book, log] = [(await query("SELECT * FROM books WHERE id=$1", [id])).rows[0], (await query("SELECT * FROM reading_log WHERE id=$1 AND book_id=$2", [logId, id])).rows[0]];
     if (!book || book.reading_experience !== "analytical") return res.status(400).json({ error: "Story Thread books do not use Reading Lens" });
     if (!log?.raw_text) return res.status(400).json({ error: "session has no extracted text" });
+    await observeEntitledGeneration(userFrom(req).id, "reading_lens_generation");
     await generateReadingLensForLog(log, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto" });
     res.json(await getReadingLensAnalysisForLog(id, logId));
   } catch (e: any) { res.status(500).json({ error: "reading lens retry failed", detail: e.message }); }

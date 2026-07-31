@@ -11,6 +11,7 @@ import { booksRouter } from "./src/routes/books.js";
 import { reviewsRouter } from "./src/routes/reviews.js";
 import { uploadRouter } from "./src/routes/upload.js";
 import { podcastsRouter, startPodcastMaintenance } from "./src/routes/podcasts.js";
+import { entitlementsRouter } from "./src/routes/entitlements.js";
 import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
@@ -246,6 +247,7 @@ app.use("/api/books", booksRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/podcasts", podcastsRouter);
+app.use("/api/entitlements", entitlementsRouter);
 
 // ── Personal achievements (derived; no duplicate achievement state) ─
 app.get("/api/achievements", async (req: Request, res: Response) => {

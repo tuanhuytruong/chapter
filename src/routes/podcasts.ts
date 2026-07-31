@@ -5,6 +5,7 @@ import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
 import { createPodcast, podcastPublic, prunePodcastCache, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
+import { observeEntitledGeneration } from "../requireEntitlement.js";
 
 export const podcastsRouter = Router();
 
@@ -70,13 +71,20 @@ podcastsRouter.post("/", async (req: Request, res: Response) => {
   if (typeof book_id !== "string" || typeof chapter_key !== "string" || (voice_gender && voice_gender !== "female" && voice_gender !== "male")) {
     return res.status(400).json({ error: "book_id, chapter_key, and an optional valid voice_gender are required" });
   }
-  try { res.status(202).json(await createPodcast(userFrom(req).id, book_id, chapter_key, voice_gender)); }
+  try {
+    const ownerId = userFrom(req).id;
+    await observeEntitledGeneration(ownerId, "podcast_chapter_generation");
+    res.status(202).json(await createPodcast(ownerId, book_id, chapter_key, voice_gender));
+  }
   catch (error: any) { res.status(error.code === "VOICE_REQUIRED" ? 409 : 400).json({ error: error.message }); }
 });
 
 podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
-  try { res.status(202).json(await regeneratePodcast(userFrom(req).id, req.params.id)); }
-  catch (error: any) { res.status(404).json({ error: "Podcast episode unavailable" }); }
+  try {
+    const ownerId = userFrom(req).id;
+    await observeEntitledGeneration(ownerId, "podcast_chapter_generation");
+    res.status(202).json(await regeneratePodcast(ownerId, req.params.id));
+  } catch (error: any) { res.status(404).json({ error: "Podcast episode unavailable" }); }
 });
 
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
