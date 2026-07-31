@@ -34,6 +34,13 @@ fi
 # bind its HTTP listener. Override for unusually slow hosts if necessary.
 HEALTH_RETRIES="${HEALTH_RETRIES:-20}"
 HEALTH_RETRY_DELAY_SECONDS="${HEALTH_RETRY_DELAY_SECONDS:-1}"
+# Non-interactive SSH shells may not include npm's user-global bin directory.
+PM2_BIN="${PM2_BIN:-$(command -v pm2 || true)}"
+if [ -z "$PM2_BIN" ] && [ -x "$HOME/.npm-global/bin/pm2" ]; then PM2_BIN="$HOME/.npm-global/bin/pm2"; fi
+if [ -z "$PM2_BIN" ]; then
+  echo "pm2 is not installed or not on PATH" >&2
+  exit 1
+fi
 
 cd "$APP_DIR"
 
@@ -59,14 +66,14 @@ echo "==> (Re)Starting with PM2 in production mode"
 # The build is served from dist/ in production. Explicitly pass --env on BOTH
 # start and reload so a previously started development process cannot keep
 # Vite middleware (which rejects unapproved public hosts) or non-secure cookies.
-if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
-  pm2 reload ecosystem.config.cjs --only "$APP_NAME" --env production --update-env
+if "$PM2_BIN" describe "$APP_NAME" > /dev/null 2>&1; then
+  "$PM2_BIN" reload ecosystem.config.cjs --only "$APP_NAME" --env production --update-env
 else
-  pm2 start ecosystem.config.cjs --env production
+  "$PM2_BIN" start ecosystem.config.cjs --env production
 fi
-pm2 save
+"$PM2_BIN" save
 
-APP_PID="$(pm2 pid "$APP_NAME" | tr -d '[:space:]')"
+APP_PID="$("$PM2_BIN" pid "$APP_NAME" | tr -d '[:space:]')"
 if [ -z "$APP_PID" ] || [ "$APP_PID" = "0" ]; then
   echo "PM2 did not report a live process for $APP_NAME" >&2
   exit 1
@@ -74,7 +81,7 @@ fi
 echo "PM2 process ready (pid $APP_PID)"
 
 echo "==> Done. Status:"
-pm2 status "$APP_NAME"
+"$PM2_BIN" status "$APP_NAME"
 echo ""
 echo "Schema check:"
 if [ -z "${DATABASE_URL:-}" ]; then
