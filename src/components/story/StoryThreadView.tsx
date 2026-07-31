@@ -33,7 +33,9 @@ function SessionStory({ item, log, canEdit, onRetry, retryingLogId }: { item: St
 export default function StoryThreadView({ analyses, logs, onRetry, retryingLogId, canEdit = false }: { analyses: StoryThreadRow[]; logs: LogRow[]; onRetry?: (logId: string) => Promise<void>; retryingLogId?: string | null; canEdit?: boolean }) {
   const latest = analyses.at(-1);
   const analyzedLogIds = new Set(analyses.map((item) => item.log_id));
-  const pendingLogs = logs.filter((log) => !analyzedLogIds.has(log.id));
+  // Book Detail keeps newest sessions first for browsing; repairs must always
+  // begin with the earliest gap so later continuity is never built on a skip.
+  const pendingLogs = logs.filter((log) => !analyzedLogIds.has(log.id)).sort((a, b) => `${a.date}-${a.session}`.localeCompare(`${b.date}-${b.session}`));
   if (!latest) return <section className="rounded-[24px] border border-dashed border-natural-border bg-natural-cream p-6 text-center">
     <BookHeart className="mx-auto h-7 w-7 text-natural-sage" />
     <h2 className="mt-3 text-base font-bold text-natural-dark">Your story companion is preparing</h2>

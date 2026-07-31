@@ -708,6 +708,23 @@ async function generateStoryThreadForLog(log: any, book: { title: string; author
   await query("UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5", [compat.summary, compat.key_insights, compat.quote, log.id, log.book_id]);
 }
 
+/** Rebuild the selected Story session and every later persisted session in reading order.
+ * This repairs a gap without letting newer analyses retain continuity from before it. */
+async function repairStoryThreadFromLog(book: any, firstLog: any): Promise<any[]> {
+  const { rows: logs } = await query(
+    `SELECT * FROM reading_log
+     WHERE book_id=$1 AND raw_text IS NOT NULL
+       AND (date > $2::date OR (date = $2::date AND session >= $3))
+     ORDER BY date ASC, session ASC`,
+    [book.id, firstLog.date, firstLog.session]
+  );
+  if (!logs.length) throw new Error("no saved Story sessions are available to repair");
+  for (const log of logs) {
+    await generateStoryThreadForLog(log, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto", session: log.session });
+  }
+  return listStoryThreadAnalyses(book.id);
+}
+
 // GET /api/books/:id/log/today — returns array of today's sessions (n8n compatibility)
 booksRouter.get("/:id/log/today", async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -739,9 +756,8 @@ booksRouter.post("/:id/logs/:logId/retry", async (req: Request, res: Response) =
     if (!book) return res.status(404).json({ error: "book not found" });
 
     if (book.reading_experience === "story") {
-      await generateStoryThreadForLog(entry, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto", session: entry.session });
-      const analysis = await getStoryThreadAnalysis(id, logId);
-      return res.json(analysis || entry);
+      const analyses = await repairStoryThreadFromLog(book, entry);
+      return res.json(analyses);
     }
     // A retry must never overwrite a visible fallback with another fallback.
     // Surface an upstream timeout so the owner can retry later with the original

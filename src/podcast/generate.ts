@@ -11,7 +11,13 @@ export type PodcastRow = { id: string; book_id: string; log_id: string | null; c
 const voices = { vi: { female: "edge-tts/vi-VN-HoaiMyNeural", male: "edge-tts/vi-VN-NamMinhNeural" }, en: { female: "edge-tts/en-US-JennyNeural", male: "edge-tts/en-US-ChristopherNeural" } } as const;
 const cacheExpiresAt = () => new Date(Date.now() + Math.max(1, config.podcastCacheTtlHours) * 3600000);
 
-function resolvedLanguage(value: string | null): "vi" | "en" { return value === "vi" ? "vi" : "en"; }
+/** Resolve Auto from the actual chapter source so Vietnamese EPUBs never fall through to English. */
+export function resolvePodcastLanguage(requested: string | null, chapterText: string): "vi" | "en" {
+  if (requested === "vi" || requested === "en") return requested;
+  const vietnameseSignals = (chapterText.match(/[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/gi) || []).length;
+  const words = chapterText.match(/[A-Za-zÀ-ỹ]+/g)?.length || 1;
+  return vietnameseSignals / words >= 0.08 ? "vi" : "en";
+}
 function safeArchiveMessage(error: unknown) { return `Archive pending: ${String(error instanceof Error ? error.message : error).slice(0, 700)}`; }
 export function podcastPublic(row: any) { const { tg_file_id, tg_file_unique_id, tg_chat_id, tg_message_id, local_cache_path, local_cache_until, user_id, book_id, chapter_key, error_message, ...safe } = row; return safe; }
 
@@ -25,17 +31,20 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
     voiceGender = (await query<{ podcast_voice_gender: "female" | "male" | null }>("SELECT podcast_voice_gender FROM users WHERE id=$1", [ownerId])).rows[0]?.podcast_voice_gender || null;
   }
   if (!voiceGender) { const error: any = new Error("Choose a narrator voice before creating your first episode"); error.code = "VOICE_REQUIRED"; throw error; }
-  const unit = (await query<any>(`SELECT chapter_key, title FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index LIMIT 1`, [bookId, chapterKey])).rows[0];
+  const units = await query<any>(`SELECT chapter_key, title, raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index`, [bookId, chapterKey]);
+  const unit = units.rows[0];
   if (!unit) throw new Error("This EPUB chapter needs to be indexed before Podcast can use it");
-  const language = resolvedLanguage(source.summary_lang); const voice = voices[language][voiceGender];
+  const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
+  if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
+  const language = resolvePodcastLanguage(source.summary_lang, chapterText); const voice = voices[language][voiceGender];
   const existing = (await query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND chapter_key=$2 AND reading_round=$3", [bookId, unit.chapter_key, source.reading_round || 1])).rows[0];
   if (existing) {
     // An ordinary Create/Try again must never replace a listenable episode or race
     // an already-queued worker. Explicit regeneration is the only destructive path.
     if (["ready", "archive_pending", "queued", "scripting", "synthesizing", "archiving"].includes(existing.status)) return podcastPublic(existing);
-    await query("UPDATE podcasts SET status='queued',error_message=NULL,updated_at=now() WHERE id=$1", [existing.id]);
+    const retried = (await query<any>("UPDATE podcasts SET status='queued',language=$2,voice_model=$3,error_message=NULL,updated_at=now() WHERE id=$1 RETURNING *", [existing.id, language, voice])).rows[0];
     void generatePodcast(existing.id).catch((error) => console.warn("[podcast] background generation failed:", error.message));
-    return podcastPublic({ ...existing, status: "queued", error_message: null });
+    return podcastPublic(retried);
   }
   const inserted = await query<any>(`INSERT INTO podcasts (user_id,book_id,log_id,reading_round,chapter_key,chapter_title,language,voice_model,status)
     VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,'queued') RETURNING *`, [ownerId, bookId, source.reading_round || 1, unit.chapter_key, unit.title, language, voice]);
@@ -45,15 +54,22 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
 
 /** Explicit destructive regeneration. The persisted narrator choice stays unchanged. */
 export async function regeneratePodcast(ownerId: string, episodeId: string): Promise<any> {
-  const episode = (await query<any>(`SELECT p.* FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1 AND p.user_id=$2 AND b.owner_id=$2`, [episodeId, ownerId])).rows[0];
+  const episode = (await query<any>(`SELECT p.*,b.summary_lang,u.podcast_voice_gender FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.id=$1 AND p.user_id=$2 AND b.owner_id=$2`, [episodeId, ownerId])).rows[0];
   if (!episode) throw new Error("Podcast episode was not found");
   if (["queued", "scripting", "synthesizing", "archiving"].includes(episode.status)) return podcastPublic(episode);
+  const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [episode.book_id, episode.chapter_key]);
+  const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
+  if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
+  const language = resolvePodcastLanguage(episode.summary_lang, chapterText);
+  const voiceGender = episode.podcast_voice_gender as "female" | "male" | null;
+  if (!voiceGender) { const error: any = new Error("Choose a narrator voice before regenerating this episode"); error.code = "VOICE_REQUIRED"; throw error; }
+  const voice = voices[language][voiceGender];
   if (episode.local_cache_path) await fs.unlink(episode.local_cache_path).catch(() => undefined);
   await deleteArchivedPodcast(episode.tg_chat_id, episode.tg_message_id);
-  const reset = (await query<any>(`UPDATE podcasts SET status='queued', script_text=NULL, word_count=NULL, duration_s=NULL,
+  const reset = (await query<any>(`UPDATE podcasts SET status='queued', language=$2, voice_model=$3, script_text=NULL, word_count=NULL, duration_s=NULL,
     tg_file_id=NULL, tg_file_unique_id=NULL, tg_chat_id=NULL, tg_message_id=NULL,
     local_cache_path=NULL, local_cache_until=NULL, error_message=NULL, updated_at=now()
-    WHERE id=$1 RETURNING *`, [episodeId])).rows[0];
+    WHERE id=$1 RETURNING *`, [episodeId, language, voice])).rows[0];
   void generatePodcast(episodeId).catch((error) => console.warn("[podcast] background regeneration failed:", error.message));
   return podcastPublic(reset);
 }
