@@ -29,7 +29,7 @@ The backend entry point. Serves API routes and optionally the built frontend (`d
 
 - **Session management** — express-session + connect-pg-simple stores sessions in the `chapter.session` table.
 - **Authentication** — password-based login (bcrypt), session-scoped middleware (`requireAuth`, `requireOwner`).
-- **API routes** — books CRUD, reading log, analysis endpoints, review system, Telegram linking, achievements, weekly goals.
+- **API routes** — books CRUD, reading log, analysis endpoints, review system, Telegram linking, achievements, weekly goals, and membership entitlements.
 - **Health check** — `GET /health` returns `{ ok: true }` for liveness probes.
 - **Production serving** — serves `dist/index.html` + static assets when no Vite dev server is detected.
 
@@ -49,6 +49,7 @@ Built with **React 19 + TypeScript**, styled with **Tailwind CSS 4**. Single-pag
 | `/momentum` | Momentum | Goal tracking and momentum score |
 | `/achievements` | Achievements | Gamification milestones |
 | `/account` | Account | Telegram linking and settings |
+| `/pricing` | Pricing | Membership plan catalog and current entitlement preview |
 | `/profile` | Profile | Avatar and display name settings |
 
 ### Database (PostgreSQL)
@@ -68,6 +69,9 @@ When the LLM endpoint is unreachable, a deterministic fallback message is return
 
 ### Podcast integration (`src/podcast/`)
 A module for generating, storing, and serving audio podcast versions of summaries. Features include TTS synthesis, podcast metadata management, and integrated UI for playback in the `Podcasts` tab.
+
+### Membership and entitlements (`src/entitlements.ts`, `src/routes/entitlements.ts`)
+The Phase 0 membership layer exposes a provider-neutral plan catalog at `GET /api/entitlements/plans` and authenticated entitlement/usage state at `GET /api/entitlements/me`. It defines `free`, `plus`, and `deep_reader` tiers, feature keys, policy-versioned quotas, and effective subscription handling; checkout is intentionally unavailable and generation boundaries only emit telemetry until enforcement is approved. Subscription state and auditable usage events are stored in `chapter.subscriptions` and `chapter.usage_events`. The `/pricing` route renders the catalog without changing the existing reading experience.
 
 ### Telegram integration
 Two integration modes:

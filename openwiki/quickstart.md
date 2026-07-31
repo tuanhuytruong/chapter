@@ -49,6 +49,7 @@ The server auto-creates the `chapter` schema tables on boot. Visit `http://local
 - **Read All Today** — bulk-advance all active books in one click
 - **Telegram Delivery** — n8n cron (07:00) advances books and pushes summaries to Telegram
 - **Telegram Account Linking** — secure deep-link flow to bind your chat to your account
+- **Membership preview** — `/pricing` shows Free, Reader Plus, and Deep Reader plans; checkout is not open and current reading behavior is unchanged
 - **Multi-user** — shelf-per-user with optional "All Readers" view
 - **Auto Cover** — fetch book cover from Open Library when adding a book
 - **Avatar system** — 8 animal avatar presets (otter, red-panda, cat, rabbit, panda, bear, koala, penguin)
