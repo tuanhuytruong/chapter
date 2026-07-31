@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Headphones, Loader2, RefreshCw, RotateCcw, X } from "lucide-react";
 import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode } from "../api";
 
@@ -79,7 +80,8 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
 
   if (!isEpub) return null;
 
-  return <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5" aria-label="Chapter podcasts">
+  return <>
+    <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5" aria-label="Chapter podcasts">
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Listen</p>
@@ -92,22 +94,28 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       </div>
     </div>
 
-    {voiceTarget && <div className="mt-4 rounded-2xl border border-natural-sage/25 bg-natural-sage/10 p-4">
-      <p className="text-sm font-bold text-natural-dark">Choose your narrator once</p>
-      <p className="mt-1 text-xs leading-5 text-natural-stone">Your choice will be used for future chapter episodes.</p>
-      <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => void create(voiceTarget, "female")} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white">Female voice</button><button type="button" onClick={() => void create(voiceTarget, "male")} className="min-h-11 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark">Male voice</button></div>
-    </div>}
-
-    {regenerateTarget && <div className="mt-4 rounded-2xl border border-natural-border bg-white/70 p-4">
-      <p className="text-sm font-bold text-natural-dark">Regenerate this episode?</p>
-      <p className="mt-1 text-xs leading-5 text-natural-stone">The current recording will be replaced when the new one is ready.</p>
-      <div className="mt-3 flex gap-2"><button type="button" onClick={() => void regenerate()} disabled={workingKey === regenerateTarget.id} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white disabled:opacity-60">{workingKey === regenerateTarget.id ? "Starting…" : "Regenerate"}</button><button type="button" onClick={() => setRegenerateTarget(null)} className="min-h-11 rounded-full px-4 text-xs font-bold text-natural-stone">Keep current</button></div>
-    </div>}
-
     <div className="mt-4 divide-y divide-natural-border/80">
       {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canEdit} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : setVoiceTarget(chapter)} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
     </div>
-  </section>;
+    </section>
+    {(voiceTarget || regenerateTarget) && createPortal(
+      <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex items-end justify-center bg-natural-dark/35 p-4 backdrop-blur-[1px] sm:items-center" role="presentation" onClick={() => { setVoiceTarget(null); setRegenerateTarget(null); }}>
+        <div role="dialog" aria-modal="true" aria-labelledby="podcast-action-title" className="w-full max-w-md rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          {voiceTarget ? <>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast narrator</p>
+            <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Choose your narrator once</h2>
+            <p className="mt-2 text-sm leading-6 text-natural-stone">Your choice will be used for future chapter episodes.</p>
+            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void create(voiceTarget, "female")} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white">Female voice</button><button type="button" onClick={() => void create(voiceTarget, "male")} className="min-h-11 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark">Male voice</button><button type="button" onClick={() => setVoiceTarget(null)} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Not now</button></div>
+          </> : <>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast episode</p>
+            <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Regenerate this episode?</h2>
+            <p className="mt-2 text-sm leading-6 text-natural-stone">The current recording will be replaced when the new one is ready.</p>
+            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => void regenerate()} disabled={workingKey === regenerateTarget?.id} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white disabled:opacity-60">{workingKey === regenerateTarget?.id ? "Starting…" : "Regenerate"}</button><button type="button" onClick={() => setRegenerateTarget(null)} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Keep current</button></div>
+          </>}
+        </div>
+      </div>, document.body
+    )}
+  </>;
 }
 
 function ChapterRow({ chapter, number, canEdit, working, onCreate, onRegenerate }: { chapter: PodcastChapter; number: number; canEdit: boolean; working: boolean; onCreate: () => void; onRegenerate: () => void }) {

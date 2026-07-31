@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
 import { query, withTransaction } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
-import { callJsonLLM, callLLM, callNineRouter, parseSummary } from "../llm.js";
-import { buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
+import { callLLM, callNineRouter, parseSummary } from "../llm.js";
+import { boundStoryThreadSource, buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
 import { processBookForWiki } from "../aiReader.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
@@ -694,8 +694,15 @@ async function generateStoryThreadForLog(log: any, book: { title: string; author
   // On retry, use only state that existed before this session. The current/newer
   // analysis must never become its own evidence or leak future story details.
   const previous = await getStoryStateBeforeLog(log.book_id, log.date, log.session);
-  const prompt = buildStoryThreadPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText: log.raw_text, priorState: previous });
-  const analysis = process.env.NINE_ROUTER_URL ? parseStoryThreadAnalysis(await callJsonLLM(prompt.system, prompt.user, 0.2)) : storyFallback();
+  const sourceText = boundStoryThreadSource(log.raw_text);
+  const prompt = buildStoryThreadPrompt({ title: book.title, author: book.author, start: log.page_start, end: log.page_end, total: book.total, lang: book.lang, sourceText, priorState: previous });
+  // Story Thread is detached from Read Today but must still finish within a
+  // bounded, feature-specific provider window. It uses the same global
+  // scheduler as every other LLM workload, so it cannot starve reader actions.
+  const raw = process.env.NINE_ROUTER_URL
+    ? await callLLM(prompt.system, prompt.user, 0.2, true, true, Number(process.env.NINE_ROUTER_STORY_THREAD_TIMEOUT_MS || 180_000), { priority: "background", traceLabel: `story-thread:p.${log.page_start}-${log.page_end}:s.${log.session}` })
+    : JSON.stringify(storyFallback());
+  const analysis = parseStoryThreadAnalysis(raw);
   await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
   const compat = storyCompatSummary(analysis);
   await query("UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5", [compat.summary, compat.key_insights, compat.quote, log.id, log.book_id]);
