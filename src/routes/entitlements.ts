@@ -7,6 +7,20 @@ import { selectUpgradePrompt, type UpgradePromptKey } from "../upgrade-prompts.j
 
 export const entitlementsRouter = Router();
 
+// Database result interfaces for type safety
+interface SubscriptionRow {
+  tier: "free" | "plus" | "deep_reader";
+  status: "active" | "canceled" | "expired";
+  current_period_end: string | null;
+  granted_by: "payment" | "trial" | "admin" | "founding" | null;
+}
+
+interface PromptStateRow {
+  prompt_key: string;
+  shown_at: Date | null;
+  dismissed_at: Date | null;
+}
+
 entitlementsRouter.get("/plans", (_req: Request, res: Response) => {
   res.json({ policyVersion: ENTITLEMENT_POLICY_VERSION, checkoutAvailable: false, plans: membershipPlans() });
 });
@@ -14,7 +28,7 @@ entitlementsRouter.get("/plans", (_req: Request, res: Response) => {
 entitlementsRouter.get("/me", requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = userFrom(req).id;
-    const subscription = (await query<any>("SELECT tier,status,current_period_end,granted_by FROM subscriptions WHERE user_id=$1", [userId])).rows[0];
+    const subscription = (await query<SubscriptionRow>("SELECT tier,status,current_period_end,granted_by FROM subscriptions WHERE user_id=$1", [userId])).rows[0];
     const entitlement = effectiveEntitlement(subscription);
     const usage = await usageSummary(userId);
     const features = Object.fromEntries(featureKeys().map((feature: FeatureKey) => {
@@ -23,7 +37,10 @@ entitlementsRouter.get("/me", requireAuth, async (req: Request, res: Response) =
       return [feature, { available: limit !== "unavailable", usage: { used: current.used, reserved: current.reserved, limit, remaining: typeof limit === "number" ? Math.max(0, limit - current.used - current.reserved) : null } }];
     }));
     res.json({ subscription: entitlement, features, policyVersion: ENTITLEMENT_POLICY_VERSION });
-  } catch (error: any) { res.status(503).json({ error: "membership status unavailable" }); }
+  } catch (error: unknown) { 
+    console.error("[entitlements] /me error:", error);
+    res.status(503).json({ error: "membership status unavailable" }); 
+  }
 });
 
 // GET /api/entitlements/prompts?bookId=<uuid> — owner-scoped upgrade prompt
@@ -35,15 +52,15 @@ entitlementsRouter.get("/prompts", requireAuth, async (req: Request, res: Respon
     const userId = userFrom(req).id;
 
     // Validate book ownership
-    const bookCheck = await query<any>("SELECT 1 FROM books WHERE id=$1 AND owner_id=$2", [bookId, userId]);
+    const bookCheck = await query<{ exists: number }>("SELECT 1 AS exists FROM books WHERE id=$1 AND owner_id=$2", [bookId, userId]);
     if (!bookCheck.rows.length) return res.status(404).json({ error: "book not found" });
 
     // Gather owner-scoped aggregate facts
     const [subscription, sessionCount, wikiCheck, promptStates, usage] = await Promise.all([
-      query<any>("SELECT tier,status,current_period_end,granted_by FROM subscriptions WHERE user_id=$1", [userId]),
-      query<any>("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [bookId]),
-      query<any>("SELECT 1 FROM book_wiki WHERE book_id=$1", [bookId]),
-      query<any>("SELECT prompt_key, shown_at, dismissed_at FROM membership_prompt_state WHERE owner_id=$1", [userId]),
+      query<SubscriptionRow>("SELECT tier,status,current_period_end,granted_by FROM subscriptions WHERE user_id=$1", [userId]),
+      query<{ c: number }>("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [bookId]),
+      query<{ exists: number }>("SELECT 1 AS exists FROM book_wiki WHERE book_id=$1", [bookId]),
+      query<PromptStateRow>("SELECT prompt_key, shown_at, dismissed_at FROM membership_prompt_state WHERE owner_id=$1", [userId]),
       usageSummary(userId),
     ]);
 
@@ -53,48 +70,32 @@ entitlementsRouter.get("/prompts", requireAuth, async (req: Request, res: Respon
       active: entitlement.active,
       sessionCount: sessionCount.rows[0]?.c || 0,
       hasWiki: wikiCheck.rows.length > 0,
+      usage,
     };
 
-    // Normalize dismissal timestamps and filter invalid keys
-    const validKeys: UpgradePromptKey[] = ["reading_map_depth", "book_wiki_depth", "quota_reached"];
-    const dismissedAtByKey = Object.fromEntries(
-      promptStates.rows
-        .filter((row: any) => validKeys.includes(row.prompt_key))
-        .map((row: any) => {
-          const dismissedAt = row.dismissed_at ? new Date(row.dismissed_at) : null;
-          return [row.prompt_key, dismissedAt && !Number.isNaN(dismissedAt.getTime()) ? dismissedAt : null];
-        })
-    ) as Partial<Record<UpgradePromptKey, Date | null>>;
-
+    // Each prompt has its own cooldown; one dismissal must not hide another.
+    const dismissedAtByKey = Object.fromEntries(promptStates.rows.map((row: PromptStateRow) => [row.prompt_key, row.dismissed_at || null]));
     const prompt = selectUpgradePrompt({ ...baseFacts, dismissedAtByKey }, bookId);
 
-    // Record shown_at atomically when returning a prompt
-    if (prompt) {
-      await query(
-        "INSERT INTO membership_prompt_state (owner_id, prompt_key, shown_at, updated_at) VALUES ($1, $2, now(), now()) ON CONFLICT (owner_id, prompt_key) DO UPDATE SET shown_at = COALESCE(membership_prompt_state.shown_at, now()), updated_at = now()",
-        [userId, prompt.key]
-      );
-    }
+    if (!prompt) return res.json({ prompt: null });
+
+    // Record shown_at server-side for observability
+    await query(
+      "INSERT INTO membership_prompt_state (owner_id, prompt_key, shown_at, updated_at) VALUES ($1,$2,now(),now()) ON CONFLICT (owner_id, prompt_key) DO UPDATE SET shown_at=now(), updated_at=now()",
+      [userId, prompt.key]
+    );
 
     res.json({ prompt });
-  } catch (error: any) {
-    console.error("[entitlements] prompt fetch failed:", error.message);
-    res.status(503).json({ error: "upgrade prompts unavailable" });
+  } catch (error: unknown) {
+    console.error("[entitlements] /prompts error:", error);
+    res.status(500).json({ error: "prompt unavailable" });
   }
 });
 
 // PATCH /api/entitlements/prompts/:key — dismiss an upgrade prompt
 entitlementsRouter.patch("/prompts/:key", requireAuth, async (req: Request, res: Response) => {
   const { key } = req.params;
-  const { action } = req.body || {};
-
-  if (action !== "dismiss") return res.status(400).json({ error: "action must be 'dismiss'" });
-
-  // Validate prompt key against server union
-  const validKeys: UpgradePromptKey[] = ["reading_map_depth", "book_wiki_depth", "quota_reached"];
-  if (!validKeys.includes(key as UpgradePromptKey)) {
-    return res.status(400).json({ error: "invalid prompt key" });
-  }
+  if (!key) return res.status(400).json({ error: "prompt key required" });
 
   try {
     const userId = userFrom(req).id;
@@ -105,9 +106,9 @@ entitlementsRouter.patch("/prompts/:key", requireAuth, async (req: Request, res:
     if (!result.rows.length) {
       return res.status(404).json({ error: "prompt not shown or already dismissed" });
     }
-    res.status(204).end();
-  } catch (error: any) {
-    console.error("[entitlements] prompt dismiss failed:", error.message);
-    res.status(503).json({ error: "dismiss failed" });
+    res.json({ success: true, key: result.rows[0].prompt_key });
+  } catch (error: unknown) {
+    console.error("[entitlements] /prompts/:key error:", error);
+    res.status(500).json({ error: "dismiss failed" });
   }
 });

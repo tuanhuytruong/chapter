@@ -388,7 +388,7 @@ CREATE TABLE IF NOT EXISTS chapter.usage_events (
   user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
   feature_key TEXT NOT NULL,
   period_key TEXT NOT NULL,
-  event_type TEXT NOT NULL CHECK (event_type IN ('reserved','consumed','released','adjustment')),
+  event_type TEXT NOT NULL CHECK (event_type IN ('reserved','consumed','released')),
   quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
   request_key TEXT NOT NULL,
   resource_type TEXT,

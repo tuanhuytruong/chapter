@@ -8,7 +8,8 @@ export type UsageReservation = { id: string; feature: FeatureKey; periodKey: str
 async function lockedEntitlement(client: Client, userId: string): Promise<EffectiveEntitlement> {
   await client.query(`INSERT INTO subscriptions (user_id, tier, status, granted_by) VALUES ($1, 'free', 'expired', 'admin') ON CONFLICT (user_id) DO NOTHING`, [userId]);
   const result = await client.query("SELECT tier, status, current_period_end, granted_by FROM subscriptions WHERE user_id=$1 FOR UPDATE", [userId]);
-  return effectiveEntitlement(result.rows[0]);
+  // Critical: result.rows[0] could be undefined if INSERT...ON CONFLICT didn't return a row
+  return effectiveEntitlement(result.rows[0] || null);
 }
 
 export async function reserveUsage(input: { userId: string; feature: FeatureKey; requestKey: string; resource?: UsageResource }): Promise<UsageReservation> {
@@ -31,7 +32,8 @@ export async function reserveUsage(input: { userId: string; feature: FeatureKey;
       if (used >= limit) throw new QuotaExceededError(input.feature, entitlement.tier, used, limit, periodKey);
     }
     const inserted = await client.query(`INSERT INTO usage_events (user_id, feature_key, period_key, event_type, request_key, resource_type, resource_id) VALUES ($1,$2,$3,'reserved',$4,$5,$6) RETURNING id`, [input.userId, input.feature, periodKey, input.requestKey, input.resource?.type || null, input.resource?.id || null]);
-    return { id: inserted.rows[0].id, feature: input.feature, periodKey, limit, remaining: limit === "unlimited" ? null : limit - 1 };
+    // Fix: apply Math.max(0, ...) consistently to prevent negative remaining
+    return { id: inserted.rows[0].id, feature: input.feature, periodKey, limit, remaining: limit === "unlimited" ? null : Math.max(0, limit - 1) };
   });
 }
 
