@@ -13,6 +13,11 @@ function optionalEnv(name: string): string {
   return /^(['"]).*\1$/.test(trimmed) ? trimmed.slice(1, -1).trim() : trimmed;
 }
 
+function boundedIntegerEnv(name: string, fallback: number, min: number, max: number): number {
+  const value = Number(optionalEnv(name));
+  return Number.isFinite(value) && Number.isInteger(value) && value >= min && value <= max ? value : fallback;
+}
+
 function appEnvironment(): "prd" | "dev" {
   const value = optionalEnv("APP_ENV") || "prd";
   if (value !== "prd" && value !== "dev") throw new Error("APP_ENV must be exactly 'prd' or 'dev'");
@@ -41,7 +46,7 @@ export const config = {
   billingVietQrAccountNumber: optionalEnv("BILLING_VIETQR_ACCOUNT_NUMBER"),
   billingVietQrAccountName: optionalEnv("BILLING_VIETQR_ACCOUNT_NAME"),
   billingVietQrTemplate: optionalEnv("BILLING_VIETQR_TEMPLATE") || "IuPsscp",
-  billingOrderExpiryMinutes: Math.min(120, Math.max(5, Number(process.env.BILLING_ORDER_EXPIRY_MINUTES ?? 30))),
+  billingOrderExpiryMinutes: boundedIntegerEnv("BILLING_ORDER_EXPIRY_MINUTES", 30, 5, 120),
   port: Number(process.env.PORT ?? 3000),
   booksDir: process.env.CHAPTER_BOOKS_DIR ?? "/opt/chapter/workspace/books",
   appUrl: optionalEnv("APP_URL") || "http://localhost:3000",

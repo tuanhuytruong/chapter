@@ -417,8 +417,13 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
     const book = await query("SELECT 1 FROM books WHERE id=$1", [id]);
     if (!book.rows.length) return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
-      "SELECT * FROM reading_log WHERE book_id = $1 ORDER BY date DESC, session DESC",
-      [id]
+      `SELECT l.id, l.book_id, l.date, l.session, l.page_start, l.page_end, l.summary,
+              l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
+              CASE WHEN b.owner_id = $2 THEN l.raw_text ELSE NULL END AS raw_text,
+              CASE WHEN b.owner_id = $2 THEN l.notes ELSE NULL END AS notes
+       FROM reading_log l JOIN books b ON b.id = l.book_id
+       WHERE l.book_id = $1 ORDER BY l.date DESC, l.session DESC`,
+      [id, userFrom(req).id]
     );
     res.json(rows);
   } catch (e: any) {

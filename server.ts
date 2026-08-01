@@ -34,6 +34,8 @@ const PORT = config.port;
 
 const app = express();
 const APP_ENV = config.appEnv;
+const sessionSecret = process.env.SESSION_SECRET || (APP_ENV === "dev" ? "development-only-session-secret" : "");
+if (!sessionSecret) throw new Error("SESSION_SECRET is required when APP_ENV=prd");
 // Production deployments terminate TLS at the reverse proxy. Trust that single
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
@@ -43,7 +45,7 @@ app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
 const PgStore = pgSession(session);
 app.use(session({
   store: process.env.DATABASE_URL ? new PgStore({ pool: getPool(), schemaName: "chapter", tableName: "session" }) : undefined,
-  secret: process.env.SESSION_SECRET || "development-only-session-secret",
+  secret: sessionSecret,
   resave: false, saveUninitialized: false,
   cookie: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 24 * 60 * 60 * 1000 },
 }));
