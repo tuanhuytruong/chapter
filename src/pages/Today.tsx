@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ArrowRight, BookOpen, CheckCircle2, CircleGauge, ClipboardCheck, Loader2, Play, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, progressPct, type TodayDashboard } from "../api";
+import type { ReviewCardRow } from "../review";
 
 export default function Today() {
   const [dashboard, setDashboard] = useState<TodayDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewCards, setReviewCards] = useState<ReviewCardRow[]>([]);
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -17,6 +19,11 @@ export default function Today() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    void api.getDueReviews().then((cards) => { if (active) setReviewCards(cards.slice(0, 3)); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const startNext = async () => {
     if (!dashboard?.next_queued_book) return;
@@ -38,6 +45,10 @@ export default function Today() {
       <Link to="/calendar" className="flex min-h-11 items-center gap-2 rounded-xl border border-natural-border bg-natural-cream px-4 text-sm font-bold text-natural-dark hover:bg-white"><CircleGauge className="h-4 w-4" /> See calendar</Link>
     </header>
     {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+    <section aria-label="Review preview" className="rounded-2xl border border-natural-border bg-white p-4">
+      <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Review</p><h2 className="mt-1 font-bold text-natural-dark">Ideas waiting for you</h2></div><Link to="/review" className="flex min-h-10 items-center gap-1 text-sm font-bold text-natural-sage">Open review <ArrowRight className="h-4 w-4" /></Link></div>
+      {dashboard.due_reviews > 0 && reviewCards.length ? <div className="mt-4"><div className="flex items-center"><div className="flex -space-x-3" aria-hidden="true">{reviewCards.slice(0, 3).map((card) => <div key={card.id} className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-lg border-2 border-white bg-natural-sage/15 text-natural-sage shadow-sm">{card.cover_url ? <img src={card.cover_url} alt="" className="h-full w-full object-cover" /> : <BookOpen className="h-5 w-5" />}</div>)}</div><p className="ml-4 text-sm font-semibold text-natural-dark">From {reviewCards[0].title} — keep it close.</p></div></div> : <div className="mt-4 flex items-center gap-3 rounded-xl bg-natural-cream p-3"><ClipboardCheck className="h-5 w-5 shrink-0 text-natural-clay" /><p className="text-sm text-natural-stone">{dashboard.due_reviews > 0 ? `${dashboard.due_reviews} insight${dashboard.due_reviews === 1 ? "" : "s"} ready to review.` : "Reviews are clear"}</p></div>}
+    </section>
 
     {active ? <section className="rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6"><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Continue reading</p><div className="mt-3 flex gap-4"><div className="flex h-16 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-natural-sage/15 text-natural-sage">{active.cover_url ? <img src={active.cover_url} alt="" className="h-full w-full object-cover" /> : <BookOpen className="h-5 w-5" />}</div><div className="min-w-0 flex-1"><h2 className="truncate text-lg font-bold text-natural-dark">{active.title}</h2><p className="truncate text-sm text-natural-stone">{active.author}</p><div className="mt-2 h-2 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-natural-sage" style={{ width: `${progressPct(active)}%` }} /></div><p className="mt-1 text-xs text-natural-stone">{active.current_page} / {active.total_pages} {active.file_type === "epub" ? "chunks" : "pages"}</p></div></div><Link to={`/books/${active.id}`} className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-natural-sage px-4 text-sm font-bold text-white hover:opacity-90"><Play className="h-4 w-4" /> Read next session</Link></section>
       : next ? <section className="rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6"><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Your next chapter</p><h2 className="mt-2 text-lg font-bold text-natural-dark">{next.title}</h2><p className="text-sm text-natural-stone">{next.author} · first in your queue</p><button onClick={startNext} disabled={starting} className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-natural-sage px-4 text-sm font-bold text-white disabled:opacity-60"><Play className="h-4 w-4" />{starting ? "Starting…" : "Start this book"}</button></section>

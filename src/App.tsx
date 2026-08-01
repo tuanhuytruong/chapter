@@ -24,6 +24,7 @@ import { api, type MembershipTier } from './api';
 import MembershipTierBadge from './components/MembershipTierBadge';
 import { OnboardingProvider } from './onboarding';
 import useSwipeNav from './hooks/useSwipeNav';
+import { REVIEWS_CHANGED_EVENT } from './reviewEvents';
 
 const primaryLink = (active: boolean) => active
   ? 'flex min-h-10 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0'
@@ -41,6 +42,7 @@ function Layout() {
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(null);
+  const [dueReviewCount, setDueReviewCount] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
 
@@ -62,6 +64,15 @@ function Layout() {
     return () => { active = false; };
   }, []);
   useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    let active = true;
+    const loadReviewCount = () => {
+      void api.getDueReviewCount().then(({ count }) => { if (active) setDueReviewCount(count); }).catch(() => {});
+    };
+    loadReviewCount();
+    window.addEventListener(REVIEWS_CHANGED_EVENT, loadReviewCount);
+    return () => { active = false; window.removeEventListener(REVIEWS_CHANGED_EVENT, loadReviewCount); };
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-sans">
@@ -79,7 +90,7 @@ function Layout() {
             <nav className="hidden shrink-0 items-center gap-6 font-sans text-xs font-semibold uppercase tracking-widest sm:flex" aria-label="Primary navigation">
               <NavLink to="/today" aria-label="Today" className={({ isActive }) => primaryLink(isActive)}><Sparkles className="h-3.5 w-3.5" /><span>Today</span></NavLink>
               <NavLink to="/" end aria-label="Library" className={({ isActive }) => primaryLink(isActive)}><BookMarked className="h-3.5 w-3.5" /><span>Library</span></NavLink>
-              <NavLink to="/review" aria-label="Review" className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Review</span></NavLink>
+              <NavLink to="/review" aria-label={dueReviewCount === null ? "Review" : `Review, ${dueReviewCount} due`} className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Review</span>{dueReviewCount !== null && dueReviewCount > 0 && <span aria-hidden="true" className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-natural-clay px-1 text-[9px] leading-4 text-white">{dueReviewCount > 9 ? "9+" : dueReviewCount}</span>}</NavLink>
             </nav>
 
             <div className="hidden shrink-0 items-center gap-2 sm:flex">
@@ -96,7 +107,7 @@ function Layout() {
           <nav className="flex h-11 items-stretch justify-around border-t border-natural-border font-sans text-[10px] font-bold uppercase tracking-[0.12em] sm:hidden" aria-label="Primary navigation">
             <NavLink to="/today" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Sparkles className="h-3.5 w-3.5" />Today</NavLink>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><BookMarked className="h-3.5 w-3.5" />Library</NavLink>
-            <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Review</NavLink>
+            <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} aria-label={dueReviewCount === null ? "Review" : `Review, ${dueReviewCount} due`} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Review{dueReviewCount !== null && dueReviewCount > 0 && <span aria-hidden="true" className="inline-flex min-w-4 items-center justify-center rounded-full bg-natural-clay px-1 text-[9px] leading-4 text-white">{dueReviewCount > 9 ? "9+" : dueReviewCount}</span>}</NavLink>
           </nav>
           {mobileMenuOpen && <div className="border-t border-natural-border py-2 sm:hidden">
             <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} /><span>Profile</span></NavLink>

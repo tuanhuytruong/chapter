@@ -166,6 +166,7 @@ export const api = {
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
   generateReflection: (bookId: string) =>
     req<Pick<BookRow, 'reflection_text' | 'reflection_at'>>(`${BASE}/${bookId}/reflection`, { method: "POST" }),
+  getDueReviewCount: () => req<{ count: number }>("/api/reviews/due/count"),
   getDueReviews: () => req<ReviewCardRow[]>("/api/reviews/due"),
   submitReview: (id: string, remembered: boolean) =>
     req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),

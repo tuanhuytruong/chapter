@@ -6,6 +6,7 @@ import ReviewHeader from "../components/review/ReviewHeader";
 import RecallCard from "../components/review/RecallCard";
 import ReviewEmptyState from "../components/review/ReviewEmptyState";
 import { GuideCard } from "../onboarding";
+import { notifyReviewsChanged } from "../reviewEvents";
 
 export default function Review() {
   const [cards, setCards] = useState<ReviewCardRow[]>([]);
@@ -51,6 +52,7 @@ export default function Review() {
       setCards((current) => current.slice(1));
       setDone((value) => value + 1);
       setRevealed(false);
+      notifyReviewsChanged();
       requestAnimationFrame(() => revealRef.current?.focus());
     } catch (e: any) {
       setError(e.message || "Could not save this review. Please try again.");
@@ -87,7 +89,11 @@ export default function Review() {
       <ReviewHeader completed={done} total={totalDue} hasActiveCard={!!card} />
       <GuideCard step="review" eyebrow="Review" title="A gentle return to ideas worth keeping"><p>These cards arrive after some space. Reveal the idea first, then simply choose whether it came back to you — there is no score to chase.</p></GuideCard>
       {card ? <>
-        <RecallCard card={card} revealed={revealed} saving={saving} onReveal={reveal} onSubmit={(remembered) => void submit(remembered)} revealRef={revealRef} responseRef={responseRef} />
+        <div className="relative isolate">
+          {cards[2] && <div aria-hidden="true" className="absolute inset-x-4 -top-3 h-6 rounded-t-[20px] border border-natural-border bg-natural-cream/60" />}
+          {cards[1] && <div aria-hidden="true" className="absolute inset-x-2 -top-1.5 h-4 rounded-t-[22px] border border-natural-border bg-natural-cream/80" />}
+          <RecallCard card={card} revealed={revealed} saving={saving} onReveal={reveal} onSubmit={(remembered) => void submit(remembered)} revealRef={revealRef} responseRef={responseRef} />
+        </div>
         {error && <p role="alert" className="text-center text-xs text-red-700">{error}</p>}
       </> : <>
         <ReviewEmptyState done={done} />

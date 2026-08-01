@@ -29,6 +29,7 @@ export interface ReviewCardRow {
   last_reviewed_at: string | null;
   title: string;
   author: string;
+  cover_url: string | null;
   source_date?: string | null;
   source_page_start?: number | null;
   source_page_end?: number | null;
