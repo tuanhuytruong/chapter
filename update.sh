@@ -89,12 +89,12 @@ if [ -z "${DATABASE_URL:-}" ]; then
   echo "DATABASE_URL is not configured; cannot verify core schema" >&2
   exit 1
 fi
-MISSING_RELATIONS="$(psql "$DATABASE_URL" -Atqc "SELECT string_agg(name, ', ') FROM unnest(ARRAY['review_cards','weekly_reading_goals','reading_lens_analyses','story_thread_analyses','story_state_snapshots','podcasts','subscriptions','usage_events','membership_prompt_state','monthly_reviews']) AS name WHERE to_regclass('chapter.' || name) IS NULL")"
+MISSING_RELATIONS="$(psql "$DATABASE_URL" -Atqc "SELECT string_agg(name, ', ') FROM unnest(ARRAY['review_cards','weekly_reading_goals','reading_lens_analyses','story_thread_analyses','story_state_snapshots','podcasts','subscriptions','usage_events','membership_prompt_state','monthly_reviews','ask_reading_answers']) AS name WHERE to_regclass('chapter.' || name) IS NULL")"
 if [ -n "$MISSING_RELATIONS" ]; then
   echo "Missing core relation(s): $MISSING_RELATIONS" >&2
   exit 1
 fi
-echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots, chapter.podcasts, chapter.subscriptions, chapter.usage_events, chapter.membership_prompt_state, chapter.monthly_reviews"
+echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots, chapter.podcasts, chapter.subscriptions, chapter.usage_events, chapter.membership_prompt_state, chapter.monthly_reviews, chapter.ask_reading_answers"
 echo ""
 echo "Health check:"
 # PORT is release-folder local and loaded from .env.local above, so the health
