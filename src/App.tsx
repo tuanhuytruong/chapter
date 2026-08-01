@@ -20,6 +20,8 @@ import Login from './components/Login';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import { AuthProvider, useAuth } from './AuthContext';
+import { api, type MembershipTier } from './api';
+import MembershipTierBadge from './components/MembershipTierBadge';
 import { OnboardingProvider } from './onboarding';
 import useSwipeNav from './hooks/useSwipeNav';
 
@@ -38,6 +40,7 @@ function Layout() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
 
@@ -49,6 +52,15 @@ function Layout() {
   };
 
   useEffect(() => { swipeNav.attach(); return swipeNav.detach; }, [swipeNav]);
+  useEffect(() => {
+    let active = true;
+    void api.getEntitlements().then((data) => {
+      if (active) setMembershipTier(data.subscription.tier);
+    }).catch(() => {
+      if (active) setMembershipTier(null);
+    });
+    return () => { active = false; };
+  }, []);
   useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
 
   return (
@@ -73,6 +85,7 @@ function Layout() {
             <div className="hidden shrink-0 items-center gap-2 sm:flex">
               <button onClick={() => setJourneyOpen(true)} aria-label="Open reading journey" title="Your Journey" aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Map className="h-3.5 w-3.5" /></button>
               <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50">{isDark ? <Sun className="h-3.5 w-3.5 text-natural-clay" /> : <Moon className="h-3.5 w-3.5 text-natural-stone" />}</button>
+              {membershipTier && <MembershipTierBadge tier={membershipTier} />}
               <NavLink to="/profile" aria-label="Your profile" title="Your profile" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Avatar user={user} /><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span></NavLink>
               <NavLink to="/account" aria-label="Telegram settings" title="Telegram settings" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Settings2 className="h-3.5 w-3.5" /></NavLink>
               <button onClick={() => void logout()} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50" title="Sign out" aria-label="Sign out"><LogOut className="h-3.5 w-3.5" /></button>
@@ -87,6 +100,7 @@ function Layout() {
           </nav>
           {mobileMenuOpen && <div className="border-t border-natural-border py-2 sm:hidden">
             <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} /><span>Profile</span></NavLink>
+            {membershipTier && <MembershipTierBadge tier={membershipTier} mobile onNavigate={() => setMobileMenuOpen(false)} />}
             <button onClick={() => { setMobileMenuOpen(false); setJourneyOpen(true); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Map className="h-4 w-4 text-natural-stone" />Your Journey</button>
             <NavLink to="/account" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>
             <button onClick={toggleDark} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark">{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}{isDark ? 'Use light theme' : 'Use dark theme'}</button>
