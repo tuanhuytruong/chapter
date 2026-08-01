@@ -101,7 +101,7 @@ booksRouter.get("/streaks", async (req: Request, res: Response) => {
     const scope = req.query.scope || "mine";
     if (scope !== "mine" && scope !== "all") return res.status(400).json({ error: "scope must be 'mine' or 'all'" });
     const { rows } = await query<{ book_id:string; date:string }>(
-      `SELECT l.book_id, l.date
+      `SELECT l.book_id, to_char(l.date, 'YYYY-MM-DD') AS date
        FROM reading_log l
        JOIN books b ON b.id=l.book_id
        JOIN users u ON u.id=b.owner_id
