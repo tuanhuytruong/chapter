@@ -14,6 +14,7 @@ import { podcastsRouter, startPodcastMaintenance } from "./src/routes/podcasts.j
 import { entitlementsRouter } from "./src/routes/entitlements.js";
 import { monthlyReviewsRouter } from "./src/routes/monthly-review.js";
 import { askReadingRouter } from "./src/routes/ask-reading.js";
+import { crossBookConnectionsRouter } from "./src/routes/cross-book-connections.js";
 import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
@@ -252,6 +253,7 @@ app.use("/api/podcasts", podcastsRouter);
 app.use("/api/entitlements", entitlementsRouter);
 app.use("/api/monthly-review", monthlyReviewsRouter);
 app.use("/api/ask-reading", askReadingRouter);
+app.use("/api/cross-book-connections", crossBookConnectionsRouter);
 
 // ── Personal achievements (derived; no duplicate achievement state) ─
 app.get("/api/achievements", async (req: Request, res: Response) => {
