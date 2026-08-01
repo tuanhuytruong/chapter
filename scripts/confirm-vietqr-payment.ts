@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local", quiet: true });
 import { confirmPaidOrder } from "../src/billing/service.js";
 import { query } from "../src/db.js";
 
