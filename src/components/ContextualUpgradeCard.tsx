@@ -41,31 +41,32 @@ export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCa
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="my-6 rounded-xl border border-purple-200 dark:border-purple-900/40 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 p-5 relative overflow-hidden"
+      className="relative my-6 overflow-hidden rounded-2xl border border-natural-sage/25 bg-natural-sage/5 p-5"
     >
       {/* Dismiss button */}
       <button
         onClick={handleDismiss}
-        className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/60 dark:hover:bg-black/20 transition-colors text-gray-500 dark:text-gray-400"
+        className="absolute right-3 top-3 rounded-lg p-1.5 text-natural-stone transition-colors hover:bg-natural-cream hover:text-natural-dark"
         aria-label="Not now"
       >
         <X size={16} />
       </button>
 
       <div className="flex items-start gap-3 pr-8">
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-          <Sparkles size={20} className="text-white" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-natural-sage/15 text-natural-sage">
+          <Sparkles size={18} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Optional next step</p>
+          <p className="mt-1 font-sans text-sm leading-relaxed text-natural-stone">
             {prompt.message}
           </p>
           <button
             onClick={handleUpgrade}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-medium transition-all shadow-sm hover:shadow-md"
+            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-natural-sage/25 bg-natural-cream px-4 font-sans text-xs font-bold text-natural-dark transition-colors hover:border-natural-sage hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50"
           >
             <Sparkles size={16} />
-            Xem gói nâng cấp
+            Explore membership
           </button>
         </div>
       </div>

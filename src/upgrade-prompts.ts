@@ -90,7 +90,7 @@ export function selectUpgradePrompt(
     return {
       key: "reading_map_depth",
       targetTier: "deep_reader",
-      message: "Bạn đã có đủ giá trị từ các buổi đọc… nối chúng thành Reading Map riêng để những điều đã đọc không bị trôi đi.",
+      message: "Your AI Reader remains available. When you want to carry ideas beyond one book, Deep Reader adds questions across your sessions, connections and reflective reviews.",
       context: { bookId },
     };
   }
@@ -100,7 +100,7 @@ export function selectUpgradePrompt(
     return {
       key: "book_wiki_depth",
       targetTier: "deep_reader",
-      message: "Your AI Reader map is ready. Unlock deeper drillable connections and context.",
+      message: "Your AI Reader remains available. If you would like a wider conversation around your reading, Deep Reader adds cross-book connections, recaps and a monthly review.",
       context: { bookId },
     };
   }
