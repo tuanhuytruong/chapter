@@ -4,7 +4,14 @@ import { billingSku } from "./catalog.js";
 import { newTransferReference, vietQrConfig, vietQrUrl } from "./vietqr.js";
 
 type Order = any;
-function expose(r: any) { const cfg=vietQrConfig(); let qrUrl:string|null=null; if (r.status === "pending" && cfg.enabled) { try { qrUrl=vietQrUrl({...cfg,amountVnd:Number(r.amount_vnd),transferReference:r.transfer_reference}); } catch { /* disabled or incomplete config: history remains readable */ } return { id:r.id, sku:r.sku, tier:r.tier, period:r.billing_period, amountVnd:Number(r.amount_vnd), currency:r.currency, status:r.status, transferReference:r.transfer_reference, expiresAt:r.expires_at, createdAt:r.created_at, qrUrl }; }
+function expose(r: any) {
+  const cfg = vietQrConfig();
+  let qrUrl: string | null = null;
+  if (r.status === "pending" && cfg.enabled) {
+    try { qrUrl = vietQrUrl({ ...cfg, amountVnd: Number(r.amount_vnd), transferReference: r.transfer_reference }); }
+    catch { /* disabled or incomplete config: history remains readable */ }
+  }
+  return { id:r.id, sku:r.sku, tier:r.tier, period:r.billing_period, amountVnd:Number(r.amount_vnd), currency:r.currency, status:r.status, transferReference:r.transfer_reference, expiresAt:r.expires_at, createdAt:r.created_at, qrUrl };
 }
 export async function expireBillingOrders() { await query("UPDATE billing_orders SET status='expired',updated_at=now() WHERE status='pending' AND expires_at<=now()"); }
 export async function createBillingOrder(ownerId:string, skuInput:unknown, requestKey:unknown) { const cfg=vietQrConfig(); if(!cfg.enabled) return { status:"unavailable" as const, order:null }; try { vietQrUrl({ ...cfg, amountVnd: 1, transferReference: "CHP-A1B2C3D4E5F6" }); } catch { return { status:"unavailable" as const, order:null }; } const sku=billingSku(skuInput); const key=typeof requestKey==="string"?requestKey.trim():""; if(!sku||!key||key.length>160) throw new Error("invalid checkout request"); await expireBillingOrders(); const prior=(await query<Order>("SELECT * FROM billing_orders WHERE owner_id=$1 AND request_key=$2",[ownerId,key])).rows[0]; if(prior) return {status:"existing" as const,order:expose(prior)}; for(let n=0;n<4;n++){try{const ref=newTransferReference();const r=(await query<Order>("INSERT INTO billing_orders(owner_id,request_key,transfer_reference,provider,sku,tier,billing_period,amount_vnd,expires_at) VALUES($1,$2,$3,'vietqr_static',$4,$5,$6,$7,now()+($8::text||' minutes')::interval) RETURNING *",[ownerId,key,ref,sku.id,sku.tier,sku.period,sku.amountVnd,cfg.expiryMinutes])).rows[0];return {status:"created" as const,order:expose(r)};}catch(e:any){if(e?.code!=="23505")throw e;}} throw new Error("could not create transfer reference"); }
