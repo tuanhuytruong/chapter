@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Loader2, BookOpen, X } from "l
 import { api } from "../api";
 import type { BookRow } from "../types";
 import type { CalendarLogRow } from "../calendar";
+import ChapterDropdown from "../components/ChapterDropdown";
 import { calendarDate, daysInMonth, monthLabel, monthStringInAppTz, shiftMonth, weekdayOffset } from "../calendar";
 
 function dayLabel(date: string): string {
@@ -47,10 +48,14 @@ export default function ReadingCalendar() {
   return <main className="mx-auto max-w-5xl space-y-5 font-sans">
     <header className="flex flex-wrap items-end justify-between gap-3">
       <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-natural-sage">Reading history</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-bold text-natural-dark"><CalendarDays className="h-6 w-6" /> Calendar</h1></div>
-      <label className="sr-only" htmlFor="calendar-book">Filter by book</label>
-      <select id="calendar-book" value={bookId} onChange={(e) => setBookId(e.target.value)} className="min-h-11 max-w-full rounded-xl border border-natural-border bg-natural-cream px-3 text-sm text-natural-dark">
-        <option value="">All my books</option>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}
-      </select>
+      <ChapterDropdown
+        id="calendar-book"
+        label="Filter by book"
+        value={bookId}
+        onChange={setBookId}
+        className="w-full max-w-xs"
+        options={[{ value: "", label: "All my books" }, ...books.map((book) => ({ value: book.id, label: book.title }))]}
+      />
     </header>
 
     <section className="rounded-[28px] border border-natural-border bg-natural-cream p-3 shadow-sm sm:p-5">

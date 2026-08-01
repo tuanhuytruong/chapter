@@ -4,6 +4,7 @@ import { X, Loader2, ImageIcon } from 'lucide-react';
 import { api, fetchCover, uploadBook, deleteUpload } from '../api';
 import type { ReadingExperience, SummaryMode } from '../types';
 import { GuideCard } from '../onboarding';
+import ChapterDropdown from './ChapterDropdown';
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -147,12 +148,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Type</label>
-              <select value={fileType} onChange={e => setFileType(e.target.value as 'pdf' | 'epub')}
-                className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-                <option value="pdf">PDF</option>
-                <option value="epub">EPUB</option>
-              </select>
+              <ChapterDropdown label="Type" value={fileType} onChange={setFileType} options={[{ value: 'pdf', label: 'PDF' }, { value: 'epub', label: 'EPUB' }]} />
             </div>
             <div className="w-28">
               <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">{fileType === 'epub' ? 'Chunks/day' : 'Pages/day'}</label>
@@ -165,13 +161,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
           </div>
           {fileType === 'epub' && <p className="-mt-2 text-[10px] text-natural-stone">EPUB is split into stable reading chunks, not fixed printed pages.</p>}
           <div className="md:col-start-2">
-            <label htmlFor="summaryLang" className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary language</label>
-            <select id="summaryLang" value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
-              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-              <option value="auto">Auto (book's language)</option>
-              <option value="vi">Tiếng Việt</option>
-              <option value="en">English</option>
-            </select>
+            <ChapterDropdown id="summaryLang" label="Summary language" value={summaryLang} onChange={setSummaryLang} options={[{ value: 'auto', label: "Auto (book's language)" }, { value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
             <p className="text-[10px] text-natural-stone mt-1">Language used for the AI daily summary. Can be changed later in book settings.</p>
           </div>
           <div className="md:col-span-2 flex items-center gap-2 py-1">

@@ -528,12 +528,12 @@ Return ONLY a JSON object with this exact structure:
     {
       "theme": "Theme name (2-4 words)",
       "color": "#hex color",
-      "nodes": ["specific insight", "specific insight", "specific insight"]
+      "nodes": [{ "text": "specific insight grounded in the supplied sessions", "evidence": "brief supporting detail from a supplied insight or summary, only when present", "page": 12 }]
     }
   ]
 }
 
-Use 3-5 branches. Each branch should have 2-4 nodes. Colors should be warm and distinct.
+Use 3-5 branches. Each branch should have 2-4 nodes. Colors should be calm, warm, and distinct. Do not invent evidence or page numbers: omit evidence and page whenever the supplied material does not establish them. Existing clients may also read legacy string nodes.
 Return only valid JSON, no markdown, no explanation.`;
 
     const raw = await callLLM('You are a knowledge synthesis expert.', prompt, 0.3);

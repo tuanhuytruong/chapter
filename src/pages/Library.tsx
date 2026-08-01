@@ -55,13 +55,13 @@ export default function Library() {
 
   const statusCounts = useMemo(() => books.reduce<Record<Filter, number>>((counts, book) => {
     counts[book.status as Filter] = (counts[book.status as Filter] || 0) + 1;
-    if (book.status !== 'queued') counts.all += 1;
+    counts.all += 1;
     return counts;
   }, { all: 0, active: 0, queued: 0, paused: 0, finished: 0 }), [books]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let list = books.filter((book) => filter === 'all' ? book.status !== 'queued' : book.status === filter);
+    let list = books.filter((book) => filter === 'all' || book.status === filter);
     if (q) list = list.filter((book) => book.title.toLowerCase().includes(q) || book.author.toLowerCase().includes(q));
     const sorted = [...list];
     if (sort === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title));

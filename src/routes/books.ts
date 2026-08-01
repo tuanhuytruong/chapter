@@ -330,7 +330,7 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const [book, logCount, chunkCount, wikiRow, job] = await Promise.all([
-      query("SELECT file_path FROM books WHERE id=$1", [id]),
+      query("SELECT file_path, status FROM books WHERE id=$1", [id]),
       query("SELECT count(*)::int AS c FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL", [id]),
       query("SELECT count(*)::int AS c FROM ai_reader_chunks WHERE book_id=$1", [id]),
       query("SELECT generated_at, pages_covered, output_language, schema_version FROM book_wiki WHERE book_id=$1", [id]),
@@ -339,6 +339,7 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
     const bookData = book.rows[0];
     res.json({
       hasFile: !!(bookData?.file_path),
+      status: bookData?.status || null,
       totalSessions: logCount.rows[0]?.c || 0,
       chunksProcessed: chunkCount.rows[0]?.c || 0,
       wikiExists: wikiRow.rows.length > 0,

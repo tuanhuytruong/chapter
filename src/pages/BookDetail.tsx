@@ -19,6 +19,7 @@ import BookWiki from '../components/BookWiki';
 import PodcastPanel from '../components/PodcastPanel';
 import { ContextualUpgradeCard } from '../components/ContextualUpgradeCard';
 import { GuideCard } from '../onboarding';
+import ChapterDropdown from '../components/ChapterDropdown';
 
 function InlineMarkdown({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -61,7 +62,7 @@ export default function BookDetail() {
   const [advancing, setAdvancing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [dailyPages, setDailyPages] = useState(20);
-  const [status, setStatus] = useState<'active' | 'paused' | 'finished'>('active');
+  const [status, setStatus] = useState<'active' | 'queued' | 'paused' | 'finished'>('active');
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
@@ -534,13 +535,7 @@ export default function BookDetail() {
                   }} className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Language</label>
-                  <select value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
-                    className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-                    <option value="auto">Auto (book's language)</option>
-                    <option value="vi">Tiếng Việt</option>
-                    <option value="en">English</option>
-                  </select>
+                  <ChapterDropdown label="Language" value={summaryLang} onChange={setSummaryLang} options={[{ value: 'auto', label: "Auto (book's language)" }, { value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
                 </div>
                 {book.reading_experience === 'analytical' && <fieldset>
                   <legend className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Summary style</legend>
@@ -548,13 +543,7 @@ export default function BookDetail() {
                   <p className="mt-1 text-[10px] text-natural-stone">Applies to new summaries and summaries you retry. Earlier summaries stay unchanged.</p>
                 </fieldset>}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">Status</label>
-                  <select value={status} onChange={e => setStatus(e.target.value as any)}
-                    className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-                    <option value="active">Active</option>
-                    <option value="paused">Paused</option>
-                    <option value="finished">Finished</option>
-                  </select>
+                  <ChapterDropdown label="Status" value={status} onChange={setStatus} options={[{ value: 'active', label: 'Active' }, { value: 'queued', label: 'Queued' }, { value: 'paused', label: 'Paused' }, { value: 'finished', label: 'Finished' }]} />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setEditing(false)} className="flex-1 py-2 border border-natural-border rounded-full text-[11px] font-bold uppercase">Cancel</button>

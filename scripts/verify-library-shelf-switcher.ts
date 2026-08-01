@@ -7,7 +7,9 @@ assert.match(source, /type Filter = 'all' \| 'active' \| 'queued' \| 'paused' \|
 assert.match(source, /useState<Filter>\('active'\)/);
 assert.match(source, /\{ id: 'queued', label: 'Queue' \}/);
 assert.match(source, /\{ id: 'all', label: 'All' \}/);
-assert.match(source, /filter === 'all' \? book\.status !== 'queued' : book\.status === filter/);
+assert.match(source, /filter === 'all' \|\| book\.status === filter/);
+assert.match(source, /counts\.all \+= 1/);
+assert.doesNotMatch(source, /book\.status !== 'queued' counts\.all/);
 assert.match(source, /scope === 'mine' && filter === 'queued'/);
 assert.match(source, /Explore readers/);
 assert.match(source, /Back to my shelf/);
