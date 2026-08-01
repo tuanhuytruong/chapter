@@ -20,8 +20,6 @@ export async function getCrossBookSource(ownerId:string):Promise<ConnectionSourc
  FROM reading_lens_analyses r JOIN books b ON b.id=r.book_id WHERE b.owner_id=$1
  UNION ALL SELECT 'wiki',w.book_id::text,b.id,b.title,w.generated_at::text,concat_ws(E'\n',w.overview,w.book_so_far,w.carry_forward_insights::text,w.connections::text)
  FROM book_wiki w JOIN books b ON b.id=w.book_id WHERE b.owner_id=$1
- UNION ALL SELECT 'chunk',c.id::text,b.id,b.title,c.processed_at::text,c.chunk_analysis::text
- FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id WHERE b.owner_id=$1
  ) SELECT * FROM source_rows WHERE COALESCE(content,'')<>'' ORDER BY occurred_at DESC LIMIT 60`,[ownerId])).rows;
  return rows.map((r:any)=>({sourceType:r.source_type,sourceId:r.source_id,bookId:r.book_id,bookTitle:r.book_title,occurredAt:r.occurred_at,content:clean(r.content,1800)})).filter((s:ConnectionSource)=>s.content);
 }
