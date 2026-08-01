@@ -466,6 +466,7 @@ ALTER TABLE chapter.cross_book_connections ADD COLUMN IF NOT EXISTS request_key 
 
 CREATE INDEX IF NOT EXISTS idx_cross_book_connections_owner_generated
   ON chapter.cross_book_connections(owner_id, generated_at DESC);
+
 -- Phase 3D: owner-scoped personalized next-reading podcast recap.
 CREATE TABLE IF NOT EXISTS chapter.podcast_recaps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -500,8 +501,4 @@ ALTER TABLE chapter.podcast_recaps ADD COLUMN IF NOT EXISTS schema_version SMALL
 ALTER TABLE chapter.podcast_recaps DROP CONSTRAINT IF EXISTS podcast_recaps_status_check;
 ALTER TABLE chapter.podcast_recaps ADD CONSTRAINT podcast_recaps_status_check CHECK (status IN ('queued','scripting','synthesizing','archiving','archive_pending','ready','failed'));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_podcast_recaps_owner_request ON chapter.podcast_recaps(owner_id, request_key);
-CREATE OR REPLACE FUNCTION chapter.podcast_recaps_touch_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
-DROP TRIGGER IF EXISTS podcast_recaps_touch_updated_at ON chapter.podcast_recaps;
-CREATE TRIGGER podcast_recaps_touch_updated_at BEFORE UPDATE ON chapter.podcast_recaps FOR EACH ROW EXECUTE FUNCTION chapter.podcast_recaps_touch_updated_at();
-
 -- Keep the artifact table idempotent in bootstrap and deployment migration paths.
