@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 // Chapter's deployment configuration belongs to this release's .env.local.
 // PM2 keeps inherited variables across reloads; without override they can silently
 // point a new build at a stale bot/chat configuration.
-dotenv.config({ path: ".env.local", override: true });
+dotenv.config({ path: ".env.local", override: true, quiet: true });
 
 function optionalEnv(name: string): string {
   const raw = process.env[name] ?? "";
