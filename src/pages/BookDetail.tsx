@@ -590,7 +590,7 @@ export default function BookDetail() {
               </button>
             )}
           </div>
-          {book.reflection_text && <article className="mt-4 whitespace-pre-wrap rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">{book.reflection_text}</article>}
+          {book.reflection_text && <ReadingLensSynthesis text={book.reflection_text} />}
         </section>
       )}
 
