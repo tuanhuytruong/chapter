@@ -33,6 +33,9 @@ export interface MonthlyReviewResponse { periodKey:string; review:MonthlyReviewA
 export interface CrossBookConnectionArtifact { id:string; requestKey:string; schemaVersion:number; outputLanguage:"vi"|"en"; opening:string; connections:Array<{title:string;synthesis:string;sourceRefs:Array<{sourceType:string;sourceId:string;bookId:string;bookTitle:string;occurredAt:string}>}>; carryForward:string[]; sourceBookCount:number; sourceSessionCount:number; generatedAt:string; }
 export interface CrossBookConnectionsResponse { connection:CrossBookConnectionArtifact|null; sourceBookCount:number; sourceSessionCount:number; hasSource:boolean; available:boolean; usage:{used:number;reserved:number;limit:number|"unlimited"|"unavailable"}; }
 
+export interface PodcastRecapArtifact { id:string; requestKey:string; status:string; outputLanguage:"vi"|"en"; voiceModel:string; payload:{title:string;opening:string;recap:string;nextDirection:string;sourceRefs:Array<{sourceType:string;sourceId:string;bookId:string;bookTitle:string;occurredAt:string}>}; sourceBookCount:number; sourceSessionCount:number; scriptText:string|null; durationS:number|null; hasAudio:boolean; generatedAt:string; }
+export interface PodcastRecapResponse { recap:PodcastRecapArtifact|null; available:boolean; hasSource:boolean; sourceBookCount:number; sourceSessionCount:number; usage:{used:number;reserved:number;limit:number|"unlimited"|"unavailable"}; }
+
 export interface AskReadingAnswer {id:string;requestKey:string;question:string;outputLanguage:"vi"|"en";answer:string;sourceRefs:Array<{sourceType:string;sourceId:string;bookTitle:string;occurredAt:string}>;sourceCount:number;createdAt:string;}
 export interface AskReadingResponse {answers:AskReadingAnswer[];available:boolean;}
 
@@ -169,6 +172,8 @@ export const api = {
   getMonthlyReview: () => req<MonthlyReviewResponse>("/api/monthly-review/current"),
   getAskReading: () => req<AskReadingResponse>("/api/ask-reading/recent"),
   getCrossBookConnections: () => req<CrossBookConnectionsResponse>("/api/cross-book-connections/current"),
+  getPodcastRecap: () => req<PodcastRecapResponse>("/api/podcast-recap/current"),
+  generatePodcastRecap: (requestKey:string) => req<{status:"generated"|"existing"|"no_source"|"voice_required";recap:PodcastRecapArtifact|null}>("/api/podcast-recap/generate", {method:"POST",body:JSON.stringify({requestKey})}),
   generateCrossBookConnections: (requestKey:string) => req<{status:"generated"|"existing"|"no_source";connection:CrossBookConnectionArtifact|null}>("/api/cross-book-connections/generate", {method:"POST",body:JSON.stringify({requestKey})}),
   answerAskReading: (question:string, requestKey:string) => req<{status:"answered"|"existing"|"no_source";answer:AskReadingAnswer|null}>("/api/ask-reading/answer", {method:"POST",body:JSON.stringify({question,requestKey})}),
   generateMonthlyReview: () => req<{ status: "generated" | "existing" | "no_source"; review: MonthlyReviewArtifact | null }>("/api/monthly-review/generate", { method: "POST" }),
