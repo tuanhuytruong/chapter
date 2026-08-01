@@ -64,14 +64,14 @@ function Layout() {
   useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-serif">
+    <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-sans">
       <header className="sticky top-0 z-40 border-b border-natural-border bg-natural-bg">
         <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between gap-3 sm:h-20">
             <NavLink to="/" aria-label="Chapter — Read less. Learn more." className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
               <img src="/chapter-book-mark.svg" alt="" className="h-9 w-9 shrink-0 sm:h-11 sm:w-11" />
               <div className="min-w-0 leading-none">
-                <span className="block font-serif text-[1.35rem] font-bold tracking-tight text-natural-dark sm:text-[1.65rem]">chapter</span>
+                <span className="block font-sans text-[1.35rem] font-bold tracking-tight text-natural-dark sm:text-[1.65rem]">chapter</span>
                 <span className="hidden pt-1 font-sans text-[9px] font-medium tracking-[0.08em] text-natural-stone sm:block">Read less. Learn more.</span>
               </div>
             </NavLink>

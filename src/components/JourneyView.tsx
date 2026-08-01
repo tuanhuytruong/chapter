@@ -120,7 +120,7 @@ export default function JourneyView({
                 {/* Date header */}
                 <div className="mb-3">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className={`text-sm font-bold font-serif ${isLatest ? 'text-natural-clay' : 'text-natural-dark'}`}>
+                    <span className={`text-sm font-bold font-sans ${isLatest ? 'text-natural-clay' : 'text-natural-dark'}`}>
                       {formatDateShort(date)}
                     </span>
                     {isLatest && (
@@ -189,7 +189,7 @@ export default function JourneyView({
                             {log.quote && (
                               <div className="flex gap-2 p-3 rounded-xl bg-natural-clay/5 border border-natural-clay/20">
                                 <Quote className="w-3.5 h-3.5 text-natural-clay shrink-0 mt-0.5" />
-                                <p className="text-xs italic text-natural-clay font-serif leading-relaxed">
+                                <p className="text-xs italic text-natural-clay font-sans leading-relaxed">
                                   {log.quote}
                                 </p>
                               </div>
@@ -204,7 +204,7 @@ export default function JourneyView({
                   {allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
                     <div className="px-4 py-2.5 border-t border-natural-border/40 flex items-start gap-2">
                       <Quote className="w-3 h-3 text-natural-clay/50 shrink-0 mt-0.5" />
-                      <p className="text-xs italic text-natural-stone/70 font-serif line-clamp-2">
+                      <p className="text-xs italic text-natural-stone/70 font-sans line-clamp-2">
                         {allQuotes[0]}
                       </p>
                     </div>

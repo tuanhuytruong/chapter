@@ -56,7 +56,7 @@ export default function JourneyDrawer({ open, onClose }: JourneyDrawerProps) {
       <button tabIndex={visible ? 0 : -1} aria-label="Close journey menu" onClick={onClose} className="journey-backdrop absolute inset-0 bg-natural-dark/20 backdrop-blur-[1px]" />
       <aside id="journey-menu" className="journey-panel relative flex h-full w-[min(22rem,calc(100vw-2rem))] flex-col overflow-y-auto border-r border-natural-border bg-natural-bg px-5 pb-6 pt-5 shadow-2xl sm:px-6 sm:pt-7">
         <div className="journey-entry flex items-start justify-between gap-4" style={{ animationDelay: "35ms" }}>
-          <div><p className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-natural-sage">Your Journey</p><h2 className="mt-1 font-serif text-2xl font-bold text-natural-dark">A quieter view of progress</h2></div>
+          <div><p className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-natural-sage">Your Journey</p><h2 className="mt-1 font-sans text-2xl font-bold text-natural-dark">A quieter view of progress</h2></div>
           <button ref={closeButtonRef} onClick={onClose} aria-label="Close journey menu" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone transition-colors hover:text-natural-dark"><X className="h-4 w-4" /></button>
         </div>
         <div className="mt-5"><GuideCard step="journey" eyebrow="Your Journey" title="Look back without turning reading into a scoreboard"><p>Use these views when reflection helps: patterns, reading days, momentum, and quiet milestones all stay optional.</p></GuideCard></div>
