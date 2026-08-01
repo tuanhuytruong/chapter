@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { query } from "../db.js";
-import { effectiveEntitlement, ENTITLEMENT_POLICY_VERSION, featureKeys, membershipPlans, quotaFor, type FeatureKey } from "../entitlements.js";
+import { effectiveEntitlement, ENTITLEMENT_POLICY_VERSION, featureKeys, membershipPlans, periodKeyInAppTz, quotaFor, type FeatureKey } from "../entitlements.js";
 import { usageSummary } from "../usage.js";
 import { requireAuth, userFrom } from "../auth.js";
-import { selectUpgradePrompt, type UpgradePromptKey } from "../upgrade-prompts.js";
+import { exhaustedQuotaFact, selectUpgradePrompt, type UpgradePromptKey } from "../upgrade-prompts.js";
 
 export const entitlementsRouter = Router();
 
@@ -65,12 +65,13 @@ entitlementsRouter.get("/prompts", requireAuth, async (req: Request, res: Respon
     ]);
 
     const entitlement = effectiveEntitlement(subscription.rows[0]);
+    const quotaFact = exhaustedQuotaFact(entitlement.tier, usage, periodKeyInAppTz());
     const baseFacts = {
       tier: entitlement.tier,
       active: entitlement.active,
       sessionCount: sessionCount.rows[0]?.c || 0,
       hasWiki: wikiCheck.rows.length > 0,
-      usage,
+      quotaFact,
     };
 
     // Each prompt has its own cooldown; one dismissal must not hide another.

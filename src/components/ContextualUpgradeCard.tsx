@@ -6,13 +6,13 @@ import type { UpgradePrompt } from "../api";
 
 interface ContextualUpgradeCardProps {
   prompt: UpgradePrompt;
-  onDismiss: (key: string) => void;
+  onDismiss: (key: string) => Promise<void>;
 }
 
 /**
  * Phase 2: Calm contextual upgrade card.
  * Appears inline after AI-generated content (Wiki, Lens) based on server-owned value signals.
- * Dismissal is optimistic; preserves scroll state when navigating to /pricing.
+ * Dismissal remains visible until the server confirms it; preserves scroll state when navigating to /pricing.
  */
 export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCardProps) {
   const [dismissing, setDismissing] = useState(false);
@@ -20,12 +20,16 @@ export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCa
 
   const handleDismiss = async () => {
     setDismissing(true);
-    onDismiss(prompt.key);
+    try {
+      await onDismiss(prompt.key);
+    } finally {
+      setDismissing(false);
+    }
   };
 
   const handleUpgrade = () => {
     // Preserve scroll position for when user returns from /pricing
-    sessionStorage.setItem("returnScroll", String(window.scrollY));
+    sessionStorage.setItem("chapter:pricing-return-scroll", String(window.scrollY));
     navigate("/pricing");
   };
 

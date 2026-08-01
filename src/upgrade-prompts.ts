@@ -1,4 +1,4 @@
-import type { Tier, FeatureKey } from "./entitlements.js";
+import { featureKeys, quotaFor, type Tier, type FeatureKey } from "./entitlements.js";
 
 /**
  * Phase 2: Contextual upgrade prompt keys.
@@ -39,6 +39,19 @@ export interface UpgradePrompt {
 }
 
 const DISMISS_COOLDOWN_DAYS = 30;
+
+type UsageSummary = Record<string, { used: number; reserved: number }>;
+
+/** Convert trusted aggregate usage into the highest-priority exhausted quota fact. */
+export function exhaustedQuotaFact(tier: Tier, usage: UsageSummary, periodKey: string): PromptPolicyInput["quotaFact"] {
+  for (const feature of featureKeys()) {
+    const limit = quotaFor(tier, feature);
+    const current = usage[feature] || { used: 0, reserved: 0 };
+    const total = current.used + current.reserved;
+    if (typeof limit === "number" && total >= limit) return { feature, used: total, limit, periodKey };
+  }
+  return undefined;
+}
 
 /**
  * Pure prompt selection policy. Returns at most one prompt, or null.
@@ -130,14 +143,18 @@ export function upgradePromptFixtureCheck(): void {
   );
   if (quotaFirst?.key !== "quota_reached") throw new Error("Expected quota_reached to take precedence");
 
-  // Fixture 5: Deep reader suppression
+  // Fixture 5: Runtime usage aggregate maps to the quota policy fact.
+  const exhausted = exhaustedQuotaFact("deep_reader", { podcast_chapter_generation: { used: 9, reserved: 1 } }, "2026-07");
+  if (exhausted?.feature !== "podcast_chapter_generation" || exhausted.used !== 10 || exhausted.limit !== 10) throw new Error("Expected exhausted usage to map to quota fact");
+
+  // Fixture 6: Deep reader suppression
   const deepReaderActive = selectUpgradePrompt(
     { ...baseInput, tier: "deep_reader", sessionCount: 5, hasWiki: true },
     "book-5"
   );
   if (deepReaderActive !== null) throw new Error("Expected no prompt for active deep_reader");
 
-  // Fixture 6: Dismiss cooldown
+  // Fixture 7: Dismiss cooldown
   const recentDismiss = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
   const coolingDown = selectUpgradePrompt(
     { ...baseInput, sessionCount: 5, dismissedAtByKey: { reading_map_depth: recentDismiss } },
@@ -145,7 +162,7 @@ export function upgradePromptFixtureCheck(): void {
   );
   if (coolingDown !== null) throw new Error("Expected no prompt during 30-day cooldown");
 
-  // Fixture 7: Cooldown expired
+  // Fixture 8: Cooldown expired
   const oldDismiss = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000); // 31 days ago
   const cooldownExpired = selectUpgradePrompt(
     { ...baseInput, sessionCount: 5, dismissedAtByKey: { reading_map_depth: oldDismiss } },

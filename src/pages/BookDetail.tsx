@@ -135,6 +135,15 @@ export default function BookDetail() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Return once to the exact Book Detail position that opened Pricing.
+  useEffect(() => {
+    const raw = sessionStorage.getItem('chapter:pricing-return-scroll');
+    if (!raw) return;
+    sessionStorage.removeItem('chapter:pricing-return-scroll');
+    const top = Number(raw);
+    if (Number.isFinite(top) && top >= 0) requestAnimationFrame(() => window.scrollTo({ top, behavior: 'auto' }));
+  }, [id]);
+
   // Phase 2 prompts are advisory only and owner-scoped. Failure must never
   // interrupt reading, summaries, or shared read-only views.
   useEffect(() => {
@@ -147,9 +156,12 @@ export default function BookDetail() {
   }, [id, book?.can_edit, logs.length, lenses.length]);
 
   const dismissUpgradePrompt = async (key: string) => {
-    setUpgradePrompt(null);
-    try { await api.dismissUpgradePrompt(key); }
-    catch { setToast({ type: 'err', msg: 'Could not save this preference. Please try again.' }); }
+    try {
+      await api.dismissUpgradePrompt(key);
+      setUpgradePrompt(previous => previous?.key === key ? null : previous);
+    } catch {
+      setToast({ type: 'err', msg: 'Could not save this preference. Please try again.' });
+    }
   };
 
   // A reading session is saved immediately; its companion analysis finishes in
