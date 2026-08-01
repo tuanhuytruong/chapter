@@ -31,9 +31,33 @@ function groupByDate(logs: LogRow[]): Map<string, LogRow[]> {
 }
 
 function InlineMarkdown({ text }: { text: string }) {
-  return <>{text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => part.startsWith('**') && part.endsWith('**')
-    ? <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>
-    : <React.Fragment key={index}>{part}</React.Fragment>)}</>;
+  return <>{text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>;
+    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  })}</>;
+}
+
+function FormattedJourneyText({ text, className = '' }: { text: string; className?: string }) {
+  const blocks: React.ReactNode[] = [];
+  let bullets: string[] = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    blocks.push(<ul key={`list-${blocks.length}`} className="ml-4 list-disc space-y-1.5 pl-3">{bullets.map((item, index) => <li key={index}><InlineMarkdown text={item} /></li>)}</ul>);
+    bullets = [];
+  };
+  for (const [index, raw] of text.split(/\r?\n/).entries()) {
+    const line = raw.trim();
+    if (!line) { flushBullets(); continue; }
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    if (heading) { flushBullets(); blocks.push(<h4 key={`heading-${index}`} className="pt-1 text-xs font-bold text-natural-dark"><InlineMarkdown text={heading[1]} /></h4>); continue; }
+    const bullet = line.match(/^[-•]\s+(.+)$/);
+    if (bullet) { bullets.push(bullet[1]); continue; }
+    flushBullets();
+    blocks.push(<p key={`paragraph-${index}`}><InlineMarkdown text={line} /></p>);
+  }
+  flushBullets();
+  return <div className={`space-y-2 ${className}`}><>{blocks}</></div>;
 }
 
 function isDeepReadingSummary(text: string | null | undefined): boolean {
@@ -158,7 +182,7 @@ export default function JourneyView({
                               {log.summary
                                 ? isDeepReading
                                   ? <DeepReadingJourney text={log.summary} expanded={isOpen} />
-                                  : <p className="text-sm text-natural-dark font-sans leading-relaxed">{log.summary}</p>
+                                  : <FormattedJourneyText text={log.summary} className="text-sm text-natural-dark font-sans leading-relaxed" />
                                 : <p className="text-sm text-natural-stone font-sans">Session summary…</p>}
 
                             </div>
@@ -181,7 +205,7 @@ export default function JourneyView({
                                 </p>
                                 {log.key_insights.map((ins, i) => (
                                   <p key={i} className="text-xs text-natural-dark font-sans leading-relaxed pl-3 border-l-2 border-natural-sage/40">
-                                    {ins}
+                                    <InlineMarkdown text={ins} />
                                   </p>
                                 ))}
                               </div>
@@ -190,7 +214,7 @@ export default function JourneyView({
                               <div className="flex gap-2 p-3 rounded-xl bg-natural-clay/5 border border-natural-clay/20">
                                 <Quote className="w-3.5 h-3.5 text-natural-clay shrink-0 mt-0.5" />
                                 <p className="text-xs italic text-natural-clay font-sans leading-relaxed">
-                                  {log.quote}
+                                  <InlineMarkdown text={log.quote} />
                                 </p>
                               </div>
                             )}
@@ -205,7 +229,7 @@ export default function JourneyView({
                     <div className="px-4 py-2.5 border-t border-natural-border/40 flex items-start gap-2">
                       <Quote className="w-3 h-3 text-natural-clay/50 shrink-0 mt-0.5" />
                       <p className="text-xs italic text-natural-stone/70 font-sans line-clamp-2">
-                        {allQuotes[0]}
+                        <InlineMarkdown text={allQuotes[0]} />
                       </p>
                     </div>
                   )}
@@ -237,7 +261,7 @@ export default function JourneyView({
                                 {i + 1}
                               </span>
                               <p className="text-xs text-natural-dark font-sans leading-relaxed flex-1">
-                                {ins}
+                                <InlineMarkdown text={ins} />
                               </p>
                             </div>
                           ))}
