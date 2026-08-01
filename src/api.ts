@@ -29,6 +29,9 @@ export interface EntitlementsResponse {
 export interface MonthlyReviewArtifact { id:string; periodKey:string; schemaVersion:number; outputLanguage:"vi"|"en"; title:string; opening:string; themes:Array<{title:string;detail:string;evidence:string[]}>; books:Array<{bookId:string;title:string;sessions:number;contribution:string}>; carryForward:string[]; gentleNextStep:string; sourceSessionCount:number; generatedAt:string; }
 export interface MonthlyReviewResponse { periodKey:string; review:MonthlyReviewArtifact|null; sourceSessionCount:number; hasSource:boolean; available:boolean; usage:{used:number;reserved:number;limit:number|"unlimited"|"unavailable"}; }
 
+export interface AskReadingAnswer {id:string;requestKey:string;question:string;outputLanguage:"vi"|"en";answer:string;sourceRefs:Array<{sourceType:string;sourceId:string;bookTitle:string;occurredAt:string}>;sourceCount:number;createdAt:string;}
+export interface AskReadingResponse {answers:AskReadingAnswer[];available:boolean;}
+
 export interface TodayDashboard {
   today: string;
   active_book: BookRow | null;
@@ -160,6 +163,8 @@ export const api = {
   getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
   getMembershipPlans: () => req<MembershipPlansResponse>("/api/entitlements/plans"),
   getMonthlyReview: () => req<MonthlyReviewResponse>("/api/monthly-review/current"),
+  getAskReading: () => req<AskReadingResponse>("/api/ask-reading/recent"),
+  answerAskReading: (question:string, requestKey:string) => req<{status:"answered"|"existing"|"no_source";answer:AskReadingAnswer|null}>("/api/ask-reading/answer", {method:"POST",body:JSON.stringify({question,requestKey})}),
   generateMonthlyReview: () => req<{ status: "generated" | "existing" | "no_source"; review: MonthlyReviewArtifact | null }>("/api/monthly-review/generate", { method: "POST" }),
   getUpgradePrompts: (bookId: string) => req<UpgradePromptsResponse>(`/api/entitlements/prompts?bookId=${encodeURIComponent(bookId)}`),
   dismissUpgradePrompt: (key: string) => req<void>(`/api/entitlements/prompts/${encodeURIComponent(key)}`, { method: "PATCH", body: JSON.stringify({ action: "dismiss" }) }),

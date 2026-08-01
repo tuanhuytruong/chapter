@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMarked, Sparkles } from 'lucide-react';
 import { api, type MonthlyReviewResponse } from '../api';
 import MonthlyReviewCard from '../components/MonthlyReviewCard';
+import AskMyReadingCard from '../components/AskMyReadingCard';
+import type { AskReadingResponse } from '../api';
 import { useNavigate } from 'react-router-dom';
 import type { BookRow, LogRow } from '../types';
 
@@ -34,11 +36,13 @@ export default function Insights() {
   const [books, setBooks] = useState<BookRow[]>([]);
   const [logsByBook, setLogsByBook] = useState<Record<string, LogRow[]>>({});
   const [monthlyReview, setMonthlyReview] = useState<MonthlyReviewResponse | null>(null);
+  const [askReading, setAskReading] = useState<AskReadingResponse | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [data, allBooks, review] = await Promise.all([api.getStats(), api.listBooks("mine"), api.getMonthlyReview()]);
+        const [data, allBooks, review, asks] = await Promise.all([api.getStats(), api.listBooks("mine"), api.getMonthlyReview(), api.getAskReading()]);
+        setAskReading(asks);
         setMonthlyReview(review);
         setStats(data);
         setBooks(allBooks);
@@ -88,6 +92,7 @@ export default function Insights() {
       <h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2>
 
       {monthlyReview && <MonthlyReviewCard data={monthlyReview} onRefresh={async () => setMonthlyReview(await api.getMonthlyReview())} />}
+      {askReading && <AskMyReadingCard data={askReading} onRefresh={async () => setAskReading(await api.getAskReading())} />}
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
