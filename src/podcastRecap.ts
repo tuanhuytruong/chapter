@@ -23,7 +23,7 @@ export async function getPodcastRecapSources(ownerId:string):Promise<RecapSource
     SELECT 'lens', r.log_id::text, b.id::text, b.title, r.generated_at::text, r.analyst_summary
     FROM reading_lens_analyses r JOIN books b ON b.id=r.book_id WHERE b.owner_id=$1
     UNION ALL
-    SELECT 'wiki', w.book_id::text, b.id::text, b.title, w.updated_at::text,
+    SELECT 'wiki', w.book_id::text, b.id::text, b.title, w.generated_at::text,
       concat_ws(E'\\n', NULLIF(w.overview,''), NULLIF(w.book_so_far,''), NULLIF(w.next_session_context,''))
     FROM book_wiki w JOIN books b ON b.id=w.book_id WHERE b.owner_id=$1
   ) SELECT * FROM sources WHERE COALESCE(content,'')<>'' ORDER BY occurred_at DESC LIMIT 40`,[ownerId])).rows;
