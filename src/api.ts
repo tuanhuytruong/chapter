@@ -7,6 +7,10 @@ import type { AchievementsResponse } from "./achievements";
 
 export type MembershipTier = "free" | "plus" | "deep_reader";
 export type MembershipPlan = { tier: MembershipTier; name: string; tagline: string; monthlyPrice: string | null; annualPrice: string | null; annualLabel: string | null; checkoutAvailable: false; benefits: Array<{ label: string; availableNow: boolean }> };
+
+export type BillingCatalogResponse = { enabled:boolean; provider:"vietqr_static"; bank:"MB"; catalog:Array<{id:string;tier:"plus"|"deep_reader";period:"month"|"year";amountVnd:number;currency:"VND";available:boolean}> };
+export type BillingOrder = { id:string; sku:string; tier:"plus"|"deep_reader"; period:"month"|"year"; amountVnd:number; currency:"VND"; status:string; transferReference:string; expiresAt:string; createdAt:string; qrUrl:string|null };
+export type BillingMeResponse = { orders:BillingOrder[]; transactions:Array<{id:string;orderId:string;sku:string;amountVnd:number;currency:string;periodStart:string;periodEnd:string;createdAt:string}> };
 export interface MembershipPlansResponse { policyVersion: number; checkoutAvailable: false; plans: MembershipPlan[]; }
 
 export interface UpgradePrompt {
@@ -168,6 +172,9 @@ export const api = {
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
   getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
+  getBillingCatalog: () => req<BillingCatalogResponse>("/api/billing/catalog"),
+  getBillingMe: () => req<BillingMeResponse>("/api/billing/me"),
+  createBillingOrder: (sku:string, requestKey:string) => req<{status:"created"|"existing";order:BillingOrder}>("/api/billing/orders", { method:"POST", body:JSON.stringify({sku,requestKey}) }),
   getMembershipPlans: () => req<MembershipPlansResponse>("/api/entitlements/plans"),
   getMonthlyReview: () => req<MonthlyReviewResponse>("/api/monthly-review/current"),
   getAskReading: () => req<AskReadingResponse>("/api/ask-reading/recent"),
