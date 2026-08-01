@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, BookOpen, Search, ChevronDown, ChevronUp, ListOrdered, Play, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
-import type { BookRow, LogRow } from '../types';
+import type { BookRow } from '../types';
 import BookCard from '../components/BookCard';
 import AddBookModal from '../components/AddBookModal';
 import Toast from '../components/Toast';
@@ -41,16 +41,9 @@ export default function Library() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await api.listBooks(scope);
+      const [list, datesByBook] = await Promise.all([api.listBooks(scope), api.getBookStreakDates(scope)]);
       setBooks(list);
-      const s: Record<string, number> = {};
-      await Promise.all(list.map(async (book) => {
-        try {
-          const log = await api.getLog(book.id);
-          s[book.id] = computeStreak(log.map((entry: LogRow) => entry.date));
-        } catch { s[book.id] = 0; }
-      }));
-      setStreaks(s);
+      setStreaks(Object.fromEntries(list.map(book => [book.id, computeStreak(datesByBook[book.id] || [])])));
     } catch (e: any) {
       setToast({ type: 'err', msg: e.message });
     } finally {

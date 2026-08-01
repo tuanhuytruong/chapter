@@ -95,6 +95,26 @@ booksRouter.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/books/streaks?scope=mine|all — one compact batch for Library sorting/cards.
+booksRouter.get("/streaks", async (req: Request, res: Response) => {
+  try {
+    const scope = req.query.scope || "mine";
+    if (scope !== "mine" && scope !== "all") return res.status(400).json({ error: "scope must be 'mine' or 'all'" });
+    const { rows } = await query<{ book_id:string; date:string }>(
+      `SELECT l.book_id, l.date
+       FROM reading_log l
+       JOIN books b ON b.id=l.book_id
+       JOIN users u ON u.id=b.owner_id
+       WHERE u.environment=$3 AND ($2='all' OR b.owner_id=$1)
+       ORDER BY l.book_id, l.date DESC`,
+      [userFrom(req).id, scope, config.appEnv]
+    );
+    const dates: Record<string, string[]> = {};
+    for (const row of rows) (dates[row.book_id] ||= []).push(String(row.date));
+    res.json(dates);
+  } catch { res.status(503).json({ error: "reading streaks unavailable" }); }
+});
+
 // GET /api/books/calendar?month=YYYY-MM&bookId=<optional UUID>
 // Personal calendar rows are derived directly from reading_log; the parent book
 // is the ownership boundary so no dependent owner_id is duplicated.

@@ -7,7 +7,7 @@ import CrossBookConnectionsCard from '../components/CrossBookConnectionsCard';
 import PodcastRecapCard from '../components/PodcastRecapCard';
 import type { AskReadingResponse } from '../api';
 import { useNavigate } from 'react-router-dom';
-import type { BookRow, LogRow } from '../types';
+import type { BookRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -36,7 +36,6 @@ export default function Insights() {
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.getStats>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<BookRow[]>([]);
-  const [logsByBook, setLogsByBook] = useState<Record<string, LogRow[]>>({});
   const [monthlyReview, setMonthlyReview] = useState<MonthlyReviewResponse | null>(null);
   const [askReading, setAskReading] = useState<AskReadingResponse | null>(null);
   const [crossBook, setCrossBook] = useState<CrossBookConnectionsResponse | null>(null);
@@ -52,11 +51,6 @@ export default function Insights() {
         setMonthlyReview(review);
         setStats(data);
         setBooks(allBooks);
-        // Fetch logs for all books in parallel
-        const logEntries = await Promise.all(
-          allBooks.map(b => api.getLog(b.id).then(logs => [b.id, logs] as const))
-        );
-        setLogsByBook(Object.fromEntries(logEntries));
       } catch (e) {
         console.error(e);
       } finally {
