@@ -67,6 +67,14 @@ export type ReadingLensAnalysis = {
   confidenceNotes: string[];
 };
 
+export interface JourneySynthesisRow {
+  book_id: string; schema_version: number; through_line: string;
+  evolving_concepts: Array<{ term: string; trajectory: string; firstSession: { logId: string; session: number }; lastSession: { logId: string; session: number } }>;
+  resolved_questions: Array<{ question: string; resolution: string; resolvedInSession: { logId: string; session: number } }>;
+  open_questions: string[]; tensions: Array<{ description: string; sessions: Array<{ logId: string; session: number }> }>; confidence_notes: string[]; output_language: "vi" | "en";
+  sessions_covered: number; last_log_id: string | null; last_log_date: string | null; last_log_session: number | null; source_revision: number; stale: boolean; generated_at: string;
+}
+
 export interface ReadingLensRow {
   id: string; book_id: string; log_id: string; schema_version: number;
   analysis: ReadingLensAnalysis; analyst_summary: string; generated_at: string;

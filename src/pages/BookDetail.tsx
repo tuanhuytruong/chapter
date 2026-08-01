@@ -4,10 +4,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen, Loader2, Zap, Settings2, ArrowLeft, Trash2, ImageIcon, Search, X, CheckCircle, RotateCcw, RefreshCw, Headphones } from 'lucide-react';
 import { api, computeStreak, progressPct, daysToFinish, fetchCover } from '../api';
 import type { UpgradePrompt } from '../api';
-import type { BookRow, LogRow, ReadingLensRow, StoryThreadRow, SummaryMode } from '../types';
+import type { BookRow, JourneySynthesisRow, LogRow, ReadingLensRow, StoryThreadRow, SummaryMode } from '../types';
 import { dailyTargetLabel } from '../readingUnits';
 import DaySummary from '../components/DaySummary';
 import ReadingLensCard from '../components/ReadingLensCard';
+import JourneySynthesisCard from '../components/JourneySynthesisCard';
 import StreakHeatmap from '../components/StreakHeatmap';
 import MomentumScore from '../components/MomentumScore';
 import Toast from '../components/Toast';
@@ -83,7 +84,7 @@ export default function BookDetail() {
   const [lenses, setLenses] = useState<ReadingLensRow[]>([]);
   const [storyThread, setStoryThread] = useState<StoryThreadRow[]>([]);
   const [storyRetryingLogId, setStoryRetryingLogId] = useState<string | null>(null);
-  const [lensSynthesis, setLensSynthesis] = useState<string | null>(null);
+  const [journeySynthesis, setJourneySynthesis] = useState<JourneySynthesisRow | null>(null);
   const [lensSynthesizing, setLensSynthesizing] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<string | null>(null);
@@ -119,7 +120,10 @@ export default function BookDetail() {
         // Persisted companion data is shared read-only. Generation/retry remains
         // owner-only, but every signed-in reader can see completed analyses.
         if (b.reading_experience === 'story') setStoryThread(await api.getStoryThread(id));
-        else setLenses(await api.getReadingLens(id));
+        else {
+          setLenses(await api.getReadingLens(id));
+          setJourneySynthesis(await api.getJourneySynthesis(id));
+        }
       } catch (e: any) {
         // Companion analysis is non-critical, especially for a fresh book
         // with no sessions yet. The detail page remains usable.
@@ -407,8 +411,8 @@ export default function BookDetail() {
     if (!id) return;
     setLensSynthesizing(true);
     try {
-      const result = await api.synthesizeReadingLens(id);
-      setLensSynthesis(result.synthesis);
+      const result = await api.synthesizeJourney(id);
+      setJourneySynthesis(result);
     } catch (e: any) { setToast({ type: 'err', msg: e.message }); }
     finally { setLensSynthesizing(false); }
   };
@@ -631,15 +635,13 @@ export default function BookDetail() {
           </div>
         )}
         {logView !== 'ai-reader' && <>
-        {book.can_edit && lenses.length >= 3 && (
-          <section className="mb-5 rounded-[24px] border border-natural-sage/30 bg-natural-sage/5 p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">Reading Lens · {lenses.length} sessions</p><h2 className="mt-1 text-base font-bold text-natural-dark">Synthesize this journey</h2><p className="mt-1 text-xs text-natural-stone">Find the thread across your saved session analyses.</p></div>
-              <button onClick={synthesizeReadingLens} disabled={lensSynthesizing} className="min-h-11 shrink-0 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50">{lensSynthesizing ? 'Synthesizing…' : 'Synthesize this journey'}</button>
-            </div>
-            {lensSynthesis && <ReadingLensSynthesis text={lensSynthesis} />}
-          </section>
-        )}
+        <JourneySynthesisCard
+          synthesis={journeySynthesis}
+          sessionCount={lenses.length}
+          canEdit={Boolean(book.can_edit)}
+          loading={lensSynthesizing}
+          onSynthesize={synthesizeReadingLens}
+        />
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
             <BookOpen className="w-8 h-8 text-natural-stone" />

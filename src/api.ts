@@ -1,5 +1,5 @@
 // API client for the Chapter reading-companion backend (Phase 1 routes).
-import type { BookRow, ReadingLensRow, StoryThreadRow } from "./types";
+import type { BookRow, JourneySynthesisRow, ReadingLensRow, StoryThreadRow } from "./types";
 import type { ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
 import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
@@ -155,8 +155,8 @@ export const api = {
   getReadingLens: (bookId: string) => req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
   retryReadingLens: (bookId: string, logId: string) =>
     req<ReadingLensRow>(`${BASE}/${bookId}/logs/${logId}/reading-lens/retry`, { method: "POST" }),
-  synthesizeReadingLens: (bookId: string) =>
-    req<{ synthesis: string }>(`${BASE}/${bookId}/reading-lens/synthesis`, { method: "POST" }),
+  getJourneySynthesis: (bookId: string) => req<JourneySynthesisRow | null>(`${BASE}/${bookId}/reading-lens/synthesis`),
+  synthesizeJourney: (bookId: string) => req<JourneySynthesisRow | null>(`${BASE}/${bookId}/reading-lens/synthesis`, { method: "POST" }),
   getStoryThread: (bookId: string) => req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread`),
   getStoryThreadForLog: (bookId: string, logId: string) =>
     req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),

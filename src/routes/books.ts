@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import { query, withTransaction } from "../db.js";
 import { buildEpubReadingUnits, extractRange, getChapterTitle } from "../extractor.js";
-import { callLLM, callNineRouter, parseSummary } from "../llm.js";
+import { callLLM, callJsonLLM, callNineRouter, parseSummary } from "../llm.js";
 import { boundStoryThreadSource, buildStoryThreadPrompt, getStoryStateBeforeLog, getStoryThreadAnalysis, listStoryThreadAnalyses, parseStoryThreadAnalysis, storyCompatSummary, storyFallback, upsertStoryThreadAnalysis } from "../storyThread.js";
 import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensSummary } from "../readingLens.js";
 import { processBookForWiki } from "../aiReader.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { getReadingLensAnalysisForLog, listReadingLensAnalyses, upsertReadingLensAnalysis } from "../readingLensRepository.js";
+import { getSynthesis, markReadingLensSynthesisStaleIfCovered, upsertSynthesis } from "../readingLensSynthesisRepository.js";
+import { buildJourneySynthesisPrompt, parseJourneySynthesis, type JourneySource } from "../journeySynthesis.js";
 import { getTelegramConfig, sendTelegramMessage, formatDailyMessage } from "../telegram.js";
 import { config } from "../config.js";
 import { requireAuth, requireOwner, userFrom } from "../auth.js";
@@ -488,19 +490,31 @@ booksRouter.post("/:id/logs/:logId/reading-lens/retry", async (req: Request, res
   } catch (e: any) { res.status(500).json({ error: "reading lens retry failed", detail: e.message }); }
 });
 
+booksRouter.get("/:id/reading-lens/synthesis", async (req: Request, res: Response) => {
+  try { const book=(await query("SELECT reading_experience FROM books WHERE id=$1",[req.params.id])).rows[0]; if(!book||book.reading_experience!=="analytical") return res.status(404).json({error:"analytical book not found"}); res.json(await getSynthesis(req.params.id)); } catch(e:any){ res.status(503).json({error:"reading lens synthesis unavailable",detail:e.message}); }
+});
 booksRouter.post("/:id/reading-lens/synthesis", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  if (!await ownerCanMutate(req, res, id)) return;
+  const {id}=req.params; if(!await ownerCanMutate(req,res,id)) return;
   try {
-    const book = (await query("SELECT title, author, summary_lang, reading_experience FROM books WHERE id=$1", [id])).rows[0];
-    if (!book || book.reading_experience !== "analytical") return res.status(400).json({ error: "Story Thread books do not use Reading Lens" });
-    const analyses = await listReadingLensAnalyses(id);
-    if (analyses.length < 3) return res.status(409).json({ error: "at least three Reading Lens sessions are required" });
-    const journal = analyses.slice(-24).map((item, index) => `Session ${index + 1}: ${item.analyst_summary}\nInsights: ${(item.analysis.durableInsights || []).join("; ")}\nQuestions: ${(item.analysis.questionsToCarryForward || []).join("; ")}`).join("\n\n").slice(0, 50000);
-    const language = book.summary_lang === "vi" ? "Write entirely in Vietnamese." : book.summary_lang === "en" ? "Write entirely in English." : "Match the journal language.";
-    const synthesis = await callLLM("You synthesize a reader's saved private journal. Stay grounded in it; do not present a definitive interpretation of the book.", `${language}\nCreate a concise Reading Lens journey synthesis for ${book.title}. Identify recurring arguments, tensions, developing concepts, and questions.\n\n${journal}`, 0.35);
-    res.json({ synthesis });
-  } catch (e: any) { res.status(500).json({ error: "reading lens synthesis failed", detail: e.message }); }
+    const book=(await query("SELECT summary_lang,reading_experience FROM books WHERE id=$1",[id])).rows[0];
+    if(!book||book.reading_experience!=="analytical") return res.status(400).json({error:"Story Thread books do not use Reading Lens"});
+    const {rows}=await query<any>("SELECT rla.*,rl.date,rl.session FROM reading_lens_analyses rla JOIN reading_log rl ON rl.id=rla.log_id WHERE rla.book_id=$1 AND rla.schema_version=1 ORDER BY rl.date ASC,rl.session ASC,rl.id ASC",[id]);
+    if(rows.length<3) return res.status(409).json({error:"at least three Reading Lens sessions are required"});
+    const prior=await getSynthesis(id);
+    const watermarkIndex=prior?.last_log_id ? rows.findIndex((r:any)=>r.log_id===prior.last_log_id && r.date===prior.last_log_date && r.session===prior.last_log_session) : -1;
+    const usableWatermark=!!prior&&!prior.stale&&watermarkIndex>=0;
+    if(usableWatermark&&watermarkIndex===rows.length-1) return res.json(prior);
+    // Rebuild all chronology when stale or watermark is absent/invalid.
+    const selected=usableWatermark ? rows.slice(watermarkIndex+1) : rows;
+    if(!selected.length) return res.json(prior);
+    const refs=rows.map((r:any)=>({logId:r.log_id,session:r.session}));
+    const sources:JourneySource[]=selected.map((r:any)=>({logId:r.log_id,session:r.session,analystSummary:r.analyst_summary,coreArgument:r.analysis?.coreArgument||"",argumentMap:r.analysis?.argumentMap||[],keyConcepts:r.analysis?.keyConcepts||[],assumptionsAndLimits:r.analysis?.assumptionsAndLimits||[],questionsToCarryForward:r.analysis?.questionsToCarryForward||[],durableInsights:r.analysis?.durableInsights||[],quote:r.analysis?.quote??null,confidenceNotes:r.analysis?.confidenceNotes||[]}));
+    const lang=book.summary_lang==="vi"?"vi":"en";
+    const priorData=prior?{throughLine:prior.through_line,evolvingConcepts:prior.evolving_concepts,resolvedQuestions:prior.resolved_questions,openQuestions:prior.open_questions,tensions:prior.tensions,confidenceNotes:prior.confidence_notes,outputLanguage:prior.output_language}:null;
+    const raw=await callJsonLLM("You synthesize a private Reading Lens journey using supplied sessions only.",buildJourneySynthesisPrompt({priorSynthesis:priorData,sources,language:lang}),0.2);
+    const data=parseJourneySynthesis(raw,priorData,refs);
+    res.json(await upsertSynthesis(id,data,rows.length,{logId:rows.at(-1).log_id,date:rows.at(-1).date,session:rows.at(-1).session},(prior?.source_revision||0)+1));
+  } catch(e:any) { res.status(500).json({error:"reading lens synthesis failed",detail:e.message}); }
 });
 
 // ── B6: Advance all active (define BEFORE /:id/advance to avoid route clash) ──
@@ -709,6 +723,7 @@ async function generateReadingLensForLog(log: any, book: { title: string; author
     try {
       const analysis = parseReadingLensAnalysis(raw, log.raw_text);
       await upsertReadingLensAnalysis(log.book_id, log.id, analysis, readingLensSummary(analysis));
+      await markReadingLensSynthesisStaleIfCovered(log.book_id, log.id);
       return;
     } catch (error) {
       if (!(error instanceof SyntaxError) || attempt === 2) throw error;

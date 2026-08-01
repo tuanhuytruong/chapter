@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BookOpen, Quote, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BookRow, LogRow } from '../types';
 
@@ -102,12 +102,17 @@ export default function JourneyView({
     });
   };
 
+  useEffect(() => {
+    if (!expanded) return;
+    document.getElementById(`journey-session-${expanded}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [expanded]);
+
   const byDate = groupByDate(logs);
   const entries = [...byDate.entries()];
   const totalPages = logs.reduce((sum, l) => sum + (l.page_end - l.page_start + 1), 0);
 
   return (
-    <div className="space-y-0">
+    <div id="reading-lens-journey" className="space-y-0">
       {/* Journey stats ribbon */}
       <div className="flex items-center gap-6 px-4 py-3 mb-6 bg-natural-cream border border-natural-border rounded-2xl text-xs text-natural-stone font-sans">
         <span><b className="text-natural-dark font-bold">{entries.length}</b> reading days</span>
@@ -167,7 +172,7 @@ export default function JourneyView({
                     const isOpen = expanded === log.id;
                     const isDeepReading = isDeepReadingSummary(log.summary);
                     return (
-                      <div key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
+                      <div id={`journey-session-${log.id}`} key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
                         <button
                           onClick={() => setExpanded(isOpen ? null : log.id)}
                           className="w-full text-left px-4 py-4 hover:bg-natural-cream/80 transition group"
