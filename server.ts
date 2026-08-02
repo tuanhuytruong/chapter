@@ -963,7 +963,7 @@ app.get("/api/today", async (req: Request, res: Response) => {
     const appToday = dateInAppTz();
     const [active, queued, todayLogs, dueReviews, goalRow] = await Promise.all([
       query(
-        `SELECT * FROM books WHERE owner_id=$1 AND status='active' ORDER BY created_at ASC LIMIT 1`,
+        `SELECT * FROM books WHERE owner_id=$1 AND status='active' ORDER BY created_at ASC`,
         [ownerId],
       ),
       query(
@@ -999,6 +999,7 @@ app.get("/api/today", async (req: Request, res: Response) => {
     );
     res.json({
       today: appToday,
+      active_books: active.rows,
       active_book: active.rows[0] || null,
       next_queued_book: queued.rows[0] || null,
       today_progress: {

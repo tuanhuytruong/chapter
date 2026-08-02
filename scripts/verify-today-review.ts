@@ -2,11 +2,25 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const today = readFileSync(new URL("../src/pages/Today.tsx", import.meta.url), "utf8");
+const dashboard = readFileSync(new URL("../server.ts", import.meta.url), "utf8");
+const api = readFileSync(new URL("../src/api.ts", import.meta.url), "utf8");
 const review = readFileSync(new URL("../src/pages/Review.tsx", import.meta.url), "utf8");
 const header = readFileSync(new URL("../src/components/review/ReviewHeader.tsx", import.meta.url), "utf8");
 const recall = readFileSync(new URL("../src/components/review/RecallCard.tsx", import.meta.url), "utf8");
+
 assert.doesNotMatch(today, /reviewCards|setReviewCards|getDueReviews/);
 assert.match(today, /\$\{dashboard\.due_reviews\} idea/);
+assert.doesNotMatch(today, /to="\/review"[\s\S]*?Keep your best ideas close/);
+assert.match(today, /activeBook/);
+assert.match(today, /dashboard\.active_books/);
+assert.match(today, /getTodayInsights\(\{ bookId: active\.id \}\)/);
+assert.match(today, /Key insights so far/);
+assert.match(today, /lg:grid-cols/);
+const actionRail = today.indexOf('More insights');
+assert.ok(actionRail >= 0 && today.indexOf('Open book', actionRail) > actionRail, "insight actions are ordered more-insights then open-book");
+assert.match(dashboard, /active_books: active\.rows/);
+assert.match(dashboard, /status='active' ORDER BY created_at ASC`/);
+assert.match(api, /active_books: BookRow\[\]/);
 assert.match(review, /useSearchParams/);
 assert.match(review, /getDueReviewBooks\(\)/);
 assert.match(review, /getDueReviews\(selectedBookId\)/);

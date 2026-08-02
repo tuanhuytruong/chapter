@@ -254,6 +254,7 @@ export interface TodayInsights {
 
 export interface TodayDashboard {
   today: string;
+  active_books: BookRow[];
   active_book: BookRow | null;
   next_queued_book: BookRow | null;
   today_progress: { sessions: number; units: number };
