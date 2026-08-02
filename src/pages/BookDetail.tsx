@@ -222,7 +222,7 @@ export default function BookDetail() {
         // Persisted companion data is shared read-only. Generation/retry remains
         // owner-only, but every signed-in reader can see completed analyses.
         if (b.reading_experience === "story")
-          setStoryThread(await api.getStoryThread(id));
+          setStoryThread(await api.getStoryThread(id, selected));
         else {
           setLenses(await api.getReadingLens(id));
           setJourneySynthesis(await api.getJourneySynthesis(id));
@@ -330,7 +330,7 @@ export default function BookDetail() {
             : [];
         if (updatedBook.can_edit) {
           if (updatedBook.reading_experience === "story")
-            setStoryThread(await api.getStoryThread(id));
+            setStoryThread(await api.getStoryThread(id, selectedRound ?? updatedBook.current_reading_round));
           else setLenses(analyses);
         }
         const pendingLog = updatedLogs.find(
@@ -1075,6 +1075,7 @@ export default function BookDetail() {
           <StoryThreadView
             analyses={storyThread}
             logs={logs}
+            fileType={book.file_type}
             onRetry={retryStoryThread}
             retryingLogId={storyRetryingLogId}
             canEdit={Boolean(book.can_edit)}

@@ -51,8 +51,16 @@ assert.match(routeSource, /if \(book\.reading_experience !== "story"\)[\s\S]*INS
 assert.match(routeSource, /result\.readingExperience === "story"\)[\s\S]*generateStoryThreadForLog[\s\S]*else[\s\S]*generateReadingLensForLog/);
 assert.match(routeSource, /boundStoryThreadSource\(log\.raw_text\)/);
 assert.match(routeSource, /NINE_ROUTER_STORY_THREAD_TIMEOUT_MS \|\| 180_000/);
+const storyThreadSource = readFileSync(new URL("../src/storyThread.ts", import.meta.url), "utf8");
+assert.match(storyThreadSource, /rl\.reading_round=\$2/);
+assert.match(routeSource, /reading_round=\$4/);
+assert.match(routeSource, /listStoryThreadAnalyses\(id, readingRound\)/);
 assert.match(routeSource, /reading_experience='analytical'/);
 assert.match(routeSource, /Story Thread books do not use Reading Lens/);
 assert.match(serverSource, /Story Thread books do not use Knowledge Maps/);
+const storyViewSource = readFileSync(new URL("../src/components/story/StoryThreadView.tsx", import.meta.url), "utf8");
+assert.match(storyViewSource, /fileType === "epub" \? "Chunks" : "Pages"/);
+assert.match(storyViewSource, /aria-label=\{`Retry Story recap for session \$\{log\.session\}`\}/);
+assert.match(storyViewSource, /RefreshCw/);
 
 console.log("STORY_THREAD_FIXTURES_OK");

@@ -409,8 +409,8 @@ export const api = {
       `${BASE}/${bookId}/reading-lens/synthesis`,
       { method: "POST" },
     ),
-  getStoryThread: (bookId: string) =>
-    req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread`),
+  getStoryThread: (bookId: string, readingRound?: number) =>
+    req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread${readingRound ? `?round=${encodeURIComponent(readingRound)}` : ""}`),
   getStoryThreadForLog: (bookId: string, logId: string) =>
     req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),
   retryStoryThread: (bookId: string, logId: string) =>
@@ -590,6 +590,22 @@ export interface UploadResult {
   books_dir: string;
 }
 
+/** The upload endpoint is the authority for the stored path and detected type. */
+export function validateUploadResult(body: unknown): UploadResult {
+  const result = body as Partial<UploadResult> | null;
+  if (
+    !result ||
+    typeof result.file_path !== "string" ||
+    !result.file_path.trim() ||
+    (result.file_type !== "pdf" && result.file_type !== "epub") ||
+    typeof result.filename !== "string" ||
+    !result.filename.trim()
+  ) {
+    throw new Error("upload completed without a usable file");
+  }
+  return result as UploadResult;
+}
+
 /** Delete an uploaded-but-not-saved file by its stored path. */
 export async function deleteUpload(filePath: string): Promise<void> {
   await fetch(`/api/upload?path=${encodeURIComponent(filePath)}`, {
@@ -617,8 +633,13 @@ export async function uploadBook(
       } catch {
         /* ignore */
       }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(body as UploadResult);
-      else reject(new Error(`${xhr.status}: ${body?.error || xhr.statusText}`));
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(validateUploadResult(body));
+        } catch (error) {
+          reject(error);
+        }
+      } else reject(new Error(`${xhr.status}: ${body?.error || xhr.statusText}`));
     };
     xhr.onerror = () => reject(new Error("upload network error"));
     xhr.open("POST", "/api/upload");

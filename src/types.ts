@@ -140,6 +140,10 @@ export interface StoryThreadRow {
   analysis: StoryThreadAnalysis;
   story_recap: string;
   generated_at: string;
+  reading_round: number;
+  session: number;
+  page_start: number;
+  page_end: number;
 }
 
 export interface LogRow {

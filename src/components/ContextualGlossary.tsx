@@ -2,13 +2,15 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 
 export type GlossaryLanguage = "vi" | "en";
-type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied";
+export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied";
 const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viDetail: string }> = {
   Deepened: { en: "Deepened", vi: "Đào sâu", enDetail: "The reading develops this idea with more nuance or detail.", viDetail: "Phần đọc phát triển ý này với thêm sắc thái hoặc chi tiết." },
   Shifted: { en: "Shifted", vi: "Đã chuyển hướng", enDetail: "The emphasis or meaning changes as the reading progresses.", viDetail: "Trọng tâm hoặc ý nghĩa thay đổi khi phần đọc tiếp diễn." },
   Introduced: { en: "Introduced", vi: "Mới xuất hiện", enDetail: "This idea, person, or thread appears here for the first time.", viDetail: "Ý tưởng, nhân vật hoặc mạch này xuất hiện lần đầu ở đây." },
   Resolved: { en: "Resolved", vi: "Đã được giải quyết", enDetail: "The reading gives enough information to close or settle this thread.", viDetail: "Phần đọc cung cấp đủ thông tin để khép lại mạch này." },
   Uncertain: { en: "Uncertain", vi: "Chưa chắc chắn", enDetail: "The available reading does not establish this clearly yet.", viDetail: "Phần đọc hiện có chưa xác lập điều này một cách rõ ràng." },
+  Open: { en: "Open", vi: "Đang mở", enDetail: "This thread has not reached a settled outcome in the reading yet.", viDetail: "Mạch này chưa có kết cục rõ ràng trong phần đọc." },
+  Escalating: { en: "Escalating", vi: "Đang leo thang", enDetail: "The tension, stakes, or consequences of this thread are increasing.", viDetail: "Căng thẳng, mức độ quan trọng hoặc hệ quả của mạch này đang gia tăng." },
   Claim: { en: "Claim", vi: "Luận điểm", enDetail: "The main idea or assertion being made.", viDetail: "Ý chính hoặc điều đang được khẳng định." },
   Support: { en: "Support", vi: "Cơ sở", enDetail: "The reasoning or material that backs up a claim.", viDetail: "Lập luận hoặc chất liệu làm cơ sở cho luận điểm." },
   Evidence: { en: "Evidence", vi: "Bằng chứng", enDetail: "A detail from the saved reading that grounds an observation.", viDetail: "Chi tiết từ phần đọc đã lưu làm nền cho nhận xét." },

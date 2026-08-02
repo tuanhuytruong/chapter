@@ -489,17 +489,27 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/books/:id/story-thread — owner-only Story continuity, never source text.
+// GET /api/books/:id/story-thread — persisted Story continuity, never source text.
 booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const allowed = await query(
-      "SELECT 1 FROM books WHERE id=$1 AND owner_id=$2 AND reading_experience='story'",
-      [id, userFrom(req).id],
+    const allowed = await query<{ current_reading_round: number }>(
+      "SELECT current_reading_round FROM books WHERE id=$1 AND reading_experience='story'",
+      [id],
     );
     if (!allowed.rows.length)
       return res.status(404).json({ error: "story book not found" });
-    res.json(await listStoryThreadAnalyses(id));
+    const requestedRound = req.query.round === undefined ? null : Number(req.query.round);
+    if (requestedRound !== null && (!Number.isInteger(requestedRound) || requestedRound < 1))
+      return res.status(400).json({ error: "round must be a positive integer" });
+    const readingRound = requestedRound ?? allowed.rows[0].current_reading_round;
+    const round = await query(
+      "SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",
+      [id, readingRound],
+    );
+    if (!round.rows.length)
+      return res.status(404).json({ error: "reading round not found for book" });
+    res.json(await listStoryThreadAnalyses(id, readingRound));
   } catch (e: any) {
     res
       .status(503)
@@ -1423,6 +1433,7 @@ async function generateStoryThreadForLog(
   // analysis must never become its own evidence or leak future story details.
   const previous = await getStoryStateBeforeLog(
     log.book_id,
+    log.reading_round,
     log.date,
     log.session,
   );
@@ -1471,10 +1482,10 @@ async function repairStoryThreadFromLog(
 ): Promise<any[]> {
   const { rows: logs } = await query(
     `SELECT * FROM reading_log
-     WHERE book_id=$1 AND raw_text IS NOT NULL
+     WHERE book_id=$1 AND raw_text IS NOT NULL AND reading_round=$4
        AND (date > $2::date OR (date = $2::date AND session >= $3))
      ORDER BY date ASC, session ASC`,
-    [book.id, firstLog.date, firstLog.session],
+    [book.id, firstLog.date, firstLog.session, firstLog.reading_round],
   );
   if (!logs.length)
     throw new Error("no saved Story sessions are available to repair");
@@ -1487,7 +1498,7 @@ async function repairStoryThreadFromLog(
       session: log.session,
     });
   }
-  return listStoryThreadAnalyses(book.id);
+  return listStoryThreadAnalyses(book.id, firstLog.reading_round);
 }
 
 // GET /api/books/:id/log/today — returns array of today's sessions (n8n compatibility)
