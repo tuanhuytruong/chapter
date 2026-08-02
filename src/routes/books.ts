@@ -1153,7 +1153,15 @@ async function reserveAdvance(
       start + Math.max(1, book.daily_pages) - 1,
       book.total_pages || start + Math.max(1, book.daily_pages) - 1,
     );
-    const session = prior[0] ? prior[0].session + 1 : 1;
+    // Page ranges are local to the active reading round, but the durable unique
+    // key is (book_id, date, session). Allocate that ordinal across every round
+    // on the same day so a same-day re-read cannot reuse session 1.
+    const { rows: daySessions } = await client.query(
+      `SELECT COALESCE(MAX(session), 0)::int AS last_session
+       FROM reading_log WHERE book_id=$1 AND date=$2`,
+      [bookId, dateStr],
+    );
+    const session = Number(daySessions[0]?.last_session || 0) + 1;
     const { rows } = await client.query(
       `INSERT INTO reading_log (book_id,reading_round,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [

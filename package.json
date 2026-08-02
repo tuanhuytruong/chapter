@@ -36,7 +36,8 @@
     "verify:platform": "tsx scripts/verify-platform-headers.ts",
     "verify:today-review": "tsx scripts/verify-today-review.ts",
     "verify:review-api": "tsx scripts/verify-review-api.ts",
-    "verify:add-book-upload": "tsx scripts/verify-add-book-upload.ts"
+    "verify:add-book-upload": "tsx scripts/verify-add-book-upload.ts",
+    "verify:same-day-reread": "tsx scripts/verify-same-day-reread.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
