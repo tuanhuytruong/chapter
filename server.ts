@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import compression from "compression";
 import session from "express-session";
 import pgSession from "connect-pg-simple";
 import bcrypt from "bcrypt";
@@ -50,6 +51,7 @@ import {
   tokenHash,
 } from "./src/auth-identity.js";
 import { sendPasswordResetEmail } from "./src/email.js";
+import { authRateLimit, authRateLimitPolicies } from "./src/auth-rate-limit.js";
 
 // Each release folder owns its listener through .env.local (3000 PRD / 3001 DEV).
 const PORT = config.port;
@@ -64,6 +66,8 @@ if (!sessionSecret)
 // Production deployments terminate TLS at the reverse proxy. Trust that single
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
+app.use(compression());
+app.use((_, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
 app.use(express.json());
 // Public liveness probe: intentionally does not require a session or database query.
 app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
@@ -154,7 +158,13 @@ app.get("/api/auth/session", (req, res) =>
 app.get("/api/auth/me", (req, res) =>
   res.json({ user: req.session.user || null }),
 );
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", authRateLimit(
+    authRateLimitPolicies.login(
+      config.authRateLimitWindowMs,
+      config.authLoginMaxAttempts,
+    ),
+  ),
+  async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== "string" || typeof password !== "string")
     return res.status(400).json({ error: "username and password required" });
@@ -173,9 +183,16 @@ app.post("/api/auth/login", async (req, res) => {
   } catch {
     res.status(503).json({ error: "Authentication service unavailable" });
   }
-});
+  },
+);
 
-app.post("/api/auth/forgot-password", async (req, res) => {
+app.post("/api/auth/forgot-password", authRateLimit(
+    authRateLimitPolicies.forgotPassword(
+      config.authRateLimitWindowMs,
+      config.authPasswordResetMaxAttempts,
+    ),
+  ),
+  async (req, res) => {
   const email = normalizeEmail(req.body?.email);
   if (!email) return res.status(202).json(genericRecoveryResponse);
   try {
@@ -216,9 +233,18 @@ app.post("/api/auth/forgot-password", async (req, res) => {
     console.error("[auth] password reset request unavailable");
   }
   res.status(202).json(genericRecoveryResponse);
-});
+  },
+);
 
-app.post("/api/auth/reset-password", async (req, res) => {
+app.post(
+  "/api/auth/reset-password",
+  authRateLimit(
+    authRateLimitPolicies.resetPassword(
+      config.authRateLimitWindowMs,
+      config.authPasswordResetMaxAttempts,
+    ),
+  ),
+  async (req, res) => {
   const { token, newPassword, confirmPassword } = req.body || {};
   if (
     typeof token !== "string" ||
@@ -258,9 +284,18 @@ app.post("/api/auth/reset-password", async (req, res) => {
       .status(503)
       .json({ error: "Password reset is unavailable. Please try again." });
   }
-});
+  },
+);
 
-app.get("/api/auth/google", (req, res) => {
+app.get(
+  "/api/auth/google",
+  authRateLimit(
+    authRateLimitPolicies.oauth(
+      config.authRateLimitWindowMs,
+      config.authOauthMaxAttempts,
+    ),
+  ),
+  (req, res) => {
   const intent = req.query.intent === "link" ? "link" : "login";
   if (!authConfigured() || (intent === "link" && !req.session.user))
     return res.redirect(`${config.appUrl}/login?auth_error=google`);
@@ -288,7 +323,8 @@ app.get("/api/auth/google", (req, res) => {
     prompt: "select_account",
   }).toString();
   res.redirect(url.toString());
-});
+  },
+);
 
 app.get("/api/auth/google/callback", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -1098,8 +1134,10 @@ Return only valid JSON, no markdown, no explanation.`;
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req: Request, res: Response) => {
+    app.use("/assets", express.static(path.join(distPath, "assets"), { immutable: true, maxAge: "1y" }));
+    app.use(express.static(distPath, { index: false }));
+    app.get("*", (_req: Request, res: Response) => {
+      res.setHeader("Cache-Control", "no-cache");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

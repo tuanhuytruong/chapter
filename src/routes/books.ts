@@ -110,11 +110,21 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
 
   const units = await buildEpubReadingUnits(book.file_path);
   if (!units.length) throw new Error("EPUB has no readable text");
-  for (const unit of units) {
-    await client.query(
-      `INSERT INTO book_reading_units (book_id, unit_index, title, spine_index, chapter_key, raw_text, char_count)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [
+
+  // This is a proven N-query ingestion hot spot for long EPUBs. Chunking keeps
+  // each statement below PostgreSQL's parameter limit while preserving the
+  // transaction, generated unit order, and all-or-nothing semantics.
+  const INSERT_BATCH_SIZE = 500;
+  for (let offset = 0; offset < units.length; offset += INSERT_BATCH_SIZE) {
+    const batch = units.slice(offset, offset + INSERT_BATCH_SIZE);
+    const values: string[] = [];
+    const params: any[] = [];
+    for (const unit of batch) {
+      const start = params.length + 1;
+      values.push(
+        `($${start},$${start + 1},$${start + 2},$${start + 3},$${start + 4},$${start + 5},$${start + 6})`,
+      );
+      params.push(
         book.id,
         unit.unitIndex,
         unit.title,
@@ -122,7 +132,12 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
         unit.chapterKey,
         unit.rawText,
         unit.rawText.length,
-      ],
+      );
+    }
+    await client.query(
+      `INSERT INTO book_reading_units (book_id, unit_index, title, spine_index, chapter_key, raw_text, char_count)
+       VALUES ${values.join(",")}`,
+      params,
     );
   }
   await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [

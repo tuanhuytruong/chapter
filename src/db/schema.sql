@@ -59,6 +59,19 @@ CREATE TABLE IF NOT EXISTS chapter.password_reset_tokens (
 );
 CREATE INDEX IF NOT EXISTS password_reset_tokens_active_lookup
   ON chapter.password_reset_tokens (user_id, expires_at DESC) WHERE used_at IS NULL;
+
+-- Durable, privacy-preserving counters for sensitive authentication routes.
+-- rate_key is a SHA-256 hash of proxy-trusted IP plus normalized identifier.
+CREATE TABLE IF NOT EXISTS chapter.auth_rate_limits (
+  scope TEXT NOT NULL CHECK (scope IN ('login','forgot_password','reset_password','oauth')),
+  rate_key TEXT NOT NULL,
+  window_started_at TIMESTAMPTZ NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (scope, rate_key, window_started_at)
+);
+CREATE INDEX IF NOT EXISTS auth_rate_limits_window_cleanup_idx
+  ON chapter.auth_rate_limits (window_started_at);
 ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_podcast_voice_gender_check;
 ALTER TABLE chapter.users ADD CONSTRAINT users_podcast_voice_gender_check
   CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male'));

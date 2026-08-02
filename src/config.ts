@@ -55,4 +55,14 @@ export const config = {
   resendApiKey: optionalEnv("RESEND_API_KEY"),
   resendFrom: optionalEnv("RESEND_FROM") || "Chapter <no-reply@account.mrl.asia>",
   passwordResetTtlMinutes: Math.min(60, Math.max(15, Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 45))),
+  authRateLimitWindowMs: boundedIntegerEnv("AUTH_RATE_LIMIT_WINDOW_MS", 15 * 60_000, 60_000, 60 * 60_000),
+  authLoginMaxAttempts: boundedIntegerEnv("AUTH_LOGIN_MAX_ATTEMPTS", 10, 1, 100),
+  authPasswordResetMaxAttempts: boundedIntegerEnv("AUTH_PASSWORD_RESET_MAX_ATTEMPTS", 5, 1, 100),
+  authOauthMaxAttempts: boundedIntegerEnv("AUTH_OAUTH_MAX_ATTEMPTS", 20, 1, 100),
+  // Ordinary web requests should fail rather than consume the pool indefinitely.
+  // Background AI/indexing work uses the explicit background DB helpers below.
+  dbRequestStatementTimeoutMs: boundedIntegerEnv("DB_REQUEST_STATEMENT_TIMEOUT_MS", 12_000, 1_000, 60_000),
+  dbRequestLockTimeoutMs: boundedIntegerEnv("DB_REQUEST_LOCK_TIMEOUT_MS", 2_000, 250, 15_000),
+  dbBackgroundStatementTimeoutMs: boundedIntegerEnv("DB_BACKGROUND_STATEMENT_TIMEOUT_MS", 120_000, 10_000, 600_000),
+  dbBackgroundLockTimeoutMs: boundedIntegerEnv("DB_BACKGROUND_LOCK_TIMEOUT_MS", 5_000, 250, 30_000),
 };
