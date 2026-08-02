@@ -6,16 +6,19 @@ import PricingComparison from "../components/PricingComparison";
 import PricingFaq from "../components/PricingFaq";
 import VietQrCheckoutSheet from "../components/VietQrCheckoutSheet";
 import { PricingSkeleton } from "../components/ContentSkeleton";
+import { useAuth } from "../AuthContext";
+import { getCachedBillingCatalog, getCachedEntitlements, getCachedMembershipPlans } from "../membershipCache";
 
 const formatVnd = (amount: number) => `${new Intl.NumberFormat("vi-VN").format(amount)}đ`;
 
 export default function Pricing() {
+  const { user } = useAuth();
   const [catalog, setCatalog] = useState<MembershipPlansResponse | null>(null);
   const [billing, setBilling] = useState<BillingCatalogResponse | null>(null);
   const [entitlement, setEntitlement] = useState<EntitlementsResponse | null>(null);
   const [sku, setSku] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { void api.getMembershipPlans().then(setCatalog).catch(() => setError("Membership details are unavailable right now.")); void api.getEntitlements().then(setEntitlement).catch(() => undefined); void api.getBillingCatalog().then(setBilling).catch(() => undefined); }, []);
+  useEffect(() => { void getCachedMembershipPlans(api.getMembershipPlans).then(setCatalog).catch(() => setError("Membership details are unavailable right now.")); if (user) void getCachedEntitlements(user.id, api.getEntitlements).then(setEntitlement).catch(() => undefined); void getCachedBillingCatalog(api.getBillingCatalog).then(setBilling).catch(() => undefined); }, [user?.id]);
   const deep = useMemo(() => billing?.catalog.filter((item) => item.tier === "deep_reader" && item.available) || [], [billing]);
   const monthly = deep.find((item) => item.period === "month");
   const annual = deep.find((item) => item.period === "year");

@@ -25,6 +25,7 @@ import MembershipTierBadge from './components/MembershipTierBadge';
 import { OnboardingProvider } from './onboarding';
 import useSwipeNav from './hooks/useSwipeNav';
 import { REVIEWS_CHANGED_EVENT } from './reviewEvents';
+import { getCachedEntitlements } from './membershipCache';
 
 const primaryLink = (active: boolean) => active
   ? 'flex min-h-10 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark sm:min-h-0'
@@ -56,13 +57,14 @@ function Layout() {
   useEffect(() => { swipeNav.attach(); return swipeNav.detach; }, [swipeNav]);
   useEffect(() => {
     let active = true;
-    void api.getEntitlements().then((data) => {
+    if (!user) return;
+    void getCachedEntitlements(user.id, api.getEntitlements).then((data) => {
       if (active) setMembershipTier(data.subscription.tier);
     }).catch(() => {
       if (active) setMembershipTier(null);
     });
     return () => { active = false; };
-  }, []);
+  }, [user?.id]);
   useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
   useEffect(() => {
     let active = true;

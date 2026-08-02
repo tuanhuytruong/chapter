@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { clearMembershipCache } from "./membershipCache";
 
 export interface CurrentUser {
   id: string;
@@ -48,16 +49,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
+      clearMembershipCache();
       setUser(data.user);
     },
     async completePasswordReset(token, newPassword, confirmPassword) {
       const data = await authRequest("/api/auth/reset-password", {
         method: "POST", body: JSON.stringify({ token, newPassword, confirmPassword }),
       });
+      clearMembershipCache();
       setUser(data.user);
     },
     updateUser(nextUser) { setUser(nextUser); },
     async logout() {
+      clearMembershipCache();
       await authRequest("/api/auth/logout", { method: "POST" });
       setUser(null);
     },

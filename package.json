@@ -19,6 +19,7 @@
     "grant-subscription": "tsx scripts/subscription.ts grant",
     "expire-subscription": "tsx scripts/subscription.ts expire",
     "verify:entitlements": "tsx scripts/verify-entitlements.ts",
+    "verify:membership-cache": "tsx scripts/verify-membership-cache.ts",
     "verify:loading-states": "tsx scripts/verify-loading-states.ts",
     "verify:upgrade-prompts": "tsx scripts/verify-upgrade-prompts.ts",
     "verify:story-thread": "tsx scripts/verify-story-thread.ts",

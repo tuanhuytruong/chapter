@@ -5,6 +5,8 @@ import { api, type EntitlementsResponse } from "../api";
 import MembershipStatusCard from "../components/MembershipStatusCard";
 import BillingHistoryCard from "../components/BillingHistoryCard";
 import { Link } from "react-router-dom";
+import { useAuth } from "../AuthContext";
+import { getCachedEntitlements } from "../membershipCache";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { headers: { "Content-Type": "application/json" }, ...init });
@@ -13,6 +15,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export default function Account() {
+  const { user } = useAuth();
   const [connected, setConnected] = useState<boolean | null>(null);
   const [linking, setLinking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -23,7 +26,7 @@ export default function Account() {
     try { setConnected((await request<{ connected: boolean }>("/api/auth/telegram")).connected); }
     catch { setError("Could not load Telegram status."); }
   }, []);
-  useEffect(() => { void load(); void api.getEntitlements().then(setEntitlement).catch(() => undefined); return () => { if (pollRef.current) window.clearInterval(pollRef.current); }; }, [load]);
+  useEffect(() => { void load(); if (user) void getCachedEntitlements(user.id, api.getEntitlements).then(setEntitlement).catch(() => undefined); return () => { if (pollRef.current) window.clearInterval(pollRef.current); }; }, [load, user?.id]);
   const connect = async () => {
     setBusy(true); setError(null);
     try {
