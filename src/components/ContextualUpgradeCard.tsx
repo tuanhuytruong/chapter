@@ -7,6 +7,7 @@ import type { UpgradePrompt } from "../api";
 interface ContextualUpgradeCardProps {
   prompt: UpgradePrompt;
   onDismiss: (key: string) => Promise<void>;
+  dismissError?: string | null;
 }
 
 /**
@@ -14,7 +15,7 @@ interface ContextualUpgradeCardProps {
  * Appears inline after AI-generated content (Wiki, Lens) based on server-owned value signals.
  * Dismissal remains visible until the server confirms it; preserves scroll state when navigating to /pricing.
  */
-export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCardProps) {
+export function ContextualUpgradeCard({ prompt, onDismiss, dismissError }: ContextualUpgradeCardProps) {
   const [dismissing, setDismissing] = useState(false);
   const navigate = useNavigate();
 
@@ -33,8 +34,6 @@ export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCa
     navigate("/pricing");
   };
 
-  if (dismissing) return null;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -46,7 +45,8 @@ export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCa
       {/* Dismiss button */}
       <button
         onClick={handleDismiss}
-        className="absolute right-3 top-3 rounded-lg p-1.5 text-natural-stone transition-colors hover:bg-natural-cream hover:text-natural-dark"
+        disabled={dismissing}
+        className="absolute right-3 top-3 rounded-lg p-1.5 text-natural-stone transition-colors hover:bg-natural-cream hover:text-natural-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50 disabled:cursor-wait disabled:opacity-60"
         aria-label="Not now"
       >
         <X size={16} />
@@ -61,6 +61,11 @@ export function ContextualUpgradeCard({ prompt, onDismiss }: ContextualUpgradeCa
           <p className="mt-1 font-sans text-sm leading-relaxed text-natural-stone">
             {prompt.message}
           </p>
+          {dismissError && (
+            <p role="status" className="mt-2 text-xs font-medium text-natural-dark">
+              {dismissError}
+            </p>
+          )}
           <button
             onClick={handleUpgrade}
             className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-natural-sage/25 bg-natural-cream px-4 font-sans text-xs font-bold text-natural-dark transition-colors hover:border-natural-sage hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50"

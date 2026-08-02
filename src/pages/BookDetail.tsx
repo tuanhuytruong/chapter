@@ -50,6 +50,7 @@ import PodcastPanel from "../components/PodcastPanel";
 import { ContextualUpgradeCard } from "../components/ContextualUpgradeCard";
 import { GuideCard } from "../onboarding";
 import ChapterDropdown from "../components/ChapterDropdown";
+import { BookDetailSkeleton } from "../components/ContentSkeleton";
 
 function InlineMarkdown({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -180,6 +181,9 @@ export default function BookDetail() {
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(
     null,
   );
+  const [upgradeDismissError, setUpgradeDismissError] = useState<string | null>(
+    null,
+  );
 
   const openPodcast = () => {
     setOpeningPodcast(true);
@@ -265,7 +269,10 @@ export default function BookDetail() {
     void api
       .getUpgradePrompts(id)
       .then(({ prompt }) => {
-        if (!cancelled) setUpgradePrompt(prompt);
+        if (!cancelled) {
+          setUpgradePrompt(prompt);
+          setUpgradeDismissError(null);
+        }
       })
       .catch(() => {
         if (!cancelled) setUpgradePrompt(null);
@@ -276,14 +283,15 @@ export default function BookDetail() {
   }, [id, book?.can_edit, logs.length, lenses.length]);
 
   const dismissUpgradePrompt = async (key: string) => {
+    const previousPrompt = upgradePrompt;
+    if (!previousPrompt || previousPrompt.key !== key) return;
+    setUpgradeDismissError(null);
+    setUpgradePrompt(null);
     try {
       await api.dismissUpgradePrompt(key);
-      setUpgradePrompt((previous) => (previous?.key === key ? null : previous));
     } catch {
-      setToast({
-        type: "err",
-        msg: "Could not save this preference. Please try again.",
-      });
+      setUpgradePrompt(previousPrompt);
+      setUpgradeDismissError("Could not save this preference. Please try again.");
     }
   };
 
@@ -475,11 +483,7 @@ export default function BookDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center p-16">
-        <Loader2 className="w-8 h-8 text-natural-sage animate-spin" />
-      </div>
-    );
+    return <BookDetailSkeleton />;
   }
   if (!book) {
     const missing = loadError?.startsWith("404:");
@@ -1186,6 +1190,7 @@ export default function BookDetail() {
                   <ContextualUpgradeCard
                     prompt={upgradePrompt}
                     onDismiss={dismissUpgradePrompt}
+                    dismissError={upgradeDismissError}
                   />
                 )}
               </div>

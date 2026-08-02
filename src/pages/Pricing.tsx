@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowLeft, CheckCircle2, CreditCard, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowLeft, CheckCircle2, CreditCard, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, type BillingCatalogResponse, type EntitlementsResponse, type MembershipPlansResponse } from "../api";
 import PricingComparison from "../components/PricingComparison";
 import PricingFaq from "../components/PricingFaq";
 import VietQrCheckoutSheet from "../components/VietQrCheckoutSheet";
+import { PricingSkeleton } from "../components/ContentSkeleton";
 
 const formatVnd = (amount: number) => `${new Intl.NumberFormat("vi-VN").format(amount)}đ`;
 
@@ -19,7 +20,7 @@ export default function Pricing() {
   const monthly = deep.find((item) => item.period === "month");
   const annual = deep.find((item) => item.period === "year");
   const saving = monthly && annual ? monthly.amountVnd * 12 - annual.amountVnd : null;
-  if (!catalog && !error) return <div className="flex min-h-48 items-center justify-center text-natural-stone"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (!catalog && !error) return <PricingSkeleton />;
   const active = entitlement?.subscription.tier === "deep_reader";
   return <main className="mx-auto max-w-6xl space-y-8 pb-8 sm:space-y-12"><Link to="/account" className="inline-flex min-h-11 items-center gap-1.5 font-sans text-xs font-bold text-natural-stone hover:text-natural-dark"><ArrowLeft className="h-4 w-4" /> Account</Link>
     <section className="relative overflow-hidden rounded-[2rem] border border-natural-sage/20 bg-natural-sage/10 px-5 py-8 sm:px-9 sm:py-12"><div className="relative max-w-3xl"><p className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-natural-sage">Membership</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-natural-dark sm:text-5xl">Keep the habit free.<br />Go deeper when a book asks for more.</h1><p className="mt-4 max-w-2xl text-base leading-relaxed text-natural-stone sm:text-lg">Your reading shelf stays yours. Membership adds a source-grounded companion for returning to ideas, asking better questions and connecting what your own sessions hold.</p><div className="mt-6 flex flex-wrap items-center gap-3"><a href="#comparison" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-natural-border bg-natural-cream px-4 font-sans text-xs font-bold text-natural-dark hover:bg-white"><ArrowDown className="h-3.5 w-3.5" /> See what changes</a>{billing?.enabled && monthly && !active && <button onClick={() => setSku(monthly.id)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-natural-sage px-4 font-sans text-xs font-bold text-white hover:opacity-90"><Sparkles className="h-3.5 w-3.5" /> Explore Deep Reader</button>}</div></div></section>
