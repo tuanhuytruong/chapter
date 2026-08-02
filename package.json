@@ -33,7 +33,9 @@
     "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
     "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",
     "verify:platform-db": "tsx scripts/verify-platform-db.ts",
-    "verify:platform": "tsx scripts/verify-platform-headers.ts"
+    "verify:platform": "tsx scripts/verify-platform-headers.ts",
+    "verify:today-review": "tsx scripts/verify-today-review.ts",
+    "verify:review-api": "tsx scripts/verify-review-api.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

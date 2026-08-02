@@ -427,7 +427,8 @@ export const api = {
       { method: "POST" },
     ),
   getDueReviewCount: () => req<{ count: number }>("/api/reviews/due/count"),
-  getDueReviews: () => req<ReviewCardRow[]>("/api/reviews/due"),
+  getDueReviewBooks: () => req<Array<{ id: string; title: string; author: string; cover_url: string | null; due_count: number }>>("/api/reviews/due/books"),
+  getDueReviews: (bookId?: string) => req<ReviewCardRow[]>(`/api/reviews/due${bookId ? `?bookId=${encodeURIComponent(bookId)}` : ""}`),
   submitReview: (id: string, remembered: boolean) =>
     req<ReviewCardRow>(`/api/reviews/${id}`, {
       method: "POST",

@@ -17,14 +17,12 @@ import {
   type TodayInsights,
 } from "../api";
 import ChapterDropdown from "../components/ChapterDropdown";
-import type { ReviewCardRow } from "../review";
 
 export default function Today() {
   const [dashboard, setDashboard] = useState<TodayDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reviewCards, setReviewCards] = useState<ReviewCardRow[]>([]);
   const [insights, setInsights] = useState<TodayInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [insightsError, setInsightsError] = useState<string | null>(null);
@@ -84,18 +82,6 @@ export default function Today() {
     next.set("insightsRound", value);
     setSearchParams(next, { replace: true });
   };
-  useEffect(() => {
-    let active = true;
-    void api
-      .getDueReviews()
-      .then((cards) => {
-        if (active) setReviewCards(cards.slice(0, 3));
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const startNext = async () => {
     if (!dashboard?.next_queued_book) return;
@@ -168,62 +154,15 @@ export default function Today() {
           {error}
         </p>
       )}
-      <section
-        aria-label="Review preview"
-        className="rounded-2xl border border-natural-border bg-white p-4"
-      >
-        <div className="flex items-center justify-between gap-3">
+      <section aria-label="Review" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-natural-border bg-white px-4 py-3">
+        <div className="flex items-center gap-3">
+          <ClipboardCheck className="h-5 w-5 shrink-0 text-natural-clay" />
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-natural-sage">
-              Review
-            </p>
-            <h2 className="mt-1 font-bold text-natural-dark">
-              Ideas waiting for you
-            </h2>
+            <p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Review</p>
+            <p className="text-sm font-semibold text-natural-dark">{dashboard.due_reviews > 0 ? `${dashboard.due_reviews} idea${dashboard.due_reviews === 1 ? "" : "s"} ready to revisit` : "Reviews are clear"}</p>
           </div>
-          <Link
-            to="/review"
-            className="flex min-h-10 items-center gap-1 text-sm font-bold text-natural-sage"
-          >
-            Open review <ArrowRight className="h-4 w-4" />
-          </Link>
         </div>
-        {dashboard.due_reviews > 0 && reviewCards.length ? (
-          <div className="mt-4">
-            <div className="flex items-center">
-              <div className="flex -space-x-3" aria-hidden="true">
-                {reviewCards.slice(0, 3).map((card) => (
-                  <div
-                    key={card.id}
-                    className="flex h-16 w-12 items-center justify-center overflow-hidden rounded-lg border-2 border-white bg-natural-sage/15 text-natural-sage shadow-sm"
-                  >
-                    {card.cover_url ? (
-                      <img
-                        src={card.cover_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <BookOpen className="h-5 w-5" />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="ml-4 text-sm font-semibold text-natural-dark">
-                From {reviewCards[0].title} — keep it close.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 flex items-center gap-3 rounded-xl bg-natural-cream p-3">
-            <ClipboardCheck className="h-5 w-5 shrink-0 text-natural-clay" />
-            <p className="text-sm text-natural-stone">
-              {dashboard.due_reviews > 0
-                ? `${dashboard.due_reviews} insight${dashboard.due_reviews === 1 ? "" : "s"} ready to review.`
-                : "Reviews are clear"}
-            </p>
-          </div>
-        )}
+        <Link to="/review" className="inline-flex min-h-10 items-center gap-1 text-sm font-bold text-natural-sage">Open review <ArrowRight className="h-4 w-4" /></Link>
       </section>
 
       {active ? (
