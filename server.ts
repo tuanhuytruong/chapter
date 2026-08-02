@@ -919,7 +919,21 @@ app.get("/api/today/insights", async (req: Request, res: Response) => {
       where += " AND rl.book_id=$2 AND rl.reading_round=$3";
     }
     const insights = await query<{ insight: string; occurrences: string }>(
-      `SELECT normalized.insight, COUNT(*)::text AS occurrences FROM reading_log rl JOIN books b ON b.id=rl.book_id CROSS JOIN LATERAL unnest(COALESCE(rl.key_insights, ARRAY[]::text[])) AS source(insight) CROSS JOIN LATERAL (SELECT lower(regexp_replace(btrim(source.insight), '\\s+', ' ', 'g')) AS insight) normalized WHERE ${where} AND normalized.insight <> '' GROUP BY normalized.insight ORDER BY COUNT(*) DESC, normalized.insight ASC LIMIT 8`,
+      `WITH source_rows AS (
+         SELECT regexp_replace(btrim(source.insight), '\\s+', ' ', 'g') AS display_insight,
+                lower(regexp_replace(btrim(source.insight), '\\s+', ' ', 'g')) AS normalized_insight
+         FROM reading_log rl
+         JOIN books b ON b.id=rl.book_id
+         CROSS JOIN LATERAL unnest(COALESCE(rl.key_insights, ARRAY[]::text[])) AS source(insight)
+         WHERE ${where}
+       )
+       SELECT (array_agg(display_insight ORDER BY display_insight))[1] AS insight,
+              COUNT(*)::text AS occurrences
+       FROM source_rows
+       WHERE normalized_insight <> ''
+       GROUP BY normalized_insight
+       ORDER BY COUNT(*) DESC, normalized_insight ASC
+       LIMIT 8`,
       params,
     );
     res.json({

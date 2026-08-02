@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export type ChapterDropdownOption<T extends string> = {
   value: T;
@@ -149,12 +150,10 @@ export default function ChapterDropdown<T extends string>({
         className="mt-1 flex min-h-11 w-full items-center justify-between rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-left text-xs text-natural-dark transition focus:outline-none focus:ring-2 focus:ring-natural-sage"
       >
         <span className="min-w-0 truncate">{selected?.label}</span>
-        <span
+        <ChevronDown
           aria-hidden="true"
-          className={`ml-2 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`}
-        >
-          ⌄
-        </span>
+          className={`ml-2 h-4 w-4 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
       {open && (
         <div

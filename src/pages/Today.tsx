@@ -323,14 +323,19 @@ export default function Today() {
               Ideas worth carrying forward
             </h2>
           </div>
-          {insights?.selection.book_id && (
-            <Link
-              to={`/books/${insights.selection.book_id}`}
-              className="min-h-10 text-sm font-bold text-natural-sage"
-            >
-              Open book
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-bold text-natural-sage">
+            {insights?.selection.book_id && (
+              <Link
+                to={`/books/${insights.selection.book_id}`}
+                className="inline-flex min-h-10 items-center gap-1"
+              >
+                Open book <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+            )}
+            <Link to="/insights" className="inline-flex min-h-10 items-center gap-1">
+              More insights <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </Link>
-          )}
+          </div>
         </div>
         {insights && (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -382,20 +387,22 @@ export default function Today() {
           </p>
         ) : insights?.insights.length ? (
           <ul className="mt-4 space-y-2">
-            {insights.insights.map((insight) => (
+            {insights.insights.map((insight, index) => (
               <li
                 key={insight.text}
-                className="flex gap-3 rounded-xl bg-natural-cream px-3 py-2 text-sm text-natural-dark"
+                className="flex items-start gap-3 rounded-xl bg-natural-cream px-3 py-2 text-sm text-natural-dark"
               >
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-natural-clay" />
-                <span>
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-[9px] font-bold text-natural-stone">
+                  {index + 1}
+                </span>
+                <p className="min-w-0 flex-1 leading-relaxed">
                   {insight.text}
                   {insight.occurrences > 1 && (
-                    <span className="ml-2 text-xs text-natural-stone">
+                    <span className="ml-2 whitespace-nowrap text-xs text-natural-stone">
                       {insight.occurrences} times
                     </span>
                   )}
-                </span>
+                </p>
               </li>
             ))}
           </ul>
