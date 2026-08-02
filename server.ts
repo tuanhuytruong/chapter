@@ -67,7 +67,12 @@ if (!sessionSecret)
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
 app.use(compression());
-app.use((_, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
+app.use((req, res, next) => {
+  // API/session responses are sensitive; static and SPA handlers override this
+  // later with their own policy.
+  if (req.path.startsWith("/api/")) res.setHeader("Cache-Control", "no-store");
+  next();
+});
 app.use(express.json());
 // Public liveness probe: intentionally does not require a session or database query.
 app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
