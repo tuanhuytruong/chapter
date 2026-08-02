@@ -90,6 +90,11 @@ export interface EntitlementsResponse {
     source: string;
     periodEnd: string | null;
   };
+  retention: {
+    accessEndsAt: string | null;
+    endsSoon: boolean;
+    cancellationScheduled: boolean;
+  };
   features: Record<
     string,
     {

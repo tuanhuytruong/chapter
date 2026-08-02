@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { query } from "../db.js";
-import { effectiveEntitlement, ENTITLEMENT_POLICY_VERSION, featureKeys, membershipPlans, periodKeyInAppTz, quotaFor, type FeatureKey } from "../entitlements.js";
+import { effectiveEntitlement, ENTITLEMENT_POLICY_VERSION, featureKeys, membershipPlans, periodKeyInAppTz, quotaFor, retentionState, type FeatureKey } from "../entitlements.js";
 import { usageSummary } from "../usage.js";
 import { requireAuth, userFrom } from "../auth.js";
 import { exhaustedQuotaFact, selectUpgradePrompt, type UpgradePromptKey } from "../upgrade-prompts.js";
@@ -30,13 +30,14 @@ entitlementsRouter.get("/me", requireAuth, async (req: Request, res: Response) =
     const userId = userFrom(req).id;
     const subscription = (await query<SubscriptionRow>("SELECT tier,status,current_period_end,granted_by FROM subscriptions WHERE user_id=$1", [userId])).rows[0];
     const entitlement = effectiveEntitlement(subscription);
+    const retention = retentionState(entitlement);
     const usage = await usageSummary(userId);
     const features = Object.fromEntries(featureKeys().map((feature: FeatureKey) => {
       const limit = quotaFor(entitlement.tier, feature);
       const current = usage[feature] || { used: 0, reserved: 0 };
       return [feature, { available: limit !== "unavailable", usage: { used: current.used, reserved: current.reserved, limit, remaining: typeof limit === "number" ? Math.max(0, limit - current.used - current.reserved) : null } }];
     }));
-    res.json({ subscription: entitlement, features, policyVersion: ENTITLEMENT_POLICY_VERSION });
+    res.json({ subscription: entitlement, retention, features, policyVersion: ENTITLEMENT_POLICY_VERSION });
   } catch (error: unknown) { 
     console.error("[entitlements] /me error:", error);
     res.status(503).json({ error: "membership status unavailable" }); 

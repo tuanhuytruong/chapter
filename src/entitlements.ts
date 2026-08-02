@@ -5,6 +5,11 @@ export type FeatureKey = "ai_reader_generation" | "reading_lens_generation" | "p
 
 export type SubscriptionRow = { tier: Tier; status: SubscriptionStatus; current_period_end: string | Date | null; granted_by: GrantSource };
 export type EffectiveEntitlement = { tier: Tier; status: SubscriptionStatus; active: boolean; source: GrantSource; periodEnd: string | null };
+export type RetentionState = {
+  accessEndsAt: string | null;
+  endsSoon: boolean;
+  cancellationScheduled: boolean;
+};
 export type Quota = number | "unlimited" | "unavailable";
 export type BillingPeriod = "month" | "year";
 export type MembershipBenefit = { label: string; availableNow: boolean };
@@ -69,6 +74,54 @@ export function effectiveEntitlement(subscription: Partial<SubscriptionRow> | nu
   const inPeriod = !end || end > now;
   const active = tier !== "free" && inPeriod && (status === "active" || status === "trialing" || status === "canceled" || status === "past_due");
   return { tier: active ? tier : "free", status, active, source, periodEnd };
+}
+
+const APP_TIME_ZONE = "Asia/Bangkok";
+const RETENTION_WINDOW_DAYS = 5;
+
+function appDateKey(value: Date): string | null {
+  if (Number.isNaN(value.valueOf())) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : null;
+}
+
+function calendarDayIndex(dateKey: string): number {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return Date.UTC(year, month - 1, day) / 86_400_000;
+}
+
+// Presentation-only facts for the owner membership surface. Authorization remains
+// exclusively controlled by effectiveEntitlement and server quota enforcement.
+export function retentionState(
+  entitlement: EffectiveEntitlement,
+  now = new Date(),
+  windowDays = RETENTION_WINDOW_DAYS,
+): RetentionState {
+  const accessEndsAt = entitlement.active ? entitlement.periodEnd : null;
+  const end = accessEndsAt ? new Date(accessEndsAt) : null;
+  const today = appDateKey(now);
+  const endDate = end ? appDateKey(end) : null;
+  const distance = today && endDate ? calendarDayIndex(endDate) - calendarDayIndex(today) : null;
+  const endsSoon = Boolean(
+    entitlement.active &&
+      entitlement.tier !== "free" &&
+      distance !== null &&
+      distance >= 0 &&
+      distance <= windowDays,
+  );
+  return {
+    accessEndsAt,
+    endsSoon,
+    cancellationScheduled: entitlement.active && entitlement.status === "canceled",
+  };
 }
 
 export function quotaFor(tier: Tier, feature: FeatureKey, _policyVersion = ENTITLEMENT_POLICY_VERSION): Quota { return QUOTAS[tier][feature]; }
