@@ -722,40 +722,6 @@ export default function BookDetail() {
         </div>
         <aside className="contents" aria-label="Book utilities">
           <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
-            {rounds.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-natural-stone">
-                <label htmlFor="reading-round" className="font-bold">
-                  Reading
-                </label>
-                <select
-                  id="reading-round"
-                  value={selectedRound ?? book.current_reading_round}
-                  onChange={(event) =>
-                    setSelectedRound(Number(event.target.value))
-                  }
-                  className="rounded border border-natural-border bg-white px-2 py-1"
-                >
-                  {rounds.map((round) => (
-                    <option
-                      key={round.reading_round}
-                      value={round.reading_round}
-                    >
-                      {round.reading_round === book.current_reading_round
-                        ? `Current reading · Round ${round.reading_round}`
-                        : `Previous reading · Round ${round.reading_round}${round.finished_at ? ` · Finished ${new Date(round.finished_at).toLocaleDateString()}` : ""}`}
-                    </option>
-                  ))}
-                </select>
-                {selectedRound !== book.current_reading_round && (
-                  <button
-                    onClick={() => setSelectedRound(book.current_reading_round)}
-                    className="underline"
-                  >
-                    Back to current
-                  </button>
-                )}
-              </div>
-            )}
             {selectedRound !== book.current_reading_round ? (
               <div className="rounded-xl border border-natural-border bg-natural-border/40 p-3 text-xs text-natural-stone">
                 Previous reading is read-only.
@@ -1146,9 +1112,9 @@ export default function BookDetail() {
                 {filteredLogs.length !== 1 ? "s" : ""} for "{search}"
               </p>
             )}
-            {/* Toggle: List / Journey */}
-            <div className="flex items-center gap-1 mb-3">
-              <button
+            <div className="mb-3 flex flex-col gap-3 border-y border-natural-border/70 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-1" role="tablist" aria-label="Reading views">
+                <button
                 onClick={() => setLogView("list")}
                 className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "list" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
@@ -1171,6 +1137,36 @@ export default function BookDetail() {
               >
                 AI Reader
               </button>
+              </div>
+              {rounds.length > 0 && (
+                <div className="flex min-w-0 items-center gap-2 sm:justify-end">
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-natural-stone">
+                    Reading
+                  </span>
+                  <ChapterDropdown
+                    id="reading-round"
+                    className="w-full sm:w-64"
+                    value={String(selectedRound ?? book.current_reading_round)}
+                    onChange={(value) => setSelectedRound(Number(value))}
+                    options={rounds.map((round) => ({
+                      value: String(round.reading_round),
+                      label:
+                        round.reading_round === book.current_reading_round
+                          ? `Current reading · Round ${round.reading_round}`
+                          : `Previous reading · Round ${round.reading_round}${round.finished_at ? ` · Finished ${new Date(round.finished_at).toLocaleDateString()}` : ""}`,
+                    }))}
+                  />
+                  {selectedRound !== book.current_reading_round && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRound(book.current_reading_round)}
+                      className="shrink-0 text-xs font-bold text-natural-sage underline underline-offset-2"
+                    >
+                      Current
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {hasOpenedAiReader && (
