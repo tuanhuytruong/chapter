@@ -25,7 +25,8 @@
     "verify:podcast": "tsx scripts/verify-podcast.ts",
     "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
     "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",
-    "verify:platform-headers": "tsx scripts/verify-platform-headers.ts"
+    "verify:platform-headers": "tsx scripts/verify-platform-headers.ts",
+    "verify:same-day-reread": "tsx scripts/verify-same-day-reread.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

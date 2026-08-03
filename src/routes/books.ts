@@ -557,20 +557,24 @@ async function reserveAdvance(bookId: string, force: boolean): Promise<any | nul
     if (!book || (book.status !== "active" && !force)) return null;
     const dateStr = today();
     const { rows: pending } = await client.query(
-      `SELECT * FROM reading_log WHERE book_id=$1 AND date=$2 AND raw_text IS NULL ORDER BY session DESC LIMIT 1`,
-      [bookId, dateStr]
+      `SELECT * FROM reading_log WHERE book_id=$1 AND reading_round=$3 AND date=$2 AND raw_text IS NULL ORDER BY session DESC LIMIT 1`,
+      [bookId, dateStr, book.reading_round]
     );
     if (pending[0]) return { book, dateStr, log: pending[0], start: pending[0].page_start, end: pending[0].page_end, resumed: true };
     const { rows: prior } = await client.query(
-      `SELECT page_end, session FROM reading_log WHERE book_id=$1 AND date=$2 ORDER BY session DESC LIMIT 1`, [bookId, dateStr]
+      `SELECT page_end, session FROM reading_log WHERE book_id=$1 AND reading_round=$3 AND date=$2 ORDER BY session DESC LIMIT 1`, [bookId, dateStr, book.reading_round]
     );
     const start = prior[0] ? prior[0].page_end + 1 : book.current_page + 1;
     if (start > (book.total_pages || Infinity)) return { bookId, skipped: true, reason: "book finished" };
     const end = Math.min(start + Math.max(1, book.daily_pages) - 1, book.total_pages || start + Math.max(1, book.daily_pages) - 1);
-    const session = prior[0] ? prior[0].session + 1 : 1;
+    const { rows: daySessions } = await client.query(
+      `SELECT COALESCE(MAX(session), 0)::int AS last_session FROM reading_log WHERE book_id=$1 AND date=$2`,
+      [bookId, dateStr],
+    );
+    const session = Number(daySessions[0]?.last_session || 0) + 1;
     const { rows } = await client.query(
-      `INSERT INTO reading_log (book_id,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [bookId, dateStr, session, start, end, "Reading session is being prepared."]
+      `INSERT INTO reading_log (book_id,reading_round,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [bookId, book.reading_round, dateStr, session, start, end, "Reading session is being prepared."]
     );
     await client.query("UPDATE books SET current_page=$1 WHERE id=$2", [end, bookId]);
     return { book, dateStr, log: rows[0], start, end, resumed: false };
