@@ -5,8 +5,25 @@ import type { CalendarLogRow } from "./calendar";
 import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
 import type { AchievementsResponse } from "./achievements";
 
+export interface TodayInsights {
+  selection: {
+    all_books: boolean;
+    book_id: string | null;
+    reading_round: number | null;
+  };
+  books: Array<{
+    id: string;
+    title: string;
+    author: string;
+    current_reading_round: number;
+  }>;
+  rounds: Array<{ reading_round: number; status: string }>;
+  insights: Array<{ text: string; occurrences: number }>;
+}
+
 export interface TodayDashboard {
   today: string;
+  active_books: BookRow[];
   active_book: BookRow | null;
   next_queued_book: BookRow | null;
   today_progress: { sessions: number; units: number };
@@ -134,6 +151,20 @@ export const api = {
     req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
+  getTodayInsights: (
+    query: { bookId?: string; round?: number; allBooks?: boolean } = {},
+  ) => {
+    const params = new URLSearchParams();
+    if (query.allBooks) params.set("allBooks", "1");
+    else {
+      if (query.bookId) params.set("bookId", query.bookId);
+      if (query.round) params.set("round", String(query.round));
+    }
+    const suffix = params.toString();
+    return req<TodayInsights>(
+      `/api/today/insights${suffix ? `?${suffix}` : ""}`,
+    );
+  },
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
   getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
   getBookPodcast: (bookId: string) => req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),

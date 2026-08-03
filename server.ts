@@ -386,13 +386,126 @@ app.get("/api/goals/weekly", async (req: Request, res: Response) => {
   }
 });
 
+// ── Today key insights (small, personal, round-aware) ───────
+app.get("/api/today/insights", async (req: Request, res: Response) => {
+  const ownerId = userFrom(req).id;
+  const bookId = typeof req.query.bookId === "string" ? req.query.bookId : "";
+  const allBooks = req.query.allBooks === "1";
+  const rawRound = req.query.round;
+  if (
+    typeof rawRound !== "undefined" &&
+    (typeof rawRound !== "string" ||
+      !/^\d+$/.test(rawRound) ||
+      Number(rawRound) < 1)
+  )
+    return res.status(400).json({ error: "round must be a positive integer" });
+  if (bookId && !/^[0-9a-f-]{36}$/i.test(bookId))
+    return res.status(400).json({ error: "bookId must be a UUID" });
+  if (allBooks && (bookId || rawRound !== undefined))
+    return res
+      .status(400)
+      .json({ error: "allBooks cannot be combined with bookId or round" });
+  try {
+    const books = await query<{
+      id: string;
+      title: string;
+      author: string;
+      current_reading_round: number;
+    }>(
+      "SELECT id, title, author, current_reading_round FROM books WHERE owner_id=$1 ORDER BY title ASC, created_at ASC",
+      [ownerId],
+    );
+    let selectedBook = bookId
+      ? books.rows.find((book) => book.id === bookId)
+      : undefined;
+    if (!bookId && !allBooks)
+      selectedBook = (
+        await query<{
+          id: string;
+          title: string;
+          author: string;
+          current_reading_round: number;
+        }>(
+          "SELECT id, title, author, current_reading_round FROM books WHERE owner_id=$1 AND status='active' ORDER BY created_at ASC LIMIT 1",
+          [ownerId],
+        )
+      ).rows[0];
+    if (bookId && !selectedBook)
+      return res.status(404).json({ error: "book not found" });
+    const selectedRound = selectedBook
+      ? rawRound === undefined
+        ? Number(selectedBook.current_reading_round)
+        : Number(rawRound)
+      : null;
+    let rounds: Array<{ reading_round: number; status: string }> = [];
+    if (selectedBook) {
+      rounds = (
+        await query<{ reading_round: number; status: string }>(
+          "SELECT reading_round, status FROM book_reading_rounds WHERE book_id=$1 ORDER BY reading_round DESC",
+          [selectedBook.id],
+        )
+      ).rows;
+      if (
+        !rounds.some((round) => Number(round.reading_round) === selectedRound)
+      )
+        return res
+          .status(404)
+          .json({ error: "reading round not found for book" });
+    }
+    const params: unknown[] = [ownerId];
+    let where = "b.owner_id=$1";
+    if (selectedBook) {
+      params.push(selectedBook.id, selectedRound);
+      where += " AND rl.book_id=$2 AND rl.reading_round=$3";
+    }
+    const insights = await query<{ insight: string; occurrences: string }>(
+      `WITH source_rows AS (
+         SELECT regexp_replace(btrim(source.insight), '\\s+', ' ', 'g') AS display_insight,
+                lower(regexp_replace(btrim(source.insight), '\\s+', ' ', 'g')) AS normalized_insight
+         FROM reading_log rl
+         JOIN books b ON b.id=rl.book_id
+         CROSS JOIN LATERAL unnest(COALESCE(rl.key_insights, ARRAY[]::text[])) AS source(insight)
+         WHERE ${where}
+       )
+       SELECT (array_agg(display_insight ORDER BY display_insight))[1] AS insight,
+              COUNT(*)::text AS occurrences
+       FROM source_rows
+       WHERE normalized_insight <> ''
+       GROUP BY normalized_insight
+       ORDER BY COUNT(*) DESC, normalized_insight ASC
+       LIMIT 8`,
+      params,
+    );
+    res.json({
+      selection: {
+        all_books: allBooks,
+        book_id: selectedBook?.id || null,
+        reading_round: selectedRound,
+      },
+      books: books.rows,
+      rounds,
+      insights: insights.rows.map((row) => ({
+        text: row.insight,
+        occurrences: Number(row.occurrences),
+      })),
+    });
+  } catch (e: any) {
+    res
+      .status(503)
+      .json({ error: "today insights unavailable", detail: e.message });
+  }
+});
+
 // ── Today dashboard (personal retention loop) ──────────────
 app.get("/api/today", async (req: Request, res: Response) => {
   try {
     const ownerId = userFrom(req).id;
     const appToday = dateInAppTz();
     const [active, queued, todayLogs, dueReviews, goalRow] = await Promise.all([
-      query(`SELECT * FROM books WHERE owner_id=$1 AND status='active' ORDER BY created_at ASC LIMIT 1`, [ownerId]),
+      query(
+        `SELECT * FROM books WHERE owner_id=$1 AND status='active' ORDER BY created_at ASC`,
+        [ownerId],
+      ),
       query(`SELECT * FROM books WHERE owner_id=$1 AND status='queued' ORDER BY queue_order NULLS LAST, created_at ASC LIMIT 1`, [ownerId]),
       query<{ sessions: string; units: string }>(
         `SELECT COUNT(*) AS sessions, COALESCE(SUM(rl.page_end - rl.page_start + 1), 0) AS units
@@ -415,6 +528,7 @@ app.get("/api/today", async (req: Request, res: Response) => {
     );
     res.json({
       today: appToday,
+      active_books: active.rows,
       active_book: active.rows[0] || null,
       next_queued_book: queued.rows[0] || null,
       today_progress: { sessions: Number(todayLogs.rows[0]?.sessions || 0), units: Number(todayLogs.rows[0]?.units || 0) },
