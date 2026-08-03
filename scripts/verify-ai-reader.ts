@@ -99,11 +99,12 @@ assert.match(bookWikiComponent, /if \(error\.message\.startsWith\("404:"\)\) ret
 assert.match(bookWikiComponent, /The owner has not generated a shared AI Reader map for this book yet\./);
 assert.match(bookWikiComponent, /import \{ GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage \} from "\.\/ContextualGlossary"/);
 assert.match(bookWikiComponent, /const glossaryLanguage: GlossaryLanguage = resolveGlossaryLanguage\(/);
-assert.match(bookWikiComponent, /const pendingScrollY = useRef<number \| null>\(null\)/);
 assert.match(bookWikiComponent, /const preserveScroll = \(update: \(\) => void\) => \{/);
-assert.match(bookWikiComponent, /pendingScrollY\.current = window\.scrollY/);
+assert.match(bookWikiComponent, /const saved = window\.scrollY/);
+assert.match(bookWikiComponent, /Capture in this interaction\'s closure/);
 assert.match(bookWikiComponent, /requestAnimationFrame\(\(\) => requestAnimationFrame/);
-assert.match(bookWikiComponent, /window\.scrollTo\(\{ top: saved, behavior: "auto" \}\)/);
+assert.match(bookWikiComponent, /if \(Math\.abs\(window\.scrollY - saved\) > 1\) window\.scrollTo\(\{ top: saved, behavior: "auto" \}\)/);
+assert.doesNotMatch(bookWikiComponent, /pendingScrollY/, "AI Reader scroll preservation must not share a mutable offset between interactions");
 assert.match(bookWikiComponent, /<GlossaryLabel term="Evidence" language=\{language\}/);
 assert.match(bookWikiComponent, /<GlossaryLabel term=\{stateTerm\} language=\{language\}/);
 assert.match(bookWikiComponent, /language=\{glossaryLanguage\} onSession=\{\(id\) => preserveScroll/);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Brain, ChevronDown, ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage } from "./ContextualGlossary";
 
@@ -57,7 +57,9 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
   const [openSession, setOpenSession] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const pendingScrollY = useRef<number | null>(null);
+  // Each local disclosure owns its own offset. A shared mutable ref lets an
+  // earlier queued interaction clear a later interaction's saved position,
+  // which can leave the browser's post-layout focus scroll uncorrected.
 
   const fetchReader = useCallback(async () => {
     try {
@@ -89,12 +91,13 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
     [wiki?.book_so_far, wiki?.overview, wiki?.current_reading_state?.summary].filter(Boolean).join(" "),
   );
   const preserveScroll = (update: () => void) => {
-    pendingScrollY.current = window.scrollY;
+    // Capture in this interaction's closure rather than a component-wide ref.
+    // This is intentionally scoped to local disclosure state; Reading Map
+    // session links still choose their own in-panel target via openSession.
+    const saved = window.scrollY;
     update();
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const saved = pendingScrollY.current;
-      pendingScrollY.current = null;
-      if (saved != null && Math.abs(window.scrollY - saved) > 1) window.scrollTo({ top: saved, behavior: "auto" });
+      if (Math.abs(window.scrollY - saved) > 1) window.scrollTo({ top: saved, behavior: "auto" });
     }));
   };
 
