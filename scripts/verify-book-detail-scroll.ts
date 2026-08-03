@@ -20,6 +20,11 @@ assert.doesNotMatch(journey, /scrollIntoView/);
 assert.doesNotMatch(journey, /<button(?![^>]*type="button")/s);
 
 const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(detail, /const pointerScrollY = useRef<number \| null>\(null\)/);
+assert.match(detail, /onPointerDownCapture=\{captureDetailScroll\}/);
+assert.match(detail, /onClickCapture=\{restoreDetailScroll\}/);
+assert.match(detail, /const saved = pointerScrollY\.current/);
+assert.match(detail, /target\.closest\("a, \[data-scroll-intent\]"\)/);
 assert.match(detail, /<button\s+type="button"\s+onClick=\{\(\) => setLogView\("list"\)\}/);
 assert.match(detail, /<button\s+type="button"\s+onClick=\{\(\) => setLogView\("journey"\)\}/);
 assert.match(detail, /<button\s+type="button"\s+onClick=\{\(\) => \{\s+setHasOpenedAiReader/);
