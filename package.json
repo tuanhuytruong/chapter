@@ -23,7 +23,9 @@
     "verify:library": "tsx scripts/verify-library-shelf-switcher.ts",
     "verify:quotes": "tsx scripts/verify-quotes-archive.ts",
     "verify:podcast": "tsx scripts/verify-podcast.ts",
-    "verify:auth": "tsx scripts/verify-auth-upgrade.ts"
+    "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
+    "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",
+    "verify:platform-headers": "tsx scripts/verify-platform-headers.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -44,7 +46,8 @@
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.18.1",
     "resend": "^6.18.1",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "compression": "^1.8.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -58,6 +61,7 @@
     "pg-mem": "^3.0.14",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "@types/compression": "^1.8.1"
   }
 }

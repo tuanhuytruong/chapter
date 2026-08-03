@@ -44,4 +44,8 @@ export const config = {
   resendApiKey: optionalEnv("RESEND_API_KEY"),
   resendFrom: optionalEnv("RESEND_FROM") || "Chapter <no-reply@account.mrl.asia>",
   passwordResetTtlMinutes: Math.min(60, Math.max(15, Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 45))),
+  authRateLimitWindowMs: Math.min(60 * 60_000, Math.max(60_000, Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? 15 * 60_000))),
+  authLoginMaxAttempts: Math.min(100, Math.max(1, Number(process.env.AUTH_LOGIN_MAX_ATTEMPTS ?? 10))),
+  authPasswordResetMaxAttempts: Math.min(100, Math.max(1, Number(process.env.AUTH_PASSWORD_RESET_MAX_ATTEMPTS ?? 5))),
+  authOauthMaxAttempts: Math.min(100, Math.max(1, Number(process.env.AUTH_OAUTH_MAX_ATTEMPTS ?? 20))),
 };
