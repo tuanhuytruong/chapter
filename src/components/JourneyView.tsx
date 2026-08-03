@@ -102,11 +102,17 @@ export default function JourneyView({
     });
   };
 
-  const preserveScroll = (update: () => void) => {
-    const saved = window.scrollY;
+  // Capture pointer-down before the browser can focus/reflow the control.
+  const captureScroll = (button: HTMLButtonElement) => {
+    button.dataset.chapterScrollY = String(window.scrollY);
+  };
+  const preserveScroll = (button: HTMLButtonElement, update: () => void) => {
+    const saved = Number(button.dataset.chapterScrollY);
+    delete button.dataset.chapterScrollY;
+    const top = Number.isFinite(saved) ? saved : window.scrollY;
     update();
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (Math.abs(window.scrollY - saved) > 1) window.scrollTo({ top: saved, behavior: "auto" });
+      if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: "auto" });
     }));
   };
 
@@ -178,7 +184,8 @@ export default function JourneyView({
                       <div id={`journey-session-${log.id}`} key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
                         <button
                           type="button"
-                          onClick={() => preserveScroll(() => setExpanded(isOpen ? null : log.id))}
+                          onPointerDown={(event) => captureScroll(event.currentTarget)}
+                          onClick={(event) => preserveScroll(event.currentTarget, () => setExpanded(isOpen ? null : log.id))}
                           className="w-full text-left px-4 py-4 hover:bg-natural-cream/80 transition group"
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -249,7 +256,8 @@ export default function JourneyView({
                       {/* Toggle bar */}
                       <button
                         type="button"
-                        onClick={() => preserveScroll(() => toggleInsights(date))}
+                        onPointerDown={(event) => captureScroll(event.currentTarget)}
+                        onClick={(event) => preserveScroll(event.currentTarget, () => toggleInsights(date))}
                         className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-natural-cream/60 transition group"
                       >
                         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Brain, ChevronDown, ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage } from "./ContextualGlossary";
 
@@ -55,6 +55,7 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [openSession, setOpenSession] = useState<string | null>(null);
+  const pointerScrollY = useRef<number | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   // Each local disclosure owns its own offset. A shared mutable ref lets an
@@ -94,7 +95,8 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
     // Capture in this interaction's closure rather than a component-wide ref.
     // This is intentionally scoped to local disclosure state; Reading Map
     // session links still choose their own in-panel target via openSession.
-    const saved = window.scrollY;
+    const saved = pointerScrollY.current ?? window.scrollY;
+    pointerScrollY.current = null;
     update();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (Math.abs(window.scrollY - saved) > 1) window.scrollTo({ top: saved, behavior: "auto" });
@@ -109,7 +111,7 @@ export default function BookWiki({ bookId, totalPages, canEdit }: { bookId: stri
     return <div className="rounded-2xl border border-natural-border bg-natural-cream/40 p-5 text-center"><p className="text-xs font-semibold text-natural-dark">{running ? "AI Reader is reading" : canEdit ? "AI Reader is preparing" : "AI Reader is not available yet"}</p><p className="mt-1 text-[11px] text-natural-stone">{message}</p>{canEdit && <button type="button" onClick={refresh} disabled={running || regenerating} className="mt-4 min-h-11 rounded-full border border-natural-sage/40 px-4 text-xs font-bold text-natural-sage disabled:opacity-50">{running || regenerating ? "Running…" : "Run AI Reader now"}</button>}</div>;
   }
 
-  return <div className="space-y-4">
+  return <div className="space-y-4" onPointerDownCapture={() => { pointerScrollY.current = window.scrollY; }}>
     <header className="flex flex-wrap items-start justify-between gap-3"><div><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-natural-sage"><Brain className="h-4 w-4" />AI Reader</p><p className="mt-1 text-xs text-natural-stone">A grounded editorial map from saved reading sessions—not raw source text.</p></div>{canEdit && <button type="button" onClick={refresh} disabled={running || regenerating} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-natural-border px-3 text-[11px] font-bold text-natural-stone disabled:opacity-50">{running || regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}{running ? "Reading…" : "Refresh"}</button>}</header>
     {languageMismatch && <p className="rounded-xl bg-natural-clay/10 p-3 text-[11px] text-natural-clay">Vietnamese/source output settings changed. This map shows the last generated language; refresh to regenerate it.</p>}
     <section className="rounded-2xl border border-natural-border bg-natural-cream/45 p-4"><p className="text-xs leading-relaxed text-natural-dark">{wiki.book_so_far || wiki.overview}</p>{wiki.current_position?.label && <p className="mt-3 flex gap-1.5 text-[11px] text-natural-stone"><Sparkles className="h-3 w-3 shrink-0 text-natural-sage" />{wiki.current_position.label}</p>}</section>

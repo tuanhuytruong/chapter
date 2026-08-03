@@ -100,7 +100,9 @@ assert.match(bookWikiComponent, /The owner has not generated a shared AI Reader 
 assert.match(bookWikiComponent, /import \{ GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage \} from "\.\/ContextualGlossary"/);
 assert.match(bookWikiComponent, /const glossaryLanguage: GlossaryLanguage = resolveGlossaryLanguage\(/);
 assert.match(bookWikiComponent, /const preserveScroll = \(update: \(\) => void\) => \{/);
-assert.match(bookWikiComponent, /const saved = window\.scrollY/);
+assert.match(bookWikiComponent, /const pointerScrollY = useRef<number \| null>\(null\)/);
+assert.match(bookWikiComponent, /const saved = pointerScrollY\.current \?\? window\.scrollY/);
+assert.match(bookWikiComponent, /onPointerDownCapture=\{\(\) => \{ pointerScrollY\.current = window\.scrollY; \}\}/);
 assert.match(bookWikiComponent, /Capture in this interaction\'s closure/);
 assert.match(bookWikiComponent, /requestAnimationFrame\(\(\) => requestAnimationFrame/);
 assert.match(bookWikiComponent, /if \(Math\.abs\(window\.scrollY - saved\) > 1\) window\.scrollTo\(\{ top: saved, behavior: "auto" \}\)/);

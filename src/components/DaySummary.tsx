@@ -71,11 +71,17 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
 
-  const preserveScroll = (update: () => void) => {
-    const saved = window.scrollY;
+  // Capture pointer-down before the browser can focus/reflow the control.
+  const captureScroll = (button: HTMLButtonElement) => {
+    button.dataset.chapterScrollY = String(window.scrollY);
+  };
+  const preserveScroll = (button: HTMLButtonElement, update: () => void) => {
+    const saved = Number(button.dataset.chapterScrollY);
+    delete button.dataset.chapterScrollY;
+    const top = Number.isFinite(saved) ? saved : window.scrollY;
     update();
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (Math.abs(window.scrollY - saved) > 1) window.scrollTo({ top: saved, behavior: "auto" });
+      if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: "auto" });
     }));
   };
 
@@ -136,7 +142,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
             </button>
           )}
           {log.raw_text && (
-            <button type="button" onClick={() => preserveScroll(() => setOpen(o => !o))} aria-label={open ? 'Collapse source text' : 'Expand source text'} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
+            <button type="button" onPointerDown={(event) => captureScroll(event.currentTarget)} onClick={(event) => preserveScroll(event.currentTarget, () => setOpen(o => !o))} aria-label={open ? 'Collapse source text' : 'Expand source text'} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           )}
@@ -174,7 +180,8 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       {canEdit && <div>
         <button
           type="button"
-          onClick={() => preserveScroll(() => setShowNotes(s => !s))}
+          onPointerDown={(event) => captureScroll(event.currentTarget)}
+          onClick={(event) => preserveScroll(event.currentTarget, () => setShowNotes(s => !s))}
           className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone hover:text-natural-dark font-sans"
         >
           <StickyNote className="w-3 h-3" /> Notes{log.notes ? ' *' : ''}{saving ? ' …' : ''}
