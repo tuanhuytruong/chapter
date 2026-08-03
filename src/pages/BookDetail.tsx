@@ -1076,6 +1076,7 @@ export default function BookDetail() {
             analyses={storyThread}
             logs={logs}
             fileType={book.file_type}
+            summaryLang={book.summary_lang}
             onRetry={retryStoryThread}
             retryingLogId={storyRetryingLogId}
             canEdit={Boolean(book.can_edit)}

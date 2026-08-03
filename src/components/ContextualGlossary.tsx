@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 
 export type GlossaryLanguage = "vi" | "en";
+export type GlossaryLanguageSetting = GlossaryLanguage | "auto";
 export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied";
 
 const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viDetail: string }> = {
@@ -19,6 +20,12 @@ const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viD
   Implication: { en: "Implication", vi: "Hệ quả", enDetail: "What may follow from the idea, without adding outside facts.", viDetail: "Điều có thể suy ra từ ý tưởng, không thêm dữ kiện bên ngoài." },
   Implied: { en: "Implied", vi: "Hàm ý", enDetail: "Suggested by the reading, but not stated directly.", viDetail: "Được gợi ra trong phần đọc nhưng không nói trực tiếp." },
 };
+
+export function resolveGlossaryLanguage(setting: GlossaryLanguageSetting, sourceText = ""): GlossaryLanguage {
+  if (setting === "vi" || setting === "en") return setting;
+  const vietnameseSignals = (sourceText.match(/[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/gi) || []).length;
+  return vietnameseSignals > 0 ? "vi" : "en";
+}
 
 export function GlossaryTerm({ term, language = "en", children }: { term: GlossaryKey; language?: GlossaryLanguage; children?: ReactNode }) {
   const [pinnedOpen, setPinnedOpen] = useState(false);
@@ -64,7 +71,7 @@ export function GlossaryTerm({ term, language = "en", children }: { term: Glossa
       {children || copy[language]}
       <Info aria-hidden="true" className="h-3 w-3 shrink-0" />
     </button>
-    {open && <span id={popupId} role="tooltip" className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-natural-border bg-natural-cream p-3 text-left text-[11px] font-normal leading-relaxed text-natural-dark shadow-lg">
+    {open && <span id={popupId} role="tooltip" className="absolute bottom-full left-0 z-50 mb-1.5 w-56 rounded-lg border border-natural-border bg-natural-cream px-2.5 py-2 text-left text-[10px] font-normal normal-case leading-snug tracking-normal text-natural-dark shadow-lg">
       <strong className="block text-xs">{copy[language]}</strong>
       {detail}
       {pinnedOpen && <span className="mt-2 block text-[10px] text-natural-stone">{language === "vi" ? "Nhấn Escape để đóng" : "Press Escape to close"}</span>}

@@ -68,7 +68,14 @@ assert.match(glossarySource, /onPointerLeave=\{\(\) => setHoverOpen\(false\)\}/)
 assert.match(glossarySource, /<button[\s\S]*?<Info aria-hidden="true"/);
 assert.match(glossarySource, /onClick=\{\(\) => setPinnedOpen\(\(value\) => !value\)\}/);
 assert.match(glossarySource, /role="tooltip"/);
+assert.match(glossarySource, /normal-case[\s\S]*?tracking-normal/);
+assert.match(glossarySource, /w-56[\s\S]*?text-\[10px\]/);
+assert.match(glossarySource, /export function resolveGlossaryLanguage/);
 assert.match(glossarySource, /event\.key === "Escape"/);
-assert.match(storyViewSource, /<GlossaryLabel term=\{glossaryStatus\[thread\.status\]\} \/>/);
+assert.match(storyViewSource, /summaryLang: GlossaryLanguageSetting/);
+assert.match(storyViewSource, /resolveGlossaryLanguage\(summaryLang, latest\?\.analysis\.storyRecap \|\| ""\)/);
+assert.match(storyViewSource, /<GlossaryLabel term=\{glossaryStatus\[thread\.status\]\} language=\{glossaryLanguage\} \/>/);
+const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(detailSource, /<StoryThreadView[\s\S]*?summaryLang=\{book\.summary_lang\}/);
 
 console.log("STORY_THREAD_FIXTURES_OK");

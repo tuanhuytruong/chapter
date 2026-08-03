@@ -1,6 +1,6 @@
 import React from "react";
 import { BookHeart, CircleDot, RefreshCw, UsersRound } from "lucide-react";
-import { GlossaryLabel, type GlossaryKey } from "../ContextualGlossary";
+import { GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguageSetting } from "../ContextualGlossary";
 import type { LogRow, StoryThreadRow } from "../../types";
 
 const glossaryStatus: Record<StoryThreadRow["analysis"]["threads"][number]["status"], GlossaryKey> = { open: "Open", escalating: "Escalating", resolved: "Resolved", uncertain: "Uncertain" };
@@ -32,8 +32,9 @@ function SessionStory({ item, log, canEdit, fileType, onRetry, retryingLogId }: 
   </article>;
 }
 
-export default function StoryThreadView({ analyses, logs, fileType, onRetry, retryingLogId, canEdit = false }: { analyses: StoryThreadRow[]; logs: LogRow[]; fileType: "epub" | "pdf"; onRetry?: (logId: string) => Promise<void>; retryingLogId?: string | null; canEdit?: boolean }) {
+export default function StoryThreadView({ analyses, logs, fileType, summaryLang, onRetry, retryingLogId, canEdit = false }: { analyses: StoryThreadRow[]; logs: LogRow[]; fileType: "epub" | "pdf"; summaryLang: GlossaryLanguageSetting; onRetry?: (logId: string) => Promise<void>; retryingLogId?: string | null; canEdit?: boolean }) {
   const latest = analyses.at(-1);
+  const glossaryLanguage = resolveGlossaryLanguage(summaryLang, latest?.analysis.storyRecap || "");
   const analyzedLogIds = new Set(analyses.map((item) => item.log_id));
   // Book Detail keeps newest sessions first for browsing; repairs must always
   // begin with the earliest gap so later continuity is never built on a skip.
@@ -56,7 +57,7 @@ export default function StoryThreadView({ analyses, logs, fileType, onRetry, ret
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="rounded-2xl border border-natural-border bg-natural-cream p-4 shadow-sm">
         <h3 className="flex items-center gap-2 text-sm font-bold text-natural-dark"><CircleDot className="h-4 w-4 text-natural-sage" /> Threads in motion</h3>
-        {state.threads.length ? <div className="mt-3 space-y-3">{state.threads.map((thread) => <div key={thread.id}><div className="flex flex-wrap items-center gap-2"><b className="text-xs text-natural-dark">{thread.label}</b><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${statusTone[thread.status]}`}><GlossaryLabel term={glossaryStatus[thread.status]} /></span></div><p className="mt-1 text-xs leading-relaxed text-natural-stone">{thread.detail}</p></div>)}</div> : <p className="mt-2 text-xs text-natural-stone">No continuing threads have been identified yet.</p>}
+        {state.threads.length ? <div className="mt-3 space-y-3">{state.threads.map((thread) => <div key={thread.id}><div className="flex flex-wrap items-center gap-2"><b className="text-xs text-natural-dark">{thread.label}</b><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${statusTone[thread.status]}`}><GlossaryLabel term={glossaryStatus[thread.status]} language={glossaryLanguage} /></span></div><p className="mt-1 text-xs leading-relaxed text-natural-stone">{thread.detail}</p></div>)}</div> : <p className="mt-2 text-xs text-natural-stone">No continuing threads have been identified yet.</p>}
       </section>
       <section className="rounded-2xl border border-natural-border bg-natural-cream p-4 shadow-sm">
         <h3 className="flex items-center gap-2 text-sm font-bold text-natural-dark"><UsersRound className="h-4 w-4 text-natural-sage" /> Character pulse</h3>
