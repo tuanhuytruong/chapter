@@ -161,10 +161,6 @@ export default function BookDetail() {
     "list" | "journey" | "ai-reader" | "podcast"
   >("list");
   const [openingPodcast, setOpeningPodcast] = useState(false);
-  // Desktop focus/layout can move the document between pointer-down and click.
-  // This page-level capture covers all Book Detail disclosures (List, Journey,
-  // and AI Reader), rather than relying on each nested card to sample too late.
-  const pointerScrollY = useRef<number | null>(null);
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
@@ -655,23 +651,8 @@ export default function BookDetail() {
     }
   };
 
-  const captureDetailScroll = () => {
-    pointerScrollY.current = window.scrollY;
-  };
-  const restoreDetailScroll = (event: React.MouseEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement;
-    // Real navigation and explicit scroll destinations remain in control.
-    if (target.closest("a, [data-scroll-intent]")) return;
-    const saved = pointerScrollY.current;
-    pointerScrollY.current = null;
-    if (saved == null) return;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (Math.abs(window.scrollY - saved) > 1) window.scrollTo({ top: saved, behavior: "auto" });
-    }));
-  };
-
   return (
-    <div className="space-y-6 font-sans" onPointerDownCapture={captureDetailScroll} onClickCapture={restoreDetailScroll}>
+    <div className="space-y-6 font-sans">
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate("/")}

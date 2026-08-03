@@ -44,7 +44,6 @@ export default function ChapterDropdown<T extends string>({
     ),
   );
   const rootRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const selected =
@@ -60,7 +59,6 @@ export default function ChapterDropdown<T extends string>({
   const close = () => {
     setOpen(false);
     setQuery("");
-    buttonRef.current?.focus();
   };
 
   useEffect(() => {
@@ -134,7 +132,6 @@ export default function ChapterDropdown<T extends string>({
         </label>
       )}
       <button
-        ref={buttonRef}
         id={listboxId}
         type="button"
         aria-haspopup="listbox"
