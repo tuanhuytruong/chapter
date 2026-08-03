@@ -1,0 +1,16 @@
+import { useState } from "react";
+import { Headphones, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { api, type PodcastRecapResponse } from "../api";
+
+export default function PodcastRecapCard({data,onRefresh}:{data:PodcastRecapResponse;onRefresh:()=>Promise<void>}){
+ const [working,setWorking]=useState(false);
+ const generate=async()=>{setWorking(true);try{await api.generatePodcastRecap(`podcast-recap-${crypto.randomUUID()}`);await onRefresh();}catch(e:any){window.alert(e.message||"Could not prepare recap");}finally{setWorking(false);}};
+ const r=data.recap;
+ return <section className="rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6">
+  <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Next-reading companion</p><h2 className="mt-1 flex items-center gap-2 text-lg font-bold text-natural-dark"><Headphones className="h-5 w-5"/>Personalized recap podcast</h2><p className="mt-1 text-sm leading-6 text-natural-stone">A short reflection on where your reading is heading next.</p></div><button type="button" onClick={()=>void onRefresh()} className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-natural-stone hover:bg-white" aria-label="Refresh podcast recap"><RefreshCw className="h-4 w-4"/></button></div>
+  {!data.available&&!r&&<div className="mt-4 rounded-2xl border border-natural-border bg-white/60 p-4 text-sm text-natural-stone">Personalized recap podcasts are available with Deep Reader.</div>}
+  {data.available&&!data.hasSource&&!r&&<div className="mt-4 rounded-2xl border border-dashed border-natural-border p-4 text-sm text-natural-stone">Keep a few reading sessions with summaries first; your recap will appear here.</div>}
+  {r&&<div className="mt-4 space-y-3"><h3 className="text-base font-bold text-natural-dark">{r.payload.title}</h3><p className="text-sm leading-6 text-natural-dark">{r.payload.opening}</p>{r.hasAudio&&<audio className="w-full" controls preload="metadata" src="/api/podcast-recap/audio"/>}<details><summary className="cursor-pointer text-xs font-semibold text-natural-stone">Read transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-natural-dark">{r.scriptText}</p></details><p className="text-xs leading-5 text-natural-stone">Based on {r.sourceBookCount} book{r.sourceBookCount===1?"":"s"} and {r.sourceSessionCount} reading session{r.sourceSessionCount===1?"":"s"}.</p>{r.status==="archive_pending"&&<p className="text-xs text-natural-sage">Ready to listen; private archive retry continues in the background.</p>}<button type="button" onClick={()=>void generate()} disabled={working||["queued","scripting","synthesizing","archiving"].includes(r.status)} className="min-h-11 rounded-full border border-natural-border px-4 text-xs font-bold text-natural-dark disabled:opacity-60">{working?<Loader2 className="inline h-4 w-4 animate-spin"/>:"Refresh recap"}</button></div>}
+  {data.available&&data.hasSource&&!r&&<button type="button" onClick={()=>void generate()} disabled={working} className="mt-4 min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white">{working?<Loader2 className="inline h-4 w-4 animate-spin"/>:<Sparkles className="mr-1 inline h-3.5 w-3.5"/>} Create recap podcast</button>}
+ </section>;
+}

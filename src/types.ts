@@ -6,7 +6,7 @@ export interface Book {
   currentPage: number;
   startDate?: string;
   endDate?: string;
-  status: 'reading' | 'completed' | 'to_read';
+  status: "reading" | "completed" | "to_read";
   coverUrl?: string;
   rating?: number;
   dailyTargetPages?: number;
@@ -40,6 +40,7 @@ export interface BookRow {
   file_type: "pdf" | "epub";
   status: "active" | "paused" | "finished" | "queued";
   current_page: number;
+  current_reading_round: number;
   total_pages: number;
   daily_pages: number;
   queue_order?: number;
@@ -67,16 +68,66 @@ export type ReadingLensAnalysis = {
   confidenceNotes: string[];
 };
 
-export interface ReadingLensRow {
-  id: string; book_id: string; log_id: string; schema_version: number;
-  analysis: ReadingLensAnalysis; analyst_summary: string; generated_at: string;
+export interface ReadingRoundRow {
+  reading_round: number;
+  status: "active" | "paused" | "finished" | "queued";
+  started_at: string;
+  finished_at: string | null;
+  final_page: number;
 }
 
-export type StoryThreadStatus = "open" | "escalating" | "resolved" | "uncertain";
+export interface JourneySynthesisRow {
+  book_id: string;
+  schema_version: number;
+  through_line: string;
+  evolving_concepts: Array<{
+    term: string;
+    trajectory: string;
+    firstSession: { logId: string; session: number };
+    lastSession: { logId: string; session: number };
+  }>;
+  resolved_questions: Array<{
+    question: string;
+    resolution: string;
+    resolvedInSession: { logId: string; session: number };
+  }>;
+  open_questions: string[];
+  tensions: Array<{
+    description: string;
+    sessions: Array<{ logId: string; session: number }>;
+  }>;
+  confidence_notes: string[];
+  output_language: "vi" | "en";
+  sessions_covered: number;
+  last_log_id: string | null;
+  last_log_date: string | null;
+  last_log_session: number | null;
+  source_revision: number;
+  stale: boolean;
+  generated_at: string;
+}
+
+export interface ReadingLensRow {
+  id: string;
+  book_id: string;
+  log_id: string;
+  schema_version: number;
+  analysis: ReadingLensAnalysis;
+  analyst_summary: string;
+  generated_at: string;
+}
+
+export type StoryThreadStatus =
+  "open" | "escalating" | "resolved" | "uncertain";
 export interface StoryThreadAnalysis {
   storyRecap: string;
   changedEvents: string[];
-  threads: Array<{ id: string; label: string; status: StoryThreadStatus; detail: string }>;
+  threads: Array<{
+    id: string;
+    label: string;
+    status: StoryThreadStatus;
+    detail: string;
+  }>;
   characterPulse: Array<{ name: string; pulse: string }>;
   readerMemory: string[];
   confidenceNotes: string[];
@@ -89,11 +140,16 @@ export interface StoryThreadRow {
   analysis: StoryThreadAnalysis;
   story_recap: string;
   generated_at: string;
+  reading_round: number;
+  session: number;
+  page_start: number;
+  page_end: number;
 }
 
 export interface LogRow {
   id: string;
   book_id: string;
+  reading_round: number;
   date: string;
   session: number;
   page_start: number;

@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, BookOpen, Calendar, Flame, Hash, Loader2, TrendingUp, BookMarked, Sparkles } from 'lucide-react';
-import { api } from '../api';
+import { api, type MonthlyReviewResponse, type CrossBookConnectionsResponse, type PodcastRecapResponse } from '../api';
+import MonthlyReviewCard from '../components/MonthlyReviewCard';
+import AskMyReadingCard from '../components/AskMyReadingCard';
+import CrossBookConnectionsCard from '../components/CrossBookConnectionsCard';
+import PodcastRecapCard from '../components/PodcastRecapCard';
+import type { AskReadingResponse } from '../api';
 import { useNavigate } from 'react-router-dom';
-import type { BookRow, LogRow } from '../types';
+import type { BookRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -31,19 +36,21 @@ export default function Insights() {
   const [stats, setStats] = useState<Awaited<ReturnType<typeof api.getStats>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<BookRow[]>([]);
-  const [logsByBook, setLogsByBook] = useState<Record<string, LogRow[]>>({});
+  const [monthlyReview, setMonthlyReview] = useState<MonthlyReviewResponse | null>(null);
+  const [askReading, setAskReading] = useState<AskReadingResponse | null>(null);
+  const [crossBook, setCrossBook] = useState<CrossBookConnectionsResponse | null>(null);
+  const [podcastRecap, setPodcastRecap] = useState<PodcastRecapResponse | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [data, allBooks] = await Promise.all([api.getStats(), api.listBooks("mine")]);
+        const [data, allBooks, review, asks, connections, recap] = await Promise.all([api.getStats(), api.listBooks("mine"), api.getMonthlyReview(), api.getAskReading(), api.getCrossBookConnections(), api.getPodcastRecap()]);
+        setAskReading(asks);
+        setCrossBook(connections);
+        setPodcastRecap(recap);
+        setMonthlyReview(review);
         setStats(data);
         setBooks(allBooks);
-        // Fetch logs for all books in parallel
-        const logEntries = await Promise.all(
-          allBooks.map(b => api.getLog(b.id).then(logs => [b.id, logs] as const))
-        );
-        setLogsByBook(Object.fromEntries(logEntries));
       } catch (e) {
         console.error(e);
       } finally {
@@ -83,6 +90,11 @@ export default function Insights() {
   return (
     <div className="space-y-6 font-sans">
       <h2 className="flex items-center gap-2 font-bold text-lg text-natural-dark"><BarChart3 className="w-5 h-5" /> Insights</h2>
+
+      {monthlyReview && <MonthlyReviewCard data={monthlyReview} onRefresh={async () => setMonthlyReview(await api.getMonthlyReview())} />}
+      {askReading && <AskMyReadingCard data={askReading} onRefresh={async () => setAskReading(await api.getAskReading())} />}
+      {crossBook && <CrossBookConnectionsCard data={crossBook} onRefresh={async () => setCrossBook(await api.getCrossBookConnections())} />}
+      {podcastRecap && <PodcastRecapCard data={podcastRecap} onRefresh={async () => setPodcastRecap(await api.getPodcastRecap())} />}
 
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

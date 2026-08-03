@@ -1,9 +1,240 @@
 // API client for the Chapter reading-companion backend (Phase 1 routes).
-import type { BookRow, ReadingLensRow, StoryThreadRow } from "./types";
+import type {
+  BookRow,
+  JourneySynthesisRow,
+  ReadingLensRow,
+  StoryThreadRow,
+} from "./types";
 import type { ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
-import type { WeeklyGoalMetric, WeeklyGoalProgress, WeeklyGoalRow } from "./weekly-goal";
+import type {
+  WeeklyGoalMetric,
+  WeeklyGoalProgress,
+  WeeklyGoalRow,
+} from "./weekly-goal";
 import type { AchievementsResponse } from "./achievements";
+
+export type MembershipTier = "free" | "plus" | "deep_reader";
+export type MembershipPlan = {
+  tier: MembershipTier;
+  name: string;
+  tagline: string;
+  monthlyPrice: string | null;
+  annualPrice: string | null;
+  annualLabel: string | null;
+  checkoutAvailable: false;
+  benefits: Array<{ label: string; availableNow: boolean }>;
+};
+
+export type BillingCatalogResponse = {
+  enabled: boolean;
+  provider: "vietqr_static";
+  bank: "MB";
+  catalog: Array<{
+    id: string;
+    tier: "plus" | "deep_reader";
+    period: "month" | "year";
+    amountVnd: number;
+    currency: "VND";
+    available: boolean;
+  }>;
+};
+export type BillingOrder = {
+  id: string;
+  sku: string;
+  tier: "plus" | "deep_reader";
+  period: "month" | "year";
+  amountVnd: number;
+  currency: "VND";
+  status: string;
+  transferReference: string;
+  expiresAt: string;
+  createdAt: string;
+  qrUrl: string | null;
+};
+export type BillingMeResponse = {
+  orders: BillingOrder[];
+  transactions: Array<{
+    id: string;
+    orderId: string;
+    sku: string;
+    amountVnd: number;
+    currency: string;
+    periodStart: string;
+    periodEnd: string;
+    createdAt: string;
+  }>;
+};
+export interface MembershipPlansResponse {
+  policyVersion: number;
+  checkoutAvailable: false;
+  plans: MembershipPlan[];
+}
+
+export interface UpgradePrompt {
+  key: string;
+  targetTier: "plus" | "deep_reader";
+  message: string;
+  feature?: string;
+  context: { bookId: string };
+}
+export interface UpgradePromptsResponse {
+  prompt: UpgradePrompt | null;
+}
+
+export interface EntitlementsResponse {
+  subscription: {
+    tier: MembershipTier;
+    status: string;
+    active: boolean;
+    source: string;
+    periodEnd: string | null;
+  };
+  retention: {
+    accessEndsAt: string | null;
+    endsSoon: boolean;
+    cancellationScheduled: boolean;
+  };
+  features: Record<
+    string,
+    {
+      available: boolean;
+      usage: {
+        used: number;
+        reserved: number;
+        limit: number | "unlimited" | "unavailable";
+        remaining: number | null;
+      };
+    }
+  >;
+  policyVersion: number;
+}
+
+export interface MonthlyReviewArtifact {
+  id: string;
+  periodKey: string;
+  schemaVersion: number;
+  outputLanguage: "vi" | "en";
+  title: string;
+  opening: string;
+  themes: Array<{ title: string; detail: string; evidence: string[] }>;
+  books: Array<{
+    bookId: string;
+    title: string;
+    sessions: number;
+    contribution: string;
+  }>;
+  carryForward: string[];
+  gentleNextStep: string;
+  sourceSessionCount: number;
+  generatedAt: string;
+}
+export interface MonthlyReviewResponse {
+  periodKey: string;
+  review: MonthlyReviewArtifact | null;
+  sourceSessionCount: number;
+  hasSource: boolean;
+  available: boolean;
+  usage: {
+    used: number;
+    reserved: number;
+    limit: number | "unlimited" | "unavailable";
+  };
+}
+
+export interface CrossBookConnectionArtifact {
+  id: string;
+  requestKey: string;
+  schemaVersion: number;
+  outputLanguage: "vi" | "en";
+  opening: string;
+  connections: Array<{
+    title: string;
+    synthesis: string;
+    sourceRefs: Array<{
+      sourceType: string;
+      sourceId: string;
+      bookId: string;
+      bookTitle: string;
+      occurredAt: string;
+    }>;
+  }>;
+  carryForward: string[];
+  sourceBookCount: number;
+  sourceSessionCount: number;
+  generatedAt: string;
+}
+export interface CrossBookConnectionsResponse {
+  connection: CrossBookConnectionArtifact | null;
+  sourceBookCount: number;
+  sourceSessionCount: number;
+  hasSource: boolean;
+  available: boolean;
+  usage: {
+    used: number;
+    reserved: number;
+    limit: number | "unlimited" | "unavailable";
+  };
+}
+
+export interface PodcastRecapArtifact {
+  id: string;
+  requestKey: string;
+  status: string;
+  outputLanguage: "vi" | "en";
+  voiceModel: string;
+  payload: {
+    title: string;
+    opening: string;
+    recap: string;
+    nextDirection: string;
+    sourceRefs: Array<{
+      sourceType: string;
+      sourceId: string;
+      bookId: string;
+      bookTitle: string;
+      occurredAt: string;
+    }>;
+  };
+  sourceBookCount: number;
+  sourceSessionCount: number;
+  scriptText: string | null;
+  durationS: number | null;
+  hasAudio: boolean;
+  generatedAt: string;
+}
+export interface PodcastRecapResponse {
+  recap: PodcastRecapArtifact | null;
+  available: boolean;
+  hasSource: boolean;
+  sourceBookCount: number;
+  sourceSessionCount: number;
+  usage: {
+    used: number;
+    reserved: number;
+    limit: number | "unlimited" | "unavailable";
+  };
+}
+
+export interface AskReadingAnswer {
+  id: string;
+  requestKey: string;
+  question: string;
+  outputLanguage: "vi" | "en";
+  answer: string;
+  sourceRefs: Array<{
+    sourceType: string;
+    sourceId: string;
+    bookTitle: string;
+    occurredAt: string;
+  }>;
+  sourceCount: number;
+  createdAt: string;
+}
+export interface AskReadingResponse {
+  answers: AskReadingAnswer[];
+  available: boolean;
+}
 
 export interface TodayInsights {
   selection: {
@@ -34,6 +265,7 @@ export interface TodayDashboard {
 export interface LogRow {
   id: string;
   book_id: string;
+  reading_round: number;
   date: string;
   session: number;
   page_start: number;
@@ -46,6 +278,14 @@ export interface LogRow {
   notes: string | null;
   chapter_title: string | null;
   created_at: string;
+}
+
+export interface ReadingRoundRow {
+  reading_round: number;
+  status: "active" | "paused" | "finished" | "queued";
+  started_at: string;
+  finished_at: string | null;
+  final_page: number;
 }
 
 export interface AdvanceResult {
@@ -66,7 +306,14 @@ export interface PodcastEpisode {
   id: string;
   log_id: string | null;
   chapter_title: string | null;
-  status: "queued" | "scripting" | "synthesizing" | "archiving" | "archive_pending" | "ready" | "failed";
+  status:
+    | "queued"
+    | "scripting"
+    | "synthesizing"
+    | "archiving"
+    | "archive_pending"
+    | "ready"
+    | "failed";
   language: "vi" | "en";
   voice_model: string;
   word_count: number | null;
@@ -111,44 +358,83 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listBooks: (scope: "mine" | "all" = "mine") => req<BookRow[]>(`${BASE}?scope=${scope}`),
+  listBooks: (scope: "mine" | "all" = "mine") =>
+    req<BookRow[]>(`${BASE}?scope=${scope}`),
   getBook: (id: string) => req<BookRow>(`${BASE}/${id}`),
   createBook: (body: Partial<BookRow>) =>
     req<BookRow>(`${BASE}`, { method: "POST", body: JSON.stringify(body) }),
   updateBook: (id: string, body: Partial<BookRow>) =>
-    req<BookRow>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    req<BookRow>(`${BASE}/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
   reorderQueue: (bookIds: string[]) =>
-    req<BookRow[]>(`${BASE}/queue`, { method: "PUT", body: JSON.stringify({ bookIds }) }),
+    req<BookRow[]>(`${BASE}/queue`, {
+      method: "PUT",
+      body: JSON.stringify({ bookIds }),
+    }),
   deleteBook: (id: string) =>
     req<{ ok: true }>(`${BASE}/${id}`, { method: "DELETE" }),
 
-  getLog: (id: string) => req<LogRow[]>(`${BASE}/${id}/log`),
-  getBookStreakDates: (scope: "mine" | "all" = "mine") => req<Record<string, string[]>>(`${BASE}/streaks?scope=${scope}`),
-  getCalendar: (month: string, bookId = "") =>
-    req<CalendarLogRow[]>(`${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}`),
+  getLog: (id: string, round?: number) =>
+    req<LogRow[]>(`${BASE}/${id}/log${round ? `?round=${round}` : ""}`),
+  getReadingRounds: (id: string) =>
+    req<ReadingRoundRow[]>(`${BASE}/${id}/rounds`),
+  reread: (id: string) =>
+    req<{ ok: true; reading_round: number; book: BookRow }>(
+      `${BASE}/${id}/reread`,
+      { method: "POST" },
+    ),
+  getBookStreakDates: (scope: "mine" | "all" = "mine") =>
+    req<Record<string, string[]>>(`${BASE}/streaks?scope=${scope}`),
+  getCalendar: (month: string, bookId = "", round = "") =>
+    req<CalendarLogRow[]>(
+      `${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}&round=${encodeURIComponent(round)}`,
+    ),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
   advance: (id: string) =>
     req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST" }),
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
-  getReadingLens: (bookId: string) => req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
+  getReadingLens: (bookId: string) =>
+    req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
   retryReadingLens: (bookId: string, logId: string) =>
-    req<ReadingLensRow>(`${BASE}/${bookId}/logs/${logId}/reading-lens/retry`, { method: "POST" }),
-  synthesizeReadingLens: (bookId: string) =>
-    req<{ synthesis: string }>(`${BASE}/${bookId}/reading-lens/synthesis`, { method: "POST" }),
-  getStoryThread: (bookId: string) => req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread`),
+    req<ReadingLensRow>(`${BASE}/${bookId}/logs/${logId}/reading-lens/retry`, {
+      method: "POST",
+    }),
+  getJourneySynthesis: (bookId: string) =>
+    req<JourneySynthesisRow | null>(`${BASE}/${bookId}/reading-lens/synthesis`),
+  synthesizeJourney: (bookId: string) =>
+    req<JourneySynthesisRow | null>(
+      `${BASE}/${bookId}/reading-lens/synthesis`,
+      { method: "POST" },
+    ),
+  getStoryThread: (bookId: string, readingRound?: number) =>
+    req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread${readingRound ? `?round=${encodeURIComponent(readingRound)}` : ""}`),
   getStoryThreadForLog: (bookId: string, logId: string) =>
     req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),
   retryStoryThread: (bookId: string, logId: string) =>
-    req<StoryThreadRow[]>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
+    req<StoryThreadRow[]>(`${BASE}/${bookId}/logs/${logId}/retry`, {
+      method: "POST",
+    }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
-    req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
+    req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ notes }),
+    }),
   generateReflection: (bookId: string) =>
-    req<Pick<BookRow, 'reflection_text' | 'reflection_at'>>(`${BASE}/${bookId}/reflection`, { method: "POST" }),
+    req<Pick<BookRow, "reflection_text" | "reflection_at">>(
+      `${BASE}/${bookId}/reflection`,
+      { method: "POST" },
+    ),
+  getDueReviewCount: () => req<{ count: number }>("/api/reviews/due/count"),
   getDueReviewBooks: () => req<Array<{ id: string; title: string; author: string; cover_url: string | null; due_count: number }>>("/api/reviews/due/books"),
   getDueReviews: (bookId?: string) => req<ReviewCardRow[]>(`/api/reviews/due${bookId ? `?bookId=${encodeURIComponent(bookId)}` : ""}`),
   submitReview: (id: string, remembered: boolean) =>
-    req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),
+    req<ReviewCardRow>(`/api/reviews/${id}`, {
+      method: "POST",
+      body: JSON.stringify({ remembered }),
+    }),
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),
   getTodayDashboard: () => req<TodayDashboard>("/api/today"),
   getTodayInsights: (
@@ -166,15 +452,92 @@ export const api = {
     );
   },
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
+  getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
+  getBillingCatalog: () => req<BillingCatalogResponse>("/api/billing/catalog"),
+  getBillingMe: () => req<BillingMeResponse>("/api/billing/me"),
+  createBillingOrder: (sku: string, requestKey: string) =>
+    req<{ status: "created" | "existing"; order: BillingOrder }>(
+      "/api/billing/orders",
+      { method: "POST", body: JSON.stringify({ sku, requestKey }) },
+    ),
+  getMembershipPlans: () =>
+    req<MembershipPlansResponse>("/api/entitlements/plans"),
+  getMonthlyReview: () =>
+    req<MonthlyReviewResponse>("/api/monthly-review/current"),
+  getAskReading: () => req<AskReadingResponse>("/api/ask-reading/recent"),
+  getCrossBookConnections: () =>
+    req<CrossBookConnectionsResponse>("/api/cross-book-connections/current"),
+  getPodcastRecap: () =>
+    req<PodcastRecapResponse>("/api/podcast-recap/current"),
+  generatePodcastRecap: (requestKey: string) =>
+    req<{
+      status: "generated" | "existing" | "no_source" | "voice_required";
+      recap: PodcastRecapArtifact | null;
+    }>("/api/podcast-recap/generate", {
+      method: "POST",
+      body: JSON.stringify({ requestKey }),
+    }),
+  generateCrossBookConnections: (requestKey: string) =>
+    req<{
+      status: "generated" | "existing" | "no_source";
+      connection: CrossBookConnectionArtifact | null;
+    }>("/api/cross-book-connections/generate", {
+      method: "POST",
+      body: JSON.stringify({ requestKey }),
+    }),
+  answerAskReading: (question: string, requestKey: string) =>
+    req<{
+      status: "answered" | "existing" | "no_source";
+      answer: AskReadingAnswer | null;
+    }>("/api/ask-reading/answer", {
+      method: "POST",
+      body: JSON.stringify({ question, requestKey }),
+    }),
+  generateMonthlyReview: () =>
+    req<{
+      status: "generated" | "existing" | "no_source";
+      review: MonthlyReviewArtifact | null;
+    }>("/api/monthly-review/generate", { method: "POST" }),
+  getUpgradePrompts: (bookId: string) =>
+    req<UpgradePromptsResponse>(
+      `/api/entitlements/prompts?bookId=${encodeURIComponent(bookId)}`,
+    ),
+  dismissUpgradePrompt: (key: string) =>
+    req<void>(`/api/entitlements/prompts/${encodeURIComponent(key)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action: "dismiss" }),
+    }),
   getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
-  getBookPodcast: (bookId: string) => req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
-  createPodcast: (bookId: string, chapterKey: string, voiceGender?: "female" | "male") =>
-    req<PodcastEpisode>("/api/podcasts", { method: "POST", body: JSON.stringify({ book_id: bookId, chapter_key: chapterKey, voice_gender: voiceGender }) }),
-  regeneratePodcast: (episodeId: string) => req<PodcastEpisode>(`/api/podcasts/${episodeId}/regenerate`, { method: "POST" }),
+  getBookPodcast: (bookId: string) =>
+    req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
+  createPodcast: (
+    bookId: string,
+    chapterKey: string,
+    voiceGender?: "female" | "male",
+  ) =>
+    req<PodcastEpisode>("/api/podcasts", {
+      method: "POST",
+      body: JSON.stringify({
+        book_id: bookId,
+        chapter_key: chapterKey,
+        voice_gender: voiceGender,
+      }),
+    }),
+  regeneratePodcast: (episodeId: string) =>
+    req<PodcastEpisode>(`/api/podcasts/${episodeId}/regenerate`, {
+      method: "POST",
+    }),
   getOnboarding: () => req<{ dismissed_steps: string[] }>("/api/onboarding"),
-  saveOnboarding: (dismissed_steps: string[]) => req<{ dismissed_steps: string[] }>("/api/onboarding", { method: "PATCH", body: JSON.stringify({ dismissed_steps }) }),
+  saveOnboarding: (dismissed_steps: string[]) =>
+    req<{ dismissed_steps: string[] }>("/api/onboarding", {
+      method: "PATCH",
+      body: JSON.stringify({ dismissed_steps }),
+    }),
   saveWeeklyGoal: (metric: WeeklyGoalMetric, target: number) =>
-    req<WeeklyGoalRow>("/api/goals/weekly", { method: "PUT", body: JSON.stringify({ metric, target }) }),
+    req<WeeklyGoalRow>("/api/goals/weekly", {
+      method: "PUT",
+      body: JSON.stringify({ metric, target }),
+    }),
   getQuotes: (query: QuoteQuery = {}) => {
     const params = new URLSearchParams();
     if (query.limit) params.set("limit", String(query.limit));
@@ -185,24 +548,38 @@ export const api = {
     const suffix = params.toString();
     return req<QuotePage>(`/api/quotes${suffix ? `?${suffix}` : ""}`);
   },
-  getStats: () => req<{
-    velocity: { date: string; pages_read: number }[];
-    insights: { insight: string; freq: number }[];
-    bookCounts: { active: number; finished: number; paused: number; queued: number };
-    globalStats: { total_days_read: number; last_read: string };
-  }>("/api/stats"),
+  getStats: () =>
+    req<{
+      velocity: { date: string; pages_read: number }[];
+      insights: { insight: string; freq: number }[];
+      bookCounts: {
+        active: number;
+        finished: number;
+        paused: number;
+        queued: number;
+      };
+      globalStats: { total_days_read: number; last_read: string };
+    }>("/api/stats"),
 
   // ── AI Reader / Book Wiki ─────────────────────────────────
   request: <T = any>(url: string, opts?: RequestInit) => req<T>(url, opts),
   getWiki: (bookId: string) => req<any | null>(`${BASE}/${bookId}/wiki`),
-  getWikiStatus: (bookId: string) => req<{
-    hasFile: boolean; totalSessions: number; chunksProcessed: number;
-    wikiExists: boolean; pagesCovered: number; wikiGeneratedAt: string | null;
-    outputLanguage: "auto" | "vi" | "en"; schemaVersion: number;
-  }>(`${BASE}/${bookId}/wiki/status`),
-  regenerateWiki: (bookId: string) => req<{ ok: boolean; updated: boolean }>(
-    `${BASE}/${bookId}/wiki/regenerate`, { method: "POST" }
-  ),
+  getWikiStatus: (bookId: string) =>
+    req<{
+      hasFile: boolean;
+      totalSessions: number;
+      chunksProcessed: number;
+      wikiExists: boolean;
+      pagesCovered: number;
+      wikiGeneratedAt: string | null;
+      outputLanguage: "auto" | "vi" | "en";
+      schemaVersion: number;
+    }>(`${BASE}/${bookId}/wiki/status`),
+  regenerateWiki: (bookId: string) =>
+    req<{ ok: boolean; updated: boolean }>(
+      `${BASE}/${bookId}/wiki/regenerate`,
+      { method: "POST" },
+    ),
 };
 
 export interface UploadResult {
@@ -213,25 +590,56 @@ export interface UploadResult {
   books_dir: string;
 }
 
+/** The upload endpoint is the authority for the stored path and detected type. */
+export function validateUploadResult(body: unknown): UploadResult {
+  const result = body as Partial<UploadResult> | null;
+  if (
+    !result ||
+    typeof result.file_path !== "string" ||
+    !result.file_path.trim() ||
+    (result.file_type !== "pdf" && result.file_type !== "epub") ||
+    typeof result.filename !== "string" ||
+    !result.filename.trim()
+  ) {
+    throw new Error("upload completed without a usable file");
+  }
+  return result as UploadResult;
+}
+
 /** Delete an uploaded-but-not-saved file by its stored path. */
 export async function deleteUpload(filePath: string): Promise<void> {
-  await fetch(`/api/upload?path=${encodeURIComponent(filePath)}`, { method: "DELETE" });
+  await fetch(`/api/upload?path=${encodeURIComponent(filePath)}`, {
+    method: "DELETE",
+  });
 }
 
 /** Upload a book file (max 100MB) to the server. Returns stored path. */
-export async function uploadBook(file: File, onProgress?: (pct: number) => void): Promise<UploadResult> {
+export async function uploadBook(
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<UploadResult> {
   const form = new FormData();
   form.append("file", file);
   const xhr = new XMLHttpRequest();
   return new Promise<UploadResult>((resolve, reject) => {
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+      if (e.lengthComputable && onProgress)
+        onProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = () => {
       let body: any = {};
-      try { body = JSON.parse(xhr.responseText); } catch { /* ignore */ }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(body as UploadResult);
-      else reject(new Error(`${xhr.status}: ${body?.error || xhr.statusText}`));
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        /* ignore */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(validateUploadResult(body));
+        } catch (error) {
+          reject(error);
+        }
+      } else reject(new Error(`${xhr.status}: ${body?.error || xhr.statusText}`));
     };
     xhr.onerror = () => reject(new Error("upload network error"));
     xhr.open("POST", "/api/upload");
@@ -259,7 +667,7 @@ export interface QuoteQuery {
   offset?: number;
   q?: string;
   bookId?: string;
-  sort?: 'newest' | 'oldest' | 'mixed';
+  sort?: "newest" | "oldest" | "mixed";
 }
 
 export interface QuotePage {
@@ -283,26 +691,36 @@ export function daysToFinish(b: BookRow): number | null {
 
 /** Returns true if any session exists for today for this book. */
 export function hasTodaySession(logs: LogRow[]): boolean {
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
-  return logs.some(l => String(l.date).slice(0, 10) === today);
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Bangkok",
+  });
+  return logs.some((l) => String(l.date).slice(0, 10) === today);
 }
 
 /** Compute current streak (consecutive days up to today) from log dates.
  *  Uses LOCAL date (not UTC) so streaks align with the user's calendar day. */
 export function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
-  const days = new Set(dates.map((d) => {
-    // ISO datetime from server (e.g. "2026-07-20T17:00:00.000Z") needs
-    // Asia/Bangkok conversion — the plain slice(0,10) would give the UTC day.
-    const s = String(d);
-    return s.includes("T")
-      ? new Date(s).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })
-      : s.slice(0, 10);
-  }));
+  const days = new Set(
+    dates.map((d) => {
+      // ISO datetime from server (e.g. "2026-07-20T17:00:00.000Z") needs
+      // Asia/Bangkok conversion — the plain slice(0,10) would give the UTC day.
+      const s = String(d);
+      return s.includes("T")
+        ? new Date(s).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })
+        : s.slice(0, 10);
+    }),
+  );
   let streak = 0;
   // "Today" in the app timezone (Asia/Bangkok / UTC+7), not the viewer's local tz.
-  const parts = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }).split("-");
-  const cur = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  const parts = new Date()
+    .toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" })
+    .split("-");
+  const cur = new Date(
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2]),
+  );
   cur.setHours(0, 0, 0, 0);
   // if today not read yet, start counting from yesterday
   if (!days.has(toLocalDateStr(cur))) cur.setDate(cur.getDate() - 1);
@@ -325,7 +743,7 @@ export async function fetchCover(title: string): Promise<string | null> {
   try {
     const q = encodeURIComponent(title.trim());
     const res = await fetch(
-      `https://openlibrary.org/search.json?title=${q}&limit=1`
+      `https://openlibrary.org/search.json?title=${q}&limit=1`,
     );
     const data = await res.json();
     const coverId = data?.docs?.[0]?.cover_i;

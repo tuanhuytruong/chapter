@@ -1,3 +1,4 @@
+import { extractJson as extractSharedJson } from "./llmJson.js";
 /**
  * AI Reader — chunk analysis and wiki synthesis.
  *
@@ -149,25 +150,14 @@ const arr = <T>(v: unknown, max: number, mapper: (item: unknown) => T | null): T
   return v.slice(0, max).map(mapper).filter((x): x is T => x !== null);
 };
 
-function escapeRawControlsInStrings(json: string): string {
-  // A safe recovery only for literal newlines/tabs inside quoted values. Do not
-  // invent missing fields, close truncated JSON, or guess at unescaped quotes.
-  let output = "";
-  let inString = false;
-  let escaped = false;
-  for (const char of json) {
-    if (inString && !escaped && char === "\n") output += "\\n";
-    else if (inString && !escaped && char === "\r") output += "\\r";
-    else if (inString && !escaped && char === "\t") output += "\\t";
-    else output += char;
-    if (char === '"' && !escaped) inString = !inString;
-    escaped = char === "\\" && !escaped;
-    if (char !== "\\") escaped = false;
-  }
-  return output;
+function extractJson(raw: string): Record<string, unknown> {
+  const shared = extractSharedJson(raw);
+  if (!shared || typeof shared !== "object" || Array.isArray(shared)) throw new Error("AI Reader: response must be a JSON object");
+  return shared as Record<string, unknown>;
 }
 
-function extractJson(raw: string): Record<string, unknown> {
+/* legacy implementation retained below is unreachable */
+function legacyExtractJson(raw: string): Record<string, unknown> {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1] || raw.trim();
   const start = fenced.indexOf("{");
   const end = fenced.lastIndexOf("}");
@@ -178,7 +168,7 @@ function extractJson(raw: string): Record<string, unknown> {
     parsed = JSON.parse(candidate);
   } catch (firstError) {
     try {
-      parsed = JSON.parse(escapeRawControlsInStrings(candidate));
+      parsed = extractSharedJson(candidate);
     } catch {
       throw firstError;
     }

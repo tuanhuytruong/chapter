@@ -4,6 +4,7 @@ import { X, Loader2, ImageIcon } from 'lucide-react';
 import { api, fetchCover, uploadBook, deleteUpload } from '../api';
 import type { ReadingExperience, SummaryMode } from '../types';
 import { GuideCard } from '../onboarding';
+import ChapterDropdown from './ChapterDropdown';
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -12,8 +13,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
 }) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [filePath, setFilePath] = useState('');
-  const [uploadedFilename, setUploadedFilename] = useState('');
+  const [upload, setUpload] = useState<{ filePath: string; filename: string; fileType: 'pdf' | 'epub' } | null>(null);
   const [fileType, setFileType] = useState<'pdf' | 'epub'>('pdf');
   const [dailyPages, setDailyPages] = useState(3);
   const [coverUrl, setCoverUrl] = useState('');
@@ -31,6 +31,17 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   // closes the modal without saving.
   const uploadedPathRef = useRef<string | null>(null);
   const submittedRef = useRef(false);
+  const uploadAttemptRef = useRef(0);
+  const filePath = upload?.filePath ?? '';
+  const uploadedFilename = upload?.filename ?? '';
+  // The server-detected type is canonical: do not submit a mismatched manual selection.
+  const uploadReady = !uploading && Boolean(upload?.filePath.trim()) && fileType === upload?.fileType;
+
+  const clearUpload = () => {
+    setUpload(null);
+    setUploadPct(0);
+    setFileType('pdf');
+  };
 
   // Auto-fetch cover from Open Library when title changes (debounced)
   useEffect(() => {
@@ -57,8 +68,12 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !filePath.trim()) {
-      onToast({ type: 'err', msg: 'Title and file path are required' });
+    if (!title.trim()) {
+      onToast({ type: 'err', msg: 'A title is required' });
+      return;
+    }
+    if (!uploadReady) {
+      onToast({ type: 'err', msg: uploading ? 'Please wait for the file upload to finish' : 'Choose a PDF or EPUB and wait for it to finish uploading' });
       return;
     }
     setSubmitting(true);
@@ -113,19 +128,27 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             <input type="file" accept=".pdf,.epub" onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) return;
+              const attempt = ++uploadAttemptRef.current;
+              const oldPath = uploadedPathRef.current;
+              uploadedPathRef.current = null;
+              clearUpload();
+              if (oldPath) deleteUpload(oldPath).catch(() => {});
               setUploading(true);
-              setUploadPct(0);
               try {
                 const r = await uploadBook(f, setUploadPct);
-                setFilePath(r.file_path);
-                setUploadedFilename(r.filename);
+                if (attempt !== uploadAttemptRef.current) {
+                  deleteUpload(r.file_path).catch(() => {});
+                  return;
+                }
+                setUpload({ filePath: r.file_path, filename: r.filename, fileType: r.file_type });
                 setFileType(r.file_type);
                 uploadedPathRef.current = r.file_path; // mark for cleanup if not saved
                 onToast({ type: 'ok', msg: `Uploaded ${r.filename}` });
               } catch (err: any) {
+                if (attempt === uploadAttemptRef.current) clearUpload();
                 onToast({ type: 'err', msg: err.message });
               } finally {
-                setUploading(false);
+                if (attempt === uploadAttemptRef.current) setUploading(false);
               }
             }} disabled={uploading}
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-natural-sage file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-natural-sage file:text-white file:text-xs" />
@@ -138,6 +161,8 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               </div>
             )}
             <p className="text-[10px] text-natural-stone mt-1">Max 100MB · PDF or EPUB</p>
+            {!uploading && upload && !uploadReady && <p className="text-[10px] text-natural-stone mt-1">Use the server-detected {upload.fileType.toUpperCase()} type to add this file.</p>}
+            {!uploading && !upload && <p className="text-[10px] text-natural-stone mt-1">Choose a file to enable Add Book.</p>}
             {uploadedFilename && (
               <div aria-label="Uploaded file" title={uploadedFilename}
                 className="mt-1 w-full truncate rounded-xl border border-natural-border bg-natural-cream/30 px-3 py-2 text-xs font-mono text-natural-stone/70 cursor-default">
@@ -147,12 +172,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Type</label>
-              <select value={fileType} onChange={e => setFileType(e.target.value as 'pdf' | 'epub')}
-                className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-                <option value="pdf">PDF</option>
-                <option value="epub">EPUB</option>
-              </select>
+              <ChapterDropdown label="Type" value={fileType} onChange={setFileType} options={[{ value: 'pdf', label: 'PDF' }, { value: 'epub', label: 'EPUB' }]} />
             </div>
             <div className="w-28">
               <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">{fileType === 'epub' ? 'Chunks/day' : 'Pages/day'}</label>
@@ -165,13 +185,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
           </div>
           {fileType === 'epub' && <p className="-mt-2 text-[10px] text-natural-stone">EPUB is split into stable reading chunks, not fixed printed pages.</p>}
           <div className="md:col-start-2">
-            <label htmlFor="summaryLang" className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Summary language</label>
-            <select id="summaryLang" value={summaryLang} onChange={e => setSummaryLang(e.target.value as 'auto' | 'vi' | 'en')}
-              className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage">
-              <option value="auto">Auto (book's language)</option>
-              <option value="vi">Tiếng Việt</option>
-              <option value="en">English</option>
-            </select>
+            <ChapterDropdown id="summaryLang" label="Summary language" value={summaryLang} onChange={setSummaryLang} options={[{ value: 'auto', label: "Auto (book's language)" }, { value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]} />
             <p className="text-[10px] text-natural-stone mt-1">Language used for the AI daily summary. Can be changed later in book settings.</p>
           </div>
           <div className="md:col-span-2 flex items-center gap-2 py-1">
@@ -223,7 +237,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
 
           <div className="flex gap-2 pt-2 md:col-span-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-natural-border rounded-full text-xs font-bold font-sans uppercase tracking-wider text-natural-stone hover:text-natural-dark cursor-pointer">Cancel</button>
-            <button type="submit" disabled={submitting}
+            <button type="submit" disabled={submitting || uploading || !uploadReady}
               className="flex-1 py-2.5 bg-natural-sage hover:bg-natural-sage-dark disabled:opacity-50 text-white rounded-full text-xs font-bold font-sans uppercase tracking-wider cursor-pointer">
               {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Add Book'}
             </button>

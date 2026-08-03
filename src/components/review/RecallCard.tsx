@@ -34,17 +34,20 @@ export default function RecallCard({ card, revealed, saving, onReveal, onSubmit,
 }) {
   const source = sourceLabel(card);
   return (
-    <section className="rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-7">
+    <section className="relative z-10 rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-7">
       <div className="border-b border-natural-border pb-4">
         <p className="truncate text-sm font-bold text-natural-dark">{card.title}</p>
         <p className="mt-0.5 truncate text-xs text-natural-stone">{card.author}</p>
         {source && <p className="mt-2 text-[11px] text-natural-stone">From {source}</p>}
       </div>
       {!revealed ? (
-        <div className="py-9 text-center sm:py-12">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-natural-sage">Take a moment</p>
-          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-natural-stone">What idea from this reading still stays with you?</p>
-          <button ref={revealRef} onClick={onReveal} className="mx-auto mt-7 flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-natural-sage px-5 text-xs font-bold uppercase tracking-wider text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-offset-2"><Eye className="h-4 w-4" /> Reveal insight</button>
+        <div className="relative overflow-hidden py-9 text-center sm:py-12">
+          <p aria-hidden="true" className="pointer-events-none absolute inset-x-6 top-3 line-clamp-3 max-h-16 select-none overflow-hidden text-sm leading-relaxed text-natural-dark opacity-25 blur-sm sm:text-base"><InsightText text={card.insight} /></p>
+          <div className="relative">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-natural-sage">Take a moment</p>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-natural-stone">What idea from this reading still stays with you?</p>
+            <button ref={revealRef} onClick={onReveal} className="mx-auto mt-7 flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-natural-sage px-5 text-xs font-bold uppercase tracking-wider text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage focus-visible:ring-offset-2"><Eye className="h-4 w-4" /> Reveal insight</button>
+          </div>
         </div>
       ) : (
         <div className="py-7 sm:py-9">

@@ -70,14 +70,14 @@ export function mergeStoryState(previous: StoryState | null, analysis: StoryAnal
   return { threads: [...byId.values()].slice(-16), characterPulse: [...byName.values()].slice(-16), readerMemory: [...new Set([...(previous?.readerMemory || []), ...analysis.readerMemory])].slice(-16) };
 }
 
-export async function getStoryStateBeforeLog(bookId: string, date: string, session: number): Promise<StoryState | null> {
+export async function getStoryStateBeforeLog(bookId: string, readingRound: number, date: string, session: number): Promise<StoryState | null> {
   const { rows } = await query<{ analysis: StoryAnalysis }>(
     `SELECT sta.analysis FROM story_thread_analyses sta
      JOIN reading_log rl ON rl.id=sta.log_id
-     WHERE sta.book_id=$1 AND sta.schema_version=1
-       AND (rl.date < $2::date OR (rl.date = $2::date AND rl.session < $3))
+     WHERE sta.book_id=$1 AND sta.schema_version=1 AND rl.reading_round=$2
+       AND (rl.date < $3::date OR (rl.date = $3::date AND rl.session < $4))
      ORDER BY rl.date ASC, rl.session ASC`,
-    [bookId, date, session]
+    [bookId, readingRound, date, session]
   );
   let state: StoryState | null = null;
   for (const item of rows) state = mergeStoryState(state, item.analysis);
@@ -88,13 +88,25 @@ export async function upsertStoryThreadAnalysis(bookId: string, logId: string, a
 
   // Rebuild from every persisted session in chronological order. This prevents a
   // retry of an earlier log from replacing the newest Story State with stale data.
-  const analyses = await listStoryThreadAnalyses(bookId);
+  const { rows: logRows } = await query<{ reading_round: number }>("SELECT reading_round FROM reading_log WHERE id=$1 AND book_id=$2", [logId, bookId]);
+  const readingRound = logRows[0]?.reading_round;
+  if (!readingRound) throw new Error("Story Thread log reading round was not found");
+  const analyses = await listStoryThreadAnalyses(bookId, readingRound);
   let state: StoryState | null = null;
   for (const item of analyses) state = mergeStoryState(state, item.analysis as StoryAnalysis);
   const latest = analyses.at(-1);
-  await query(`INSERT INTO story_state_snapshots (book_id, reading_round, last_log_id, state) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT (book_id) DO UPDATE SET reading_round=EXCLUDED.reading_round, last_log_id=EXCLUDED.last_log_id, state=EXCLUDED.state, updated_at=now()`, [bookId, latest?.session || 1, latest?.log_id || logId, JSON.stringify(state || { threads: [], characterPulse: [], readerMemory: [] })]);
+  await query(`INSERT INTO story_state_snapshots (book_id, reading_round, last_log_id, state) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT (book_id) DO UPDATE SET reading_round=EXCLUDED.reading_round, last_log_id=EXCLUDED.last_log_id, state=EXCLUDED.state, updated_at=now()`, [bookId, readingRound, latest?.log_id || logId, JSON.stringify(state || { threads: [], characterPulse: [], readerMemory: [] })]);
 }
 export async function getStoryThreadAnalysis(bookId: string, logId: string): Promise<any | null> { const { rows } = await query("SELECT * FROM story_thread_analyses WHERE book_id=$1 AND log_id=$2 AND schema_version=1", [bookId, logId]); return rows[0] || null; }
-export async function listStoryThreadAnalyses(bookId: string): Promise<any[]> { return (await query("SELECT sta.*, rl.session FROM story_thread_analyses sta JOIN reading_log rl ON rl.id=sta.log_id WHERE sta.book_id=$1 AND sta.schema_version=1 ORDER BY rl.date ASC, rl.session ASC", [bookId])).rows; }
+export async function listStoryThreadAnalyses(bookId: string, readingRound?: number): Promise<any[]> {
+  const scoped = Number.isInteger(readingRound) && (readingRound as number) > 0;
+  return (await query(
+    `SELECT sta.*, rl.session, rl.reading_round, rl.page_start, rl.page_end
+     FROM story_thread_analyses sta JOIN reading_log rl ON rl.id=sta.log_id
+     WHERE sta.book_id=$1 AND sta.schema_version=1${scoped ? " AND rl.reading_round=$2" : ""}
+     ORDER BY rl.date ASC, rl.session ASC`,
+    scoped ? [bookId, readingRound] : [bookId],
+  )).rows;
+}
 export function storyCompatSummary(analysis: StoryAnalysis): { summary: string; key_insights: string[]; quote: null } { return { summary: analysis.storyRecap, key_insights: analysis.readerMemory.slice(0, 3), quote: null }; }
 export const storyFallback = (): StoryAnalysis => ({ storyRecap: "Story Thread is waiting for a configured language model.", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["No Story Thread analysis was generated because NineRouter is unavailable."] });

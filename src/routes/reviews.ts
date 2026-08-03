@@ -9,6 +9,23 @@ reviewsRouter.use(requireAuth);
 const APP_TZ = "Asia/Bangkok";
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
 
+// GET /api/reviews/due/count — exact count of cards belonging only to the signed-in reader.
+// This deliberately has no session-list limit and must stay before parameterized routes.
+reviewsRouter.get("/due/count", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query(
+      `SELECT COUNT(*)::int AS count
+       FROM review_cards rc
+       JOIN books b ON b.id=rc.book_id
+       WHERE b.owner_id=$1 AND rc.due_date <= $2`,
+      [userFrom(req).id, today()]
+    );
+    res.json({ count: rows[0]?.count ?? 0 });
+  } catch (e: any) {
+    res.status(503).json({ error: "review count unavailable", detail: e.message });
+  }
+});
+
 const uuid = (value: unknown) =>
   typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value) ? value : null;
 
@@ -42,7 +59,7 @@ reviewsRouter.get("/due", async (req: Request, res: Response) => {
     const { rows } = await query(
       `SELECT rc.id, rc.book_id, rc.log_id, rc.insight_index, rc.insight,
               rc.interval_days, rc.repetitions, rc.due_date, rc.last_reviewed_at,
-              b.title, b.author,
+              b.title, b.author, b.cover_url AS cover_url,
               rl.date AS source_date, rl.page_start AS source_page_start, rl.page_end AS source_page_end
        FROM review_cards rc
        JOIN books b ON b.id=rc.book_id
@@ -50,7 +67,7 @@ reviewsRouter.get("/due", async (req: Request, res: Response) => {
        WHERE b.owner_id=$1 AND rc.due_date <= $2${bookFilter}
        ORDER BY rc.due_date ASC, rc.created_at ASC
        LIMIT 50`,
-      params
+      params,
     );
     res.json(rows);
   } catch (e: any) {

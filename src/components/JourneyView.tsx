@@ -31,9 +31,33 @@ function groupByDate(logs: LogRow[]): Map<string, LogRow[]> {
 }
 
 function InlineMarkdown({ text }: { text: string }) {
-  return <>{text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => part.startsWith('**') && part.endsWith('**')
-    ? <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>
-    : <React.Fragment key={index}>{part}</React.Fragment>)}</>;
+  return <>{text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>;
+    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  })}</>;
+}
+
+function FormattedJourneyText({ text, className = '' }: { text: string; className?: string }) {
+  const blocks: React.ReactNode[] = [];
+  let bullets: string[] = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    blocks.push(<ul key={`list-${blocks.length}`} className="ml-4 list-disc space-y-1.5 pl-3">{bullets.map((item, index) => <li key={index}><InlineMarkdown text={item} /></li>)}</ul>);
+    bullets = [];
+  };
+  for (const [index, raw] of text.split(/\r?\n/).entries()) {
+    const line = raw.trim();
+    if (!line) { flushBullets(); continue; }
+    const heading = line.match(/^#{1,3}\s+(.+)$/);
+    if (heading) { flushBullets(); blocks.push(<h4 key={`heading-${index}`} className="pt-1 text-xs font-bold text-natural-dark"><InlineMarkdown text={heading[1]} /></h4>); continue; }
+    const bullet = line.match(/^[-•]\s+(.+)$/);
+    if (bullet) { bullets.push(bullet[1]); continue; }
+    flushBullets();
+    blocks.push(<p key={`paragraph-${index}`}><InlineMarkdown text={line} /></p>);
+  }
+  flushBullets();
+  return <div className={`space-y-2 ${className}`}><>{blocks}</></div>;
 }
 
 function isDeepReadingSummary(text: string | null | undefined): boolean {
@@ -78,12 +102,26 @@ export default function JourneyView({
     });
   };
 
+  // Capture pointer-down before the browser can focus/reflow the control.
+  const captureScroll = (button: HTMLButtonElement) => {
+    button.dataset.chapterScrollY = String(window.scrollY);
+  };
+  const preserveScroll = (button: HTMLButtonElement, update: () => void) => {
+    const saved = Number(button.dataset.chapterScrollY);
+    delete button.dataset.chapterScrollY;
+    const top = Number.isFinite(saved) ? saved : window.scrollY;
+    update();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: "auto" });
+    }));
+  };
+
   const byDate = groupByDate(logs);
   const entries = [...byDate.entries()];
   const totalPages = logs.reduce((sum, l) => sum + (l.page_end - l.page_start + 1), 0);
 
   return (
-    <div className="space-y-0">
+    <div id="reading-lens-journey" className="space-y-0">
       {/* Journey stats ribbon */}
       <div className="flex items-center gap-6 px-4 py-3 mb-6 bg-natural-cream border border-natural-border rounded-2xl text-xs text-natural-stone font-sans">
         <span><b className="text-natural-dark font-bold">{entries.length}</b> reading days</span>
@@ -120,7 +158,7 @@ export default function JourneyView({
                 {/* Date header */}
                 <div className="mb-3">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className={`text-sm font-bold font-serif ${isLatest ? 'text-natural-clay' : 'text-natural-dark'}`}>
+                    <span className={`text-sm font-bold font-sans ${isLatest ? 'text-natural-clay' : 'text-natural-dark'}`}>
                       {formatDateShort(date)}
                     </span>
                     {isLatest && (
@@ -143,9 +181,11 @@ export default function JourneyView({
                     const isOpen = expanded === log.id;
                     const isDeepReading = isDeepReadingSummary(log.summary);
                     return (
-                      <div key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
+                      <div id={`journey-session-${log.id}`} key={log.id} className={si > 0 ? 'border-t border-natural-border/60' : ''}>
                         <button
-                          onClick={() => setExpanded(isOpen ? null : log.id)}
+                          type="button"
+                          onPointerDown={(event) => captureScroll(event.currentTarget)}
+                          onClick={(event) => preserveScroll(event.currentTarget, () => setExpanded(isOpen ? null : log.id))}
                           className="w-full text-left px-4 py-4 hover:bg-natural-cream/80 transition group"
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -158,7 +198,7 @@ export default function JourneyView({
                               {log.summary
                                 ? isDeepReading
                                   ? <DeepReadingJourney text={log.summary} expanded={isOpen} />
-                                  : <p className="text-sm text-natural-dark font-sans leading-relaxed">{log.summary}</p>
+                                  : <FormattedJourneyText text={log.summary} className="text-sm text-natural-dark font-sans leading-relaxed" />
                                 : <p className="text-sm text-natural-stone font-sans">Session summary…</p>}
 
                             </div>
@@ -181,7 +221,7 @@ export default function JourneyView({
                                 </p>
                                 {log.key_insights.map((ins, i) => (
                                   <p key={i} className="text-xs text-natural-dark font-sans leading-relaxed pl-3 border-l-2 border-natural-sage/40">
-                                    {ins}
+                                    <InlineMarkdown text={ins} />
                                   </p>
                                 ))}
                               </div>
@@ -189,8 +229,8 @@ export default function JourneyView({
                             {log.quote && (
                               <div className="flex gap-2 p-3 rounded-xl bg-natural-clay/5 border border-natural-clay/20">
                                 <Quote className="w-3.5 h-3.5 text-natural-clay shrink-0 mt-0.5" />
-                                <p className="text-xs italic text-natural-clay font-serif leading-relaxed">
-                                  {log.quote}
+                                <p className="text-xs italic text-natural-clay font-sans leading-relaxed">
+                                  <InlineMarkdown text={log.quote} />
                                 </p>
                               </div>
                             )}
@@ -204,8 +244,8 @@ export default function JourneyView({
                   {allQuotes.length > 0 && !dayLogs.some(l => expanded === l.id) && (
                     <div className="px-4 py-2.5 border-t border-natural-border/40 flex items-start gap-2">
                       <Quote className="w-3 h-3 text-natural-clay/50 shrink-0 mt-0.5" />
-                      <p className="text-xs italic text-natural-stone/70 font-serif line-clamp-2">
-                        {allQuotes[0]}
+                      <p className="text-xs italic text-natural-stone/70 font-sans line-clamp-2">
+                        <InlineMarkdown text={allQuotes[0]} />
                       </p>
                     </div>
                   )}
@@ -215,7 +255,9 @@ export default function JourneyView({
                     <div className="border-t border-natural-border/40">
                       {/* Toggle bar */}
                       <button
-                        onClick={() => toggleInsights(date)}
+                        type="button"
+                        onPointerDown={(event) => captureScroll(event.currentTarget)}
+                        onClick={(event) => preserveScroll(event.currentTarget, () => toggleInsights(date))}
                         className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-natural-cream/60 transition group"
                       >
                         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans">
@@ -237,7 +279,7 @@ export default function JourneyView({
                                 {i + 1}
                               </span>
                               <p className="text-xs text-natural-dark font-sans leading-relaxed flex-1">
-                                {ins}
+                                <InlineMarkdown text={ins} />
                               </p>
                             </div>
                           ))}
