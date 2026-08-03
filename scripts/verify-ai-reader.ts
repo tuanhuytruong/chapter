@@ -99,6 +99,18 @@ assert.match(bookWikiComponent, /if \(error\.message\.startsWith\("404:"\)\) ret
 assert.match(bookWikiComponent, /The owner has not generated a shared AI Reader map for this book yet\./);
 assert.match(bookWikiComponent, /\{canEdit && <button onClick=\{refresh\}/);
 assert.match(bookWikiComponent, /\.join\("\\n"\)\]\.filter\(Boolean\)\.join\("\\n"\)/, "entity page appearances stay on individual lines");
+assert.match(bookWikiComponent, /onOpenReadingSession: \(logId: string\) => void/);
+assert.match(bookWikiComponent, /onSession=\{onOpenReadingSession\}/);
+assert.match(bookWikiComponent, /disabled=\{!entry\.log_id\}/);
+const bookDetailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(bookDetailSource, /const openSavedReadingSession = \(logId: string\) => \{/);
+assert.match(bookDetailSource, /setLogView\('list'\)/);
+assert.match(bookDetailSource, /setNavigationTargetLogId\(logId\)/);
+assert.match(bookDetailSource, /onOpenReadingSession=\{openSavedReadingSession\}/);
+assert.match(bookDetailSource, /isNavigationTarget=\{navigationTargetLogId === log\.id\}/);
+const daySummarySource = readFileSync(new URL("../src/components/DaySummary.tsx", import.meta.url), "utf8");
+assert.match(daySummarySource, /scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
+assert.match(daySummarySource, /focus\(\{ preventScroll: true \}\)/);
 
 const migration = readFileSync(new URL("../migrations/20260726_expand_ai_reader_narrative.sql", import.meta.url), "utf8");
 const v2Migration = readFileSync(new URL("../migrations/20260726_ai_reader_continuity_map_v2.sql", import.meta.url), "utf8");

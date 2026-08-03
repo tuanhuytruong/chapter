@@ -74,6 +74,7 @@ export default function BookDetail() {
   const [openingPodcast, setOpeningPodcast] = useState(false);
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
+  const [navigationTargetLogId, setNavigationTargetLogId] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
   const [reflectionLoading, setReflectionLoading] = useState(false);
@@ -91,6 +92,16 @@ export default function BookDetail() {
       setLogView('podcast');
       window.setTimeout(() => setOpeningPodcast(false), 180);
     });
+  };
+
+  const openSavedReadingSession = (logId: string) => {
+    if (!logs.some((log) => log.id === logId)) {
+      setToast({ type: 'err', msg: 'This saved session is not available here.' });
+      return;
+    }
+    setSearch('');
+    setNavigationTargetLogId(logId);
+    setLogView('list');
   };
 
   const load = useCallback(async () => {
@@ -605,7 +616,7 @@ export default function BookDetail() {
 
         {hasOpenedAiReader && (
           <div id="ai-reader-panel" role="tabpanel" aria-hidden={logView !== 'ai-reader'} hidden={logView !== 'ai-reader'} className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
-            <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} />
+            <BookWiki bookId={id} totalPages={book.total_pages} canEdit={!!book.can_edit} onOpenReadingSession={openSavedReadingSession} />
           </div>
         )}
         {logView !== 'ai-reader' && <>
@@ -647,7 +658,7 @@ export default function BookDetail() {
                             <div className="flex-1 h-px bg-natural-border" />
                           </div>
                         )}
-                        <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} />
+                        <DaySummary summaryMode={book.summary_mode} log={log} bookTitle={book.title} bookAuthor={book.author} bookId={book.id} canEdit={!!book.can_edit} highlight={search} fileType={book.file_type} onRetryComplete={load} isNavigationTarget={navigationTargetLogId === log.id} onNavigationHandled={() => setNavigationTargetLogId(null)} />
                         <ReadingLensCard lens={lenses.find((lens) => lens.log_id === log.id)} canEdit={!!book.can_edit} isPreparing={enrichmentPending && pendingEnrichmentLogId === log.id} onRetry={() => retryReadingLens(log.id)} />
                       </div>
                     ))}
