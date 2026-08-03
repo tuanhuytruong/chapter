@@ -106,6 +106,7 @@ export const api = {
     req<{ ok: true }>(`${BASE}/${id}`, { method: "DELETE" }),
 
   getLog: (id: string) => req<LogRow[]>(`${BASE}/${id}/log`),
+  getBookStreakDates: (scope: "mine" | "all" = "mine") => req<Record<string, string[]>>(`${BASE}/streaks?scope=${scope}`),
   getCalendar: (month: string, bookId = "") =>
     req<CalendarLogRow[]>(`${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}`),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
