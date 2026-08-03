@@ -3,6 +3,7 @@ import { Info } from "lucide-react";
 
 export type GlossaryLanguage = "vi" | "en";
 export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied";
+
 const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viDetail: string }> = {
   Deepened: { en: "Deepened", vi: "Đào sâu", enDetail: "The reading develops this idea with more nuance or detail.", viDetail: "Phần đọc phát triển ý này với thêm sắc thái hoặc chi tiết." },
   Shifted: { en: "Shifted", vi: "Đã chuyển hướng", enDetail: "The emphasis or meaning changes as the reading progresses.", viDetail: "Trọng tâm hoặc ý nghĩa thay đổi khi phần đọc tiếp diễn." },
@@ -18,9 +19,59 @@ const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viD
   Implication: { en: "Implication", vi: "Hệ quả", enDetail: "What may follow from the idea, without adding outside facts.", viDetail: "Điều có thể suy ra từ ý tưởng, không thêm dữ kiện bên ngoài." },
   Implied: { en: "Implied", vi: "Hàm ý", enDetail: "Suggested by the reading, but not stated directly.", viDetail: "Được gợi ra trong phần đọc nhưng không nói trực tiếp." },
 };
+
 export function GlossaryTerm({ term, language = "en", children }: { term: GlossaryKey; language?: GlossaryLanguage; children?: ReactNode }) {
-  const [open, setOpen] = useState(false); const ref = useRef<HTMLSpanElement>(null); const copy = TERMS[term];
-  useEffect(() => { if (!open) return; const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false); const outside = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }; document.addEventListener("keydown", key); document.addEventListener("mousedown", outside); return () => { document.removeEventListener("keydown", key); document.removeEventListener("mousedown", outside); }; }, [open]);
-  return <span ref={ref} className="relative inline-flex items-center gap-1"><button type="button" aria-expanded={open} aria-label={`${copy[language]}: ${copy[language === "vi" ? "viDetail" : "enDetail"]}`} onClick={() => setOpen(v => !v)} className="border-b border-dotted border-natural-sage/70 font-semibold text-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50">{children || copy[language]}</button>{open && <span role="dialog" className="absolute bottom-full left-0 z-30 mb-2 w-64 rounded-xl border border-natural-border bg-natural-cream p-3 text-left text-[11px] font-normal leading-relaxed text-natural-dark shadow-lg"><strong className="block text-xs">{copy[language]}</strong>{copy[language === "vi" ? "viDetail" : "enDetail"]}<span className="mt-2 block text-[10px] text-natural-stone">{language === "vi" ? "Nhấn Escape để đóng" : "Press Escape to close"}</span></span>}<Info aria-hidden="true" className="h-3 w-3 text-natural-sage" /></span>;
+  const [pinnedOpen, setPinnedOpen] = useState(false);
+  const [hoverOpen, setHoverOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const copy = TERMS[term];
+  const detail = copy[language === "vi" ? "viDetail" : "enDetail"];
+  const open = pinnedOpen || hoverOpen;
+  const popupId = `glossary-${term.toLowerCase()}`;
+
+  useEffect(() => {
+    if (!pinnedOpen) return;
+    const key = (event: KeyboardEvent) => event.key === "Escape" && setPinnedOpen(false);
+    const outside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setPinnedOpen(false);
+    };
+    document.addEventListener("keydown", key);
+    document.addEventListener("mousedown", outside);
+    return () => {
+      document.removeEventListener("keydown", key);
+      document.removeEventListener("mousedown", outside);
+    };
+  }, [pinnedOpen]);
+
+  return <span
+    ref={ref}
+    className="relative inline-flex items-center"
+    onPointerEnter={() => setHoverOpen(true)}
+    onPointerLeave={() => setHoverOpen(false)}
+  >
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-controls={popupId}
+      aria-label={`${copy[language]}: ${detail}`}
+      onClick={() => setPinnedOpen((value) => !value)}
+      onFocus={() => setHoverOpen(true)}
+      onBlur={() => setHoverOpen(false)}
+      onPointerEnter={() => setHoverOpen(true)}
+      onPointerLeave={() => setHoverOpen(false)}
+      className="inline-flex items-center gap-1 border-b border-dotted border-current font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50"
+    >
+      {children || copy[language]}
+      <Info aria-hidden="true" className="h-3 w-3 shrink-0" />
+    </button>
+    {open && <span id={popupId} role="tooltip" className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-natural-border bg-natural-cream p-3 text-left text-[11px] font-normal leading-relaxed text-natural-dark shadow-lg">
+      <strong className="block text-xs">{copy[language]}</strong>
+      {detail}
+      {pinnedOpen && <span className="mt-2 block text-[10px] text-natural-stone">{language === "vi" ? "Nhấn Escape để đóng" : "Press Escape to close"}</span>}
+    </span>}
+  </span>;
 }
-export function GlossaryLabel({ term, language = "en" }: { term: GlossaryKey; language?: GlossaryLanguage }) { return <GlossaryTerm term={term} language={language} />; }
+
+export function GlossaryLabel({ term, language = "en" }: { term: GlossaryKey; language?: GlossaryLanguage }) {
+  return <GlossaryTerm term={term} language={language} />;
+}

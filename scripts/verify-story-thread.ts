@@ -62,5 +62,13 @@ const storyViewSource = readFileSync(new URL("../src/components/story/StoryThrea
 assert.match(storyViewSource, /fileType === "epub" \? "Chunks" : "Pages"/);
 assert.match(storyViewSource, /aria-label=\{`Retry Story recap for session \$\{log\.session\}`\}/);
 assert.match(storyViewSource, /RefreshCw/);
+const glossarySource = readFileSync(new URL("../src/components/ContextualGlossary.tsx", import.meta.url), "utf8");
+assert.match(glossarySource, /onPointerEnter=\{\(\) => setHoverOpen\(true\)\}/);
+assert.match(glossarySource, /onPointerLeave=\{\(\) => setHoverOpen\(false\)\}/);
+assert.match(glossarySource, /<button[\s\S]*?<Info aria-hidden="true"/);
+assert.match(glossarySource, /onClick=\{\(\) => setPinnedOpen\(\(value\) => !value\)\}/);
+assert.match(glossarySource, /role="tooltip"/);
+assert.match(glossarySource, /event\.key === "Escape"/);
+assert.match(storyViewSource, /<GlossaryLabel term=\{glossaryStatus\[thread\.status\]\} \/>/);
 
 console.log("STORY_THREAD_FIXTURES_OK");
