@@ -128,7 +128,8 @@ export const api = {
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, { method: "PATCH", body: JSON.stringify({ notes }) }),
   generateReflection: (bookId: string) =>
     req<Pick<BookRow, 'reflection_text' | 'reflection_at'>>(`${BASE}/${bookId}/reflection`, { method: "POST" }),
-  getDueReviews: () => req<ReviewCardRow[]>("/api/reviews/due"),
+  getDueReviewBooks: () => req<Array<{ id: string; title: string; author: string; cover_url: string | null; due_count: number }>>("/api/reviews/due/books"),
+  getDueReviews: (bookId?: string) => req<ReviewCardRow[]>(`/api/reviews/due${bookId ? `?bookId=${encodeURIComponent(bookId)}` : ""}`),
   submitReview: (id: string, remembered: boolean) =>
     req<ReviewCardRow>(`/api/reviews/${id}`, { method: "POST", body: JSON.stringify({ remembered }) }),
   getWeeklyGoal: () => req<WeeklyGoalProgress>("/api/goals/weekly"),

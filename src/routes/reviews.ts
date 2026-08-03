@@ -9,9 +9,36 @@ reviewsRouter.use(requireAuth);
 const APP_TZ = "Asia/Bangkok";
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
 
+const uuid = (value: unknown) =>
+  typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value) ? value : null;
+
+// GET /api/reviews/due/books — lightweight, owner-scoped choices for Review.
+reviewsRouter.get("/due/books", async (req: Request, res: Response) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.id, b.title, b.author, b.cover_url, COUNT(*)::int AS due_count
+       FROM review_cards rc
+       JOIN books b ON b.id=rc.book_id
+       WHERE b.owner_id=$1 AND rc.due_date <= $2
+       GROUP BY b.id, b.title, b.author, b.cover_url
+       ORDER BY b.title ASC`,
+      [userFrom(req).id, today()],
+    );
+    res.json(rows);
+  } catch (e: any) {
+    res.status(503).json({ error: "review books unavailable", detail: e.message });
+  }
+});
+
 // GET /api/reviews/due — cards belonging only to the signed-in reader.
 reviewsRouter.get("/due", async (req: Request, res: Response) => {
+  const bookId = req.query.bookId === undefined ? null : uuid(req.query.bookId);
+  if (req.query.bookId !== undefined && !bookId)
+    return res.status(400).json({ error: "bookId must be a UUID" });
   try {
+    const params: unknown[] = [userFrom(req).id, today()];
+    const bookFilter = bookId ? " AND rc.book_id=$3" : "";
+    if (bookId) params.push(bookId);
     const { rows } = await query(
       `SELECT rc.id, rc.book_id, rc.log_id, rc.insight_index, rc.insight,
               rc.interval_days, rc.repetitions, rc.due_date, rc.last_reviewed_at,
@@ -20,10 +47,10 @@ reviewsRouter.get("/due", async (req: Request, res: Response) => {
        FROM review_cards rc
        JOIN books b ON b.id=rc.book_id
        JOIN reading_log rl ON rl.id=rc.log_id
-       WHERE b.owner_id=$1 AND rc.due_date <= $2
+       WHERE b.owner_id=$1 AND rc.due_date <= $2${bookFilter}
        ORDER BY rc.due_date ASC, rc.created_at ASC
        LIMIT 50`,
-      [userFrom(req).id, today()]
+      params
     );
     res.json(rows);
   } catch (e: any) {
