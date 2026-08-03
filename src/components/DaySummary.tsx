@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Quote, FileText, RotateCcw, StickyNote } from 'lucide-react';
 import type { LogRow, SummaryMode } from '../types';
 import { api } from '../api';
@@ -26,6 +26,8 @@ interface DaySummaryProps {
   fileType?: 'pdf' | 'epub';
   summaryMode?: SummaryMode;
   onRetryComplete?: () => void;
+  isNavigationTarget?: boolean;
+  onNavigationHandled?: () => void;
 }
 
 /** Highlight search matches in text */
@@ -63,7 +65,9 @@ function DeepReadingSummary({ text, highlight }: { text: string; highlight?: str
   return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [navigationHighlight, setNavigationHighlight] = useState(false);
   const [open, setOpen] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
@@ -97,6 +101,22 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
     }
   }, [log.book_id, log.id]);
 
+  useEffect(() => {
+    if (!isNavigationTarget) return;
+    setNavigationHighlight(true);
+    const frame = window.requestAnimationFrame(() => {
+      const card = cardRef.current;
+      card?.scrollIntoView({ behavior: "smooth", block: "center" });
+      card?.focus({ preventScroll: true });
+      onNavigationHandled?.();
+    });
+    const clearHighlight = window.setTimeout(() => setNavigationHighlight(false), 1800);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(clearHighlight);
+    };
+  }, [isNavigationTarget, onNavigationHandled]);
+
   const retrySummary = useCallback(async () => {
     setRetrying(true);
     setRetryError(null);
@@ -122,7 +142,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   });
 
   return (
-    <div className="bg-natural-cream border border-natural-border rounded-2xl p-4 shadow-sm space-y-2">
+    <div ref={cardRef} tabIndex={-1} className={`bg-natural-cream border rounded-2xl p-4 shadow-sm space-y-2 outline-none transition ${navigationHighlight ? "border-natural-sage ring-2 ring-natural-sage/30" : "border-natural-border"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>

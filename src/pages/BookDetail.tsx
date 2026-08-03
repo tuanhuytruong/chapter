@@ -163,6 +163,7 @@ export default function BookDetail() {
   const [openingPodcast, setOpeningPodcast] = useState(false);
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
+  const [navigationTargetLogId, setNavigationTargetLogId] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
   const [reflectionLoading, setReflectionLoading] = useState(false);
@@ -191,6 +192,16 @@ export default function BookDetail() {
       setLogView("podcast");
       window.setTimeout(() => setOpeningPodcast(false), 180);
     });
+  };
+
+  const openSavedReadingSession = (logId: string) => {
+    if (!logs.some((log) => log.id === logId)) {
+      setToast({ type: "err", msg: "This saved session is not available in the selected reading round." });
+      return;
+    }
+    setSearch("");
+    setNavigationTargetLogId(logId);
+    setLogView("list");
   };
 
   const load = useCallback(async () => {
@@ -1186,6 +1197,7 @@ export default function BookDetail() {
                   bookId={id}
                   totalPages={book.total_pages}
                   canEdit={!!book.can_edit}
+                  onOpenReadingSession={openSavedReadingSession}
                 />
                 {book.can_edit && upgradePrompt && (
                   <ContextualUpgradeCard
@@ -1259,6 +1271,8 @@ export default function BookDetail() {
                                   highlight={search}
                                   fileType={book.file_type}
                                   onRetryComplete={load}
+                                  isNavigationTarget={navigationTargetLogId === log.id}
+                                  onNavigationHandled={() => setNavigationTargetLogId(null)}
                                 />
                                 <ReadingLensCard
                                   lens={lenses.find(
