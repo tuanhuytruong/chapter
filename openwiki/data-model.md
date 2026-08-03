@@ -197,6 +197,8 @@ erDiagram
     users ||--o{ review_cards : reviews
     users ||--o{ weekly_goals : sets
     users ||--o{ onboarding_progress : tracks
+    users ||--o| subscriptions : has
+    users ||--o{ usage_events : incurs
     users ||--o| session : "has 0 or 1"
 ```
 
@@ -265,6 +267,8 @@ Background job tracking with status `idle | running | failed` to prevent concurr
 |-------|---------|
 | `chapter.review_cards` | Spaced-repetition review cards derived from reading insights. Intervals: 1, 3, 7, 14, 30 days. |
 | `chapter.weekly_goals` | Per-user weekly goal targeting `sessions` or `units` read. Week starts Monday in Asia/Bangkok. |
+| `chapter.subscriptions` | One provider-neutral membership entitlement per user (`free`, `plus`, or `deep_reader`) with status, period, grant source, and optional provider identifiers. |
+| `chapter.usage_events` | Idempotent audit ledger for feature usage reservations, consumption, releases, and adjustments by Bangkok billing period; Phase 0 does not yet enforce quotas. |
 | `chapter.onboarding_progress` | Per-user dismissed onboarding step IDs. Content is client-side. |
 
 ## Migrations
