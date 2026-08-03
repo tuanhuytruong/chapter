@@ -1117,18 +1117,21 @@ export default function BookDetail() {
             <div className="mb-3 flex flex-col gap-3 border-y border-natural-border/70 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-1" role="tablist" aria-label="Reading views">
                 <button
+                type="button"
                 onClick={() => setLogView("list")}
                 className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "list" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 List
               </button>
               <button
+                type="button"
                 onClick={() => setLogView("journey")}
                 className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "journey" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 Journey
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setHasOpenedAiReader(true);
                   setLogView("ai-reader");
