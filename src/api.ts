@@ -338,6 +338,7 @@ export interface PodcastCatalogBook {
   cover_url?: string | null;
   summary_lang: string | null;
   reading_round: number;
+  has_podcast_voice: boolean;
   chapters: PodcastChapter[];
 }
 

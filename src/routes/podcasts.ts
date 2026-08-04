@@ -56,13 +56,15 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
     const book = rows[0];
     if (!book) return res.status(404).json({ error: "Podcast book not found" });
     await ensureChapterUnits(book);
-    const [units, episodes] = await Promise.all([
+    const viewerId = userFrom(req).id;
+    const [units, episodes, viewer] = await Promise.all([
       query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, sum(char_count)::int AS char_count
         FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
       query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
+      query<{ podcast_voice_gender: string | null }>("SELECT podcast_voice_gender FROM users WHERE id=$1", [viewerId]),
     ]);
     const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
-    res.json({ ...book, chapters: units.rows.map((unit) => ({ ...unit, episode: byChapter.get(unit.chapter_key) || null })) });
+    res.json({ ...book, has_podcast_voice: !!viewer.rows[0]?.podcast_voice_gender, chapters: units.rows.map((unit) => ({ ...unit, episode: byChapter.get(unit.chapter_key) || null })) });
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });
 
