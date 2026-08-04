@@ -55,7 +55,7 @@ try {
   const pendingJson = await pendingCatalog.json() as any[];
   assert(pendingJson[0].chapters[0].episode.status === "archive_pending" && !('tg_file_id' in pendingJson[0].chapters[0].episode), "archive-pending state is public without exposing archive metadata");
   const foreign = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { "x-user": other } });
-  assert(foreign.status === 200, "ready audio is safely playable by a signed-in shared reader");
+  assert(foreign.status === 404, "podcast audio is private to the owner and denied to shared readers");
   const sharedBook = await fetch(`${base}/api/podcasts/books/${book}`, { headers: { "x-user": other } });
   const sharedJson = await sharedBook.json() as any;
   assert(sharedBook.status === 200 && sharedJson.chapters.length === 2, "book-scoped podcast view is available to a shared reader");
