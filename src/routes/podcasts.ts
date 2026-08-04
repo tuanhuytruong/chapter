@@ -90,8 +90,8 @@ podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
   try {
     const episode = (await query<any>(
-      "SELECT p.* FROM podcasts p WHERE p.id=$1 AND p.user_id=$2",
-      [req.params.id, userFrom(req).id]
+      "SELECT p.* FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1",
+      [req.params.id]
     )).rows[0];
     const locallyPlayable = episode?.local_cache_path && episode?.local_cache_until && new Date(episode.local_cache_until) > new Date();
     if (!episode || (episode.status !== "ready" && episode.status !== "archive_pending") || (!locallyPlayable && !episode.tg_file_id)) return res.status(404).end();
