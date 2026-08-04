@@ -61,11 +61,13 @@ async function applyLocalTimeouts(client: any, timeouts: DbTimeouts): Promise<vo
   );
 }
 
-function logDbOutcome(operation: "request" | "background", start: number, error?: any): void {
+function logDbOutcome(operation: "request" | "background", start: number, error?: any, text?: string): void {
   const elapsedMs = Date.now() - start;
   if (error) {
+    const msg = String(error?.message || error).replace(/\s+/g, " ").slice(0, 160);
+    const sql = text ? text.replace(/\s+/g, " ").slice(0, 140) : "-";
     console.error(
-      `[db] ${operation} failed duration_ms=${elapsedMs} code=${error?.code || "unknown"}`,
+      `[db] ${operation} failed duration_ms=${elapsedMs} code=${error?.code || "unknown"} msg=${msg} query=${sql}`,
     );
   } else if (elapsedMs >= 1000) {
     console.info(`[db] ${operation} slow duration_ms=${elapsedMs}`);
@@ -89,7 +91,7 @@ async function timedQuery<T>(
     return { rows: res.rows, rowCount: res.rowCount };
   } catch (error: any) {
     await client.query("ROLLBACK").catch(() => undefined);
-    logDbOutcome(operation, start, error);
+    logDbOutcome(operation, start, error, text);
     throw error;
   } finally {
     client.release();
