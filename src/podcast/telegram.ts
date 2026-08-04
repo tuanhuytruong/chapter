@@ -31,7 +31,7 @@ async function telegramJson(url: string, init: RequestInit, retrySafe = false) {
 /** Server-only archive diagnostic. Never return this result to the browser. */
 export async function verifyPodcastArchive(chatId: string): Promise<void> {
   const cfg = getTelegramConfig();
-  if (!cfg) throw new Error("Telegram archive bot is not configured");
+  if (!cfg) throw new Error("Podcast archive bot is not configured");
   if (!chatId) throw new Error("Podcast archive destination is not configured");
   try {
     await telegramJson(`${api}/bot${cfg.botToken}/getChat`, {
@@ -52,25 +52,27 @@ export function logPodcastArchiveConfig(chatId: string) {
   console.info(`[podcast] archive configuration: configured=${Boolean(chatId)} rawLength=${raw.length} normalizedLength=${normalized.length} idSuffix=${chatId ? archiveSuffix(chatId) : "none"} quoteWrapped=${quoteWrapped} hiddenChars=${hiddenChars}`);
 }
 
-export function archiveFilename(_userName: string | null, bookTitle: string, chapterTitle: string | null): string {
-  // Telegram's visible filename should describe the recording, not the account
-  // that requested it. Keep one readable, safe shape without artificial ellipses.
-  const part = (value: string | null | undefined, fallback: string, max = 72) => String(value || fallback)
-    .replace(/[\/:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, max).trim() || fallback;
-  return `${part(bookTitle, "Book")} — ${part(chapterTitle, "Chapter")}.mp3`;
+function cleanPart(value: string | null | undefined, fallback: string, max = 72): string {
+  return String(value || fallback)
+    .replace(/[\/\\:*?"<>|\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, max).trim() || fallback;
+}
+
+export function archiveFilename(userName: string | null, bookTitle: string, chapterTitle: string | null): string {
+  // Trackable archive filename: "<user> – <first 15 chars of book> – <first 15 chars of chapter>.mp3"
+  return `${cleanPart(userName, "User", 20)} – ${cleanPart(bookTitle, "Book", 15)} – ${cleanPart(chapterTitle, "Chapter", 15)}.mp3`;
 }
 
 export async function archivePodcast(filePath: string, chatId: string, userName: string | null, title: string, chapterTitle: string | null, durationS: number): Promise<TelegramArchiveResult> {
   const cfg = getTelegramConfig();
-  if (!cfg) throw new Error("Telegram archive bot is not configured");
+  if (!cfg) throw new Error("Podcast archive bot is not configured");
   if (!chatId) throw new Error("Podcast archive destination is not configured");
   const bytes = await fs.readFile(filePath);
   const makeForm = () => {
     const form = new FormData();
     form.set("chat_id", chatId);
     form.set("audio", new Blob([bytes], { type: "audio/mpeg" }), archiveFilename(userName, title, chapterTitle));
-    form.set("title", chapterTitle || title);
-    form.set("performer", "Chapter");
+    form.set("title", `${cleanPart(title, "Book", 72)} – ${cleanPart(chapterTitle, "Chapter", 72)}`);
+    form.set("performer", cleanPart(userName, "Chapter", 20));
     form.set("duration", String(Math.max(1, durationS)));
     return form;
   };
@@ -113,7 +115,7 @@ export async function deleteArchivedPodcast(chatId: string | null, messageId: nu
 
 export async function downloadArchivedPodcast(fileId: string): Promise<Buffer> {
   const cfg = getTelegramConfig();
-  if (!cfg) throw new Error("Telegram archive bot is not configured");
+  if (!cfg) throw new Error("Podcast archive bot is not configured");
   const found = await telegramJson(`${api}/bot${cfg.botToken}/getFile`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file_id: fileId }) });
   if (!found.result?.file_path) throw new Error("Telegram archive file is unavailable");
   const audio = await fetch(`${api}/file/bot${cfg.botToken}/${found.result.file_path}`);
