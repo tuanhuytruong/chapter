@@ -507,7 +507,11 @@ booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
       "SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",
       [id, readingRound],
     );
-    if (!round.rows.length)
+    // A freshly added story book has no round rows yet (the first round is
+    // created on the first reading session). Empty thread list is valid for
+    // the default round; only an explicitly requested missing round is an
+    // error.
+    if (!round.rows.length && requestedRound !== null)
       return res.status(404).json({ error: "reading round not found for book" });
     res.json(await listStoryThreadAnalyses(id, readingRound));
   } catch (e: any) {
@@ -752,7 +756,12 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
       "SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",
       [id, readingRound],
     );
-    if (!round.rows.length)
+    // A freshly added book has no reading round rows yet (the first round is
+    // created when the owner reads the first session). An empty log is valid
+    // for the default round; only an explicitly requested missing round is an
+    // error. Previously this 404 surfaced in the UI as a misleading
+    // "Book not found." for newly added books.
+    if (!round.rows.length && requestedRound !== null)
       return res
         .status(404)
         .json({ error: "reading round not found for book" });
