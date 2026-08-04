@@ -33,6 +33,7 @@ The backend entry point. Serves API routes and optionally the built frontend (`d
 - **Health check** — `GET /health` returns `{ ok: true }` for liveness probes.
 - **Production serving** — serves `dist/index.html` + static assets when no Vite dev server is detected.
 
+<!-- openwiki: broken internal link [../src/config.ts] file "../src/config.ts" does not exist. Fix the href or restore the target, then delete this comment. -->
 Configuration is centralized in [`/src/config.ts`](../src/config.ts) — loaded from `.env.local`.
 
 ### Frontend SPA (`src/`)
@@ -53,6 +54,8 @@ Built with **React 19 + TypeScript**, styled with **Tailwind CSS 4**. Single-pag
 | `/profile` | Profile | Avatar and display name settings |
 
 ### Database (PostgreSQL)
+<!-- openwiki: broken internal link [../src/db/schema.sql] file "../src/db/schema.sql" does not exist. Fix the href or restore the target, then delete this comment. -->
+<!-- openwiki: broken internal link [data-model.md] file "data-model.md" does not exist. Fix the href or restore the target, then delete this comment. -->
 All data lives in the `chapter` schema of a shared `dwh` database. The `ensureSchema()` function at boot reads [`src/db/schema.sql`](../src/db/schema.sql) and applies all `CREATE TABLE IF NOT EXISTS` and `ADD COLUMN IF NOT EXISTS` statements idempotently. See the [Data Model](data-model.md) page for full schema details.
 
 ### LLM integration (`src/llm.ts`)
@@ -79,6 +82,7 @@ Two integration modes:
 2. **Account linking** — `src/telegram-link.ts` generates time-limited deep-link tokens. Users receive a `/start chapter_<token>` command that the webhook endpoint processes to bind `telegram_chat_id` to their account.
 
 ### n8n workflow
+<!-- openwiki: broken internal link [../n8n/chapter-daily-summary.json] file "../n8n/chapter-daily-summary.json" does not exist. Fix the href or restore the target, then delete this comment. -->
 An [n8n workflow](../n8n/chapter-daily-summary.json) runs daily at 07:00 Asia/Bangkok:
 1. Calls `POST /api/books/all/advance` — advances all active books by their `daily_pages` setting.
 2. Reads each new log's summary.

@@ -51,6 +51,7 @@ cp .env.example .env.local
 
 ## Deployment
 
+<!-- openwiki: broken internal link [../update.sh] link "../update.sh" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 The [`update.sh`](../update.sh) script handles a full deploy:
 
 ```bash
@@ -196,6 +197,7 @@ Books are stored as PDF or EPUB files on disk. The `CHAPTER_BOOKS_DIR` environme
 - **Absolute paths** (starting with `/`) are kept as-is (backward compatible)
 - **Relative paths** are resolved inside `CHAPTER_BOOKS_DIR`
 
+<!-- openwiki: broken internal link [../src/upload.ts] link "../src/upload.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 File upload via the `AddBookModal` uses multer middleware (configured in [`/src/upload.ts`](../src/upload.ts)):
 - Max size: 100 MB
 - Allowed types: `.pdf`, `.epub`

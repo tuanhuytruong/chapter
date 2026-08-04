@@ -48,6 +48,7 @@ sequenceDiagram
 
 ### n8n workflow component
 
+<!-- openwiki: broken internal link [../n8n/chapter-daily-summary.json] link "../n8n/chapter-daily-summary.json" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 The workflow is exported as [`/n8n/chapter-daily-summary.json`](../n8n/chapter-daily-summary.json). It contains:
 
 1. **Schedule trigger** — Cron expression for 07:00 daily (Asia/Bangkok timezone).
