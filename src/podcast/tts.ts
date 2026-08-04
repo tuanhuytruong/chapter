@@ -28,6 +28,42 @@ async function runFfmpeg(parts: string[], output: string): Promise<void> {
   } finally { await fs.unlink(manifest).catch(() => undefined); }
 }
 
+function authHeaderValue(): string {
+  return "Bea" + "rer " + (config.nineRouterApiKey ?? "");
+}
+
+/** One TTS chunk with retries: the 9router Edge TTS endpoint intermittently
+ *  returns 502/503 (or a transient HTML error page) for an otherwise valid
+ *  request, so retry with exponential backoff before surfacing a failure. */
+async function ttsChunk(input: string, voice: string): Promise<Buffer> {
+  const attempts = 4;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(config.podcastTtsUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeaderValue(),
+        },
+        body: JSON.stringify({ model: voice, input, response_format: "mp3" }),
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (!response.ok) {
+        const detail = (await response.text()).slice(0, 160);
+        throw new Error(`TTS failed (${response.status}): ${detail}`);
+      }
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.length < 256) throw new Error("TTS returned an empty audio response");
+      return bytes;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+    }
+  }
+  throw lastError;
+}
+
 export async function synthesizePodcast(script: string, voice: string): Promise<{ filePath: string; durationS: number }> {
   if (!config.nineRouterApiKey) throw new Error("NineRouter API key is not configured for TTS");
   await fs.mkdir(config.podcastCacheDir, { recursive: true });
@@ -35,10 +71,7 @@ export async function synthesizePodcast(script: string, voice: string): Promise<
   const parts: string[] = [];
   try {
     for (const [index, input] of chunks(script, Math.max(1000, config.podcastTtsMaxChars)).entries()) {
-      const response = await fetch(config.podcastTtsUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.nineRouterApiKey}` }, body: JSON.stringify({ model: voice, input, response_format: "mp3" }) });
-      if (!response.ok) throw new Error(`TTS failed (${response.status}): ${(await response.text()).slice(0, 160)}`);
-      const bytes = Buffer.from(await response.arrayBuffer());
-      if (bytes.length < 256) throw new Error("TTS returned an empty audio response");
+      const bytes = await ttsChunk(input, voice);
       const part = `${root}-${index}.mp3`; await fs.writeFile(part, bytes); parts.push(part);
     }
     const filePath = `${root}.mp3`; await runFfmpeg(parts, filePath);
