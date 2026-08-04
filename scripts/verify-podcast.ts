@@ -61,6 +61,11 @@ try {
   assert(sharedBook.status === 200 && sharedJson.chapters.length === 2, "book-scoped podcast view is available to a shared reader");
   assert(!('tg_file_id' in sharedJson.chapters[0].episode) && !('error_message' in sharedJson.chapters[0].episode), "shared podcast view keeps archive and operational details private");
   assert(archiveFilename("Huy/Truong", "A deliberately long book title", "A deliberately long chapter title") === "Huy Truong – A deliberately – A deliberately.mp3", "Telegram filename tracks user + 15 chars book + 15 chars chapter");
+  const longUser = "ABCDEFGHIJKLMNOPQRST"; // 20 chars
+  const longName = archiveFilename(longUser, "0123456789abcdef", "0123456789abcdef");
+  assert(longName.length <= 60, "archive filename never exceeds the 60-char Telegram limit");
+  assert(longName.startsWith("ABCDEFGHIJKLMNOPQRST \u2013 ") && longName.endsWith(".mp3"), "60-char guard keeps user and extension intact");
+  assert(archiveFilename("U", "B", "C") === "U \u2013 B \u2013 C.mp3", "short values keep their shape");
   assert(resolvePodcastLanguage("auto", "Đây là một chương tiếng Việt với những diễn biến rõ ràng.") === "vi", "Auto resolves Vietnamese chapter text to Vietnamese audio");
   assert(resolvePodcastLanguage("auto", "This is an English chapter with no Vietnamese diacritics.") === "en", "Auto resolves English chapter text to English audio");
   assert(resolvePodcastLanguage("en", "Đây vẫn là tiếng Việt.") === "en", "Explicit podcast language remains authoritative");

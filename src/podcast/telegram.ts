@@ -59,7 +59,22 @@ function cleanPart(value: string | null | undefined, fallback: string, max = 72)
 
 export function archiveFilename(userName: string | null, bookTitle: string, chapterTitle: string | null): string {
   // Trackable archive filename: "<user> – <first 15 chars of book> – <first 15 chars of chapter>.mp3"
-  return `${cleanPart(userName, "User", 20)} – ${cleanPart(bookTitle, "Book", 15)} – ${cleanPart(chapterTitle, "Chapter", 15)}.mp3`;
+  // Telegram truncates long filenames, so keep the whole name (incl. .mp3) within 60 chars.
+  const maxTotal = 60;
+  const separator = " – ";
+  const ext = ".mp3";
+  let user = cleanPart(userName, "User", 20);
+  let book = cleanPart(bookTitle, "Book", 15);
+  let chapter = cleanPart(chapterTitle, "Chapter", 15);
+  let name = `${user}${separator}${book}${separator}${chapter}${ext}`;
+  while (name.length > maxTotal) {
+    // Shrink chapter first, then book, then user; a 13-char floor always terminates the loop.
+    if (chapter.length > 1) chapter = chapter.slice(0, -1).trim();
+    else if (book.length > 1) book = book.slice(0, -1).trim();
+    else user = user.slice(0, -1).trim();
+    name = `${user}${separator}${book}${separator}${chapter}${ext}`;
+  }
+  return name;
 }
 
 export async function archivePodcast(filePath: string, chatId: string, userName: string | null, title: string, chapterTitle: string | null, durationS: number): Promise<TelegramArchiveResult> {
