@@ -60,7 +60,7 @@ try {
   const sharedJson = await sharedBook.json() as any;
   assert(sharedBook.status === 200 && sharedJson.chapters.length === 2, "book-scoped podcast view is available to a shared reader");
   assert(!('tg_file_id' in sharedJson.chapters[0].episode) && !('error_message' in sharedJson.chapters[0].episode), "shared podcast view keeps archive and operational details private");
-  assert(archiveFilename("Huy/Truong", "A deliberately long book title", "A deliberately long chapter title") === "A deliberately long book title — A deliberately long chapter title.mp3", "Telegram filename uses the readable book and chapter title only");
+  assert(archiveFilename("Huy/Truong", "A deliberately long book title", "A deliberately long chapter title") === "Huy Truong – A deliberately – A deliberately.mp3", "Telegram filename tracks user + 15 chars book + 15 chars chapter");
   assert(resolvePodcastLanguage("auto", "Đây là một chương tiếng Việt với những diễn biến rõ ràng.") === "vi", "Auto resolves Vietnamese chapter text to Vietnamese audio");
   assert(resolvePodcastLanguage("auto", "This is an English chapter with no Vietnamese diacritics.") === "en", "Auto resolves English chapter text to English audio");
   assert(resolvePodcastLanguage("en", "Đây vẫn là tiếng Việt.") === "en", "Explicit podcast language remains authoritative");
