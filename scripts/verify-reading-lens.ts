@@ -28,21 +28,31 @@ assert.throws(() => parseReadingLensAnalysis("not json", source));
 const lensCardSource = readFileSync(new URL("../src/components/ReadingLensCard.tsx", import.meta.url), "utf8");
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
 const booksRouteSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
-const sharedLensStart = booksRouteSource.indexOf('booksRouter.get("/:id/reading-lens"');
-const sharedLensEnd = booksRouteSource.indexOf('booksRouter.get("/:id/logs/:logId/reading-lens"', sharedLensStart);
+
+// Slice between the shared list route and the per-log route; route bodies are
+// reformatted across lines, so anchor on the quoted path strings themselves.
+const sharedLensStart = booksRouteSource.indexOf('"/:id/reading-lens"');
+const sharedLensEnd = booksRouteSource.indexOf('"/:id/logs/:logId/reading-lens"', sharedLensStart);
 const sharedLensRoute = booksRouteSource.slice(sharedLensStart, sharedLensEnd);
 assert.doesNotMatch(sharedLensRoute, /owner_id/, "Persisted Reading Lens data must be readable by all authenticated readers");
-assert.match(detailSource, /else setLenses\(await api\.getReadingLens\(id\)\)/, "Non-owners must load persisted Reading Lens data into Book Detail");
-assert.doesNotMatch(detailSource.slice(detailSource.indexOf("const load"), detailSource.indexOf("useEffect(() => { load();")), /if \(b\.can_edit\)/, "Loading shared Reading Lens data must not be owner-gated in Book Detail");
-assert.match(booksRouteSource, /reading-lens\/retry", async \(req: Request, res: Response\) => \{\n  const \{ id, logId \} = req\.params;\n  if \(!await ownerCanMutate/, "Reading Lens regeneration must remain owner-only");
+
+// Non-owners must load persisted Reading Lens data into Book Detail.
+assert.match(detailSource, /else\s*\{?\s*setLenses\(await api\.getReadingLens\(id\)\)/, "Non-owners must load persisted Reading Lens data into Book Detail");
+const sharedLoadStart = detailSource.indexOf("// Persisted companion data is shared read-only.");
+const sharedLoadEnd = detailSource.indexOf("} catch (e: any) {", sharedLoadStart);
+assert.doesNotMatch(detailSource.slice(sharedLoadStart, sharedLoadEnd), /b\.can_edit/, "Loading shared Reading Lens data must not be owner-gated in Book Detail");
+
+// Regeneration must remain owner-only (multi-line route body).
+assert.match(booksRouteSource, /reading-lens\/retry",\s*async \(req: Request, res: Response\) => \{\s*const \{ id, logId \} = req\.params;\s*if \(!\(?await\s+ownerCanMutate/, "Reading Lens regeneration must remain owner-only");
 assert.match(lensCardSource, /isPreparing = false/);
 assert.match(lensCardSource, /Reading Lens couldn't be prepared for this session\./);
 assert.match(lensCardSource, /canEdit && !isPreparing/);
-assert.match(detailSource, /isPreparing=\{enrichmentPending && pendingEnrichmentLogId === log\.id\}/);
+assert.match(detailSource, /isPreparing=\{\s*enrichmentPending\s*&&\s*pendingEnrichmentLogId\s*===\s*log\.id\s*\}/);
+
 const retryStart = detailSource.indexOf("const retryReadingLens");
 const retryEnd = detailSource.indexOf("const retryStoryThread", retryStart);
 const retrySource = detailSource.slice(retryStart, retryEnd);
 assert.doesNotMatch(retrySource, /await load\(\)/, "Reading Lens retry must not trigger page-level loading");
 assert.match(retrySource, /const lens = await api\.retryReadingLens\(id, logId\)/);
-assert.match(retrySource, /setLenses\(previous => \[lens, \.\.\.previous\.filter/);
+assert.match(retrySource, /setLenses\(\(previous\)\s*=>\s*\[\s*lens,\s*\.\.\.previous\.filter/, "Reading Lens retry must optimistically upsert the fresh analysis");
 console.log("READING_LENS_FIXTURES_OK");
