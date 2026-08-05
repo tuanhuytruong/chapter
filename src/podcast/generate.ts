@@ -22,15 +22,20 @@ function safeArchiveMessage(error: unknown) { return `Archive pending: ${String(
 export function podcastPublic(row: any) { const { tg_file_id, tg_file_unique_id, tg_chat_id, tg_message_id, local_cache_path, local_cache_until, user_id, book_id, chapter_key, error_message, ...safe } = row; return safe; }
 
 export async function createPodcast(ownerId: string, bookId: string, chapterKey: string, gender?: "female" | "male"): Promise<any> {
-  const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round,u.podcast_voice_gender
-    FROM books b JOIN users u ON u.id=b.owner_id WHERE b.id=$1 AND b.owner_id=$2`, [bookId, ownerId]);
+  const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round
+    FROM books b WHERE b.id=$1 AND b.owner_id=$2`, [bookId, ownerId]);
   const source = rows[0]; if (!source) throw new Error("Book chapter was not found"); if (source.file_type !== "epub") throw new Error("Podcast is available for EPUB books only");
-  let voiceGender = source.podcast_voice_gender as "female" | "male" | null;
-  if (!voiceGender && gender) {
-    await query("UPDATE users SET podcast_voice_gender=$1 WHERE id=$2 AND podcast_voice_gender IS NULL", [gender, ownerId]);
-    voiceGender = (await query<{ podcast_voice_gender: "female" | "male" | null }>("SELECT podcast_voice_gender FROM users WHERE id=$1", [ownerId])).rows[0]?.podcast_voice_gender || null;
-  }
+  // The narrator is per Book + per reading round: persist the picker choice only
+  // when this Book/Round has none yet; a re-read round is a fresh session that
+  // must choose again. users.podcast_voice_gender is never consulted.
+  const narrator = (await query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [bookId, source.reading_round || 1])).rows[0];
+  const voiceGender = (narrator?.voice_gender as "female" | "male" | undefined) || gender;
   if (!voiceGender) { const error: any = new Error("Choose a narrator voice before creating your first episode"); error.code = "VOICE_REQUIRED"; throw error; }
+  if (!narrator) {
+    await query("INSERT INTO podcast_narrators (book_id, reading_round, voice_gender) VALUES ($1,$2,$3) ON CONFLICT (book_id, reading_round) DO NOTHING", [bookId, source.reading_round || 1, voiceGender]);
+    const after = (await query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [bookId, source.reading_round || 1])).rows[0];
+    if (after?.voice_gender && after.voice_gender !== voiceGender) throw new Error("This reading round already picked its narrator voice.");
+  }
   const units = await query<any>(`SELECT chapter_key, title, raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index`, [bookId, chapterKey]);
   const unit = units.rows[0];
   if (!unit) throw new Error("This EPUB chapter needs to be indexed before Podcast can use it");
@@ -54,14 +59,16 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
 
 /** Explicit destructive regeneration. The persisted narrator choice stays unchanged. */
 export async function regeneratePodcast(ownerId: string, episodeId: string): Promise<any> {
-  const episode = (await query<any>(`SELECT p.*,b.summary_lang,u.podcast_voice_gender FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.id=$1 AND p.user_id=$2 AND b.owner_id=$2`, [episodeId, ownerId])).rows[0];
+  const episode = (await query<any>(`SELECT p.*,b.summary_lang FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1 AND p.user_id=$2 AND b.owner_id=$2`, [episodeId, ownerId])).rows[0];
   if (!episode) throw new Error("Podcast episode was not found");
   if (["queued", "scripting", "synthesizing", "archiving"].includes(episode.status)) return podcastPublic(episode);
   const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [episode.book_id, episode.chapter_key]);
   const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
   if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
   const language = resolvePodcastLanguage(episode.summary_lang, chapterText);
-  const voiceGender = episode.podcast_voice_gender as "female" | "male" | null;
+  // Regeneration keeps the narrator of the episode's own Book + Round.
+  const narrator = (await query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [episode.book_id, episode.reading_round])).rows[0];
+  const voiceGender = narrator?.voice_gender as "female" | "male" | undefined;
   if (!voiceGender) { const error: any = new Error("Choose a narrator voice before regenerating this episode"); error.code = "VOICE_REQUIRED"; throw error; }
   const voice = voices[language][voiceGender];
   if (episode.local_cache_path) await fs.unlink(episode.local_cache_path).catch(() => undefined);

@@ -300,6 +300,20 @@ ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
 CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
 
+-- Podcast narrator is chosen per Book and per reading round. A re-read round
+-- is a new session: it may pick a different voice, so the user-level default
+-- (users.podcast_voice_gender) is NOT consulted for generation. Note: the
+-- backfill of existing (book, round) pairs lives in the deployment migration
+-- (migrations/20260805_podcast_narrator_per_round.sql), not here, because the
+-- app bootstrap splits statements on ";" and LIKE patterns with % would break.
+CREATE TABLE IF NOT EXISTS chapter.podcast_narrators (
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  reading_round INT NOT NULL CHECK (reading_round >= 1),
+  voice_gender TEXT NOT NULL CHECK (voice_gender IN (female, male)),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (book_id, reading_round)
+);
+
 -- ───────────────────────────────────────────────────────────
 -- chapter.reading_lens_analyses (versioned structured session analysis)
 -- ───────────────────────────────────────────────────────────
