@@ -82,10 +82,10 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     await ensureChapterUnits(book);
     const round = book.reading_round || 1;
     const [episodes, progress] = await Promise.all([
-      query<any>(`SELECT p.*, min(u.unit_index)::int AS chapter_order
+      query<any>(`SELECT p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at, min(u.unit_index)::int AS chapter_order
         FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key
         WHERE p.user_id=$1 AND p.book_id=$2 AND p.reading_round=$3 AND p.status IN ('ready','archive_pending')
-        GROUP BY p.id ORDER BY min(u.unit_index), p.created_at`, [userId, book.id, round]),
+        GROUP BY p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at ORDER BY min(u.unit_index), p.created_at`, [userId, book.id, round]),
       query<any>("SELECT podcast_id,current_time_seconds,completed_at,updated_at FROM podcast_playback_progress WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]),
     ]);
     res.json({ book_id: book.id, reading_round: round, episodes: episodes.rows.map(podcastPublic), progress: progress.rows[0] || null });
