@@ -327,6 +327,8 @@ export interface PodcastChapter {
   chapter_title: string | null;
   start_unit: number;
   end_unit: number;
+  start_page: number | null;
+  end_page: number | null;
   char_count: number;
   episode: PodcastEpisode | null;
 }

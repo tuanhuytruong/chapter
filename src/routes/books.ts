@@ -122,7 +122,7 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
     for (const unit of batch) {
       const start = params.length + 1;
       values.push(
-        `($${start},$${start + 1},$${start + 2},$${start + 3},$${start + 4},$${start + 5},$${start + 6})`,
+        `($${start},$${start + 1},$${start + 2},$${start + 3},$${start + 4},$${start + 5},$${start + 6},$${start + 7})`,
       );
       params.push(
         book.id,
@@ -132,10 +132,11 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
         unit.chapterKey,
         unit.rawText,
         unit.rawText.length,
+        unit.pageLabel ?? null,
       );
     }
     await client.query(
-      `INSERT INTO book_reading_units (book_id, unit_index, title, spine_index, chapter_key, raw_text, char_count)
+      `INSERT INTO book_reading_units (book_id, unit_index, title, spine_index, chapter_key, raw_text, char_count, page_label)
        VALUES ${values.join(",")}`,
       params,
     );
@@ -549,7 +550,10 @@ booksRouter.get("/:id/wiki", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { rows } = await query(
-      `SELECT w.book_id, w.schema_version, w.output_language, w.pages_covered, w.overview, w.concepts, w.themes, w.people, w.chapter_map, w.notable_quotes, w.open_questions, w.book_so_far, w.current_position, w.narrative_arc, w.carry_forward_insights, w.reading_path, w.thread_map, w.entity_map, w.connections, w.current_reading_state, w.next_session_context, w.generated_at, w.generation_ms
+      `SELECT w.book_id, w.schema_version, w.output_language, w.pages_covered, w.overview, w.concepts, w.themes, w.people, w.chapter_map, w.notable_quotes, w.open_questions, w.book_so_far, w.current_position, w.narrative_arc, w.carry_forward_insights, w.reading_path, w.thread_map, w.entity_map, w.connections, w.current_reading_state, w.next_session_context, w.generated_at, w.generation_ms,
+        b.file_type,
+        EXISTS (SELECT 1 FROM book_reading_units u2 WHERE u2.book_id = w.book_id AND u2.page_label IS NOT NULL) AS has_page_labels,
+        (SELECT jsonb_object_agg(unit_index::text, page_label) FROM book_reading_units WHERE book_id = $1) AS page_labels
       FROM book_wiki w JOIN books b ON b.id=w.book_id WHERE w.book_id=$1`,
       [id],
     );
@@ -607,13 +611,22 @@ booksRouter.get("/:id/wiki/status", async (req: Request, res: Response) => {
 });
 
 // GET /api/books/:id/wiki/sessions — shared, safe persisted V2 session analyses (no raw text).
+// Each chunk carries the real printed page range when the EPUB encodes page
+// numbers (page_label), and re-reads of the same range are collapsed so the
+// timeline shows one entry per range (latest analysis wins).
 booksRouter.get("/:id/wiki/sessions", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { rows } = await query(
-      `SELECT c.log_id, c.page_start, c.page_end, c.chunk_analysis, c.processed_at
+      `SELECT DISTINCT ON (c.page_start, c.page_end)
+        c.log_id, c.page_start, c.page_end, c.chunk_analysis, c.processed_at,
+        (SELECT min(page_label) FROM book_reading_units u
+          WHERE u.book_id = c.book_id AND u.unit_index BETWEEN c.page_start AND c.page_end) AS page_label_start,
+        (SELECT max(page_label) FROM book_reading_units u
+          WHERE u.book_id = c.book_id AND u.unit_index BETWEEN c.page_start AND c.page_end) AS page_label_end
       FROM ai_reader_chunks c JOIN books b ON b.id=c.book_id
-      WHERE c.book_id=$1 ORDER BY c.page_start, c.page_end`,
+      WHERE c.book_id=$1
+      ORDER BY c.page_start, c.page_end, c.processed_at DESC`,
       [id],
     );
     if (!rows.length) {
@@ -1053,7 +1066,7 @@ booksRouter.post("/:id/reflection", async (req: Request, res: Response) => {
           : "Match the predominant language in the reading journal.";
     const reflection = await callLLM(
       "You are a thoughtful reading companion. Synthesize a completed reader's own journal; stay concrete and avoid inventing events, quotes, or claims not present in it.",
-      `Create a warm, lasting end-of-book reflection for \"${book.title}\" by ${book.author}.\n\n${language}\n\nUse exactly these markdown sections:\n## What stayed with you\nA concise thesis about the journey.\n\n## Five insights to carry forward\nExactly five grounded bullets (use fewer only if the journal genuinely contains fewer distinct ideas).\n\n## A letter to your future self\nA short personal, practical letter.\n\nDo not call this a passage, excerpt, or report.\n\nReading journal:\n${boundedJournal}`,
+      `Create a warm, lasting end-of-book reflection for \"${book.title}\" by ${book.author}.\n\n${language}\n\nUse exactly these markdown sections:\n## What stayed with you\nA concise thesis about the journey.\n\n## Five insights to carry forward\nExactly five grounded bullets (use fewer only if the journal genuinely contains fewer distinct ideas). Each insight must be a single line starting with a hyphen, then a bold label, then a colon and the explanation — exactly this format: - **Label:** explanation. Never use \"*\" as a list marker; the only asterisks allowed are the pair opening/closing the bold label.\n\n## A letter to your future self\nA short personal, practical letter.\n\nDo not call this a passage, excerpt, or report.\n\nReading journal:\n${boundedJournal}`,
       0.5,
     );
     const { rows } = await query(

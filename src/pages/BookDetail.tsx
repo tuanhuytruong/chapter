@@ -53,7 +53,10 @@ import ChapterDropdown from "../components/ChapterDropdown";
 import { BookDetailSkeleton } from "../components/ContentSkeleton";
 
 function InlineMarkdown({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  // Defensive: LLMs sometimes emit "**Label:*** text" (bold close + stray list
+  // asterisk). Collapse any run of 3+ asterisks to a plain bold close so no
+  // literal "*" leaks into the rendered text.
+  const parts = text.replace(/\*{3,}/g, "**").split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return (
     <>
       {parts.map((part, index) => {
@@ -109,7 +112,7 @@ function ReadingLensSynthesis({ text }: { text: string }) {
       );
       continue;
     }
-    const bullet = line.match(/^[-•]\s+(.+)$/);
+    const bullet = line.match(/^[-•*]\s+(.+)$/);
     if (bullet) {
       bullets.push(bullet[1]);
       continue;

@@ -49,7 +49,10 @@ function HighlightText({ text, query }: { text: string; query: string }) {
 }
 
 function InlineMarkdown({ text, highlight }: { text: string; highlight?: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // Defensive: LLMs sometimes emit "**Label:*** text" (bold close + stray list
+  // asterisk). Collapse any run of 3+ asterisks to a plain bold close so no
+  // literal "*" leaks into the rendered text.
+  const parts = text.replace(/\*{3,}/g, "**").split(/(\*\*[^*]+\*\*)/g);
   return <>{parts.map((part, index) => part.startsWith('**') && part.endsWith('**')
     ? <strong key={index} className="font-bold text-natural-dark">{highlight ? <HighlightText text={part.slice(2, -2)} query={highlight} /> : part.slice(2, -2)}</strong>
     : <React.Fragment key={index}>{highlight ? <HighlightText text={part} query={highlight} /> : part}</React.Fragment>)}</>;
@@ -184,7 +187,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         <ul className="space-y-1">
           {log.key_insights.map((ins, i) => (
             <li key={i} className="flex gap-1.5 text-[11px] text-natural-muted font-sans">
-              <span className="text-natural-sage mt-0.5">•</span>{highlight ? <HighlightText text={ins} query={highlight} /> : ins}
+              <span className="text-natural-sage mt-0.5">•</span><InlineMarkdown text={ins.replace(/^[-•*]\s+/, "")} highlight={highlight} />
             </li>
           ))}
         </ul>

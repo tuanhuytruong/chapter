@@ -38,7 +38,7 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
     const result = [] as any[];
     for (const book of books) {
       const [units, episodes, narrator] = await Promise.all([
-        query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, sum(char_count)::int AS char_count
+        query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
           FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
         query<any>("SELECT * FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [ownerId, book.id, book.reading_round || 1]),
         query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
@@ -58,7 +58,7 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
     if (!book) return res.status(404).json({ error: "Podcast book not found" });
     await ensureChapterUnits(book);
     const [units, episodes, narrator] = await Promise.all([
-      query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, sum(char_count)::int AS char_count
+      query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
         FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
       query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),

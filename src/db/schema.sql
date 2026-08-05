@@ -212,6 +212,7 @@ CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_unit
   ON chapter.book_reading_units (book_id, unit_index);
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS spine_index INT;
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS chapter_key TEXT;
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS page_label INT;
 CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_chapter
   ON chapter.book_reading_units (book_id, chapter_key, unit_index);
 
