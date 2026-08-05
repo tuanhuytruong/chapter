@@ -7,6 +7,8 @@ tags: [database, postgresql, schema, data-model, ai-reader]
 
 # Data Model
 
+<!-- openwiki: broken internal link [../src/db.ts#L81] link "../src/db.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
+<!-- openwiki: broken internal link [../src/db/schema.sql] link "../src/db/schema.sql" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 All tables live in the `chapter` schema of the `dwh` database. The schema is applied idempotently at server boot by [`ensureSchema()`](../src/db.ts#L81) reading [`src/db/schema.sql`](../src/db/schema.sql). Migrations in `/migrations/` add further columns and tables.
 
 ## Entity relationship diagram

@@ -16,13 +16,15 @@ db.public.none(`
   CREATE TABLE books (id uuid primary key, owner_id uuid not null references users(id), title text, author text, cover_url text, file_type text, summary_lang text, reading_round int default 1, file_path text, created_at timestamptz default now(), total_pages int);
   CREATE TABLE reading_log (id uuid primary key, book_id uuid references books(id), page_start int, page_end int);
   CREATE TABLE book_reading_units (book_id uuid, unit_index int, title text, spine_index int, chapter_key text, raw_text text, char_count int);
-  CREATE TABLE podcasts (id uuid primary key, user_id uuid references users(id), book_id uuid references books(id), log_id uuid references reading_log(id), reading_round int, chapter_key text, chapter_title text, language text, voice_model text, status text, script_text text, word_count int, duration_s int, tg_file_id text, tg_file_unique_id text, tg_chat_id text, tg_message_id bigint, local_cache_path text, local_cache_until timestamptz, error_message text, created_at timestamptz default now(), updated_at timestamptz default now(), UNIQUE(book_id,chapter_key,reading_round));
+  CREATE TABLE podcasts (id uuid primary key default gen_random_uuid(), user_id uuid references users(id), book_id uuid references books(id), log_id uuid references reading_log(id), reading_round int, chapter_key text, chapter_title text, language text, voice_model text, status text, script_text text, word_count int, duration_s int, tg_file_id text, tg_file_unique_id text, tg_chat_id text, tg_message_id bigint, local_cache_path text, local_cache_until timestamptz, error_message text, created_at timestamptz default now(), updated_at timestamptz default now(), UNIQUE(book_id,chapter_key,reading_round));
+  CREATE TABLE podcast_narrators (book_id uuid not null references books(id), reading_round int not null check (reading_round >= 1), voice_gender text not null check (voice_gender in ('female','male')), created_at timestamptz default now(), PRIMARY KEY(book_id, reading_round));
 `);
 const pool = new (db.adapters.createPg().Pool)();
 setPool(pool as any);
 const owner = "00000000-0000-4000-8000-000000000001";
 const other = "00000000-0000-4000-8000-000000000002";
 const book = "10000000-0000-4000-8000-000000000001";
+const bookTwo = "10000000-0000-4000-8000-000000000002";
 const episode = "30000000-0000-4000-8000-000000000001";
 const cache = await mkdtemp(path.join(tmpdir(), "chapter-podcast-"));
 const audioPath = path.join(cache, "episode.mp3");
@@ -30,8 +32,15 @@ const audio = Buffer.from("0123456789podcast-audio");
 await writeFile(audioPath, audio);
 await pool.query("INSERT INTO users VALUES ($1,'owner','x','Owner', 'female'),($2,'other','x','Other', 'male')", [owner, other]);
 await pool.query("INSERT INTO books (id,owner_id,title,author,file_type,summary_lang,reading_round,file_path) VALUES ($1,$2,'Book','Author','epub','en',1,'/no-file.epub')", [book, owner]);
-await pool.query("INSERT INTO book_reading_units VALUES ($1,1,'Chapter One',0,'0:chapter-one','The first part.',15),($1,2,'Chapter One',0,'0:chapter-one','The second part.',16),($1,3,'Chapter Two',1,'1:chapter-two','The next chapter.',17)", [book]);
-await pool.query("INSERT INTO podcasts (id,user_id,book_id,reading_round,chapter_key,chapter_title,language,voice_model,status,script_text,duration_s,local_cache_path,local_cache_until) VALUES ($1,$2,$3,1,'0:chapter-one','Chapter One','en','edge-tts/en-US-JennyNeural','ready','Transcript',2,$4,now() + interval '1 hour')", [episode, owner, book, audioPath]);
+await pool.query("INSERT INTO books (id,owner_id,title,author,file_type,summary_lang,reading_round,file_path) VALUES ($1,$2,'Book Two','Author','epub','en',1,'/no-file2.epub')", [bookTwo, owner]);
+await pool.query("INSERT INTO book_reading_units VALUES ($1,1,'Chapter One',0,'0:chapter-one','The first part.',15)", [book]);
+await pool.query("INSERT INTO book_reading_units VALUES ($1,2,'Chapter One',0,'0:chapter-one','The second part.',16)", [book]);
+await pool.query("INSERT INTO book_reading_units VALUES ($1,3,'Chapter Two',1,'1:chapter-two','The next chapter.',17)", [book]);
+await pool.query("INSERT INTO book_reading_units VALUES ($1,1,'Chapter One',0,'0:chapter-one','The other book part.',15)", [bookTwo]);
+await pool.query("INSERT INTO book_reading_units VALUES ($1,2,'Chapter Two',1,'1:second-chapter','The other chapter.',16)", [bookTwo]);
+await pool.query("INSERT INTO podcasts (id,user_id,book_id,reading_round,chapter_key,chapter_title,language,voice_model,status,script_text,duration_s,local_cache_path,local_cache_until) VALUES ('30000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',1,'0:chapter-one','Chapter One','en','edge-tts/en-US-JennyNeural','ready','Transcript',2,'/tmp/cache-placeholder',now() + interval '1 hour')");
+await pool.query("UPDATE podcasts SET local_cache_path=$1 WHERE id='30000000-0000-4000-8000-000000000001'", [audioPath]);
+await pool.query("INSERT INTO podcast_narrators (book_id,reading_round,voice_gender) VALUES ($1,1,'female')", [book]);
 
 const app = express(); app.use(express.json());
 app.use((req: any, _res, next) => { const id = req.header("x-user") || owner; req.session = { user: { id, username: "test", displayName: "Test" } }; req.user = req.session.user; next(); });
@@ -42,9 +51,11 @@ const assert = (value: any, message: string) => { if (!value) throw new Error(me
 try {
   const catalogResponse = await fetch(`${base}/api/podcasts/catalog`);
   const catalog = await catalogResponse.json() as any[];
-  assert(catalogResponse.status === 200 && catalog[0].chapters.length === 2, "catalog groups EPUB units into stable complete chapters");
-  assert(catalog[0].chapters[0].episode && !('chapter_key' in catalog[0].chapters[0].episode), "catalog hides internal archive and chapter identity metadata");
-  assert(!('tg_file_id' in catalog[0].chapters[0].episode) && !('local_cache_path' in catalog[0].chapters[0].episode), "catalog keeps Telegram and cache identifiers private");
+  assert(catalogResponse.status === 200 && catalog.length === 2, "catalog lists both of my EPUB books");
+  const ownerBook = catalog.find((b: any) => b.id === "10000000-0000-4000-8000-000000000001");
+  assert(ownerBook && ownerBook.chapters.length === 2, "catalog groups EPUB units into stable complete chapters");
+  assert(ownerBook.chapters[0].episode && !('chapter_key' in ownerBook.chapters[0].episode), "catalog hides internal archive and chapter identity metadata");
+  assert(!('tg_file_id' in ownerBook.chapters[0].episode) && !('local_cache_path' in ownerBook.chapters[0].episode), "catalog keeps Telegram and cache identifiers private");
   const partial = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { Range: "bytes=2-7" } });
   assert(partial.status === 206 && partial.headers.get("content-range") === `bytes 2-7/${audio.length}`, "audio proxy serves HTTP Range responses");
   assert(Buffer.compare(Buffer.from(await partial.arrayBuffer()), audio.subarray(2, 8)) === 0, "audio proxy returns exactly requested bytes");
@@ -53,13 +64,37 @@ try {
   assert(pendingAudio.status === 200 && Buffer.compare(Buffer.from(await pendingAudio.arrayBuffer()), audio) === 0, "archive-pending episode remains privately playable from local cache");
   const pendingCatalog = await fetch(`${base}/api/podcasts/catalog`);
   const pendingJson = await pendingCatalog.json() as any[];
-  assert(pendingJson[0].chapters[0].episode.status === "archive_pending" && !('tg_file_id' in pendingJson[0].chapters[0].episode), "archive-pending state is public without exposing archive metadata");
+  const ownerPend = pendingJson.find((b: any) => b.id === '10000000-0000-4000-8000-000000000001');
+  assert(ownerPend.chapters[0].episode.status === "archive_pending" && !('tg_file_id' in ownerPend.chapters[0].episode), "archive-pending state is public without exposing archive metadata");
   const foreign = await fetch(`${base}/api/podcasts/${episode}/audio`, { headers: { "x-user": other } });
   assert(foreign.status === 200, "ready audio is safely playable by a signed-in shared reader");
   const sharedBook = await fetch(`${base}/api/podcasts/books/${book}`, { headers: { "x-user": other } });
   const sharedJson = await sharedBook.json() as any;
   assert(sharedBook.status === 200 && sharedJson.chapters.length === 2, "book-scoped podcast view is available to a shared reader");
   assert(!('tg_file_id' in sharedJson.chapters[0].episode) && !('error_message' in sharedJson.chapters[0].episode), "shared podcast view keeps archive and operational details private");
+  assert(sharedJson.narrator_gender === "female" && sharedJson.reading_round === 1, "book view reports the narrator chosen for the current reading round");
+  const bookTwoView = await fetch(`${base}/api/podcasts/books/${bookTwo}`) as any;
+  const bookTwoJson = await bookTwoView.json() as any;
+  assert(bookTwoJson.narrator_gender === null, "a book whose round has no narrator yet reports null so the picker can open");
+  const firstCreate = await fetch(`${base}/api/podcasts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: bookTwo, chapter_key: "0:chapter-one", voice_gender: "female" }) });
+  assert(firstCreate.status === 202, "first create on an unset book + round is accepted with an explicit narrator choice");
+  const firstNarrator = await pool.query("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=1", [bookTwo]);
+  assert(firstNarrator.rows[0]?.voice_gender === "female", "first choice is persisted per book + round");
+  // A second chapter in the SAME book + round: the persisted narrator wins, so an
+  // attempted conflicting choice cannot overwrite it (the choice is deterministic).
+  const secondCreate = await fetch(`${base}/api/podcasts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: bookTwo, chapter_key: "1:second-chapter", voice_gender: "male" }) });
+  assert(secondCreate.status === 202, "a later chapter in the same round still succeeds");
+  const laterCreate = await fetch(`${base}/api/podcasts/books/${bookTwo}`);
+  const laterEnv = await (laterCreate.json() as any);
+  assert(laterEnv.narrator_gender === "female", "a conflicting attempted choice does not overwrite the round's female narrator");
+  await pool.query("UPDATE books SET reading_round=2 WHERE id=$1", [bookTwo]);
+  const roundTwoView = await fetch(`${base}/api/podcasts/books/${bookTwo}`) as any;
+  const roundTwoJson = await roundTwoView.json() as any;
+  assert(roundTwoJson.reading_round === 2 && roundTwoJson.narrator_gender === null, "a re-read round is a new session: narrator resets so the picker opens again");
+  const roundTwoCreate = await fetch(`${base}/api/podcasts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ book_id: bookTwo, chapter_key: "0:chapter-one", voice_gender: "male" }) });
+  assert(roundTwoCreate.status === 202, "a new round may choose a different narrator than round 1");
+  const roundTwoNarrator = await pool.query("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=2", [bookTwo]);
+  assert(roundTwoNarrator.rows[0]?.voice_gender === "male", "round 2 keeps its own voice independent of round 1");
   assert(archiveFilename("Huy/Truong", "A deliberately long book title", "A deliberately long chapter title") === "Huy Truong – A deliberately – A deliberately.mp3", "Telegram filename tracks user + 15 chars book + 15 chars chapter");
   const longUser = "ABCDEFGHIJKLMNOPQRST"; // 20 chars
   const longName = archiveFilename(longUser, "0123456789abcdef", "0123456789abcdef");
