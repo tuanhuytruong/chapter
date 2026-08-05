@@ -6,7 +6,7 @@ function episodeName(episode: PodcastEpisode, index: number) {
   return episode.chapter_title || `Chapter ${index + 1}`;
 }
 
-export default function PodcastPlaylistPlayer({ bookId, compact = false, playRequest = null, onPlayed }: { bookId: string; compact?: boolean; playRequest?: { bookId: string; chapterKey: string } | null; onPlayed?: () => void }) {
+export default function PodcastPlaylistPlayer({ bookId, compact = false, playRequest = null, onPlayed }: { bookId: string; compact?: boolean; playRequest?: { bookId: string; episodeId: string } | null; onPlayed?: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastSavedAt = useRef(0);
   const autoplayNext = useRef(false);
@@ -22,7 +22,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
     pendingRequest.current = true;
     setActiveIndex(null);
     void api.getPodcastPlaylist(bookId).then((next) => {
-      const index = next.episodes.findIndex((episode) => episode.chapter_key === playRequest.chapterKey);
+      const index = next.episodes.findIndex((episode) => episode.id === playRequest.episodeId);
       setPlaylist(next);
       setActiveIndex(index >= 0 ? index : 0);
       setStarted(true);

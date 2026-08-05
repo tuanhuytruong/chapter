@@ -16,7 +16,7 @@ export default function Podcasts() {
   const [books, setBooks] = useState<PodcastCatalogBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState<string | null>(null);
-  const [playRequest, setPlayRequest] = useState<{ bookId: string; chapterKey: string } | null>(null);
+  const [playRequest, setPlayRequest] = useState<{ bookId: string; episodeId: string } | null>(null);
   const [voiceTarget, setVoiceTarget] = useState<{ bookId: string; chapterKey: string } | null>(null);
   // `undefined` means the initial automatic expansion has not happened yet;
   // `null` is an intentional user collapse and must stay collapsed.
@@ -46,7 +46,7 @@ export default function Podcasts() {
           <div className="min-w-0 flex-1"><h2 className="truncate text-sm font-bold text-natural-dark sm:text-base">{book.title}</h2>{book.author && <p className="mt-0.5 truncate text-xs text-natural-stone">{book.author}</p>}<p className="mt-2 text-[11px] font-medium text-natural-stone">{summary.ready}/{summary.total} episodes ready{summary.attention ? <span className="ml-2 text-natural-clay">· {summary.attention} needs attention</span> : null}</p></div>
           <ChevronDown className={`h-5 w-5 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
         </button>
-        {open && <div className="border-t border-natural-border px-4 py-4 sm:px-5"><PodcastPlaylistPlayer key={book.id} bookId={book.id} playRequest={playRequest && playRequest.bookId === book.id ? playRequest : null} onPlayed={() => setPlayRequest(null)} />{book.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow number={index + 1} chapter={chapter} creating={creatingKey === `${book.id}:${chapter.chapter_key}`} onCreate={() => { void create(book.id, chapter.chapter_key); }} onPlay={() => setPlayRequest({ bookId: book.id, chapterKey: chapter.chapter_key })} /></div>)}</div>}
+        {open && <div className="border-t border-natural-border px-4 py-4 sm:px-5"><PodcastPlaylistPlayer key={book.id} bookId={book.id} playRequest={playRequest && playRequest.bookId === book.id ? playRequest : null} onPlayed={() => setPlayRequest(null)} />{book.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow number={index + 1} chapter={chapter} creating={creatingKey === `${book.id}:${chapter.chapter_key}`} onCreate={() => { void create(book.id, chapter.chapter_key); }} onPlay={() => { const episode = chapter.episode as PodcastEpisode | null; if (episode) setPlayRequest({ bookId: book.id, episodeId: episode.id }); }} /></div>)}</div>}
       </section>;
     }) : <section className="rounded-[24px] border border-dashed border-natural-border p-8 text-center text-sm text-natural-stone">Add an EPUB book to create chapter episodes.</section>}
   </main>;
