@@ -151,8 +151,9 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>
           <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Session {log.session}</span>
           {log.chapter_title ? (
-            <span className="text-[10px] text-natural-sage font-sans bg-natural-cream px-2 py-0.5 rounded-full max-w-[480px] truncate" title={log.chapter_title}>
-              📑 {log.chapter_title}
+            <span className="inline-flex max-w-[480px] items-center gap-1 truncate rounded-full bg-natural-cream px-2 py-0.5 text-[10px] text-natural-sage" title={log.chapter_title}>
+              <FileText aria-hidden="true" className="h-3 w-3 shrink-0" />
+              {log.chapter_title}
             </span>
           ) : (
             <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">{fileType === 'epub' ? 'Chunks' : 'Pages'} {log.page_start}–{log.page_end}</span>

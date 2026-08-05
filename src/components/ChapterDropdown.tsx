@@ -46,6 +46,7 @@ export default function ChapterDropdown<T extends string>({
   );
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const selected =
     options.find((option) => option.value === value) || options[0];
@@ -60,16 +61,19 @@ export default function ChapterDropdown<T extends string>({
   const close = () => {
     setOpen(false);
     setQuery("");
+    triggerRef.current?.focus();
   };
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node))
-        close();
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  });
+  }, []);
 
   useEffect(() => {
     const index = visibleOptions.findIndex((option) => option.value === value);
@@ -133,6 +137,7 @@ export default function ChapterDropdown<T extends string>({
         </label>
       )}
       <button
+        ref={triggerRef}
         id={listboxId}
         type="button"
         aria-haspopup="listbox"
@@ -161,7 +166,7 @@ export default function ChapterDropdown<T extends string>({
           className="absolute z-50 mt-1 max-h-60 w-full overflow-hidden rounded-xl border border-natural-border bg-natural-cream p-1 shadow-lg"
         >
           {searchable && (
-            <li className="sticky top-0 z-10 bg-natural-cream p-1">
+            <div className="sticky top-0 z-10 bg-natural-cream p-1">
               <label htmlFor={`${listboxId}-search`} className="sr-only">
                 Search {label?.toLocaleLowerCase() || "options"}
               </label>
@@ -172,14 +177,38 @@ export default function ChapterDropdown<T extends string>({
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {
                   event.stopPropagation();
-                  if (event.key === "Escape") close();
+                  if (event.key === "Escape") {
+                    setOpen(false);
+                    setQuery("");
+                    triggerRef.current?.focus();
+                    return;
+                  }
+                  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                    event.preventDefault();
+                    if (!visibleOptions.length) return;
+                    const next =
+                      highlighted +
+                      (event.key === "ArrowDown" ? 1 : -1);
+                    setHighlighted(
+                      Math.min(
+                        visibleOptions.length - 1,
+                        Math.max(0, next),
+                      ),
+                    );
+                    return;
+                  }
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    if (visibleOptions[highlighted])
+                      choose(visibleOptions[highlighted]);
+                  }
                 }}
                 placeholder="Search my books"
                 className="min-h-9 w-full rounded-lg border border-natural-border bg-white/70 px-3 text-xs text-natural-dark outline-none focus:border-natural-sage focus:ring-2 focus:ring-natural-sage"
               />
-            </li>
+            </div>
           )}
-          <div className="max-h-48 overflow-y-auto">
+          <ul className="max-h-48 overflow-y-auto">
             {visibleOptions.length ? (
               visibleOptions.map((option, index) => (
                 <li
@@ -207,7 +236,7 @@ export default function ChapterDropdown<T extends string>({
                 No books found
               </li>
             )}
-          </div>
+          </ul>
         </div>
       )}
     </div>

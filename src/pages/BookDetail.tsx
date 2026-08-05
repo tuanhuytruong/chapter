@@ -747,7 +747,7 @@ export default function BookDetail() {
             />
           </div>
           <p className="mt-1.5 text-[11px] text-natural-stone">
-            {pct}% complete · {logs.length} reading days
+            {pct}% complete · {logs.length} {logs.length === 1 ? "session" : "sessions"}
           </p>
         </div>
         <aside className="contents" aria-label="Book utilities">
@@ -1019,8 +1019,8 @@ export default function BookDetail() {
                   )}
                   <p>
                     File:{" "}
-                    <span className="font-mono text-[10px]">
-                      {book.file_type.toUpperCase()}
+                    <span className="inline-flex rounded-full border border-natural-border bg-natural-cream px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-natural-stone">
+                      {book.file_type}
                     </span>
                   </p>
                 </div>
@@ -1083,12 +1083,14 @@ export default function BookDetail() {
       )}
 
       {logView === "podcast" ? (
+        <div id="podcast-panel" role="tabpanel" aria-labelledby="podcast-tab" className="mt-1">
         <PodcastPanel
           bookId={book.id}
           canEdit={Boolean(book.can_edit)}
           isEpub={book.file_type === "epub"}
           onClose={() => setLogView("list")}
         />
+        </div>
       ) : book.reading_experience === "story" ? (
         <>
           <GuideCard
@@ -1149,6 +1151,10 @@ export default function BookDetail() {
               <div className="flex items-center gap-1" role="tablist" aria-label="Reading views">
                 <button
                 type="button"
+                role="tab"
+                id="list-tab"
+                aria-selected={logView === "list"}
+                aria-controls="reader-panel"
                 onClick={() => setLogView("list")}
                 className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "list" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
@@ -1156,6 +1162,10 @@ export default function BookDetail() {
               </button>
               <button
                 type="button"
+                role="tab"
+                id="journey-tab"
+                aria-selected={logView === "journey"}
+                aria-controls="reader-panel"
                 onClick={() => setLogView("journey")}
                 className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "journey" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
@@ -1163,6 +1173,8 @@ export default function BookDetail() {
               </button>
               <button
                 type="button"
+                role="tab"
+                id="ai-reader-tab"
                 onClick={() => {
                   setHasOpenedAiReader(true);
                   setLogView("ai-reader");
@@ -1229,7 +1241,7 @@ export default function BookDetail() {
               </div>
             )}
             {logView !== "ai-reader" && (
-              <>
+              <div id="reader-panel" role="tabpanel" aria-labelledby={logView === "journey" ? "journey-tab" : "list-tab"}>
                 <JourneySynthesisCard
                   synthesis={journeySynthesis}
                   sessionCount={lenses.length}
@@ -1314,7 +1326,7 @@ export default function BookDetail() {
                     )}
                   </>
                 )}
-              </>
+              </div>
             )}
           </div>
 
@@ -1373,8 +1385,14 @@ export default function BookDetail() {
       {/* Finish queue modal */}
       {finishModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finish-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={() => setFinishModal(null)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setFinishModal(null);
+          }}
         >
           <div
             className="safe-bottom max-h-[calc(100dvh-2rem)] w-full max-w-sm space-y-4 overflow-y-auto rounded-[28px] border border-natural-border bg-natural-cream p-6 shadow-xl"
@@ -1382,7 +1400,7 @@ export default function BookDetail() {
           >
             <div className="text-center space-y-2">
               <p className="text-2xl">🎉</p>
-              <h3 className="font-bold text-lg text-natural-dark font-sans">
+              <h3 id="finish-modal-title" className="font-bold text-lg text-natural-dark font-sans">
                 You finished &ldquo;{book?.title}&rdquo;!
               </h3>
               <p className="text-xs text-natural-stone font-sans">
