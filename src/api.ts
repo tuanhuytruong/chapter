@@ -333,6 +333,20 @@ export interface PodcastChapter {
   episode: PodcastEpisode | null;
 }
 
+export interface PodcastPlaylistProgress {
+  podcast_id: string;
+  current_time_seconds: number;
+  completed_at: string | null;
+  updated_at: string;
+}
+
+export interface PodcastPlaylist {
+  book_id: string;
+  reading_round: number;
+  episodes: PodcastEpisode[];
+  progress: PodcastPlaylistProgress | null;
+}
+
 export interface PodcastCatalogBook {
   id: string;
   title: string;
@@ -513,6 +527,13 @@ export const api = {
   getPodcastCatalog: () => req<PodcastCatalogBook[]>("/api/podcasts/catalog"),
   getBookPodcast: (bookId: string) =>
     req<PodcastCatalogBook>(`/api/podcasts/books/${bookId}`),
+  getPodcastPlaylist: (bookId: string) =>
+    req<PodcastPlaylist>(`/api/podcasts/books/${bookId}/playlist`),
+  savePodcastPlaylistProgress: (bookId: string, podcastId: string, currentTimeSeconds: number, completed: boolean) =>
+    req<PodcastPlaylistProgress>(`/api/podcasts/books/${bookId}/playlist/progress`, {
+      method: "PUT",
+      body: JSON.stringify({ podcast_id: podcastId, current_time_seconds: currentTimeSeconds, completed }),
+    }),
   createPodcast: (
     bookId: string,
     chapterKey: string,

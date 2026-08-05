@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, ChevronDown, Headphones, Loader2, Play, RefreshCw } from "lucide-react";
 import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode } from "../api";
+import PodcastPlaylistPlayer from "../components/PodcastPlaylistPlayer";
 
 const pending = new Set(["queued", "scripting", "synthesizing", "archiving"]);
 const duration = (seconds: number | null) => seconds ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
@@ -45,7 +46,7 @@ export default function Podcasts() {
           <div className="min-w-0 flex-1"><h2 className="truncate text-sm font-bold text-natural-dark sm:text-base">{book.title}</h2>{book.author && <p className="mt-0.5 truncate text-xs text-natural-stone">{book.author}</p>}<p className="mt-2 text-[11px] font-medium text-natural-stone">{summary.ready}/{summary.total} episodes ready{summary.attention ? <span className="ml-2 text-natural-clay">· {summary.attention} needs attention</span> : null}</p></div>
           <ChevronDown className={`h-5 w-5 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
         </button>
-        {open && <div className="border-t border-natural-border px-4 py-1 sm:px-5">{book.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow number={index + 1} chapter={chapter} creating={creatingKey === `${book.id}:${chapter.chapter_key}`} onCreate={() => { void create(book.id, chapter.chapter_key); }} /></div>)}</div>}
+        {open && <div className="border-t border-natural-border px-4 py-4 sm:px-5"><PodcastPlaylistPlayer bookId={book.id} />{book.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow number={index + 1} chapter={chapter} creating={creatingKey === `${book.id}:${chapter.chapter_key}`} onCreate={() => { void create(book.id, chapter.chapter_key); }} /></div>)}</div>}
       </section>;
     }) : <section className="rounded-[24px] border border-dashed border-natural-border p-8 text-center text-sm text-natural-stone">Add an EPUB book to create chapter episodes.</section>}
   </main>;

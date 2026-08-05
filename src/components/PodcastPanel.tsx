@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Headphones, Loader2, RefreshCw, RotateCcw, X } from "lucide-react";
 import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode } from "../api";
+import PodcastPlaylistPlayer from "./PodcastPlaylistPlayer";
 
 type PodcastApi = typeof api & {
   getBookPodcast: (bookId: string) => Promise<PodcastCatalogBook>;
@@ -102,6 +103,7 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       </div>
     </div>
 
+    <PodcastPlaylistPlayer bookId={bookId} />
     <div className="mt-4 divide-y divide-natural-border/80">
       {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canEdit} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : (book?.narrator_gender ? void create(chapter) : setVoiceTarget(chapter))} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
     </div>

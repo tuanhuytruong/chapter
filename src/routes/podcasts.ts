@@ -68,6 +68,50 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });
 
+// Owner-scoped queue and resume marker. The queue deliberately contains only
+// ready episodes, sorted by chapter order; no chapter is generated implicitly.
+podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response) => {
+  try {
+    const userId = userFrom(req).id;
+    const { rows: books } = await query<CatalogBook>(
+      "SELECT id,title,author,cover_url,summary_lang,reading_round FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'",
+      [req.params.bookId, userId],
+    );
+    const book = books[0];
+    if (!book) return res.status(404).json({ error: "Podcast playlist unavailable" });
+    await ensureChapterUnits(book);
+    const round = book.reading_round || 1;
+    const [episodes, progress] = await Promise.all([
+      query<any>(`SELECT p.*, min(u.unit_index)::int AS chapter_order
+        FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key
+        WHERE p.user_id=$1 AND p.book_id=$2 AND p.reading_round=$3 AND p.status IN ('ready','archive_pending')
+        GROUP BY p.id ORDER BY min(u.unit_index), p.created_at`, [userId, book.id, round]),
+      query<any>("SELECT podcast_id,current_time_seconds,completed_at,updated_at FROM podcast_playback_progress WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]),
+    ]);
+    res.json({ book_id: book.id, reading_round: round, episodes: episodes.rows.map(podcastPublic), progress: progress.rows[0] || null });
+  } catch (error: any) { console.warn("[podcast] playlist read failed:", error.message); res.status(500).json({ error: "Podcast playlist unavailable" }); }
+});
+
+podcastsRouter.put("/books/:bookId/playlist/progress", async (req: Request, res: Response) => {
+  const { podcast_id, current_time_seconds, completed } = req.body || {};
+  if (typeof podcast_id !== "string" || !Number.isFinite(current_time_seconds) || current_time_seconds < 0 || typeof completed !== "boolean") {
+    return res.status(400).json({ error: "podcast_id, current_time_seconds, and completed are required" });
+  }
+  try {
+    const userId = userFrom(req).id;
+    const { rows } = await query<{ reading_round: number }>("SELECT reading_round FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'", [req.params.bookId, userId]);
+    const book = rows[0];
+    if (!book) return res.status(404).json({ error: "Podcast playlist unavailable" });
+    const episode = await owned(podcast_id, userId);
+    if (!episode || episode.book_id !== req.params.bookId || episode.reading_round !== book.reading_round) return res.status(404).json({ error: "Podcast episode unavailable" });
+    const { rows: saved } = await query<any>(`INSERT INTO podcast_playback_progress (user_id,book_id,reading_round,podcast_id,current_time_seconds,completed_at,updated_at)
+      VALUES ($1,$2,$3,$4,$5,CASE WHEN $6 THEN now() ELSE NULL END,now())
+      ON CONFLICT (user_id,book_id,reading_round) DO UPDATE SET podcast_id=EXCLUDED.podcast_id,current_time_seconds=EXCLUDED.current_time_seconds,completed_at=EXCLUDED.completed_at,updated_at=now()
+      RETURNING podcast_id,current_time_seconds,completed_at,updated_at`, [userId, req.params.bookId, book.reading_round, podcast_id, current_time_seconds, completed]);
+    res.json(saved[0]);
+  } catch (error: any) { console.warn("[podcast] playlist progress failed:", error.message); res.status(500).json({ error: "Podcast progress unavailable" }); }
+});
+
 podcastsRouter.post("/", async (req: Request, res: Response) => {
   const { book_id, chapter_key, voice_gender } = req.body || {};
   if (typeof book_id !== "string" || typeof chapter_key !== "string" || (voice_gender && voice_gender !== "female" && voice_gender !== "male")) {

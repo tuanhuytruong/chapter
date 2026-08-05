@@ -301,6 +301,21 @@ ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
 CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
 
+-- One listener-owned resume marker per book and reading round. Episodes remain
+-- generated/owned as before; this stores only playback state, never audio data.
+CREATE TABLE IF NOT EXISTS chapter.podcast_playback_progress (
+  user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  reading_round INT NOT NULL CHECK (reading_round >= 1),
+  podcast_id UUID REFERENCES chapter.podcasts(id) ON DELETE SET NULL,
+  current_time_seconds REAL NOT NULL DEFAULT 0 CHECK (current_time_seconds >= 0),
+  completed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, book_id, reading_round)
+);
+CREATE INDEX IF NOT EXISTS idx_podcast_playback_progress_book
+  ON chapter.podcast_playback_progress (book_id, reading_round, updated_at DESC);
+
 -- Podcast narrator is chosen per Book and per reading round. A re-read round
 -- is a new session: it may pick a different voice, so the user-level default
 -- (users.podcast_voice_gender) is NOT consulted for generation. Note: the
