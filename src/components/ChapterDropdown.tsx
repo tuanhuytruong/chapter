@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { ChevronDown } from "lucide-react";
 
 export type ChapterDropdownOption<T extends string> = {
@@ -8,7 +9,7 @@ export type ChapterDropdownOption<T extends string> = {
 
 type ChapterDropdownProps<T extends string> = {
   value: T;
-  onChange: (value: T) => void;
+  onChange: Dispatch<SetStateAction<T>>;
   options: readonly ChapterDropdownOption<T>[];
   label?: string;
   id?: string;

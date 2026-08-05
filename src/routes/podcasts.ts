@@ -104,6 +104,9 @@ podcastsRouter.put("/books/:bookId/playlist/progress", async (req: Request, res:
     if (!book) return res.status(404).json({ error: "Podcast playlist unavailable" });
     const episode = await owned(podcast_id, userId);
     if (!episode || episode.book_id !== req.params.bookId || episode.reading_round !== book.reading_round) return res.status(404).json({ error: "Podcast episode unavailable" });
+    if (episode.status !== "ready" && episode.status !== "archive_pending") {
+      return res.status(409).json({ error: "Only a playable podcast episode can be saved to the playlist" });
+    }
     const { rows: saved } = await query<any>(`INSERT INTO podcast_playback_progress (user_id,book_id,reading_round,podcast_id,current_time_seconds,completed_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,CASE WHEN $6 THEN now() ELSE NULL END,now())
       ON CONFLICT (user_id,book_id,reading_round) DO UPDATE SET podcast_id=EXCLUDED.podcast_id,current_time_seconds=EXCLUDED.current_time_seconds,completed_at=EXCLUDED.completed_at,updated_at=now()

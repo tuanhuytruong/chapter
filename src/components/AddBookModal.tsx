@@ -26,7 +26,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
-  const debounce = useRef<ReturnType<typeof setTimeout>>();
+  const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // Path of a file we uploaded but haven't saved yet — delete it if the user
   // closes the modal without saving.
   const uploadedPathRef = useRef<string | null>(null);

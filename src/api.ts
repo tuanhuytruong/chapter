@@ -320,6 +320,7 @@ export interface PodcastEpisode {
   duration_s: number | null;
   script_text: string | null;
   created_at: string;
+  chapter_key: string;
 }
 
 export interface PodcastChapter {
