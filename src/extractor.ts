@@ -36,6 +36,13 @@ export interface EpubReadingUnit {
   spineIndex: number;
   chapterKey: string;
   rawText: string;
+  /**
+   * Printed page number when the EPUB encodes it in the spine filename
+   * (e.g. `page0042.xhtml` -> 42). Some EPUBs are converted from a paginated
+   * source and carry this in the file name. Null when the book has no usable
+   * page info (reflowable/SectionNNNN/etc).
+   */
+  pageLabel: number | null;
 }
 
 // ~4,500 Vietnamese characters is typically 700–900 words: a practical
@@ -67,14 +74,16 @@ export async function buildEpubReadingUnits(filePath: string): Promise<EpubReadi
   let pendingTitle: string | null = null;
   let pendingSpineIndex = 0;
   let pendingChapterKey = "";
+  let pendingPageLabel: number | null = null;
 
   const flush = () => {
     const rawText = pending.join("\n\n").trim();
-    if (rawText) units.push({ unitIndex: units.length + 1, title: pendingTitle, spineIndex: pendingSpineIndex, chapterKey: pendingChapterKey, rawText });
+    if (rawText) units.push({ unitIndex: units.length + 1, title: pendingTitle, spineIndex: pendingSpineIndex, chapterKey: pendingChapterKey, rawText, pageLabel: pendingPageLabel });
     pending = [];
     pendingTitle = null;
     pendingSpineIndex = 0;
     pendingChapterKey = "";
+    pendingPageLabel = null;
   };
 
   for (const [spineIndex, item] of (epub.flow as any[]).entries()) {
@@ -83,12 +92,18 @@ export async function buildEpubReadingUnits(filePath: string): Promise<EpubReadi
     const paragraphs = htmlToParagraphs(html);
     if (!paragraphs.length) continue;
     const title = item.title ? String(item.title).trim().slice(0, 70) || null : null;
+    // Printed page number from the spine filename when the EPUB carries one
+    // (page0042.xhtml -> 42). Falls back to null for reflowable books that have
+    // no page info, so callers never show a fabricated "page".
+    const pageMatch = String(item.href || item.id || "").match(/page(\d+)/i);
+    const pageLabel = pageMatch ? parseInt(pageMatch[1], 10) : null;
     // Never combine chunks across spine items: a title can repeat or be absent,
     // while the EPUB spine gives each chapter/document a durable boundary.
     flush();
     pendingTitle = title;
     pendingSpineIndex = spineIndex;
     pendingChapterKey = `${spineIndex}:${String(item.id || item.href || "untitled")}`;
+    pendingPageLabel = pageLabel;
 
     for (const paragraph of paragraphs) {
       const currentLength = pending.reduce((n, p) => n + p.length, 0);
@@ -97,6 +112,7 @@ export async function buildEpubReadingUnits(filePath: string): Promise<EpubReadi
       if (!pendingChapterKey) {
         pendingSpineIndex = spineIndex;
         pendingChapterKey = `${spineIndex}:${String(item.id || item.href || "untitled")}`;
+        pendingPageLabel = pageLabel;
       }
       pending.push(paragraph);
     }

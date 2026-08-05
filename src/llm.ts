@@ -258,7 +258,9 @@ Format your response EXACTLY as:
 - <insight 3>
 
 ## Quote
-<the quote, or "N/A" if none>`;
+<the quote, or "N/A" if none>
+
+Bullet rules: every bullet line starts with a single "-" followed by a space. Never use "*" as a list marker. Bold labels are allowed inside a bullet as - **Label:** explanation — with no extra asterisks anywhere else.`;
 }
 
 function buildDeepReadingSystemPrompt(lang: "auto" | "vi" | "en" = "auto"): string {
@@ -297,7 +299,9 @@ Format your response EXACTLY as:
 - <exactly 3 concise, durable insights suitable for spaced review>
 
 ## Quote
-<one verbatim quote, or "N/A">`;
+<one verbatim quote, or "N/A">
+
+Bullet rules: every bullet line starts with a single "-" followed by a space. Never use "*" as a list marker. Bold labels are allowed inside a bullet as - **Label:** explanation — with no extra asterisks anywhere else.`;
 }
 
 function buildUserPrompt(input: AdvanceLLMInput): string {
