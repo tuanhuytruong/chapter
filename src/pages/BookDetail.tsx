@@ -137,8 +137,10 @@ export default function BookDetail() {
   const [rounds, setRounds] = useState<ReadingRoundRow[]>([]);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedInitialDetail = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
+  const [rereading, setRereading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [dailyPages, setDailyPages] = useState(20);
   const [status, setStatus] = useState<
@@ -206,7 +208,9 @@ export default function BookDetail() {
 
   const load = useCallback(async () => {
     if (!id) return;
-    setLoading(true);
+    // Keep already-rendered detail content stable while changing rounds. The
+    // full skeleton is only for the first visit to this route.
+    if (!hasLoadedInitialDetail.current) setLoading(true);
     setLoadError(null);
     try {
       // The book record is the detail page's source of truth. Do not let an
@@ -251,6 +255,7 @@ export default function BookDetail() {
       setLoadError(e.message);
       setToast({ type: "err", msg: e.message });
     } finally {
+      hasLoadedInitialDetail.current = true;
       setLoading(false);
     }
   }, [id, selectedRound]);
@@ -651,14 +656,19 @@ export default function BookDetail() {
   };
 
   const startReread = async () => {
-    if (!id) return;
+    if (!id || rereading) return;
+    setRereading(true);
     try {
       const response = await api.reread(id);
+      // selectedRound drives the effect below. A direct load here would use the
+      // old state first and briefly replace the full page with a skeleton.
+      setBook((previous) => previous ? { ...previous, ...response.book } : response.book);
       setSelectedRound(response.reading_round);
-      setToast({ type: "ok", msg: `📖 Re-reading "${book?.title}"!` });
-      await load();
+      setToast({ type: "ok", msg: `📖 Re-reading "${response.book.title}"!` });
     } catch (e: any) {
       setToast({ type: "err", msg: e.message });
+    } finally {
+      setRereading(false);
     }
   };
 
@@ -744,9 +754,10 @@ export default function BookDetail() {
                 </span>
                 <button
                   onClick={startReread}
-                  className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 cursor-pointer"
+                  disabled={rereading}
+                  className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 cursor-pointer disabled:cursor-wait disabled:opacity-45"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" /> Re-read
+                  {rereading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />} {rereading ? "Starting…" : "Re-read"}
                 </button>
               </div>
             ) : (
