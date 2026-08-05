@@ -320,7 +320,6 @@ export interface PodcastEpisode {
   duration_s: number | null;
   script_text: string | null;
   created_at: string;
-  chapter_key: string;
 }
 
 export interface PodcastChapter {
@@ -414,14 +413,14 @@ export const api = {
     req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST" }),
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
-  getReadingLens: (bookId: string) =>
-    req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens`),
+  getReadingLens: (bookId: string, round?: number) =>
+    req<ReadingLensRow[]>(`${BASE}/${bookId}/reading-lens${round ? `?round=${round}` : ""}`),
   retryReadingLens: (bookId: string, logId: string) =>
     req<ReadingLensRow>(`${BASE}/${bookId}/logs/${logId}/reading-lens/retry`, {
       method: "POST",
     }),
-  getJourneySynthesis: (bookId: string) =>
-    req<JourneySynthesisRow | null>(`${BASE}/${bookId}/reading-lens/synthesis`),
+  getJourneySynthesis: (bookId: string, round?: number) =>
+    req<JourneySynthesisRow | null>(`${BASE}/${bookId}/reading-lens/synthesis${round ? `?round=${round}` : ""}`),
   synthesizeJourney: (bookId: string) =>
     req<JourneySynthesisRow | null>(
       `${BASE}/${bookId}/reading-lens/synthesis`,

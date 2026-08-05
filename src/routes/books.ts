@@ -805,7 +805,8 @@ booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
     );
     if (!allowed.rows.length)
       return res.status(404).json({ error: "analytical book not found" });
-    res.json(await listReadingLensAnalyses(id));
+    const round = Number(req.query.round);
+    res.json(await listReadingLensAnalyses(id, Number.isFinite(round) ? round : undefined));
   } catch (e: any) {
     res
       .status(503)
@@ -887,7 +888,8 @@ booksRouter.get(
       ).rows[0];
       if (!book || book.reading_experience !== "analytical")
         return res.status(404).json({ error: "analytical book not found" });
-      res.json(await getSynthesis(req.params.id));
+      const round = Number(req.query.round);
+      res.json(await getSynthesis(req.params.id, Number.isFinite(round) ? round : undefined));
     } catch (e: any) {
       res
         .status(503)

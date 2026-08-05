@@ -16,9 +16,9 @@ export async function getReadingLensAnalysisForLog(bookId: string, logId: string
   return rows[0] || null;
 }
 
-export async function listReadingLensAnalyses(bookId: string): Promise<ReadingLensRow[]> {
+export async function listReadingLensAnalyses(bookId: string, round?: number): Promise<ReadingLensRow[]> {
   const { rows } = await query<ReadingLensRow>(
     `SELECT rla.* FROM reading_lens_analyses rla JOIN reading_log rl ON rl.id=rla.log_id
-     WHERE rla.book_id=$1 AND rla.schema_version=1 ORDER BY rl.date ASC, rl.session ASC`, [bookId]);
+     WHERE rla.book_id=$1 AND rla.schema_version=1${round ? " AND rl.reading_round=$2" : ""} ORDER BY rl.date ASC, rl.session ASC`, round ? [bookId, round] : [bookId]);
   return rows;
 }

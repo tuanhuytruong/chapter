@@ -242,8 +242,8 @@ export default function BookDetail() {
         if (b.reading_experience === "story")
           setStoryThread(await api.getStoryThread(id, selected));
         else {
-          setLenses(await api.getReadingLens(id));
-          setJourneySynthesis(await api.getJourneySynthesis(id));
+          setLenses(await api.getReadingLens(id, selected));
+          setJourneySynthesis(await api.getJourneySynthesis(id, selected));
         }
       } catch (e: any) {
         // Companion analysis is non-critical, especially for a fresh book
@@ -325,7 +325,7 @@ export default function BookDetail() {
       try {
         const [updatedBook, updatedLogs] = await Promise.all([
           api.getBook(id),
-          api.getLog(id),
+          api.getLog(id, selectedRound ?? undefined),
         ]);
         if (cancelled) return;
         // Quietly reconcile only changed data. Keeping existing state in place
@@ -345,7 +345,7 @@ export default function BookDetail() {
         const analyses =
           updatedBook.can_edit &&
           updatedBook.reading_experience === "analytical"
-            ? await api.getReadingLens(id)
+            ? await api.getReadingLens(id, selectedRound ?? undefined)
             : [];
         if (updatedBook.can_edit) {
           if (updatedBook.reading_experience === "story")
@@ -384,7 +384,7 @@ export default function BookDetail() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [enrichmentPending, id, pendingEnrichmentLogId]);
+  }, [enrichmentPending, id, pendingEnrichmentLogId, selectedRound]);
 
   useEffect(() => {
     if (!id || logs.length === 0) return;
