@@ -37,6 +37,7 @@ import type {
 import { dailyTargetLabel } from "../readingUnits";
 import DaySummary from "../components/DaySummary";
 import ReadingLensCard from "../components/ReadingLensCard";
+import { resolveGlossaryLanguage, type GlossaryLanguage } from "../components/ContextualGlossary";
 import JourneySynthesisCard from "../components/JourneySynthesisCard";
 import StreakHeatmap from "../components/StreakHeatmap";
 import MomentumScore from "../components/MomentumScore";
@@ -394,6 +395,11 @@ export default function BookDetail() {
         setMindmapData(JSON.parse(cached));
       } catch {}
   }, [id, logs.length]);
+
+  const glossaryLanguage: GlossaryLanguage = resolveGlossaryLanguage(
+    (book?.summary_lang as "auto" | "vi" | "en") || "auto",
+    logs[0]?.raw_text || "",
+  );
 
   const readToday = async () => {
     if (!id) return;
@@ -1293,6 +1299,7 @@ export default function BookDetail() {
                                     (lens) => lens.log_id === log.id,
                                   )}
                                   canEdit={!!book.can_edit}
+                                  language={glossaryLanguage}
                                   isPreparing={
                                     enrichmentPending &&
                                     pendingEnrichmentLogId === log.id

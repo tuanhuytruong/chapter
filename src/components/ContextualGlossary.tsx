@@ -3,7 +3,7 @@ import { Info } from "lucide-react";
 
 export type GlossaryLanguage = "vi" | "en";
 export type GlossaryLanguageSetting = GlossaryLanguage | "auto";
-export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied";
+export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied" | "ArgumentMap" | "AssumptionsLimits" | "KeyConcepts" | "QuestionsForward" | "ReadingNotes" | "ReadingLens";
 
 const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viDetail: string }> = {
   Deepened: { en: "Deepened", vi: "Đào sâu", enDetail: "The reading develops this idea with more nuance or detail.", viDetail: "Phần đọc phát triển ý này với thêm sắc thái hoặc chi tiết." },
@@ -19,6 +19,12 @@ const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viD
   Example: { en: "Example", vi: "Ví dụ", enDetail: "A concrete instance that makes an idea easier to see.", viDetail: "Một trường hợp cụ thể giúp làm rõ ý tưởng." },
   Implication: { en: "Implication", vi: "Hệ quả", enDetail: "What may follow from the idea, without adding outside facts.", viDetail: "Điều có thể suy ra từ ý tưởng, không thêm dữ kiện bên ngoài." },
   Implied: { en: "Implied", vi: "Hàm ý", enDetail: "Suggested by the reading, but not stated directly.", viDetail: "Được gợi ra trong phần đọc nhưng không nói trực tiếp." },
+  ArgumentMap: { en: "Argument map", vi: "Sơ đồ lập luận", enDetail: "How the claim, its support, and its implications fit together.", viDetail: "Cách luận điểm, cơ sở và hệ quả của nó khớp với nhau." },
+  AssumptionsLimits: { en: "Assumptions & limits", vi: "Giả định & giới hạn", enDetail: "What the reading takes for granted and where it stops short.", viDetail: "Điều phần đọc xem là hiển nhiên và chỗ nó còn hạn chế." },
+  KeyConcepts: { en: "Key concepts", vi: "Khái niệm chính", enDetail: "Terms the reading relies on and what they mean here.", viDetail: "Các thuật ngữ phần đọc dựa vào và ý nghĩa của chúng ở đây." },
+  QuestionsForward: { en: "Questions to carry forward", vi: "Câu hỏi để ngỏ", enDetail: "Open questions the reading leaves worth returning to.", viDetail: "Các câu hỏi mở mà phần đọc để lại, đáng quay lại suy ngẫm." },
+  ReadingNotes: { en: "Reading notes", vi: "Ghi chú đọc", enDetail: "The analyst's caution notes about this analysis.", viDetail: "Các lưu ý thận trọng của phân tích này." },
+  ReadingLens: { en: "Reading Lens", vi: "Lăng kính đọc", enDetail: "A structured analysis of a saved reading session.", viDetail: "Phân tích có cấu trúc của một phiên đọc đã lưu." },
 };
 
 export function resolveGlossaryLanguage(setting: GlossaryLanguageSetting, sourceText = ""): GlossaryLanguage {
