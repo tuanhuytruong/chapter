@@ -305,6 +305,7 @@ export interface AdvanceResult {
 export interface PodcastEpisode {
   id: string;
   log_id: string | null;
+  chapter_key: string;
   chapter_title: string | null;
   status:
     | "queued"
@@ -340,11 +341,23 @@ export interface PodcastPlaylistProgress {
   updated_at: string;
 }
 
+export interface PodcastNextChapter {
+  chapter_key: string;
+  chapter_title: string | null;
+  start_unit: number;
+  end_unit: number;
+  start_page: number | null;
+  end_page: number | null;
+  has_narrator: boolean;
+  episode_status: PodcastEpisode["status"] | null;
+}
+
 export interface PodcastPlaylist {
   book_id: string;
   reading_round: number;
   episodes: PodcastEpisode[];
   progress: PodcastPlaylistProgress | null;
+  next_chapter: PodcastNextChapter | null;
 }
 
 export interface PodcastCatalogBook {

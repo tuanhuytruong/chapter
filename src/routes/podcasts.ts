@@ -70,6 +70,8 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
 
 // Owner-scoped queue and resume marker. The queue deliberately contains only
 // ready episodes, sorted by chapter order; no chapter is generated implicitly.
+// `next_chapter` exposes the first chapter (by unit order) that has no playable
+// episode yet, so the player can offer an explicit "Generate & play next" CTA.
 podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response) => {
   try {
     const userId = userFrom(req).id;
@@ -81,14 +83,27 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     if (!book) return res.status(404).json({ error: "Podcast playlist unavailable" });
     await ensureChapterUnits(book);
     const round = book.reading_round || 1;
-    const [episodes, progress] = await Promise.all([
+    const [episodes, progress, chapters, narrator] = await Promise.all([
       query<any>(`SELECT p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at, min(u.unit_index)::int AS chapter_order
         FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key
         WHERE p.user_id=$1 AND p.book_id=$2 AND p.reading_round=$3 AND p.status IN ('ready','archive_pending')
         GROUP BY p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at ORDER BY min(u.unit_index), p.created_at`, [userId, book.id, round]),
       query<any>("SELECT podcast_id,current_time_seconds,completed_at,updated_at FROM podcast_playback_progress WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]),
+      query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page
+        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
+      query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2 LIMIT 1", [book.id, round]),
     ]);
-    res.json({ book_id: book.id, reading_round: round, episodes: episodes.rows.map(podcastPublic), progress: progress.rows[0] || null });
+    const readyByChapter = new Set(episodes.rows.map((episode) => episode.chapter_key));
+    const allStatus = await query<any>("SELECT chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
+    const statusByChapter = new Map(allStatus.rows.map((episode) => [episode.chapter_key, episode.status]));
+    const next = chapters.rows.find((chapter) => !readyByChapter.has(chapter.chapter_key)) || null;
+    res.json({
+      book_id: book.id,
+      reading_round: round,
+      episodes: episodes.rows.map((episode) => ({ ...podcastPublic(episode), chapter_key: episode.chapter_key })),
+      progress: progress.rows[0] || null,
+      next_chapter: next ? { ...next, has_narrator: !!narrator.rows[0], episode_status: statusByChapter.get(next.chapter_key) || null } : null,
+    });
   } catch (error: any) { console.warn("[podcast] playlist read failed:", error.message); res.status(500).json({ error: "Podcast playlist unavailable" }); }
 });
 
