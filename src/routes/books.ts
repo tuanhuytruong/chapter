@@ -180,6 +180,7 @@ booksRouter.get("/streaks", async (req: Request, res: Response) => {
        JOIN books b ON b.id=l.book_id
        JOIN users u ON u.id=b.owner_id
        WHERE u.environment=$3 AND ($2='all' OR b.owner_id=$1)
+         AND l.reading_round = b.current_reading_round
        ORDER BY l.book_id, l.date DESC`,
       [userFrom(req).id, scope, config.appEnv],
     );
