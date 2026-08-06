@@ -1,13 +1,7 @@
 {
-<<<<<<< HEAD
-  "updatedAt": "2026-08-02T18:10:52.513Z",
+  "updatedAt": "2026-08-05T18:48:13.889Z",
   "command": "update",
-  "gitHead": "0d33d3df8051cc91e70bb5a694fdaf551bbd7896",
-=======
-  "updatedAt": "2026-08-04T18:49:43.974Z",
-  "command": "update",
-  "gitHead": "76b821348644397b8e0cbdd2fb7272b1b2e54e0b",
->>>>>>> origin/dev
+  "gitHead": "a0740e44d1998ab12e420a95d97d30624661f602",
   "model": "n8n",
   "status": "complete",
   "language": "en"

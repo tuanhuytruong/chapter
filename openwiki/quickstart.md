@@ -34,9 +34,7 @@ The server auto-creates the `chapter` schema tables on boot. Visit `http://local
 - **Podcasts** — AI-generated audio summaries delivered via Telegram
 - **Multi-user** — shelf-per-user with optional "All Readers" view, Telegram account linking
 - **Five analysis modes**:
-<!-- openwiki: broken internal link [reading-engine.md#casual-mode-summary_mode--casual] heading anchor "casual-mode-summary_mode--casual" does not exist in "reading-engine.md". Fix the href or restore the target, then delete this comment. -->
   - [Casual](reading-engine.md#casual-mode-summary_mode--casual) — warm 3–5 sentence narrative summary
-<!-- openwiki: broken internal link [reading-engine.md#deep-reading-mode-summary_mode--deep_reading] heading anchor "deep-reading-mode-summary_mode--deep_reading" does not exist in "reading-engine.md". Fix the href or restore the target, then delete this comment. -->
   - [Deep Reading](reading-engine.md#deep-reading-mode-summary_mode--deep_reading) — structured section-by-section analysis
   - [Reading Lens](reading-engine.md#reading-lens-analysis-srcreadinglensts) — argument mapping for non-fiction (analytical)
   - [Story Thread](reading-engine.md#story-thread-analysis-srcstorythreadts) — character/plot tracking for fiction
@@ -112,7 +110,7 @@ Built over ~12 days (July 15–26, 2026) by a single developer + AI agent. The r
 
 ## Backlog
 
-<!-- openwiki: broken internal link [../docs/BRAINSTORM.md] link "../docs/BRAINSTORM.md" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
+<!-- openwiki: broken internal link [../docs/BRAINSTORM.md] file "../docs/BRAINSTORM.md" does not exist. Fix the href or restore the target, then delete this comment. -->
 The [BRAINSTORM.md](../docs/BRAINSTORM.md) document records ideas for future enhancements, including:
 - **Reading Momentum Score** (already partially implemented as `MomentumScore` component)
 - **Cross-book Insight Clusters** — theme clustering across books using embeddings

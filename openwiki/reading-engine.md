@@ -223,11 +223,8 @@ A scheduled run via PM2 cron or the n8n workflow populates the wiki incrementall
 
 | File | Purpose |
 |------|---------|
-<!-- openwiki: broken internal link [../src/aiReader.ts] link "../src/aiReader.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/aiReader.ts`](../src/aiReader.ts) | Chunk analysis + synthesis logic, batch pipeline, types |
-<!-- openwiki: broken internal link [../scripts/run-ai-reader.ts] link "../scripts/run-ai-reader.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/scripts/run-ai-reader.ts`](../scripts/run-ai-reader.ts) | CLI entry point for batch processing |
-<!-- openwiki: broken internal link [../scripts/verify-ai-reader.ts] link "../scripts/verify-ai-reader.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/scripts/verify-ai-reader.ts`](../scripts/verify-ai-reader.ts) | Verification tests for parsing, synthesis, companion voice |
 
 ## Language support
@@ -241,19 +238,11 @@ The `summary_lang` column on books controls output language:
 
 | File | Purpose |
 |------|---------|
-<!-- openwiki: broken internal link [../src/extractor.ts] link "../src/extractor.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/extractor.ts`](../src/extractor.ts) | PDF/EPUB text extraction |
-<!-- openwiki: broken internal link [../src/llm.ts] link "../src/llm.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/llm.ts`](../src/llm.ts) | 9router LLM client + prompt builder |
-<!-- openwiki: broken internal link [../src/readingLens.ts] link "../src/readingLens.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/readingLens.ts`](../src/readingLens.ts) | Reading Lens prompts + parser |
-<!-- openwiki: broken internal link [../src/readingLensRepository.ts] link "../src/readingLensRepository.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/readingLensRepository.ts`](../src/readingLensRepository.ts) | Reading Lens DB access |
-<!-- openwiki: broken internal link [../src/storyThread.ts] link "../src/storyThread.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/storyThread.ts`](../src/storyThread.ts) | Story Thread prompts + parser + state merge |
-<!-- openwiki: broken internal link [../src/readingUnits.ts] link "../src/readingUnits.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/readingUnits.ts`](../src/readingUnits.ts) | Unit label formatting helpers |
-<!-- openwiki: broken internal link [../src/aiReader.ts] link "../src/aiReader.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/aiReader.ts`](../src/aiReader.ts) | AI Reader batch analysis + wiki synthesis |
-<!-- openwiki: broken internal link [../src/routes/books.ts] link "../src/routes/books.ts" is outside the wiki root. Fix the href or restore the target, then delete this comment. -->
 | [`/src/routes/books.ts`](../src/routes/books.ts) | Route handlers that orchestrate the pipeline |
