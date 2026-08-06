@@ -43,17 +43,20 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
   const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
 
   const refresh = useCallback(async () => {
+    // The playlist catalog is the critical payload; the rhythm feed (used for
+    // the "Đã nghe X/Y" counters) is auxiliary. Fetch independently so a rhythm
+    // failure cannot blank the whole panel.
     try {
-      const [catalog, rhythmData] = await Promise.all([
-        podcastApi.getBookPodcast(bookId),
-        podcastApi.getRhythm(),
-      ]);
-      setBook(catalog);
-      setRhythm(rhythmData);
+      setBook(await podcastApi.getBookPodcast(bookId));
     } catch {
       setBook(null);
     } finally {
       setLoading(false);
+    }
+    try {
+      setRhythm(await podcastApi.getRhythm());
+    } catch {
+      setRhythm(null);
     }
   }, [bookId]);
 
@@ -171,7 +174,7 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       </div>
     ) : null}
 
-    <PodcastPlaylistPlayer bookId={bookId} playRequest={playRequest} onPlayed={() => setPlayRequest(null)} onNeedVoice={handleNeedVoice} refreshKey={podcastRefreshKey} onEpisodeCreated={() => { void refresh(); setPodcastRefreshKey((key) => key + 1); }} />
+    <PodcastPlaylistPlayer bookId={bookId} playRequest={playRequest} onPlayed={() => setPlayRequest(null)} onNeedVoice={handleNeedVoice} refreshKey={podcastRefreshKey} onEpisodeCreated={() => { void refresh(); setPodcastRefreshKey((key) => key + 1); }} onListened={() => { window.setTimeout(() => void refresh(), 500); }} />
     <div className="mt-4 divide-y divide-natural-border/80">
       {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canEdit} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onPlay={() => chapter.episode && isReady(chapter.episode) && setPlayRequest({ bookId, episodeId: chapter.episode.id })} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : (book?.narrator_gender ? void create(chapter) : setVoiceTarget(chapter))} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
     </div>
