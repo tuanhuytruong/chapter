@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -24,7 +24,7 @@ import {
   daysToFinish,
   fetchCover,
 } from "../api";
-import type { UpgradePrompt } from "../api";
+import type { UpgradePrompt, RhythmResponse } from "../api";
 import type {
   BookRow,
   JourneySynthesisRow,
@@ -37,7 +37,7 @@ import type {
 import { dailyTargetLabel } from "../readingUnits";
 import DaySummary from "../components/DaySummary";
 import ReadingLensCard from "../components/ReadingLensCard";
-import { resolveGlossaryLanguage, type GlossaryLanguage } from "../components/ContextualGlossary";
+import { resolveGlossaryLanguage, GlossaryTerm, type GlossaryLanguage } from "../components/ContextualGlossary";
 import JourneySynthesisCard from "../components/JourneySynthesisCard";
 import StreakHeatmap from "../components/StreakHeatmap";
 import MomentumScore from "../components/MomentumScore";
@@ -138,6 +138,7 @@ export default function BookDetail() {
   const navigate = useNavigate();
   const [book, setBook] = useState<BookRow | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
   const [rounds, setRounds] = useState<ReadingRoundRow[]>([]);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -236,6 +237,15 @@ export default function BookDetail() {
       setSummaryLang(b.summary_lang || "auto");
       setSummaryMode(b.summary_mode || "casual");
       setLogs(l);
+
+      try {
+        // Listening side of the twin-track rhythm, scoped to this book + round
+        // so the heatmap matches the logs shown. Non-critical: degrade to
+        // read-only heatmap when unavailable.
+        setRhythm(await api.getRhythm(id, selected));
+      } catch {
+        setRhythm(null);
+      }
 
       try {
         // Persisted companion data is shared read-only. Generation/retry remains
@@ -400,6 +410,15 @@ export default function BookDetail() {
     (book?.summary_lang as "auto" | "vi" | "en") || "auto",
     logs[0]?.raw_text || "",
   );
+
+  // Listen activity by day for the twin-track heatmap (read + listen).
+  const rhythmListenByDay = useMemo(() => {
+    const byDay: Record<string, { episodes: number; seconds: number }> = {};
+    for (const day of rhythm?.listen_by_day ?? []) {
+      byDay[day.day] = { episodes: day.episodes, seconds: day.seconds };
+    }
+    return byDay;
+  }, [rhythm]);
 
   const readToday = async () => {
     if (!id) return;
@@ -726,16 +745,20 @@ export default function BookDetail() {
             by {book.author}
           </p>
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="flex items-center gap-1 text-sm font-bold text-natural-clay">
-              <Flame className="h-4 w-4 fill-natural-clay" />
-              {streak}d streak
-            </span>
-            {daysToFinish(book) !== null && (
-              <span className="text-[11px] text-natural-stone">
-                Pace: about {daysToFinish(book)} days left
+            <GlossaryTerm term="Streak" language={glossaryLanguage}>
+              <span className="flex items-center gap-1 text-sm font-bold text-natural-clay">
+                <Flame className="h-4 w-4 fill-natural-clay" />
+                {streak}d streak
               </span>
+            </GlossaryTerm>
+            {daysToFinish(book) !== null && (
+              <GlossaryTerm term="Pace" language={glossaryLanguage}>
+                <span className="text-[11px] text-natural-stone">
+                  Pace: about {daysToFinish(book)} days left
+                </span>
+              </GlossaryTerm>
             )}
-            <MomentumScore book={book} logs={logs} />
+            <MomentumScore book={book} logs={logs} language={glossaryLanguage} />
           </div>
           <div
             className="h-2 overflow-hidden rounded-full bg-natural-border"
@@ -826,10 +849,10 @@ export default function BookDetail() {
               Reading Rhythm
             </h3>
             <div className="lg:hidden">
-              <StreakHeatmap logs={logs} />
+              <StreakHeatmap logs={logs} listenByDay={rhythmListenByDay} />
             </div>
             <div className="hidden lg:block">
-              <StreakHeatmap logs={logs} windowDays={21} />
+              <StreakHeatmap logs={logs} windowDays={21} listenByDay={rhythmListenByDay} />
             </div>
           </section>
 

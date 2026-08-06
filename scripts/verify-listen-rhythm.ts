@@ -107,10 +107,12 @@ const pure = buildListenRhythm({
   listened: [],
   titles: [{ id: book, title: "Book" }],
   totalListenSeconds: 0,
+  listenByDay: [],
 });
 assert.equal(pure.books.length, 1);
 assert.equal(pure.books[0].episodes_listened, 0);
-const empty = buildListenRhythm({ readingDays: [], listeningDays: [], episodeTotals: [], listened: [], titles: [], totalListenSeconds: 0 });
+assert.equal(pure.listen_by_day.length, 0);
+const empty = buildListenRhythm({ readingDays: [], listeningDays: [], episodeTotals: [], listened: [], titles: [], totalListenSeconds: 0, listenByDay: [] });
 assert.equal(empty.books.length, 0);
 assert.equal(empty.listening_episodes_total, 0);
 

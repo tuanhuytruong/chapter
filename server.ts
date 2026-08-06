@@ -684,7 +684,17 @@ app.get("/api/achievements", async (req: Request, res: Response) => {
 // read/listen/active streaks with computeStreak() (existing convention).
 app.get("/api/rhythm", async (req: Request, res: Response) => {
   try {
-    res.json(await getListenRhythm(userFrom(req).id));
+    const bookId =
+      typeof req.query.book_id === "string" && req.query.book_id
+        ? req.query.book_id
+        : undefined;
+    const roundRaw =
+      typeof req.query.round === "string" ? Number(req.query.round) : undefined;
+    const round =
+      roundRaw && Number.isInteger(roundRaw) && roundRaw > 0 ? roundRaw : undefined;
+    const rhythm = await getListenRhythm(userFrom(req).id, { bookId, round });
+    if (!rhythm) return res.status(404).json({ error: "book not found" });
+    res.json(rhythm);
   } catch (e: any) {
     res.status(503).json({ error: "rhythm unavailable", detail: e.message });
   }

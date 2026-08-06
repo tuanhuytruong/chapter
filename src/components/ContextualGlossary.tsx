@@ -3,7 +3,7 @@ import { Info } from "lucide-react";
 
 export type GlossaryLanguage = "vi" | "en";
 export type GlossaryLanguageSetting = GlossaryLanguage | "auto";
-export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied" | "ArgumentMap" | "AssumptionsLimits" | "KeyConcepts" | "QuestionsForward" | "ReadingNotes" | "ReadingLens";
+export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied" | "ArgumentMap" | "AssumptionsLimits" | "KeyConcepts" | "QuestionsForward" | "ReadingNotes" | "ReadingLens" | "Consistency" | "Velocity" | "Momentum" | "Slipping" | "Steady" | "OnFire" | "Pace" | "Streak";
 
 const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viDetail: string }> = {
   Deepened: { en: "Deepened", vi: "Đào sâu", enDetail: "The reading develops this idea with more nuance or detail.", viDetail: "Phần đọc phát triển ý này với thêm sắc thái hoặc chi tiết." },
@@ -25,6 +25,14 @@ const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viD
   QuestionsForward: { en: "Questions to carry forward", vi: "Câu hỏi để ngỏ", enDetail: "Open questions the reading leaves worth returning to.", viDetail: "Các câu hỏi mở mà phần đọc để lại, đáng quay lại suy ngẫm." },
   ReadingNotes: { en: "Reading notes", vi: "Ghi chú đọc", enDetail: "The analyst's caution notes about this analysis.", viDetail: "Các lưu ý thận trọng của phân tích này." },
   ReadingLens: { en: "Reading Lens", vi: "Lăng kính đọc", enDetail: "A structured analysis of a saved reading session.", viDetail: "Phân tích có cấu trúc của một phiên đọc đã lưu." },
+  Consistency: { en: "Consistency", vi: "Đều đặn", enDetail: "How regularly you read: pages read versus your daily chunks target over the last 7 days.", viDetail: "Mức đều đặn: % trang đọc được so với mục tiêu chunks/day trong 7 ngày gần nhất." },
+  Velocity: { en: "Velocity", vi: "Nhịp độ", enDetail: "Your recent pace vs your usual pace: reading days in the last 7 compared with the last 14.", viDetail: "Nhịp độ: số ngày đọc trong 7 ngày gần so với 14 ngày — mức tham gia hiện tại so với thói quen chung." },
+  Momentum: { en: "Momentum", vi: "Động lực", enDetail: "A 0–100 score blending Consistency (55%), Velocity (30%) and a bonus for multi-session days.", viDetail: "Điểm động lực 0–100: Consistency ×0.55 + Velocity ×0.3 + bonus cho ngày đọc nhiều phiên." },
+  Slipping: { en: "Slipping", vi: "Đang chững lại", enDetail: "Reading over the last 3 days dropped below 80% of the previous 3 days.", viDetail: "Lượng đọc 3 ngày gần nhất giảm dưới 80% so với 3 ngày trước đó." },
+  Steady: { en: "Steady", vi: "Ổn định", enDetail: "Recent reading is close to your previous pace — the habit holds.", viDetail: "Lượng đọc 3 ngày gần nhất tương đương 3 ngày trước — thói quen được giữ vững." },
+  OnFire: { en: "On fire", vi: "Bùng cháy", enDetail: "Reading over the last 3 days is more than 120% of the previous 3 days.", viDetail: "Lượng đọc 3 ngày gần nhất tăng hơn 120% so với 3 ngày trước đó." },
+  Pace: { en: "Pace", vi: "Tiến độ", enDetail: "Estimated days left to finish = remaining chunks ÷ chunks per day.", viDetail: "Ước tính số ngày còn lại để hết sách = chunks còn lại ÷ chunks mỗi ngày." },
+  Streak: { en: "Streak", vi: "Chuỗi ngày", enDetail: "Consecutive days with at least one reading session.", viDetail: "Số ngày liên tiếp có ít nhất một phiên đọc." },
 };
 
 export function resolveGlossaryLanguage(setting: GlossaryLanguageSetting, sourceText = ""): GlossaryLanguage {

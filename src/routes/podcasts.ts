@@ -161,6 +161,59 @@ podcastsRouter.post("/", async (req: Request, res: Response) => {
   catch (error: any) { res.status(error.code === "VOICE_REQUIRED" ? 409 : 400).json({ error: error.message }); }
 });
 
+// Change the narrator voice for a reading round. When the round already has
+// episodes, the client must confirm with force=true; that deletes the round's
+// episodes and playback progress so everything is re-generated with the new
+// voice. Listen events are kept (podcast_id is set NULL by the FK) so already
+// earned listening streak days are not lost.
+podcastsRouter.post("/books/:bookId/narrator", async (req: Request, res: Response) => {
+  const { voice_gender, force } = req.body || {};
+  if (voice_gender !== "female" && voice_gender !== "male") {
+    return res.status(400).json({ error: "voice_gender must be 'female' or 'male'" });
+  }
+  try {
+    const userId = userFrom(req).id;
+    const { rows: books } = await query<{ reading_round: number }>(
+      "SELECT reading_round FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'",
+      [req.params.bookId, userId],
+    );
+    const book = books[0];
+    if (!book) return res.status(404).json({ error: "Podcast book not found" });
+    const round = book.reading_round || 1;
+    const { rows: existing } = await query<{ id: string }>(
+      `SELECT id FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3
+        AND status IN ('ready','archive_pending','queued','scripting','synthesizing')`,
+      [userId, req.params.bookId, round],
+    );
+    const count = existing.length;
+    if (count > 0 && force !== true) {
+      return res.status(409).json({
+        error: `Changing the narrator will delete ${count} podcast${count === 1 ? "" : "s"} of this round`,
+        episodes: count,
+        force_required: true,
+      });
+    }
+    await withTransaction(async (client) => {
+      if (count > 0) {
+        await client.query(
+          "DELETE FROM podcast_playback_progress WHERE user_id=$1 AND book_id=$2 AND reading_round=$3",
+          [userId, req.params.bookId, round],
+        );
+        await client.query(
+          "DELETE FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3",
+          [userId, req.params.bookId, round],
+        );
+      }
+      await client.query(
+        `INSERT INTO podcast_narrators (book_id, reading_round, voice_gender) VALUES ($1,$2,$3)
+         ON CONFLICT (book_id, reading_round) DO UPDATE SET voice_gender=EXCLUDED.voice_gender`,
+        [req.params.bookId, round, voice_gender],
+      );
+    });
+    res.json({ ok: true, episodes_deleted: count, reading_round: round, voice_gender });
+  } catch (error: any) { console.warn("[podcast] narrator change failed:", error.message); res.status(500).json({ error: "Narrator could not be updated" }); }
+});
+
 podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
   try {
     const ownerId = userFrom(req).id;

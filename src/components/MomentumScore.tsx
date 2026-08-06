@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { LogRow, BookRow } from '../types';
+import { GlossaryTerm, type GlossaryLanguage } from './ContextualGlossary';
 
 const APP_TZ = 'Asia/Bangkok';
 
@@ -105,9 +106,11 @@ function computeMomentum(book: BookRow, logs: LogRow[]): {
 export default function MomentumScore({
   book,
   logs,
+  language = "en",
 }: {
   book: BookRow;
   logs: LogRow[];
+  language?: GlossaryLanguage;
 }) {
   const m = useMemo(() => computeMomentum(book, logs), [book, logs]);
 
@@ -121,14 +124,22 @@ export default function MomentumScore({
   return (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 font-sans text-[10px] text-natural-stone">
       <span className="text-natural-border">·</span>
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-natural-sage/15 px-1.5 py-0.5 font-bold text-natural-dark">
-        {m.score}<TrendIcon className={`h-2.5 w-2.5 ${trendColor}`} />
-      </span>
-      <span className={trendColor}>{trendLabel}</span>
+      <GlossaryTerm term="Momentum" language={language}>
+        <span className="inline-flex items-center gap-0.5 rounded-full bg-natural-sage/15 px-1.5 py-0.5 font-bold text-natural-dark">
+          {m.score}<TrendIcon className={`h-2.5 w-2.5 ${trendColor}`} />
+        </span>
+      </GlossaryTerm>
+      <GlossaryTerm term={m.trend === 'up' ? 'OnFire' : m.trend === 'down' ? 'Slipping' : 'Steady'} language={language}>
+        <span className={trendColor}>{trendLabel}</span>
+      </GlossaryTerm>
       <span className="hidden text-natural-border sm:inline">·</span>
-      <span className="hidden sm:inline">Consistency <b className="text-natural-dark">{m.consistency}%</b></span>
+      <GlossaryTerm term="Consistency" language={language}>
+        <span className="hidden sm:inline">Consistency <b className="text-natural-dark">{m.consistency}%</b></span>
+      </GlossaryTerm>
       <span className="hidden text-natural-border sm:inline">·</span>
-      <span className="hidden sm:inline">Velocity <b className="text-natural-dark">{m.velocity}%</b></span>
+      <GlossaryTerm term="Velocity" language={language}>
+        <span className="hidden sm:inline">Velocity <b className="text-natural-dark">{m.velocity}%</b></span>
+      </GlossaryTerm>
     </div>
   );
 }

@@ -385,6 +385,7 @@ export interface RhythmResponse {
   listening_days: string[];
   listening_episodes_total: number;
   total_listen_seconds: number;
+  listen_by_day: { day: string; episodes: number; seconds: number }[];
   books: RhythmBookItem[];
 }
 
@@ -499,7 +500,10 @@ export const api = {
     );
   },
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
-  getRhythm: () => req<RhythmResponse>("/api/rhythm"),
+  getRhythm: (bookId?: string, round?: number) =>
+    req<RhythmResponse>(
+      `/api/rhythm${bookId ? `?book_id=${encodeURIComponent(bookId)}${round ? `&round=${round}` : ""}` : ""}`,
+    ),
   getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
   getBillingCatalog: () => req<BillingCatalogResponse>("/api/billing/catalog"),
   getBillingMe: () => req<BillingMeResponse>("/api/billing/me"),
@@ -578,6 +582,18 @@ export const api = {
         voice_gender: voiceGender,
       }),
     }),
+  setBookNarrator: (
+    bookId: string,
+    voiceGender: "female" | "male",
+    force = false,
+  ) =>
+    req<{ ok: boolean; episodes_deleted: number }>(
+      `/api/podcasts/books/${bookId}/narrator`,
+      {
+        method: "POST",
+        body: JSON.stringify({ voice_gender: voiceGender, force }),
+      },
+    ),
   regeneratePodcast: (episodeId: string) =>
     req<PodcastEpisode>(`/api/podcasts/${episodeId}/regenerate`, {
       method: "POST",

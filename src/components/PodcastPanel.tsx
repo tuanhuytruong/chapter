@@ -7,6 +7,11 @@ import PodcastPlaylistPlayer from "./PodcastPlaylistPlayer";
 type PodcastApi = typeof api & {
   getBookPodcast: (bookId: string) => Promise<PodcastCatalogBook>;
   regeneratePodcast: (episodeId: string) => Promise<PodcastEpisode>;
+  setBookNarrator: (
+    bookId: string,
+    voiceGender: "female" | "male",
+    force?: boolean,
+  ) => Promise<{ ok: boolean; episodes_deleted: number }>;
 };
 
 type PodcastPanelProps = {
@@ -29,6 +34,10 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
   const [workingKey, setWorkingKey] = useState<string | null>(null);
   const [voiceTarget, setVoiceTarget] = useState<PodcastChapter | null>(null);
   const [regenerateTarget, setRegenerateTarget] = useState<PodcastEpisode | null>(null);
+  const [narratorModal, setNarratorModal] = useState(false);
+  const [confirmChange, setConfirmChange] = useState(false);
+  const [pendingGender, setPendingGender] = useState<"female" | "male" | null>(null);
+  const [changingNarrator, setChangingNarrator] = useState(false);
   const [playRequest, setPlayRequest] = useState<{ bookId: string; episodeId: string } | null>(null);
   const [podcastRefreshKey, setPodcastRefreshKey] = useState(0);
   const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
@@ -97,9 +106,33 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
     }
   };
 
+  const closeNarratorModal = () => {
+    setNarratorModal(false);
+    setConfirmChange(false);
+    setPendingGender(null);
+  };
+
+  // Switch the round's narrator voice. If the round already has episodes the
+  // modal first asks for explicit confirmation (force=true on the API), which
+  // deletes them so everything is re-generated with the new voice.
+  const changeNarrator = async (gender: "female" | "male", force: boolean) => {
+    setChangingNarrator(true);
+    try {
+      await podcastApi.setBookNarrator(bookId, gender, force);
+      closeNarratorModal();
+      await refresh();
+      setPodcastRefreshKey((key) => key + 1);
+    } catch (error: any) {
+      window.alert(error?.message || "Narrator could not be changed. Please try again.");
+    } finally {
+      setChangingNarrator(false);
+    }
+  };
+
   if (!isEpub) return null;
 
   const bookRhythm = rhythm?.books.find((item) => item.book_id === bookId) ?? null;
+  const readyEpisodeCount = book?.chapters.filter(({ episode }) => isReady(episode)).length ?? 0;
 
   return <>
     <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5" aria-label="Chapter podcasts">
@@ -109,10 +142,15 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
         <h2 className="mt-1 flex items-center gap-2 text-lg font-bold text-natural-dark"><Headphones className="h-5 w-5" /> Chapter podcasts</h2>
         <p className="mt-1 text-sm leading-5 text-natural-stone">Listen to complete chapters at your own pace.</p>
         {book?.narrator_gender ? (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-1 text-xs font-bold text-natural-dark">
+          <button
+            type="button"
+            onClick={() => setNarratorModal(true)}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-1 text-xs font-bold text-natural-dark transition hover:border-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40"
+            title="Change narrator voice for this round"
+          >
             <Headphones className="h-3.5 w-3.5 text-natural-sage" />
             Narrator · Round {book.reading_round}: {book.narrator_gender === "female" ? "Female" : "Male"}
-          </p>
+          </button>
         ) : null}
       </div>
       <div className="flex shrink-0 gap-1">
@@ -138,14 +176,33 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canEdit} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onPlay={() => chapter.episode && isReady(chapter.episode) && setPlayRequest({ bookId, episodeId: chapter.episode.id })} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : (book?.narrator_gender ? void create(chapter) : setVoiceTarget(chapter))} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
     </div>
     </section>
-    {(voiceTarget || regenerateTarget) && createPortal(
-      <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex items-end justify-center bg-natural-dark/35 p-4 backdrop-blur-[1px] sm:items-center" role="presentation" onClick={() => { setVoiceTarget(null); setRegenerateTarget(null); }}>
+    {(voiceTarget || regenerateTarget || narratorModal) && createPortal(
+      <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex items-end justify-center bg-natural-dark/35 p-4 backdrop-blur-[1px] sm:items-center" role="presentation" onClick={() => { setVoiceTarget(null); setRegenerateTarget(null); closeNarratorModal(); }}>
         <div role="dialog" aria-modal="true" aria-labelledby="podcast-action-title" className="w-full max-w-md rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-          {voiceTarget ? <>
+          {narratorModal ? <>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast narrator · Round {book?.reading_round ?? 1}</p>
+            <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Change narrator voice</h2>
+            <p className="mt-2 text-sm leading-6 text-natural-stone">Current voice: {book?.narrator_gender === "female" ? "Female" : "Male"}. Your choice applies to every episode of reading round {book?.reading_round ?? 1}.</p>
+            {confirmChange ? (
+              <div className="mt-5 rounded-2xl border border-natural-clay/30 bg-natural-clay/10 p-4">
+                <p className="text-sm font-bold leading-6 text-natural-clay">Delete {readyEpisodeCount} {readyEpisodeCount === 1 ? "episode" : "episodes"} &amp; switch to {pendingGender === "female" ? "Female" : "Male"}?</p>
+                <p className="mt-1 text-xs leading-5 text-natural-stone">All podcasts of this round will be removed and you will generate again from chapter 1 with the new voice. Your listening streak days are kept.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => void changeNarrator(pendingGender ?? "female", true)} disabled={changingNarrator} className="min-h-11 rounded-full bg-natural-clay px-4 text-xs font-bold text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay/45 disabled:opacity-60">{changingNarrator ? "Changing…" : "Confirm — delete &amp; recreate"}</button>
+                  <button type="button" onClick={() => setConfirmChange(false)} disabled={changingNarrator} className="min-h-11 px-3 text-xs font-bold text-natural-stone">Keep current voice</button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => readyEpisodeCount > 0 ? (setPendingGender("female"), setConfirmChange(true)) : void changeNarrator("female", false)} disabled={changingNarrator} className="flex min-h-24 flex-col items-start justify-between rounded-2xl border border-teal-700/25 bg-teal-50 p-4 text-left text-teal-950 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-teal-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/45 disabled:opacity-60"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-teal-700/30 bg-white text-teal-700"><Check className="h-3.5 w-3.5" /></span><span><span className="block text-sm font-bold">Female</span><span className="text-xs text-teal-800/75">Warm sage tone</span></span></button>
+                <button type="button" onClick={() => readyEpisodeCount > 0 ? (setPendingGender("male"), setConfirmChange(true)) : void changeNarrator("male", false)} disabled={changingNarrator} className="flex min-h-24 flex-col items-start justify-between rounded-2xl border border-slate-600/25 bg-slate-100 p-4 text-left text-slate-900 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600/45 disabled:opacity-60"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-600/30 bg-white text-slate-700"><Check className="h-3.5 w-3.5" /></span><span><span className="block text-sm font-bold">Male</span><span className="text-xs text-slate-600">Clear neutral tone</span></span></button>
+              </div>
+            )}
+          </> : voiceTarget ? <>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast narrator · Round {book?.reading_round ?? 1}</p>
             <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Choose this round&apos;s narrator</h2>
             <p className="mt-2 text-sm leading-6 text-natural-stone">Your choice applies to every episode of this book in reading round {book?.reading_round ?? 1}. A future re-read round can pick a different narrator.</p>
-            <div className="mt-5 grid grid-cols-2 gap-3"><button type="button" onClick={() => void create(voiceTarget, "female")} disabled={workingKey === voiceTarget.chapter_key} className="flex min-h-24 flex-col items-start justify-between rounded-2xl border border-teal-700/25 bg-teal-50 p-4 text-left text-teal-950 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-teal-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/45 disabled:opacity-60"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-teal-700/30 bg-white text-teal-700"><Check className="h-3.5 w-3.5" /></span><span><span className="block text-sm font-bold">Female</span><span className="text-xs text-teal-800/75">Warm sage tone</span></span></button><button type="button" onClick={() => void create(voiceTarget, "male")} disabled={workingKey === voiceTarget.chapter_key} className="flex min-h-24 flex-col items-start justify-between rounded-2xl border border-slate-600/25 bg-slate-100 p-4 text-left text-slate-900 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600/45 disabled:opacity-60"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-600/30 bg-white text-slate-700"><Check className="h-3.5 w-3.5" /></span><span><span className="block text-sm font-bold">Male</span><span className="text-xs text-slate-600">Clear neutral tone</span></span></button></div><button type="button" onClick={() => setVoiceTarget(null)} className="mt-3 min-h-11 px-3 text-xs font-bold text-natural-stone">Not now</button>
+            <div className="mt-5 grid grid-cols-2 gap-3"><button type="button" onClick={() => void create(voiceTarget, "female")} disabled={workingKey === voiceTarget.chapter_key} className="flex min-h-24 flex-col items-start justify-between rounded-2xl border border-teal-700/25 bg-teal-50 p-4 text-left text-teal-950 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-teal-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/45 disabled:opacity-60"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-teal-700/30 bg-white text-teal-700"><Check className="h-3.5 w-3.5" /></span><span><span className="block text-sm font-bold">Female</span><span className="text-xs text-teal-800/75">Warm sage tone</span></span></button><button type="button" onClick={() => void create(voiceTarget, "male")} disabled={workingKey === voiceTarget.chapter_key} className="flex min-h-24 flex-col items-start justify-between rounded-2xl border border-slate-600/25 bg-slate-100 p-4 text-left text-slate-900 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-600/45 disabled:opacity-60"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-600/30 bg-white text-slate-700"><Check className="h-3.5 w-3.5" /></span><span><span className="block text-sm font-bold">Male</span><span className="text-xs text-slate-600">Clear neutral tone</span></span></button></div>
           </> : <>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast episode</p>
             <h2 id="podcast-action-title" className="mt-1 text-base font-bold text-natural-dark">Regenerate this episode?</h2>
