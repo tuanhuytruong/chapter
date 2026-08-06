@@ -372,6 +372,22 @@ export interface PodcastCatalogBook {
   chapters: PodcastChapter[];
 }
 
+export interface RhythmBookItem {
+  book_id: string;
+  title: string;
+  reading_round: number;
+  episodes_total: number;
+  episodes_listened: number;
+}
+
+export interface RhythmResponse {
+  reading_days: string[];
+  listening_days: string[];
+  listening_episodes_total: number;
+  total_listen_seconds: number;
+  books: RhythmBookItem[];
+}
+
 const BASE = "/api/books";
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
@@ -483,6 +499,7 @@ export const api = {
     );
   },
   getAchievements: () => req<AchievementsResponse>("/api/achievements"),
+  getRhythm: () => req<RhythmResponse>("/api/rhythm"),
   getEntitlements: () => req<EntitlementsResponse>("/api/entitlements/me"),
   getBillingCatalog: () => req<BillingCatalogResponse>("/api/billing/catalog"),
   getBillingMe: () => req<BillingMeResponse>("/api/billing/me"),

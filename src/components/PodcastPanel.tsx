@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Headphones, Loader2, Play, RefreshCw, RotateCcw, X } from "lucide-react";
-import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode } from "../api";
+import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode, type RhythmResponse } from "../api";
 import PodcastPlaylistPlayer from "./PodcastPlaylistPlayer";
 
 type PodcastApi = typeof api & {
@@ -31,10 +31,16 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
   const [regenerateTarget, setRegenerateTarget] = useState<PodcastEpisode | null>(null);
   const [playRequest, setPlayRequest] = useState<{ bookId: string; episodeId: string } | null>(null);
   const [podcastRefreshKey, setPodcastRefreshKey] = useState(0);
+  const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      setBook(await podcastApi.getBookPodcast(bookId));
+      const [catalog, rhythmData] = await Promise.all([
+        podcastApi.getBookPodcast(bookId),
+        podcastApi.getRhythm(),
+      ]);
+      setBook(catalog);
+      setRhythm(rhythmData);
     } catch {
       setBook(null);
     } finally {
@@ -93,6 +99,8 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
 
   if (!isEpub) return null;
 
+  const bookRhythm = rhythm?.books.find((item) => item.book_id === bookId) ?? null;
+
   return <>
     <section className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5" aria-label="Chapter podcasts">
     <div className="flex items-start justify-between gap-3">
@@ -112,6 +120,18 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
         {onClose && <button type="button" onClick={onClose} className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-natural-stone transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40" aria-label="Close podcasts"><X className="h-4 w-4" /></button>}
       </div>
     </div>
+
+    {bookRhythm ? (
+      <div className="mt-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="inline-flex items-center gap-1.5 text-xs font-bold text-natural-dark"><Headphones className="h-3.5 w-3.5 text-natural-sage" /> Đã nghe {bookRhythm.episodes_listened}/{bookRhythm.episodes_total || bookRhythm.episodes_listened} episodes</p>
+          {bookRhythm.episodes_total > 0 && bookRhythm.episodes_listened >= bookRhythm.episodes_total && (<span className="rounded-full bg-natural-sage/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-natural-sage">Trọn sách</span>)}
+        </div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-natural-border/60">
+          <div className="h-full rounded-full bg-natural-sage transition-all duration-500" style={{ width: `${Math.min(100, Math.round((bookRhythm.episodes_total ? bookRhythm.episodes_listened / bookRhythm.episodes_total : bookRhythm.episodes_listened > 0 ? 1 : 0) * 100))}%` }} />
+        </div>
+      </div>
+    ) : null}
 
     <PodcastPlaylistPlayer bookId={bookId} playRequest={playRequest} onPlayed={() => setPlayRequest(null)} onNeedVoice={handleNeedVoice} refreshKey={podcastRefreshKey} onEpisodeCreated={() => { void refresh(); setPodcastRefreshKey((key) => key + 1); }} />
     <div className="mt-4 divide-y divide-natural-border/80">

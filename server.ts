@@ -32,6 +32,7 @@ import {
   type WeeklyGoalRow,
 } from "./src/weekly-goal.js";
 import { achievementResponse } from "./src/achievements.js";
+import { getListenRhythm } from "./src/listenRhythm.js";
 import { config } from "./src/config.js";
 import {
   createLinkToken,
@@ -675,6 +676,17 @@ app.get("/api/achievements", async (req: Request, res: Response) => {
     res
       .status(503)
       .json({ error: "achievements unavailable", detail: e.message });
+  }
+});
+
+// ── Listening rhythm (twin-track: read + listen at the day level) ─────────
+// Returns raw day sets + book-level audio completion; the client derives
+// read/listen/active streaks with computeStreak() (existing convention).
+app.get("/api/rhythm", async (req: Request, res: Response) => {
+  try {
+    res.json(await getListenRhythm(userFrom(req).id));
+  } catch (e: any) {
+    res.status(503).json({ error: "rhythm unavailable", detail: e.message });
   }
 });
 

@@ -127,6 +127,23 @@ podcastsRouter.put("/books/:bookId/playlist/progress", async (req: Request, res:
       VALUES ($1,$2,$3,$4,$5,CASE WHEN $6 THEN now() ELSE NULL END,now())
       ON CONFLICT (user_id,book_id,reading_round) DO UPDATE SET podcast_id=EXCLUDED.podcast_id,current_time_seconds=EXCLUDED.current_time_seconds,completed_at=EXCLUDED.completed_at,updated_at=now()
       RETURNING podcast_id,current_time_seconds,completed_at,updated_at`, [userId, req.params.bookId, book.reading_round, podcast_id, current_time_seconds, completed]);
+    // Listening-rhythm event: one row per (user, episode, day) so listen days
+    // and streaks are derivable without chunk alignment. Recorded only once an
+    // episode counts as "listened" (completed, or at least 60s heard).
+    if (completed === true || current_time_seconds >= 60) {
+      // Asia/Bangkok day (no DST) so listen days align with reading logs.
+      const listenedOn = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+      await query<any>(
+        `INSERT INTO podcast_listen_events
+           (user_id, book_id, podcast_id, chapter_key, reading_round, listened_on, seconds_heard, completed, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now())
+         ON CONFLICT (user_id, podcast_id, listened_on) DO UPDATE SET
+           seconds_heard = GREATEST(podcast_listen_events.seconds_heard, EXCLUDED.seconds_heard),
+           completed     = podcast_listen_events.completed OR EXCLUDED.completed,
+           updated_at    = now()`,
+        [userId, req.params.bookId, episode.id, episode.chapter_key, episode.reading_round, listenedOn, current_time_seconds, completed],
+      );
+    }
     res.json(saved[0]);
   } catch (error: any) { console.warn("[podcast] playlist progress failed:", error.message); res.status(500).json({ error: "Podcast progress unavailable" }); }
 });
