@@ -64,7 +64,7 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
     ]);
     const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
-    res.json({ ...book, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: units.rows.map((unit) => ({ ...unit, episode: byChapter.get(unit.chapter_key) || null })) });
+    res.json({ ...book, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: units.rows.map((unit, index) => ({ ...unit, chapter_number: index + 1, episode: byChapter.get(unit.chapter_key) || null })) });
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });
 
@@ -96,7 +96,8 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     const readyByChapter = new Set(episodes.rows.map((episode) => episode.chapter_key));
     const allStatus = await query<any>("SELECT chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
     const statusByChapter = new Map(allStatus.rows.map((episode) => [episode.chapter_key, episode.status]));
-    const next = chapters.rows.find((chapter) => !readyByChapter.has(chapter.chapter_key)) || null;
+    const chapterRows = chapters.rows.map((chapter, index) => ({ ...chapter, chapter_number: index + 1 }));
+    const next = chapterRows.find((chapter) => !readyByChapter.has(chapter.chapter_key)) || null;
     res.json({
       book_id: book.id,
       reading_round: round,

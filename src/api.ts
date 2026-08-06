@@ -344,6 +344,7 @@ export interface PodcastPlaylistProgress {
 export interface PodcastNextChapter {
   chapter_key: string;
   chapter_title: string | null;
+  chapter_number: number | null;
   start_unit: number;
   end_unit: number;
   start_page: number | null;

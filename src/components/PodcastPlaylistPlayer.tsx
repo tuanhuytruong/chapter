@@ -8,7 +8,7 @@ function episodeName(episode: PodcastEpisode, index: number) {
 
 const pendingStatuses = new Set(["queued", "scripting", "synthesizing", "archiving"]);
 
-export default function PodcastPlaylistPlayer({ bookId, compact = false, playRequest = null, onPlayed, onNeedVoice, refreshKey = 0 }: { bookId: string; compact?: boolean; playRequest?: { bookId: string; episodeId: string } | null; onPlayed?: () => void; onNeedVoice?: (chapterKey: string) => void; refreshKey?: number }) {
+export default function PodcastPlaylistPlayer({ bookId, compact = false, playRequest = null, onPlayed, onNeedVoice, refreshKey = 0, onEpisodeCreated }: { bookId: string; compact?: boolean; playRequest?: { bookId: string; episodeId: string } | null; onPlayed?: () => void; onNeedVoice?: (chapterKey: string) => void; refreshKey?: number; onEpisodeCreated?: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastSavedAt = useRef(0);
   const autoplayNext = useRef(false);
@@ -103,6 +103,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
     const target = next.chapter_key;
     try {
       await api.createPodcast(bookId, target);
+      onEpisodeCreated?.();
     } catch (error: any) {
       if (String(error?.message || "").startsWith("409:")) { setGenerating(false); onNeedVoice?.(target); return; }
       setGenerating(false);
@@ -117,11 +118,13 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
         if (index >= 0) {
           window.clearInterval(timer);
           setGenerating(false);
+          // Flip autoplay so the loadedmetadata handler starts the fresh episode
+          // once the <audio> element has swapped to its src. A plain setTimeout
+          // play() here races the React commit and silently plays nothing.
+          autoplayNext.current = true;
           setActiveIndex(index);
           setStarted(true);
-          autoplayNext.current = false;
           void persist(nextList.episodes[index], 0, false);
-          window.setTimeout(() => void audioRef.current?.play().catch(() => setPlaying(false)), 0);
           return;
         }
       } catch { /* transient; keep polling */ }
@@ -130,7 +133,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
     };
     const timer = window.setInterval(() => void poll(), 5000);
     void poll();
-  }, [bookId, playlist, generating, onNeedVoice, persist]);
+  }, [bookId, playlist, generating, onNeedVoice, persist, onEpisodeCreated]);
 
   if (loading) return <div className="mt-4 flex items-center gap-2 text-xs text-natural-stone"><Loader2 className="h-4 w-4 animate-spin" /> Loading playlist…</div>;
   if (!episodes.length && !playlist?.next_chapter) return null;
@@ -147,7 +150,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
       {playing && <p className="mt-1 text-[10px] text-natural-stone">The next ready chapter will continue automatically.</p>}</div>}
     {!compact && episodes.length > 0 && <ol className="mt-3 space-y-1" aria-label="Playlist queue">{episodes.slice(Math.max(0, activeIndex ?? 0), (activeIndex ?? 0) + 4).map((episode, offset) => { const index = (activeIndex ?? 0) + offset; return <li key={episode.id}><button type="button" onClick={() => selectAndPlay(index)} className={`flex min-h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-xs ${index === activeIndex ? "bg-white text-natural-dark font-bold" : "text-natural-stone hover:bg-white/70"}`}><span className="w-5 text-[10px] font-bold text-natural-sage">{index === activeIndex ? "NOW" : String(index + 1).padStart(2, "0")}</span><span className="truncate">{episodeName(episode, index)}</span></button></li>; })}</ol>}
     {next && <div className="mt-3 rounded-xl border border-dashed border-natural-sage/40 bg-white/60 p-3">
-      <p className="text-[11px] font-semibold text-natural-stone">Next chapter not recorded yet: <span className="font-bold text-natural-dark">{next.chapter_title || next.chapter_key}</span>{next.start_page != null ? ` · p. ${next.start_page}` : ""}</p>
+      <p className="text-[11px] font-semibold text-natural-stone">Next chapter not recorded yet: <span className="font-bold text-natural-dark">{next.chapter_title || (next.chapter_number ? `Chapter ${next.chapter_number}` : next.chapter_key)}</span>{next.start_page != null ? ` · p. ${next.start_page}` : ""}</p>
       {nextPending ? <p className="mt-2 flex items-center gap-2 text-xs text-natural-stone"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparing this chapter…</p> : <button type="button" onClick={() => void generateNext()} disabled={generating} className="mt-2 flex min-h-10 items-center gap-1.5 rounded-full bg-natural-sage px-3 text-xs font-bold text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{generating ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</> : <><Sparkles className="h-3.5 w-3.5" /> {episodes.length ? "Generate & play next" : "Generate & play first chapter"}</>}</button>}
     </div>}
   </section>;
