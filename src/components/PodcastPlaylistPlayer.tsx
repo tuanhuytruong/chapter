@@ -25,6 +25,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
+  const [preparedNote, setPreparedNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!playRequest || playRequest.bookId !== bookId || pendingRequest.current) return;
@@ -104,9 +105,11 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
 
   const playBook = (fromStart = false) => selectAndPlay(fromStart ? 0 : (activeIndex ?? 0), fromStart);
 
-  // Generate the next chapter. "manual" (default) also starts playback of the
-  // fresh episode once ready; "auto" (30% listener trigger) only prepares it into
-  // the queue — the user keeps listening to the current chapter uninterrupted.
+  // Generate the next chapter. Manual mode auto-plays the fresh episode only
+  // when it is the listener's turn (nothing is playing, or the latest ready
+  // chapter is playing); otherwise it just prepares it into the queue so the
+  // current chapter is never cut off. "auto" (30% listener trigger) always
+  // only prepares it — the user keeps listening uninterrupted.
   const generateNext = useCallback(async (mode: "manual" | "auto" = "manual") => {
     const next = playlist?.next_chapter;
     if (!next || generating) return;
@@ -134,12 +137,23 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
           window.clearInterval(timer);
           setGenerating(false);
           if (auto) { setAutoGenerating(false); return; }
-          // Flip autoplay so the loadedmetadata handler starts the fresh episode
-          // once the <audio> element has swapped to its src. A plain setTimeout
-          // play() here races the React commit and silently plays nothing.
-          autoplayNext.current = true;
-          setActiveIndex(index);
-          void persist(nextList.episodes[index], 0, false);
+          const fresh = nextList.episodes[index];
+          const atLatest = activeIndex === null || activeIndex === episodes.length - 1;
+          if (atLatest) {
+            // It is the listener's turn: flip autoplay so the loadedmetadata
+            // handler starts the fresh episode once the <audio> element has
+            // swapped to its src. A plain setTimeout play() here races the
+            // React commit and silently plays nothing.
+            autoplayNext.current = true;
+            setActiveIndex(index);
+            void persist(fresh, 0, false);
+          } else {
+            // Still listening to an earlier chapter: prepare quietly and let
+            // playback advance to the new episode naturally.
+            const label = fresh.chapter_title || `Chapter ${fresh.chapter_key}`;
+            setPreparedNote(`${label} đã sẵn sàng — sẽ tự phát khi đến lượt nghe của bạn.`);
+            window.setTimeout(() => setPreparedNote(null), 6000);
+          }
           return;
         }
         // Generation can fail mid-flight (e.g. TTS 502). Stop polling and hand
@@ -157,7 +171,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
     };
     const timer = window.setInterval(() => void poll(), 5000);
     void poll();
-  }, [bookId, playlist, generating, onNeedVoice, persist, onEpisodeCreated]);
+  }, [bookId, playlist, generating, activeIndex, onNeedVoice, persist, onEpisodeCreated]);
 
   // Put the current row at the top of the queue whenever playback changes, so
   // the first visible list item always confirms what is playing.
@@ -185,7 +199,7 @@ export default function PodcastPlaylistPlayer({ bookId, compact = false, playReq
     {!compact && episodes.length > 0 && <div ref={queueRef} className="mt-3 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(121,134,102,0.45) transparent" }}><ol className="space-y-1 pb-64" aria-label="Playlist queue">{episodes.map((episode, index) => { const activeNow = index === activeIndex; return <li key={episode.id} ref={activeNow ? nowItemRef : undefined}><button type="button" onClick={() => selectAndPlay(index)} className={`flex min-h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-xs ${activeNow ? "bg-white text-natural-dark font-bold" : "text-natural-stone hover:bg-white/70"}`}><span className="w-5 shrink-0 text-[10px] font-bold text-natural-sage">{activeNow ? "NOW" : String(index + 1).padStart(2, "0")}</span><span className="truncate">{episodeName(episode, index)}</span></button></li>; })}</ol></div>}
     {next && <div className="mt-3 rounded-xl border border-dashed border-natural-sage/40 bg-white/60 p-3">
       <p className="text-[11px] font-semibold text-natural-stone">Next chapter not recorded yet: <span className="font-bold text-natural-dark">{next.chapter_title || (next.chapter_number ? `Chapter ${next.chapter_number}` : next.chapter_key)}</span>{next.start_page != null ? ` · p. ${next.start_page}` : ""}</p>
-      {autoGenerating ? <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-natural-dark"><Loader2 className="h-3.5 w-3.5 animate-spin text-natural-sage" /> Auto-preparing the next chapter: <span className="font-bold">{next.chapter_title || (next.chapter_number ? `Chapter ${next.chapter_number}` : next.chapter_key)}</span>…</p> : nextPending ? <p className="mt-2 flex items-center gap-2 text-xs text-natural-stone"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparing this chapter…</p> : <><button type="button" onClick={() => void generateNext("manual")} disabled={generating} className="mt-2 flex min-h-10 items-center gap-1.5 rounded-full bg-natural-sage px-3 text-xs font-bold text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{generating ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</> : <><Sparkles className="h-3.5 w-3.5" /> {episodes.length ? "Generate & play next" : "Generate & play first chapter"}</>}</button><p className="mt-2 text-[10px] leading-relaxed text-natural-stone">Follow your listening rhythm — the next chapter will be prepared as you keep listening.</p></>}
+      {autoGenerating ? <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-natural-dark"><Loader2 className="h-3.5 w-3.5 animate-spin text-natural-sage" /> Auto-preparing the next chapter: <span className="font-bold">{next.chapter_title || (next.chapter_number ? `Chapter ${next.chapter_number}` : next.chapter_key)}</span>…</p> : nextPending ? <p className="mt-2 flex items-center gap-2 text-xs text-natural-stone"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparing this chapter…</p> : <><button type="button" onClick={() => void generateNext("manual")} disabled={generating} className="mt-2 flex min-h-10 items-center gap-1.5 rounded-full bg-natural-sage px-3 text-xs font-bold text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{generating ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating…</> : <><Sparkles className="h-3.5 w-3.5" /> {episodes.length ? "Generate & play next" : "Generate & play first chapter"}</>}</button><p className={`mt-2 text-[10px] leading-relaxed ${preparedNote ? "text-natural-sage" : "text-natural-stone"}`}>{preparedNote || "Follow your listening rhythm — the next chapter will be prepared as you keep listening."}</p></>}
     </div>}
   </section>;
 }
