@@ -74,7 +74,7 @@ export function GlossaryTerm({ term, language = "en", children }: { term: Glossa
       type="button"
       aria-expanded={open}
       aria-controls={popupId}
-      aria-label={`${copy[language]}: ${detail}`}
+      aria-label={`${copy.en}: ${detail}`}
       onClick={() => setPinnedOpen((value) => !value)}
       onFocus={() => setHoverOpen(true)}
       onBlur={() => setHoverOpen(false)}
@@ -82,7 +82,9 @@ export function GlossaryTerm({ term, language = "en", children }: { term: Glossa
       onPointerLeave={() => setHoverOpen(false)}
       className="inline-flex items-center gap-1 border-b border-dotted border-current font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50"
     >
-      {children || copy[language]}
+      {/* The visible label stays in English (the source language of the
+          product); only the popup explanation follows the glossary language. */}
+      {children || copy.en}
       <Info aria-hidden="true" className="h-3 w-3 shrink-0" />
     </button>
     {open && <span id={popupId} role="tooltip" className="absolute bottom-full left-0 z-50 mb-1.5 w-56 rounded-lg border border-natural-border bg-natural-cream px-2.5 py-2 text-left text-[10px] font-normal normal-case leading-snug tracking-normal text-natural-dark shadow-lg">
