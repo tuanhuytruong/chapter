@@ -80,7 +80,7 @@ export function GlossaryTerm({ term, language = "en", children }: { term: Glossa
       onBlur={() => setHoverOpen(false)}
       onPointerEnter={() => setHoverOpen(true)}
       onPointerLeave={() => setHoverOpen(false)}
-      className="inline-flex items-center gap-1 border-b border-dotted border-current font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50"
+      className="inline-flex items-center gap-1 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50"
     >
       {/* The visible label stays in English (the source language of the
           product); only the popup explanation follows the glossary language. */}
