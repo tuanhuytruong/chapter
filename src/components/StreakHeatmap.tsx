@@ -83,13 +83,14 @@ export default function StreakHeatmap({
             const listen = listenByDay?.[day.date];
             const state = dayState(day.sessionCount, listen);
             const pages = pagesByDay.get(day.date) || 0;
-            const parts: string[] = [];
+            const hasListen = !!listen && (listen.episodes > 0 || listen.seconds > 0);
+            const readingParts: string[] = [];
             if (day.sessionCount > 0)
-              parts.push(`${day.sessionCount} ${day.sessionCount === 1 ? "session" : "sessions"} · ${pages} ${pages === 1 ? "page" : "pages"}`);
-            else parts.push("No reading");
-            if (listen && (listen.episodes > 0 || listen.seconds > 0))
-              parts.push(`${listen.episodes} ${listen.episodes === 1 ? "episode" : "episodes"} · ${formatMinutes(listen.seconds)}`);
-            const ariaLabel = `${formatRhythmDate(day.date)}${day.isToday ? ", today" : ""}: ${parts.join(", ")}${day.isCurrentStreakDay ? ", part of your current rhythm" : ""}`;
+              readingParts.push(`${day.sessionCount} ${day.sessionCount === 1 ? "session" : "sessions"} · ${pages} ${pages === 1 ? "page" : "pages"}`);
+            const listenPart = hasListen
+              ? `${listen!.episodes} ${listen!.episodes === 1 ? "episode" : "episodes"} · ${formatMinutes(listen!.seconds)}`
+              : null;
+            const ariaLabel = `${formatRhythmDate(day.date)}${day.isToday ? ", today" : ""}: ${[readingParts.length ? `Reading ${readingParts.join(", ")}` : null, listenPart ? `Listening ${listenPart}` : null].filter(Boolean).join("; ") || "no activity"}${day.isCurrentStreakDay ? ", part of your current rhythm" : ""}`;
             return (
               <span
                 key={day.date}
@@ -107,15 +108,26 @@ export default function StreakHeatmap({
                 />
                 <span
                   role="tooltip"
-                  className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-max max-w-52 -translate-x-1/2 rounded-lg border border-natural-border bg-natural-dark px-2.5 py-1.5 text-left shadow-lg group-hover:block"
+                  className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-max max-w-56 -translate-x-1/2 rounded-lg border border-natural-border bg-natural-dark px-2.5 py-1.5 text-left shadow-lg group-hover:block"
                 >
                   <strong className="block text-[10px] font-bold text-white">
                     {formatRhythmDate(day.date)}{day.isToday ? " · Today" : ""}
                   </strong>
-                  <span className="mt-0.5 flex items-center gap-1 text-[10px] leading-snug text-white/90">
-                    <span className={`inline-block h-2 w-2 shrink-0 rounded-[2px] ${state === "none" ? "bg-white/30" : CELL_COLOR[state]}`} />
-                    {parts.join(" · ")}
-                  </span>
+                  {readingParts.length > 0 && (
+                    <span className="mt-1 flex items-center gap-1 text-[10px] leading-snug text-white/90">
+                      <span className="inline-block h-2 w-2 shrink-0 rounded-[2px] bg-natural-sage" />
+                      Reading: {readingParts.join(", ")}
+                    </span>
+                  )}
+                  {listenPart && (
+                    <span className="mt-1 flex items-center gap-1 text-[10px] leading-snug text-white/90">
+                      <span className="inline-block h-2 w-2 shrink-0 rounded-[2px] bg-amber-300" />
+                      Listening: {listenPart}
+                    </span>
+                  )}
+                  {!readingParts.length && !listenPart && (
+                    <span className="mt-1 block text-[10px] leading-snug text-white/60">No activity</span>
+                  )}
                   {day.isCurrentStreakDay && (
                     <span className="mt-1 block text-[10px] font-bold text-natural-clay">🔥 part of your current rhythm</span>
                   )}

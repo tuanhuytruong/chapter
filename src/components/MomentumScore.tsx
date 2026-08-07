@@ -132,13 +132,13 @@ export default function MomentumScore({
       <GlossaryTerm term={m.trend === 'up' ? 'OnFire' : m.trend === 'down' ? 'Slipping' : 'Steady'} language={language}>
         <span className={trendColor}>{trendLabel}</span>
       </GlossaryTerm>
-      <span className="hidden text-natural-border sm:inline">·</span>
+      <span className="text-natural-border">·</span>
       <GlossaryTerm term="Consistency" language={language}>
-        <span className="hidden sm:inline">Consistency <b className="text-natural-dark">{m.consistency}%</b></span>
+        <span>Consistency <b className="text-natural-dark">{m.consistency}%</b></span>
       </GlossaryTerm>
-      <span className="hidden text-natural-border sm:inline">·</span>
+      <span className="text-natural-border">·</span>
       <GlossaryTerm term="Velocity" language={language}>
-        <span className="hidden sm:inline">Velocity <b className="text-natural-dark">{m.velocity}%</b></span>
+        <span>Velocity <b className="text-natural-dark">{m.velocity}%</b></span>
       </GlossaryTerm>
     </div>
   );
