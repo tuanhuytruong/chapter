@@ -4,12 +4,12 @@ okf_version: "0.1"
 
 # Files
 
-- [Chapter — Data Model](data-model.md) - PostgreSQL schema for the Chapter app — books, reading_log, users, sessions, book_reading_units, review_cards, analysis tables, AI Reader storage (ai_reader_chunks, book_wiki), and job tracking.
-- [Chapter — Operations](operations.md) - Deployment, environment configuration, build process, PM2 management, verification scripts, and production considerations.
-- [Chapter — AI Daily Book Reading Companion](quickstart.md) - Self-hosted web app for book library management, daily reading tracking, and AI-generated summaries delivered via Telegram. Full-stack TypeScript with React 19, Express, PostgreSQL, and LLM integration.
-- [Chapter — Reading Engine](reading-engine.md) - Text extraction (PDF/EPUB), LLM integration, and six analysis modes — Casual, Deep Reading, Reading Lens, Story Thread, AI Reader, and Book Wiki synthesis.
-- [Repository Files Reference](references.md) - Placeholder files created for repository organizational tracking.
-- [Chapter — Workflows](workflows.md) - Daily reading automation via n8n cron workflow, Telegram delivery, and account linking.
+- [Data Model](data-model.md) - Database schema and SQLite data definitions for Chapter.
+- [Operations & Runbooks](operations.md) - Deployment, monitoring, and operational runbooks for Chapter.
+- [Quickstart](quickstart.md) - Getting started with the OpenWiki code knowledge base for Chapter.
+- [Reading Engine](reading-engine.md) - The core reading analytics, AI reader, and content processing engine.
+- [References & Testing](references.md) - Test verification scripts and reference documentation for Chapter.
+- [Key Workflows](workflows.md) - Core user workflows and system pipelines in Chapter.
 
 # Directories
 

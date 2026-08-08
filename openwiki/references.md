@@ -1,13 +1,18 @@
 ---
-type: Reference
-title: Repository Files Reference
-description: Placeholder files created for repository organizational tracking.
-tags: [internal, reference]
+type: References
+title: References & Testing
+description: Test verification scripts and reference documentation for Chapter.
+tags: [testing, references]
+openwiki:
+  roles: ["testing"]
+  change_kinds: ["lifecycle"]
+  source_paths: ["scripts/"]
+  validation_commands: ["npm test"]
 ---
-# Repository Files Reference
 
-This document tracks reference files within the repository.
+# References & Testing
 
-- a.txt: Placeholder.
-- b.txt: Placeholder.
-- c.txt: Placeholder.
+Verification scripts under `/scripts/` ensure platform integrity:
+- `/scripts/verify-platform-db.ts`
+- `/scripts/verify-ai-reader.ts`
+- `/scripts/verify-today-insights-markdown.ts`
