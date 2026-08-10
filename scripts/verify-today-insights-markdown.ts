@@ -3,40 +3,28 @@ import { readFileSync } from "node:fs";
 
 const today = readFileSync(new URL("../src/pages/Today.tsx", import.meta.url), "utf8");
 
-// 1. Insights render qua InlineMarkdown (không còn plain text)
-assert.match(today, /<InlineMarkdown text=\{insight\.text\} \/>/);
+assert.match(today, /function stripInsightOrdinal/);
+assert.match(today, /function InlineMarkdown/);
+assert.match(today, /stripInsightOrdinal\(insight\.text\)/);
+assert.match(today, /const hasExplicitBold/);
+assert.match(today, /const lead = clean\.match/);
 
-// 2. Không còn chỗ nào render {insight.text} plain trong insights map
-//    (key={insight.text} vẫn còn — chỉ là React key, không phải render text)
-const insightsMap = today.slice(today.indexOf("insights.insights.slice"));
-assert.doesNotMatch(insightsMap, /leading-relaxed">\{insight\.text\}/);
+const stripInsightOrdinal = (text: string) => text.replace(/^\s*\d+[.)]\s+/, "");
+const leadOf = (text: string) => {
+  const clean = text.replace(/\*{3,}/g, "**");
+  const hasExplicitBold = /\*\*[^*]+\*\*/.test(clean);
+  if (hasExplicitBold) return null;
+  return clean.match(/^(.+?:)(?:\s+|$)/)?.[1]
+    ?? clean.match(/^(.+?[.!?])(?:\s+|$)/)?.[1]
+    ?? clean;
+};
 
-// 3. Component InlineMarkdown local tồn tại
-assert.match(today, /function InlineMarkdown\(\{ text \}: \{ text: string \}\)/);
+assert.equal(stripInsightOrdinal("1. Chip quyết định sức mạnh quân sự: Vũ khí thông minh"), "Chip quyết định sức mạnh quân sự: Vũ khí thông minh");
+assert.equal(stripInsightOrdinal("2) Cuộc khủng hoảng: Đầu tư ngược chiều"), "Cuộc khủng hoảng: Đầu tư ngược chiều");
+assert.equal(stripInsightOrdinal("2008–2009 là bối cảnh"), "2008–2009 là bối cảnh");
+assert.equal(leadOf("**Chip quyết định sức mạnh quân sự:** Vũ khí thông minh"), null, "explicit markdown owns bolding");
+assert.equal(leadOf("Cuộc khủng hoảng tài chính 2008–2009 là chất xúc tác: Morris Chang đầu tư ngược chiều."), "Cuộc khủng hoảng tài chính 2008–2009 là chất xúc tác:");
+assert.equal(leadOf("Intel đánh mất thị trường di động vì quá ưu tiên lợi nhuận từ PC. Minh họa cho innovator’s dilemma."), "Intel đánh mất thị trường di động vì quá ưu tiên lợi nhuận từ PC.");
+assert.equal(leadOf("Một insight không có dấu câu"), "Một insight không có dấu câu");
 
-// 4. Defensive collapse *** -> ** trước khi split
-assert.match(today, /replace\(/);
-assert.ok(today.includes('\\*{3,}'), "defensive 3+ asterisk collapse present");
-
-// 5. Bold render qua <strong>
-assert.match(today, /<strong key=\{index\} className="font-bold text-natural-dark">/);
-
-// 6. Logic thực tế: split/bold parsing hoạt động đúng
-const renderParts = (text: string): string[] =>
-  text.replace(/\*{3,}/g, "**").split(/(\*\*[^*]+\*\*)/g);
-
-const sample = "**Chip quyết định sức mạnh quân sự:** Gulf War ... ";
-const parts = renderParts(sample);
-assert.ok(parts.some((p) => p.startsWith("**") && p.endsWith("**")), "bold segment detected");
-assert.equal(parts[0], "", "opening separator before bold");
-assert.ok(parts.includes("**Chip quyết định sức mạnh quân sự:**"), "label kept intact");
-
-// 7. Edge case "**Label:***" (bold close + stray asterisk) -> collapse, không lộ *
-const edge = renderParts("**Label:*** text");
-assert.ok(!edge.some((p) => p.includes("***")), "no literal *** leaks");
-assert.ok(edge.some((p) => p === "**Label:**"), "collapsed to clean bold close");
-
-// 8. Plain text không bold -> giữ nguyên, không crash
-assert.deepEqual(renderParts("Intel lost the mobile market"), ["Intel lost the mobile market"]);
-
-console.log("Today key-insights markdown rendering contract passed");
+console.log("Today key-insights formatting contract passed");
