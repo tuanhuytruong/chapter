@@ -2,29 +2,33 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const today = readFileSync(new URL("../src/pages/Today.tsx", import.meta.url), "utf8");
+const insights = readFileSync(new URL("../src/pages/Insights.tsx", import.meta.url), "utf8");
 
-assert.match(today, /function stripInsightOrdinal/);
-assert.match(today, /function InlineMarkdown/);
-assert.match(today, /stripInsightOrdinal\(insight\.text\)/);
-assert.match(today, /const hasExplicitBold/);
-assert.match(today, /const lead = clean\.match/);
+for (const [name, source, render] of [
+  ["Today", today, /stripInsightOrdinal\(insight\.text\)/],
+  ["Insights", insights, /stripInsightOrdinal\(ins\.insight\)/],
+] as const) {
+  assert.match(source, /function stripInsightOrdinal/, `${name} strips display-only ordinals`);
+  assert.match(source, /function InlineMarkdown/, `${name} renders inline markdown`);
+  assert.match(source, render, `${name} normalizes insights before rendering`);
+  assert.match(source, /const hasExplicitBold/, `${name} preserves explicit bold`);
+  assert.match(source, /const lead = clean\.match/, `${name} applies plain-text lead fallback`);
+}
 
 const stripInsightOrdinal = (text: string) => text.replace(/^\s*\d+[.)]\s+/, "");
 const leadOf = (text: string) => {
   const clean = text.replace(/\*{3,}/g, "**");
-  const hasExplicitBold = /\*\*[^*]+\*\*/.test(clean);
-  if (hasExplicitBold) return null;
+  if (/\*\*[^*]+\*\*/.test(clean)) return null;
   return clean.match(/^(.+?:)(?:\s+|$)/)?.[1]
     ?? clean.match(/^(.+?[.!?])(?:\s+|$)/)?.[1]
     ?? clean;
 };
 
-assert.equal(stripInsightOrdinal("1. Chip quyết định sức mạnh quân sự: Vũ khí thông minh"), "Chip quyết định sức mạnh quân sự: Vũ khí thông minh");
-assert.equal(stripInsightOrdinal("2) Cuộc khủng hoảng: Đầu tư ngược chiều"), "Cuộc khủng hoảng: Đầu tư ngược chiều");
+assert.equal(stripInsightOrdinal("3. **Mô hình TSMC:** nội dung"), "**Mô hình TSMC:** nội dung");
+assert.equal(stripInsightOrdinal("2) Mô hình fabless: nội dung"), "Mô hình fabless: nội dung");
 assert.equal(stripInsightOrdinal("2008–2009 là bối cảnh"), "2008–2009 là bối cảnh");
-assert.equal(leadOf("**Chip quyết định sức mạnh quân sự:** Vũ khí thông minh"), null, "explicit markdown owns bolding");
-assert.equal(leadOf("Cuộc khủng hoảng tài chính 2008–2009 là chất xúc tác: Morris Chang đầu tư ngược chiều."), "Cuộc khủng hoảng tài chính 2008–2009 là chất xúc tác:");
-assert.equal(leadOf("Intel đánh mất thị trường di động vì quá ưu tiên lợi nhuận từ PC. Minh họa cho innovator’s dilemma."), "Intel đánh mất thị trường di động vì quá ưu tiên lợi nhuận từ PC.");
-assert.equal(leadOf("Một insight không có dấu câu"), "Một insight không có dấu câu");
+assert.equal(leadOf("**Mô hình TSMC:** nội dung"), null, "explicit markdown owns bolding");
+assert.equal(leadOf("Mô hình fabless giúp giảm rào cản: phần giải thích."), "Mô hình fabless giúp giảm rào cản:");
+assert.equal(leadOf("Intel đánh mất thị trường di động. Phần sau."), "Intel đánh mất thị trường di động.");
 
-console.log("Today key-insights formatting contract passed");
+console.log("Today and Insights key-insights formatting contract passed");

@@ -11,6 +11,26 @@ import type { BookRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
 
+function stripInsightOrdinal(text: string) {
+  return text.replace(/^\s*\d+[.)]\s+/, "");
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  const clean = text.replace(/\*{3,}/g, "**");
+  const hasExplicitBold = /\*\*[^*]+\*\*/.test(clean);
+  if (!hasExplicitBold) {
+    const lead = clean.match(/^(.+?:)(?:\s+|$)/)?.[1]
+      ?? clean.match(/^(.+?[.!?])(?:\s+|$)/)?.[1]
+      ?? clean;
+    return <><strong className="font-bold text-natural-dark">{lead}</strong>{clean.slice(lead.length)}</>;
+  }
+  const parts = clean.split(/(\*\*[^*]+\*\*)/g);
+  return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**")
+    ? <strong key={index} className="font-bold text-natural-dark">{part.slice(2, -2)}</strong>
+    : <React.Fragment key={index}>{part}</React.Fragment>)}</>;
+}
+
+
 function formatLastRead(raw: string | null | undefined): string {
   if (!raw) return '—';
   const s = String(raw);
@@ -317,7 +337,7 @@ export default function Insights() {
                 <span className="shrink-0 w-5 h-5 rounded-full bg-natural-cream border border-natural-border flex items-center justify-center text-[9px] font-bold text-natural-stone mt-0.5">
                   {i + 1}
                 </span>
-                <p className="text-sm text-natural-dark leading-relaxed flex-1">{ins.insight}</p>
+                <p className="text-sm text-natural-dark leading-relaxed flex-1"><InlineMarkdown text={stripInsightOrdinal(ins.insight)} /></p>
                 {Number(ins.freq) > 1 && (
                   <span className="shrink-0 text-[9px] font-bold text-natural-sage bg-natural-sage/10 px-1.5 py-0.5 rounded-full mt-0.5">
                     {ins.freq}×
