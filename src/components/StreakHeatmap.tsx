@@ -51,8 +51,11 @@ export default function StreakHeatmap({
   const rhythm = useMemo(() => buildReadingRhythm({
     today: todayInAppTz(),
     logDates: logs.map((log) => dateInAppTz(log.date)),
+    activityDates: Object.entries(listenByDay || {})
+      .filter(([, listen]) => listen.episodes > 0 || listen.seconds > 0)
+      .map(([day]) => day),
     windowDays,
-  }), [logs, windowDays]);
+  }), [logs, listenByDay, windowDays]);
 
   const pagesByDay = useMemo(() => pagesForDay(logs), [logs]);
 
@@ -61,17 +64,17 @@ export default function StreakHeatmap({
     : rhythm.nextMilestone && rhythm.currentStreak > 0
       ? `${rhythm.nextMilestone.remaining} more reading ${rhythm.nextMilestone.remaining === 1 ? "day" : "days"} → ${rhythm.nextMilestone.title}`
       : rhythm.nextMilestone
-        ? "Your next rhythm begins with one page today."
+        ? "Your next rhythm begins with one reading or listening day today."
         : "A lasting practice · 100-day rhythm";
 
   const oldestDay = rhythm.days[0];
   const newestDay = rhythm.days.at(-1)!;
 
   return (
-    <section className="w-full space-y-2.5" aria-label="Reading rhythm">
+    <section className="w-full space-y-2.5" aria-label="Reading and listening rhythm">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-natural-stone">
         <span className="font-semibold text-natural-dark">
-          {rhythm.currentStreak > 0 ? `${rhythm.currentStreak}-day rhythm` : "Start a reading rhythm"}
+          {rhythm.currentStreak > 0 ? `${rhythm.currentStreak}-day rhythm` : "Start a rhythm"}
         </span>
         <span aria-hidden="true" className="text-natural-border">·</span>
         <span>Best {rhythm.longestStreak} {rhythm.longestStreak === 1 ? "day" : "days"}</span>

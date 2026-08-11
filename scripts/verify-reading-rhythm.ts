@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { buildReadingRhythm, dateInAppTz, formatRhythmDate } from "../src/reading-rhythm.js";
 
 const rhythm = buildReadingRhythm({
@@ -40,5 +41,20 @@ assert.equal(fourteenDayMilestone.currentStreak, 14);
 assert.equal(fourteenDayMilestone.reachedMilestone?.title, "The thread holds");
 assert.equal(fourteenDayMilestone.nextMilestone?.remaining, 16);
 
+const listenOnly = buildReadingRhythm({
+  today: "2026-08-11",
+  logDates: [],
+  activityDates: ["2026-08-09", "2026-08-10", "2026-08-11"],
+});
+assert.equal(listenOnly.currentStreak, 3, "consecutive listen-only days create an activity streak");
+assert.equal(listenOnly.longestStreak, 3);
+assert.equal(listenOnly.totalReadDays, 0, "listening never inflates reading days");
+assert.ok(listenOnly.days.at(-1)?.isCurrentStreakDay, "today's listen-only activity is highlighted");
+assert.equal(listenOnly.days.at(-1)?.sessionCount, 0, "listen-only activity has no reading sessions");
+
 assert.equal(dateInAppTz("2026-07-25T18:30:00.000Z"), "2026-07-26");
+const heatmapSource = readFileSync(new URL("../src/components/StreakHeatmap.tsx", import.meta.url), "utf8");
+assert.match(heatmapSource, /activityDates: Object\.entries\(listenByDay \|\| \{\}\)/, "heatmap passes recorded listen days into streak calculation");
+assert.match(heatmapSource, /\[logs, listenByDay, windowDays\]/, "heatmap recomputes when listen activity arrives");
+
 console.log("READING_RHYTHM_FIXTURES_OK");

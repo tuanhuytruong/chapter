@@ -33,20 +33,20 @@ function shiftDateStr(dateStr: string, days: number): string {
   return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`;
 }
 
-function consecutiveDaysEndingAt(readingDays: Set<string>, endingAt: string): number {
+function consecutiveDaysEndingAt(activityDays: Set<string>, endingAt: string): number {
   let length = 0;
   let cursor = endingAt;
-  while (readingDays.has(cursor)) {
+  while (activityDays.has(cursor)) {
     length++;
     cursor = shiftDateStr(cursor, -1);
   }
   return length;
 }
 
-function longestConsecutiveDays(readingDays: Set<string>): number {
+function longestConsecutiveDays(activityDays: Set<string>): number {
   let longest = 0;
-  for (const date of readingDays) {
-    longest = Math.max(longest, consecutiveDaysEndingAt(readingDays, date));
+  for (const date of activityDays) {
+    longest = Math.max(longest, consecutiveDaysEndingAt(activityDays, date));
   }
   return longest;
 }
@@ -61,7 +61,7 @@ export function todayInAppTz(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
 }
 
-export function buildReadingRhythm({ today, logDates, windowDays = 14 }: { today: string; logDates: string[]; windowDays?: number }): ReadingRhythm {
+export function buildReadingRhythm({ today, logDates, activityDates = [], windowDays = 14 }: { today: string; logDates: string[]; activityDates?: string[]; windowDays?: number }): ReadingRhythm {
   const sessionsByDay = new Map<string, number>();
   for (const rawDate of logDates) {
     const date = dateInAppTz(rawDate);
@@ -69,8 +69,11 @@ export function buildReadingRhythm({ today, logDates, windowDays = 14 }: { today
   }
 
   const readingDays = new Set(sessionsByDay.keys());
-  const currentStreak = consecutiveDaysEndingAt(readingDays, today);
-  const longestStreak = longestConsecutiveDays(readingDays);
+  // Podcast listening is real learning activity: it contributes to the
+  // consistency streak but never inflates reading session/page counts.
+  const activeDays = new Set([...readingDays, ...activityDates.map(dateInAppTz)]);
+  const currentStreak = consecutiveDaysEndingAt(activeDays, today);
+  const longestStreak = longestConsecutiveDays(activeDays);
   const currentStreakStart = shiftDateStr(today, -(currentStreak - 1));
   const days = Array.from({ length: windowDays }, (_, index) => {
     const date = shiftDateStr(today, index - (windowDays - 1));

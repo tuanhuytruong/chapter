@@ -69,6 +69,7 @@ const bangkokMidnight = new Date("2026-08-10T17:00:00.000Z");
 assert.equal(bangkokMidnight.toISOString().slice(0, 10), "2026-08-10");
 assert.equal(listenDateKey(bangkokMidnight), "2026-08-11", "listening keys use the Chapter calendar, not UTC");
 assert.equal(listenDateKey("2026-08-11"), "2026-08-11", "plain SQL date strings remain stable");
+assert.equal(listenDateKey(new Date("2026-08-11T00:00:00.000Z")), "2026-08-11", "Bangkok SQL-date driver values retain their stored calendar key");
 
 // 1. 30s, not completed → no listen event yet
 let res = await put(epOne, 30, false);
