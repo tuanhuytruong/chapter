@@ -39,7 +39,8 @@
     "verify:review-api": "tsx scripts/verify-review-api.ts",
     "verify:add-book-upload": "tsx scripts/verify-add-book-upload.ts",
     "verify:same-day-reread": "tsx scripts/verify-same-day-reread.ts",
-    "verify:book-detail-scroll": "tsx scripts/verify-book-detail-scroll.ts"
+    "verify:book-detail-scroll": "tsx scripts/verify-book-detail-scroll.ts",
+    "verify:deep-reading-language": "tsx scripts/verify-deep-reading-language.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
