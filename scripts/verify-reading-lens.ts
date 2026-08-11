@@ -37,7 +37,7 @@ const sharedLensRoute = booksRouteSource.slice(sharedLensStart, sharedLensEnd);
 assert.doesNotMatch(sharedLensRoute, /owner_id/, "Persisted Reading Lens data must be readable by all authenticated readers");
 
 // Non-owners must load persisted Reading Lens data into Book Detail.
-assert.match(detailSource, /else\s*\{?\s*setLenses\(await api\.getReadingLens\(id\)\)/, "Non-owners must load persisted Reading Lens data into Book Detail");
+assert.match(detailSource, /setLenses\(await api\.getReadingLens\(id, selected\)\)/, "Persisted Reading Lens data must load into Book Detail for the selected round");
 const sharedLoadStart = detailSource.indexOf("// Persisted companion data is shared read-only.");
 const sharedLoadEnd = detailSource.indexOf("} catch (e: any) {", sharedLoadStart);
 assert.doesNotMatch(detailSource.slice(sharedLoadStart, sharedLoadEnd), /b\.can_edit/, "Loading shared Reading Lens data must not be owner-gated in Book Detail");
@@ -48,6 +48,12 @@ assert.match(lensCardSource, /isPreparing = false/);
 assert.match(lensCardSource, /Reading Lens couldn't be prepared for this session\./);
 assert.match(lensCardSource, /canEdit && !isPreparing/);
 assert.match(detailSource, /isPreparing=\{\s*enrichmentPending\s*&&\s*pendingEnrichmentLogId\s*===\s*log\.id\s*\}/);
+assert.match(lensCardSource, /RotateCcw/, "Populated Reading Lens cards must expose the established retry icon");
+assert.ok(lensCardSource.includes('{canEdit && <button') && lensCardSource.includes('aria-label="Retry Reading Lens"'), "Only owners can retry a populated Reading Lens");
+assert.match(lensCardSource, /disabled=\{retrying\}/, "Reading Lens retry must prevent duplicate requests");
+assert.match(lensCardSource, /event\.stopPropagation\(\)/, "Retry must not toggle the Reading Lens details");
+assert.match(lensCardSource, /await onRetry\(\)/, "Retry must reuse the existing Reading Lens mutation callback");
+
 
 const retryStart = detailSource.indexOf("const retryReadingLens");
 const retryEnd = detailSource.indexOf("const retryStoryThread", retryStart);

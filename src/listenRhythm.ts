@@ -84,16 +84,25 @@ export function buildListenRhythm(opts: {
   };
 }
 
+/** Formats SQL date / timestamp values as Chapter's Asia/Bangkok calendar key. */
+export function listenDateKey(value: unknown): string {
+  const raw = value instanceof Date ? value : new Date(String(value));
+  if (!(raw instanceof Date) || Number.isNaN(raw.getTime())) return String(value).slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(raw);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 export async function getListenRhythm(
   userId: string,
   opts?: { bookId?: string; round?: number },
 ): Promise<ListenRhythm | null> {
-  // Normalize pg date values (Date objects or 'YYYY-MM-DD...' strings) to
-  // 'YYYY-MM-DD' — keeps the SQL portable (pg-mem has no date::text cast).
-  const toDateStr = (value: unknown): string =>
-    value instanceof Date
-      ? value.toISOString().slice(0, 10)
-      : String(value).slice(0, 10);
+  const toDateStr = listenDateKey;
 
   // Book-scoped requests filter listen activity to one book (and, when known,
   // one reading round) so the Book Detail heatmap matches the logs it shows.

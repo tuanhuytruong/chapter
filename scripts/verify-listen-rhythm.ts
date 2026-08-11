@@ -7,7 +7,7 @@ import express from "express";
 import assert from "node:assert";
 import { setPool } from "../src/db.ts";
 import { podcastsRouter } from "../src/routes/podcasts.ts";
-import { buildListenRhythm, getListenRhythm } from "../src/listenRhythm.ts";
+import { buildListenRhythm, getListenRhythm, listenDateKey } from "../src/listenRhythm.ts";
 
 const db = newDb();
 db.public.registerFunction({ name: "gen_random_uuid", implementation: () => crypto.randomUUID(), impure: true });
@@ -63,6 +63,12 @@ const put = (episodeId: string, seconds: number, completed: boolean) =>
 
 const countEvents = async (): Promise<number> =>
   (await pool.query("SELECT count(*)::int AS n FROM podcast_listen_events")).rows[0].n;
+
+// Bangkok midnight can have the previous UTC calendar date; preserve Bangkok's day key.
+const bangkokMidnight = new Date("2026-08-10T17:00:00.000Z");
+assert.equal(bangkokMidnight.toISOString().slice(0, 10), "2026-08-10");
+assert.equal(listenDateKey(bangkokMidnight), "2026-08-11", "listening keys use the Chapter calendar, not UTC");
+assert.equal(listenDateKey("2026-08-11"), "2026-08-11", "plain SQL date strings remain stable");
 
 // 1. 30s, not completed → no listen event yet
 let res = await put(epOne, 30, false);
