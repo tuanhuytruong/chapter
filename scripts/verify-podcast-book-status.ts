@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const generate = readFileSync(new URL("../src/podcast/generate.ts", import.meta.url), "utf8");
+const routes = readFileSync(new URL("../src/routes/podcasts.ts", import.meta.url), "utf8");
+const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+const panel = readFileSync(new URL("../src/components/PodcastPanel.tsx", import.meta.url), "utf8");
+const player = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
+assert.match(generate, /source\.status !== "active"/, "create has an authoritative active guard");
+assert.match(generate, /episode\.book_status !== "active"/, "regenerate has an authoritative active guard");
+assert.match(routes, /requireActivePodcastBook\(book_id, ownerId\)[\s\S]*observeEntitledGeneration/, "create checks status before quota consumption");
+assert.match(routes, /requireActivePodcastBook\(episode\.book_id, ownerId\)[\s\S]*observeEntitledGeneration/, "regenerate checks status before quota consumption");
+assert.match(routes, /book\.status !== "active"\) return res\.status\(409\)/, "narrator mutation is blocked while paused");
+assert.match(detail, /canGenerate=\{Boolean\(book\.can_edit\) && book\.status === "active"\}/, "Book Detail derives permission from active status");
+assert.match(panel, /PodcastPlaylistPlayer bookId=\{bookId\} canGenerate=\{canGenerate\}/, "Panel forwards status permission");
+assert.match(player, /if \(!next \|\| generating \|\| !canGenerate\) return/, "generation function rejects paused state");
+assert.match(player, /if \(canGenerate && nextChapter/, "automatic generation respects paused state");
+assert.match(player, /disabled=\{generating \|\| !canGenerate\}/, "manual generation is disabled while paused");
+console.log("PODCAST_BOOK_STATUS_FIXTURES_OK");

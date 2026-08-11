@@ -1110,6 +1110,7 @@ export default function BookDetail() {
         <PodcastPanel
           bookId={book.id}
           canEdit={Boolean(book.can_edit)}
+          canGenerate={Boolean(book.can_edit) && book.status === "active"}
           isEpub={book.file_type === "epub"}
           onClose={() => setLogView("list")}
         />

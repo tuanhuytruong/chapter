@@ -17,6 +17,7 @@ type PodcastApi = typeof api & {
 type PodcastPanelProps = {
   bookId: string;
   canEdit: boolean;
+  canGenerate: boolean;
   isEpub: boolean;
   onClose?: () => void;
 };
@@ -28,7 +29,7 @@ const isReady = (episode: PodcastEpisode | null) =>
 const duration = (seconds: number | null) =>
   seconds ? `${Math.max(1, Math.round(seconds / 60))} min` : null;
 
-export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: PodcastPanelProps) {
+export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onClose }: PodcastPanelProps) {
   const [book, setBook] = useState<PodcastCatalogBook | null>(null);
   const [loading, setLoading] = useState(true);
   const [workingKey, setWorkingKey] = useState<string | null>(null);
@@ -148,6 +149,7 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
           <button
             type="button"
             onClick={() => setNarratorModal(true)}
+            disabled={!canGenerate}
             className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-natural-border bg-white px-3 py-1 text-xs font-bold text-natural-dark transition hover:border-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40"
             title="Change narrator voice for this round"
           >
@@ -174,9 +176,10 @@ export default function PodcastPanel({ bookId, canEdit, isEpub, onClose }: Podca
       </div>
     ) : null}
 
-    <PodcastPlaylistPlayer bookId={bookId} playRequest={playRequest} onPlayed={() => setPlayRequest(null)} onNeedVoice={handleNeedVoice} refreshKey={podcastRefreshKey} onEpisodeCreated={() => { void refresh(); setPodcastRefreshKey((key) => key + 1); }} onListened={() => { window.setTimeout(() => void refresh(), 500); }} />
+    <PodcastPlaylistPlayer bookId={bookId} canGenerate={canGenerate} playRequest={playRequest} onPlayed={() => setPlayRequest(null)} onNeedVoice={handleNeedVoice} refreshKey={podcastRefreshKey} onEpisodeCreated={() => { void refresh(); setPodcastRefreshKey((key) => key + 1); }} onListened={() => { window.setTimeout(() => void refresh(), 500); }} />
+    {!canGenerate && canEdit && <p className="mt-3 text-xs text-natural-stone">Resume this book to create or change podcast episodes. Existing episodes remain available to listen.</p>}
     <div className="mt-4 divide-y divide-natural-border/80">
-      {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canEdit} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onPlay={() => chapter.episode && isReady(chapter.episode) && setPlayRequest({ bookId, episodeId: chapter.episode.id })} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : (book?.narrator_gender ? void create(chapter) : setVoiceTarget(chapter))} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
+      {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canGenerate} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onPlay={() => chapter.episode && isReady(chapter.episode) && setPlayRequest({ bookId, episodeId: chapter.episode.id })} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : (book?.narrator_gender ? void create(chapter) : setVoiceTarget(chapter))} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
     </div>
     </section>
     {(voiceTarget || regenerateTarget || narratorModal) && createPortal(

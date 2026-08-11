@@ -29,6 +29,12 @@ async function ensureChapterUnits(book: CatalogBook): Promise<void> {
 
 async function owned(id: string, userId: string) { return (await query<any>("SELECT p.* FROM podcasts p WHERE p.id=$1 AND p.user_id=$2", [id, userId])).rows[0]; }
 
+async function requireActivePodcastBook(bookId: string, userId: string): Promise<void> {
+  const book = (await query<{ status: string }>("SELECT status FROM books WHERE id=$1 AND owner_id=$2", [bookId, userId])).rows[0];
+  if (!book) { const error: any = new Error("Podcast book not found"); error.code = "BOOK_NOT_FOUND"; throw error; }
+  if (book.status !== "active") { const error: any = new Error("Resume this book before creating podcast episodes"); error.code = "BOOK_NOT_ACTIVE"; throw error; }
+}
+
 // Chapter-first catalog: no reading_log is consulted or returned.
 podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
   try {
@@ -115,7 +121,7 @@ podcastsRouter.put("/books/:bookId/playlist/progress", async (req: Request, res:
   }
   try {
     const userId = userFrom(req).id;
-    const { rows } = await query<{ reading_round: number }>("SELECT reading_round FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'", [req.params.bookId, userId]);
+    const { rows } = await query<{ reading_round: number; status: string }>("SELECT reading_round FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'", [req.params.bookId, userId]);
     const book = rows[0];
     if (!book) return res.status(404).json({ error: "Podcast playlist unavailable" });
     const episode = await owned(podcast_id, userId);
@@ -155,10 +161,11 @@ podcastsRouter.post("/", async (req: Request, res: Response) => {
   }
   try {
     const ownerId = userFrom(req).id;
+    await requireActivePodcastBook(book_id, ownerId);
     await observeEntitledGeneration(ownerId, "podcast_chapter_generation");
     res.status(202).json(await createPodcast(ownerId, book_id, chapter_key, voice_gender));
   }
-  catch (error: any) { res.status(error.code === "VOICE_REQUIRED" ? 409 : 400).json({ error: error.message }); }
+  catch (error: any) { res.status(error.code === "VOICE_REQUIRED" || error.code === "BOOK_NOT_ACTIVE" ? 409 : 400).json({ error: error.message }); }
 });
 
 // Change the narrator voice for a reading round. When the round already has
@@ -173,12 +180,13 @@ podcastsRouter.post("/books/:bookId/narrator", async (req: Request, res: Respons
   }
   try {
     const userId = userFrom(req).id;
-    const { rows: books } = await query<{ reading_round: number }>(
-      "SELECT reading_round FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'",
+    const { rows: books } = await query<{ reading_round: number; status: string }>(
+      "SELECT reading_round, status FROM books WHERE id=$1 AND owner_id=$2 AND file_type='epub'",
       [req.params.bookId, userId],
     );
     const book = books[0];
     if (!book) return res.status(404).json({ error: "Podcast book not found" });
+    if (book.status !== "active") return res.status(409).json({ error: "Resume this book before changing its podcast narrator" });
     const round = book.reading_round || 1;
     const { rows: existing } = await query<{ id: string }>(
       `SELECT id FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3
@@ -217,9 +225,12 @@ podcastsRouter.post("/books/:bookId/narrator", async (req: Request, res: Respons
 podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
   try {
     const ownerId = userFrom(req).id;
+    const episode = await owned(req.params.id, ownerId);
+    if (!episode) return res.status(404).json({ error: "Podcast episode unavailable" });
+    await requireActivePodcastBook(episode.book_id, ownerId);
     await observeEntitledGeneration(ownerId, "podcast_chapter_generation");
     res.status(202).json(await regeneratePodcast(ownerId, req.params.id));
-  } catch (error: any) { res.status(404).json({ error: "Podcast episode unavailable" }); }
+  } catch (error: any) { res.status(error.code === "BOOK_NOT_ACTIVE" ? 409 : 404).json({ error: error.message || "Podcast episode unavailable" }); }
 });
 
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {

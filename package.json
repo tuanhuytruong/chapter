@@ -30,6 +30,7 @@
     "verify:library": "tsx scripts/verify-library-shelf-switcher.ts",
     "verify:quotes": "tsx scripts/verify-quotes-archive.ts",
     "verify:podcast": "tsx scripts/verify-podcast.ts",
+    "verify:podcast-book-status": "tsx scripts/verify-podcast-book-status.ts",
     "verify:listen-rhythm": "tsx scripts/verify-listen-rhythm.ts",
     "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
     "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",

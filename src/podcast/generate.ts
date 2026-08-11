@@ -22,9 +22,10 @@ function safeArchiveMessage(error: unknown) { return `Archive pending: ${String(
 export function podcastPublic(row: any) { const { tg_file_id, tg_file_unique_id, tg_chat_id, tg_message_id, local_cache_path, local_cache_until, user_id, book_id, chapter_key, error_message, ...safe } = row; return safe; }
 
 export async function createPodcast(ownerId: string, bookId: string, chapterKey: string, gender?: "female" | "male"): Promise<any> {
-  const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round
+  const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round,b.status
     FROM books b WHERE b.id=$1 AND b.owner_id=$2`, [bookId, ownerId]);
   const source = rows[0]; if (!source) throw new Error("Book chapter was not found"); if (source.file_type !== "epub") throw new Error("Podcast is available for EPUB books only");
+  if (source.status !== "active") { const error: any = new Error("Resume this book before creating podcast episodes"); error.code = "BOOK_NOT_ACTIVE"; throw error; }
   // The narrator is per Book + per reading round: persist the picker choice only
   // when this Book/Round has none yet; a re-read round is a fresh session that
   // must choose again. users.podcast_voice_gender is never consulted.
@@ -59,8 +60,9 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
 
 /** Explicit destructive regeneration. The persisted narrator choice stays unchanged. */
 export async function regeneratePodcast(ownerId: string, episodeId: string): Promise<any> {
-  const episode = (await query<any>(`SELECT p.*,b.summary_lang FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1 AND p.user_id=$2 AND b.owner_id=$2`, [episodeId, ownerId])).rows[0];
+  const episode = (await query<any>(`SELECT p.*,b.summary_lang,b.status AS book_status FROM podcasts p JOIN books b ON b.id=p.book_id WHERE p.id=$1 AND p.user_id=$2 AND b.owner_id=$2`, [episodeId, ownerId])).rows[0];
   if (!episode) throw new Error("Podcast episode was not found");
+  if (episode.book_status !== "active") { const error: any = new Error("Resume this book before regenerating podcast episodes"); error.code = "BOOK_NOT_ACTIVE"; throw error; }
   if (["queued", "scripting", "synthesizing", "archiving"].includes(episode.status)) return podcastPublic(episode);
   const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [episode.book_id, episode.chapter_key]);
   const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
