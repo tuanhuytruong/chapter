@@ -20,6 +20,7 @@ import {
 import {
   buildReadingLensPrompt,
   parseReadingLensAnalysis,
+  readingLensLanguageValidation,
   readingLensSummary,
 } from "../readingLens.js";
 import { processBookForWiki } from "../aiReader.js";
@@ -1422,18 +1423,28 @@ async function generateReadingLensForLog(
     quote: null,
     confidenceNotes: ["Reading Lens is running with a local fallback."],
   });
-  // Providers occasionally return an otherwise complete JSON object with a
-  // malformed string. Normalize harmless raw controls first, then make exactly
-  // one fresh strict request for unrecoverable JSON. Never persist guessed data.
+  // Providers occasionally return malformed JSON or valid JSON in the wrong
+  // language. Make exactly one fresh strict correction request; never persist
+  // guessed or language-mismatched analysis.
+  let correctionReason: "json" | "language" | undefined;
   for (let attempt = 1; attempt <= 2; attempt++) {
+    const user = correctionReason === "language"
+      ? `${prompt.user}\n\nYour previous JSON used the wrong language. Regenerate the entire JSON in the required language; do not explain the correction.`
+      : prompt.user;
     const raw = process.env.NINE_ROUTER_URL
-      ? await callLLM(prompt.system, prompt.user, 0.2, true, true, undefined, {
+      ? await callLLM(prompt.system, user, 0.2, true, true, undefined, {
           priority: "background",
           traceLabel: `reading-lens:p.${log.page_start}-${log.page_end}:attempt=${attempt}`,
         })
       : fallback;
     try {
       const analysis = parseReadingLensAnalysis(raw, log.raw_text);
+      const language = readingLensLanguageValidation(analysis, prompt.effectiveLang);
+      if (!language.valid) {
+        const error = new Error(`Reading Lens output did not satisfy required ${prompt.effectiveLang} language (${language.mismatch})`);
+        error.name = "ReadingLensLanguageError";
+        throw error;
+      }
       await upsertReadingLensAnalysis(
         log.book_id,
         log.id,
@@ -1443,9 +1454,11 @@ async function generateReadingLensForLog(
       await markReadingLensSynthesisStaleIfCovered(log.book_id, log.id);
       return;
     } catch (error) {
-      if (!(error instanceof SyntaxError) || attempt === 2) throw error;
+      const languageMismatch = error instanceof Error && error.name === "ReadingLensLanguageError";
+      if ((!(error instanceof SyntaxError) && !languageMismatch) || attempt === 2) throw error;
+      correctionReason = languageMismatch ? "language" : "json";
       console.warn(
-        `[reading-lens] malformed JSON for p.${log.page_start}-${log.page_end}; retrying once with a fresh provider response`,
+        `[reading-lens] ${languageMismatch ? "language mismatch" : "malformed JSON"} for p.${log.page_start}-${log.page_end}; retrying once with a fresh provider response`,
       );
     }
   }

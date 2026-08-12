@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseReadingLensAnalysis } from "../src/readingLens.js";
+import { buildReadingLensPrompt, parseReadingLensAnalysis, readingLensLanguageValidation } from "../src/readingLens.js";
 
 const source = "Silicon changes power. Evidence stays close to the text.";
 const valid = JSON.stringify({
@@ -24,6 +24,26 @@ const invalidQuote = parseReadingLensAnalysis(valid.replace("Silicon changes pow
 assert.equal(invalidQuote.quote, null);
 assert.ok(invalidQuote.confidenceNotes.length > 0);
 assert.throws(() => parseReadingLensAnalysis("not json", source));
+
+const vietnameseSource = "Người quản lý cần xây dựng niềm tin với nhân viên và dành thời gian cho các cuộc đối thoại chân thành.";
+const vietnameseLens = parseReadingLensAnalysis(JSON.stringify({
+  coreArgument: "Người quản lý xây dựng niềm tin bằng sự quan tâm và đối thoại chân thành.",
+  argumentMap: [{ claim: "Niềm tin giúp nhân viên chia sẻ.", support: "Cuộc đối thoại tạo sự an toàn.", implication: "Quản lý cần lắng nghe." }],
+  assumptionsAndLimits: ["Đoạn đọc không nêu mọi hoàn cảnh."],
+  keyConcepts: [{ term: "Niềm tin", definition: "Cảm giác an toàn trong quan hệ làm việc." }],
+  questionsToCarryForward: ["Làm sao để lắng nghe tốt hơn?"],
+  durableInsights: ["Sự quan tâm tạo điều kiện cho đối thoại."],
+  quote: null,
+  confidenceNotes: ["Phân tích chỉ dựa trên đoạn đọc."],
+}), vietnameseSource);
+const autoVietnamesePrompt = buildReadingLensPrompt({ title: "Sách", author: "Tác giả", start: 1, end: 2, total: 10, lang: "auto", sourceText: vietnameseSource });
+const autoEnglishPrompt = buildReadingLensPrompt({ title: "Book", author: "Author", start: 1, end: 2, total: 10, lang: "auto", sourceText: source });
+assert.equal(autoVietnamesePrompt.effectiveLang, "vi");
+assert.match(autoVietnamesePrompt.system, /Every non-quote JSON value must be Vietnamese/);
+assert.equal(autoEnglishPrompt.effectiveLang, "en");
+assert.match(autoEnglishPrompt.system, /Every non-quote JSON value must be English/);
+assert.equal(readingLensLanguageValidation(vietnameseLens, autoVietnamesePrompt.effectiveLang).valid, true);
+assert.equal(readingLensLanguageValidation(parsed, autoVietnamesePrompt.effectiveLang).valid, false);
 
 const lensCardSource = readFileSync(new URL("../src/components/ReadingLensCard.tsx", import.meta.url), "utf8");
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
