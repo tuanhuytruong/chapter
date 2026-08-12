@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildDeepReadingSystemPrompt, parseSummary, validateSummaryOutputLanguage } from "../src/llm.js";
+import { buildDeepReadingSystemPrompt, parseSummary, resolveSummaryOutputLanguage, validateSummaryOutputLanguage } from "../src/llm.js";
 
 const vietnamese = `## Luận điểm cốt lõi
 Quản lý tạo ra kết quả tập thể thông qua sự phối hợp rõ ràng giữa những người cùng làm việc.
@@ -61,6 +61,12 @@ assert.doesNotMatch(prompt, /## Core argument/);
 assert.equal(validateSummaryOutputLanguage(vietnamese, "vi").valid, true);
 assert.equal(validateSummaryOutputLanguage(english, "vi").valid, false);
 assert.equal(validateSummaryOutputLanguage(english, "en").valid, true);
+assert.equal(resolveSummaryOutputLanguage("auto", vietnamese), "vi");
+assert.equal(resolveSummaryOutputLanguage("auto", english), "en");
+assert.equal(resolveSummaryOutputLanguage("vi", english), "vi");
+assert.equal(resolveSummaryOutputLanguage("en", vietnamese), "en");
+assert.equal(validateSummaryOutputLanguage(english, resolveSummaryOutputLanguage("auto", vietnamese)).valid, false);
+assert.equal(validateSummaryOutputLanguage(vietnamese, resolveSummaryOutputLanguage("auto", vietnamese)).valid, true);
 const parsed = parseSummary(vietnamese, "deep_reading");
 assert.equal(parsed.key_insights.length, 3);
 assert.equal(parsed.quote, "Công việc của nhà quản lý là tạo ra thành quả tốt nhất từ một nhóm người.");

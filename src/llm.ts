@@ -128,6 +128,18 @@ export interface SummaryLanguageValidation {
   mismatch?: "insufficient-prose" | "wrong-language";
 }
 
+/** Resolve Auto from reading text so Deep Reading uses a concrete language contract. */
+export function resolveSummaryOutputLanguage(
+  requestedLang: "auto" | "vi" | "en" | undefined,
+  sourceText: string,
+): "vi" | "en" {
+  if (requestedLang === "vi" || requestedLang === "en") return requestedLang;
+  const vietnameseTokens = /\b(và|của|là|trong|với|cho|được|không|những|một|này|từ|theo|khi|để|về|có|người|như|sự|đến|cần)\b/giu;
+  const tokenEvidence = (sourceText.match(vietnameseTokens) || []).length;
+  const diacriticEvidence = (sourceText.match(/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu) || []).length;
+  return tokenEvidence + diacriticEvidence >= 3 ? "vi" : "en";
+}
+
 /** Deterministic, conservative language check for explicitly requested summary languages. */
 export function validateSummaryOutputLanguage(
   raw: string,
@@ -487,6 +499,10 @@ export async function callNineRouter(
 ): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
+  const effectiveLang: "auto" | "vi" | "en" =
+    input.summaryMode === "deep_reading"
+      ? resolveSummaryOutputLanguage(input.lang, input.extractedText)
+      : input.lang || "auto";
 
   if (!url) {
     if (strict) throw new Error("NineRouter is not configured");
@@ -528,8 +544,8 @@ export async function callNineRouter(
               role: "system",
               content:
                 input.summaryMode === "deep_reading"
-                  ? buildDeepReadingSystemPrompt(input.lang)
-                  : buildSystemPrompt(input.lang),
+                  ? buildDeepReadingSystemPrompt(effectiveLang)
+                  : buildSystemPrompt(effectiveLang),
             },
             {
               role: "user",
@@ -558,13 +574,13 @@ export async function callNineRouter(
       if (!text.trim()) throw new Error("9router returned blank content");
       const output = text.trim();
       if (input.summaryMode === "deep_reading") {
-        const validation = validateSummaryOutputLanguage(output, input.lang);
+        const validation = validateSummaryOutputLanguage(output, effectiveLang);
         if (!validation.valid) {
           console.warn(
-            `[llm] interactive summary language mismatch attempt=${correctionAttempt ? 2 : 1}/2 lang=${input.lang} category=${validation.mismatch}`,
+            `[llm] interactive summary language mismatch attempt=${correctionAttempt ? 2 : 1}/2 lang=${effectiveLang} category=${validation.mismatch}`,
           );
           throw new LlmOutputLanguageError(
-            input.lang as "vi" | "en",
+            effectiveLang as "vi" | "en",
             validation.mismatch!,
           );
         }
