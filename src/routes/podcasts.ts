@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import fs from "fs/promises";
+import { createReadStream } from "fs";
+import { stat } from "fs/promises";
 import { query, withClient, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
@@ -19,10 +20,20 @@ async function ensureChapterUnits(book: CatalogBook): Promise<void> {
   if (!units.length) throw new Error(`Could not index ${book.title}`);
   await withTransaction(async (client) => {
     await client.query("DELETE FROM book_reading_units WHERE book_id=$1", [book.id]);
-    for (const unit of units) await client.query(
-      `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [book.id, unit.unitIndex, unit.title, unit.spineIndex, unit.chapterKey, unit.rawText, unit.rawText.length]
-    );
+    const batchSize = 250;
+    for (let offset = 0; offset < units.length; offset += batchSize) {
+      const batch = units.slice(offset, offset + batchSize);
+      const values: unknown[] = [];
+      const placeholders = batch.map((unit, index) => {
+        const base = index * 8;
+        values.push(book.id, unit.unitIndex, unit.title, unit.spineIndex, unit.chapterKey, unit.rawText, unit.rawText.length, unit.pageLabel ?? null);
+        return `(${Array.from({ length: 8 }, (_, field) => `$${base + field + 1}`).join(",")})`;
+      });
+      await client.query(
+        `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${placeholders.join(",")}`,
+        values,
+      );
+    }
     await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [units.length, book.id]);
   });
 }
@@ -42,15 +53,28 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
     const { rows: books } = await query<CatalogBook>("SELECT id,title,author,cover_url,summary_lang,reading_round FROM books WHERE owner_id=$1 AND file_type='epub' ORDER BY created_at DESC", [ownerId]);
     for (const book of books) await ensureChapterUnits(book);
     const result = [] as any[];
+    const bookIds = books.map((book) => book.id);
+    const [units, episodes, narrators] = bookIds.length ? await Promise.all([
+      query<any>(`SELECT book_id, chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
+        FROM book_reading_units WHERE book_id = ANY($1) AND chapter_key IS NOT NULL GROUP BY book_id, chapter_key ORDER BY book_id, min(unit_index)`, [bookIds]),
+      query<any>("SELECT * FROM podcasts WHERE user_id=$1 AND book_id = ANY($2)", [ownerId, bookIds]),
+      query<any>("SELECT book_id,reading_round,voice_gender FROM podcast_narrators WHERE book_id = ANY($1)", [bookIds]),
+    ]) : [{ rows: [] }, { rows: [] }, { rows: [] }];
+    const unitsByBook = new Map<string, any[]>();
+    for (const unit of units.rows) {
+      const rows = unitsByBook.get(unit.book_id) || [];
+      rows.push(unit);
+      unitsByBook.set(unit.book_id, rows);
+    }
+    const episodesByBookChapter = new Map(episodes.rows.map((episode) => [`${episode.book_id}\0${episode.reading_round}\0${episode.chapter_key}`, podcastPublic(episode)]));
+    const narratorByBookRound = new Map(narrators.rows.map((narrator) => [`${narrator.book_id}\0${narrator.reading_round}`, narrator.voice_gender]));
     for (const book of books) {
-      const [units, episodes, narrator] = await Promise.all([
-        query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
-          FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
-        query<any>("SELECT * FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [ownerId, book.id, book.reading_round || 1]),
-        query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
-      ]);
-      const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
-      result.push({ ...book, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: units.rows.map((unit) => ({ ...unit, episode: byChapter.get(unit.chapter_key) || null })) });
+      const round = book.reading_round || 1;
+      result.push({
+        ...book,
+        narrator_gender: narratorByBookRound.get(`${book.id}\0${round}`) || null,
+        chapters: (unitsByBook.get(book.id) || []).map(({ book_id: _bookId, ...unit }) => ({ ...unit, episode: episodesByBookChapter.get(`${book.id}\0${round}\0${unit.chapter_key}`) || null })),
+      });
     }
     res.json(result);
   } catch (error: any) { console.warn("[podcast] catalog failed:", error.message); res.status(500).json({ error: "Podcast catalog unavailable" }); }
@@ -233,6 +257,24 @@ podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
   } catch (error: any) { res.status(error.code === "BOOK_NOT_ACTIVE" ? 409 : 404).json({ error: error.message || "Podcast episode unavailable" }); }
 });
 
+function parseAudioRange(range: string | undefined, size: number): { start: number; end: number; partial: boolean } | null {
+  if (size <= 0) return range ? null : { start: 0, end: -1, partial: false };
+  if (!range) return { start: 0, end: size - 1, partial: false };
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!match || (!match[1] && !match[2])) return null;
+  let start: number;
+  let end: number;
+  if (!match[1]) {
+    const suffix = Number(match[2]);
+    if (!Number.isSafeInteger(suffix) || suffix <= 0) return null;
+    start = Math.max(0, size - suffix); end = size - 1;
+  } else {
+    start = Number(match[1]); end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)) return null;
+  }
+  return start >= size || start > end ? null : { start, end, partial: true };
+}
+
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
   try {
     const episode = (await query<any>(
@@ -241,18 +283,29 @@ podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
     )).rows[0];
     const locallyPlayable = episode?.local_cache_path && episode?.local_cache_until && new Date(episode.local_cache_until) > new Date();
     if (!episode || (episode.status !== "ready" && episode.status !== "archive_pending") || (!locallyPlayable && !episode.tg_file_id)) return res.status(404).end();
-    let data: Buffer;
-    try { data = locallyPlayable ? await fs.readFile(episode.local_cache_path) : await downloadArchivedPodcast(episode.tg_file_id); }
-    catch {
-      if (!episode.tg_file_id) return res.status(503).json({ error: "Podcast audio is temporarily unavailable" });
-      data = await downloadArchivedPodcast(episode.tg_file_id);
+    const rangeHeader = req.header("range");
+    res.setHeader("Accept-Ranges", "bytes"); res.setHeader("Content-Type", "audio/mpeg"); res.setHeader("Cache-Control", "private, no-store");
+    if (locallyPlayable) {
+      try {
+        const size = (await stat(episode.local_cache_path)).size;
+        const parsed = parseAudioRange(rangeHeader, size);
+        if (!parsed) return res.status(416).setHeader("Content-Range", `bytes */${size}`).end();
+        const { start, end, partial } = parsed;
+        res.status(partial ? 206 : 200).setHeader("Content-Length", end - start + 1);
+        if (partial) res.setHeader("Content-Range", `bytes ${start}-${end}/${size}`);
+        if (size === 0) return res.end();
+        return createReadStream(episode.local_cache_path, { start, end }).on("error", () => res.destroy()).pipe(res);
+      } catch {
+        if (!episode.tg_file_id) return res.status(503).json({ error: "Podcast audio is temporarily unavailable" });
+      }
     }
-    const range = req.header("range"); res.setHeader("Accept-Ranges", "bytes"); res.setHeader("Content-Type", "audio/mpeg"); res.setHeader("Cache-Control", "private, no-store");
-    if (!range) { res.setHeader("Content-Length", data.length); return res.status(200).end(data); }
-    const match = /^bytes=(\d*)-(\d*)$/.exec(range); if (!match) return res.status(416).end();
-    const start = match[1] ? Number(match[1]) : 0; const end = match[2] ? Math.min(Number(match[2]), data.length - 1) : data.length - 1;
-    if (start > end || start >= data.length) return res.status(416).setHeader("Content-Range", `bytes */${data.length}`).end();
-    res.status(206).setHeader("Content-Range", `bytes ${start}-${end}/${data.length}`).setHeader("Content-Length", end - start + 1).end(data.subarray(start, end + 1));
+    const data = await downloadArchivedPodcast(episode.tg_file_id);
+    const parsed = parseAudioRange(rangeHeader, data.length);
+    if (!parsed) return res.status(416).setHeader("Content-Range", `bytes */${data.length}`).end();
+    const { start, end, partial } = parsed;
+    res.status(partial ? 206 : 200).setHeader("Content-Length", end - start + 1);
+    if (partial) res.setHeader("Content-Range", `bytes ${start}-${end}/${data.length}`);
+    return res.end(data.subarray(start, end + 1));
   } catch { res.status(502).json({ error: "Podcast audio is temporarily unavailable" }); }
 });
 
