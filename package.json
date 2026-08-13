@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "verify:phase1": "tsx scripts/verify-phase1.mjs",
+    "verify:ui-foundation": "tsx scripts/verify-ui-foundation.ts",
     "verify:9router": "tsx scripts/verify-9router.mjs",
     "verify:reading-lens": "tsx scripts/verify-reading-lens.ts",
     "verify:journey-synthesis": "tsx scripts/verify-journey-synthesis.ts",

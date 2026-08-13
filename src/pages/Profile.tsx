@@ -3,6 +3,7 @@ import { Check, Loader2, Save, UserRound } from "lucide-react";
 import { useAuth } from "../AuthContext";
 import { AVATAR_PRESETS, avatarValueForPreset, presetFromAvatarValue, type AvatarPresetId } from "../avatar-presets";
 import AnimalAvatar from "../components/AnimalAvatar";
+import PageHeader from "../components/PageHeader";
 
 type ProfileResponse = { username: string; displayName: string; avatarUrl: string | null; email: string | null; googleConnected: boolean; hasPassword: boolean };
 
@@ -42,7 +43,7 @@ export default function Profile() {
 
   const current = AVATAR_PRESETS.find(({ id }) => id === avatar)!;
   return <main className="mx-auto max-w-2xl space-y-5">
-    <section><p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Profile</p><h1 className="mt-1 text-3xl font-bold">Your reading identity</h1><p className="mt-2 text-sm text-natural-stone">Choose a small companion for the places Chapter recognizes you.</p></section>
+    <PageHeader eyebrow="Profile" title="Your reading identity" description="Choose a small companion for the places Chapter recognizes you." titleClassName="mt-1 text-3xl font-bold" descriptionClassName="mt-2 text-sm text-natural-stone" />
     <form onSubmit={save} className="space-y-6 rounded-3xl border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6">
       <div className="flex items-center gap-4"><div className={`flex h-16 w-16 overflow-hidden rounded-[22px] ${current.tone} shadow-sm`}><AnimalAvatar id={current.id} alt={`${current.label} animal companion`} className="h-full w-full" /></div><div><p className="font-sans text-sm font-bold text-natural-dark">{displayName || "Your profile"}</p><p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-natural-stone">@{user?.username}</p></div></div>
       <label className="block"><span className="font-sans text-xs font-bold text-natural-dark">Display name</span><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={60} required className="mt-2 block min-h-11 w-full rounded-xl border border-natural-border bg-white px-3 font-sans text-sm text-natural-dark outline-none focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/15" /></label>
