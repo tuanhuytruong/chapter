@@ -5,9 +5,40 @@ import { query } from "../db.js";
 import { requireAuth, userFrom } from "../auth.js";
 import fs from "fs";
 import path from "path";
+import JSZip from "jszip";
 
 export const uploadRouter = Router();
 uploadRouter.use(requireAuth);
+
+const MAX_EPUB_ENTRIES = 10_000;
+const MAX_EPUB_EXPANDED_BYTES = 250 * 1024 * 1024;
+
+export async function validateBookUpload(file: Express.Multer.File): Promise<"pdf" | "epub"> {
+  const handle = await fs.promises.open(file.path, "r");
+  try {
+    const signature = Buffer.alloc(5);
+    await handle.read(signature, 0, signature.length, 0);
+    if (file.originalname.toLowerCase().endsWith(".pdf")) {
+      if (signature.toString("ascii") !== "%PDF-") throw new Error("Uploaded file is not a valid PDF");
+      return "pdf";
+    }
+  } finally {
+    await handle.close();
+  }
+
+  const zip = await JSZip.loadAsync(await fs.promises.readFile(file.path), { checkCRC32: true });
+  const entries = Object.values(zip.files);
+  if (!zip.file("META-INF/container.xml") || !zip.file("mimetype")) throw new Error("Uploaded file is not a valid EPUB");
+  if (entries.length > MAX_EPUB_ENTRIES) throw new Error("EPUB contains too many files");
+  let expandedBytes = 0;
+  for (const entry of entries) {
+    if (entry.dir) continue;
+    const data = await entry.async("uint8array");
+    expandedBytes += data.byteLength;
+    if (expandedBytes > MAX_EPUB_EXPANDED_BYTES) throw new Error("EPUB expanded size is too large");
+  }
+  return "epub";
+}
 
 // POST /api/upload — upload a book file (max 100MB, .pdf/.epub).
 // Saves into CHAPTER_BOOKS_DIR and returns the stored file_path so the client
@@ -16,10 +47,15 @@ uploadRouter.post("/", upload.single("file"), async (req: Request, res: Response
   if (!req.file) {
     return res.status(400).json({ error: "no file uploaded (field name must be 'file')" });
   }
-  const lower = req.file.originalname.toLowerCase();
-  const fileType = lower.endsWith(".epub") ? "epub" : "pdf";
+  let fileType: "pdf" | "epub";
+  try {
+    fileType = await validateBookUpload(req.file);
+  } catch {
+    fs.unlink(req.file.path, () => undefined);
+    return res.status(400).json({ error: "uploaded file content does not match a supported PDF or EPUB" });
+  }
   try { await query("INSERT INTO uploaded_files (owner_id, file_path) VALUES ($1,$2)", [userFrom(req).id, req.file.path]); }
-  catch (error: any) { fs.unlink(req.file.path, () => undefined); return res.status(503).json({ error: "could not register uploaded file", detail: error.message }); }
+  catch { fs.unlink(req.file.path, () => undefined); return res.status(503).json({ error: "could not register uploaded file" }); }
   res.status(201).json({
     file_path: req.file.path,
     file_type: fileType,
@@ -51,7 +87,7 @@ uploadRouter.delete("/", async (req: Request, res: Response) => {
     }
     await query("DELETE FROM uploaded_files WHERE owner_id=$1 AND file_path=$2 AND claimed_at IS NULL", [userFrom(req).id, abs]);
     return res.json({ ok: true });
-  } catch (e: any) {
-    return res.status(500).json({ error: "delete failed", detail: e.message });
+  } catch {
+    return res.status(500).json({ error: "delete failed" });
   }
 });
