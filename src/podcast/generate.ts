@@ -91,13 +91,17 @@ async function retainPendingArchive(id: string, audioPath: string, durationS: nu
 }
 
 export async function generatePodcast(id: string): Promise<void> {
-  const current = (await query<any>(`SELECT p.*,b.title AS book_title,b.author,b.summary_lang,COALESCE(u.display_name, u.username) AS user_name FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.id=$1`, [id])).rows[0] as PodcastRow & any;
-  if (!current || current.status === "ready" || current.status === "archive_pending") return;
+  // Claim and transition in one statement. A paused book, a duplicate worker, or
+  // any episode no longer queued produces no row and therefore no side effects.
+  const current = (await query<any>(`UPDATE podcasts p SET status='scripting',error_message=NULL,updated_at=now()
+    FROM books b, users u
+    WHERE p.id=$1 AND p.status='queued' AND b.id=p.book_id AND b.status='active' AND u.id=p.user_id
+    RETURNING p.*,b.title AS book_title,b.author,b.summary_lang,COALESCE(u.display_name, u.username) AS user_name`, [id])).rows[0] as PodcastRow & any;
+  if (!current) return;
   let audioPath: string | undefined;
   try {
     logPodcastArchiveConfig(config.podcastTelegramArchiveChatId);
     await verifyPodcastArchive(config.podcastTelegramArchiveChatId);
-    await query("UPDATE podcasts SET status='scripting',error_message=NULL,updated_at=now() WHERE id=$1", [id]);
     const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [current.book_id, current.chapter_key]);
     const chapterText = units.rows.map((row) => row.raw_text).join("\n\n"); if (!chapterText) throw new Error("No raw EPUB text exists for this chapter");
     const prompt = podcastPrompt({ title: current.book_title, author: current.author, chapterTitle: current.chapter_title, language: current.language, chapterText });
@@ -118,6 +122,26 @@ export async function generatePodcast(id: string): Promise<void> {
     }
   } catch (error: any) { await query("UPDATE podcasts SET status='failed',error_message=$2,updated_at=now() WHERE id=$1", [id, String(error.message || error).slice(0, 1000)]).catch(() => undefined); throw error; }
   finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
+}
+
+export async function recoverQueuedPodcastJobs(batchSize = 10): Promise<void> {
+  const limit = Math.max(1, Math.min(50, Math.floor(batchSize)));
+  // Recover abandoned in-flight work in a bounded batch. Paused books remain
+  // untouched; they can be recovered after the book is resumed.
+  await query(`WITH stale AS (
+      SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id
+      WHERE b.status='active' AND p.status IN ('scripting','synthesizing','archiving')
+        AND p.updated_at < now() - interval '30 minutes'
+      ORDER BY p.updated_at LIMIT $1
+    )
+    UPDATE podcasts p SET status='queued',error_message=NULL,updated_at=now()
+    FROM stale WHERE p.id=stale.id`, [limit]);
+  const queued = await query<{ id: string }>(`SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id
+    WHERE p.status='queued' AND b.status='active' ORDER BY p.updated_at LIMIT $1`, [limit]);
+  for (const episode of queued.rows) {
+    try { await generatePodcast(episode.id); }
+    catch (error: any) { console.warn(`[podcast] queued recovery failed for ${episode.id}:`, error.message); }
+  }
 }
 
 export async function retryPendingPodcastArchives(): Promise<void> {

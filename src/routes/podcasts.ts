@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import fs from "fs/promises";
-import { query, withTransaction } from "../db.js";
+import { query, withClient, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
-import { createPodcast, podcastPublic, prunePodcastCache, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
+import { createPodcast, podcastPublic, prunePodcastCache, recoverQueuedPodcastJobs, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 
@@ -257,10 +257,35 @@ podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
 });
 
 let timer: ReturnType<typeof setInterval> | undefined;
+let maintenanceRunning = false;
+const PODCAST_MAINTENANCE_LOCK = 0x504f4443;
+
+export async function runPodcastMaintenance(): Promise<void> {
+  if (maintenanceRunning) return;
+  maintenanceRunning = true;
+  try {
+    await withClient(async (client) => {
+      const locked = (await client.query(
+        "SELECT pg_try_advisory_lock($1) AS locked",
+        [PODCAST_MAINTENANCE_LOCK],
+      )).rows[0]?.locked === true;
+      if (!locked) return;
+      try {
+        await recoverQueuedPodcastJobs();
+        await prunePodcastCache();
+        await retryPendingPodcastArchives();
+      } finally {
+        await client.query("SELECT pg_advisory_unlock($1)", [PODCAST_MAINTENANCE_LOCK]);
+      }
+    });
+  } finally {
+    maintenanceRunning = false;
+  }
+}
+
 export function startPodcastMaintenance() {
   if (timer) return;
-  const maintain = async () => { await prunePodcastCache(); await retryPendingPodcastArchives(); };
-  void maintain().catch((error) => console.warn("[podcast] maintenance failed:", error.message));
-  timer = setInterval(() => void maintain().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), 60 * 60 * 1000);
+  void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message));
+  timer = setInterval(() => void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), 60 * 60 * 1000);
   timer.unref();
 }
