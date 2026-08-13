@@ -7,26 +7,21 @@
  * Both functions return concatenated plain text for the requested range.
  */
 
-import fs from "fs";
-import { createRequire } from "module";
-import { resolve as pathResolve } from "path";
+import { Worker } from "worker_threads";
 
-// pdf-parse v1.1.1 blocks ALL subpath imports via its "exports" map. Load the
-// lib entry by absolute filesystem path. In ESM/tsx use createRequire(import.meta.url);
-// in the CJS build (dist/server.cjs) import.meta is empty so fall back to the
-// global require and a cwd-relative path.
-const req: NodeRequire =
-  typeof import.meta !== "undefined" && import.meta.url
-    ? createRequire(import.meta.url)
-    : (require as NodeRequire);
-const pdfParseLibPath = pathResolve(process.cwd(), "node_modules/pdf-parse/lib/pdf-parse.js");
-// @ts-ignore - no types for the internal entry
-const pdfParse = req(pdfParseLibPath);
+const PDF_MAX_FILE_BYTES = 100 * 1024 * 1024;
+const PDF_MAX_PAGES = 5_000;
+const PDF_MAX_CHARS_PER_PAGE = 250_000;
+const PDF_MAX_TOTAL_CHARS = 50_000_000;
+const PDF_TIMEOUT_MS = 120_000;
+const PDF_WORKER_OLD_GENERATION_MB = 128;
 
 export interface ExtractResult {
   text: string;
   /** Total units available (pages for PDF, reading chunks for EPUB). */
   totalUnits: number;
+  /** Validated text for every PDF page; absent for EPUB. */
+  pages?: string[];
 }
 
 export interface EpubReadingUnit {
@@ -139,40 +134,33 @@ export async function extractPdfRange(
   startPage: number,
   endPage: number
 ): Promise<ExtractResult> {
-  const buffer = fs.readFileSync(filePath);
-  const pageTexts: string[] = [];
-
-  // pdf-parse (via pdfjs/fontkit) emits a harmless "Required 'glyf' table is
-  // not found -- trying to recover" warning for PDFs whose fonts lack a TrueType
-  // glyph table (scanned/bitmap/Type3 fonts). Text extraction still works fine,
-  // so we suppress just that noisy warning to keep logs clean.
-  const origWarn = console.warn;
-  console.warn = (...args: any[]) => {
-    const msg = String(args[0] ?? "");
-    if (/glyf.+table.+not found|trying to recover/i.test(msg)) return;
-    origWarn.apply(console, args as any);
-  };
-  try {
-    await pdfParse(buffer, {
-      // Called once per rendered page with that page's text.
-      pagerender: (pageData: any) => {
-        return pageData.getTextContent().then((content: any) => {
-          const strings = content.items.map((it: any) => it.str).join(" ");
-          const pNum = pageData.pageIndex + 1;
-          pageTexts[pNum] = strings;
-          return strings;
-        });
-      },
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./pdfExtractorWorker.mjs", import.meta.url), {
+      workerData: { filePath, startPage, endPage, limits: { maxFileBytes: PDF_MAX_FILE_BYTES, maxPages: PDF_MAX_PAGES, maxCharsPerPage: PDF_MAX_CHARS_PER_PAGE, maxTotalChars: PDF_MAX_TOTAL_CHARS } },
+      resourceLimits: { maxOldGenerationSizeMb: PDF_WORKER_OLD_GENERATION_MB },
     });
-  } finally {
-    console.warn = origWarn;
-  }
-
-  const totalUnits = pageTexts.length - 1; // index 0 unused
-  const lo = Math.max(1, startPage);
-  const hi = Math.min(totalUnits, endPage);
-  const slice = pageTexts.slice(lo, hi + 1).filter(Boolean);
-  return { text: slice.join("\n\n"), totalUnits };
+    let settled = false;
+    const finish = (error?: Error, result?: ExtractResult) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      void worker.terminate();
+      if (error) reject(error);
+      else resolve(result!);
+    };
+    const timeout = setTimeout(
+      () => finish(new Error(`PDF extraction timed out after ${PDF_TIMEOUT_MS}ms`)),
+      PDF_TIMEOUT_MS
+    );
+    worker.once("message", (message: { ok: boolean; result?: ExtractResult; error?: string }) => {
+      if (message.ok && message.result) finish(undefined, message.result);
+      else finish(new Error(message.error || "PDF extraction worker failed"));
+    });
+    worker.once("error", (error) => finish(error));
+    worker.once("exit", (code) => {
+      if (!settled) finish(new Error(`PDF extraction worker exited with code ${code}`));
+    });
+  });
 }
 
 /**

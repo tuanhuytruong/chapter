@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { query, withTransaction } from "../db.js";
+import { query, withClient, withTransaction } from "../db.js";
 import {
   buildEpubReadingUnits,
   extractRange,
@@ -71,6 +71,7 @@ async function ownerCanMutate(
 // grouping use this, independent of where the server physically runs.
 const APP_TZ = "Asia/Bangkok";
 const MAX_DAILY_PAGES = 20;
+const READING_UNIT_INSERT_BATCH_SIZE = 500;
 
 function validDailyPages(value: unknown): number | null {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -115,9 +116,8 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
   // This is a proven N-query ingestion hot spot for long EPUBs. Chunking keeps
   // each statement below PostgreSQL's parameter limit while preserving the
   // transaction, generated unit order, and all-or-nothing semantics.
-  const INSERT_BATCH_SIZE = 500;
-  for (let offset = 0; offset < units.length; offset += INSERT_BATCH_SIZE) {
-    const batch = units.slice(offset, offset + INSERT_BATCH_SIZE);
+  for (let offset = 0; offset < units.length; offset += READING_UNIT_INSERT_BATCH_SIZE) {
+    const batch = units.slice(offset, offset + READING_UNIT_INSERT_BATCH_SIZE);
     const values: string[] = [];
     const params: any[] = [];
     for (const unit of batch) {
@@ -147,6 +147,77 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
     book.id,
   ]);
   return units.length;
+}
+
+/** Cache stats are complete only for the exact contiguous page range 1..expected. */
+export function isCompletePdfCache(
+  stats: { count: number | string; min_index: number | string | null; max_index: number | string | null },
+  expectedTotalPages: unknown,
+): boolean {
+  const expected = Number(expectedTotalPages);
+  return Number.isInteger(expected) && expected > 0 && Number(stats.count) === expected
+    && Number(stats.min_index) === 1 && Number(stats.max_index) === expected;
+}
+
+export interface PdfCacheDependencies {
+  query: typeof query;
+  withClient: typeof withClient;
+  extractRange: typeof extractRange;
+}
+
+const pdfCacheDependencies: PdfCacheDependencies = { query, withClient, extractRange };
+
+async function pdfCacheStats(runQuery: any, bookId: string) {
+  const { rows } = await runQuery(
+    "SELECT count(*)::int AS count,min(unit_index)::int AS min_index,max(unit_index)::int AS max_index FROM book_reading_units WHERE book_id=$1",
+    [bookId],
+  );
+  return rows[0];
+}
+
+/** Ensure a complete PDF page cache. The session advisory lock is derived by
+ * PostgreSQL from the UUID text, avoiding lossy JavaScript hashing. */
+export async function ensurePdfReadingUnits(
+  book: any,
+  dependencies: PdfCacheDependencies = pdfCacheDependencies,
+): Promise<number> {
+  const cached = await pdfCacheStats(dependencies.query, book.id);
+  if (isCompletePdfCache(cached, book.total_pages)) return Number(cached.count);
+  return dependencies.withClient(async (client: any) => {
+    await client.query("SELECT pg_advisory_lock(hashtextextended($1::text, 0))", [book.id]);
+    try {
+      const rechecked = await pdfCacheStats(client.query.bind(client), book.id);
+      if (isCompletePdfCache(rechecked, book.total_pages)) return Number(rechecked.count);
+      // Intentionally outside a transaction, while the session lock prevents duplicate parsing.
+      const extracted = await dependencies.extractRange(book.file_path, "pdf", 1, Number.MAX_SAFE_INTEGER);
+      const pages = extracted.pages;
+      if (!pages || pages.length !== extracted.totalUnits || pages.length < 1 || pages.some((page: unknown) => typeof page !== "string"))
+        throw new Error("PDF extractor returned an invalid page map");
+      await client.query("BEGIN");
+      try {
+        await client.query("DELETE FROM book_reading_units WHERE book_id=$1", [book.id]);
+        for (let offset = 0; offset < pages.length; offset += READING_UNIT_INSERT_BATCH_SIZE) {
+          const batch = pages.slice(offset, offset + READING_UNIT_INSERT_BATCH_SIZE);
+          const params: any[] = [];
+          const values = batch.map((rawText: string, index: number) => {
+            const n = params.length + 1;
+            const unitIndex = offset + index + 1;
+            params.push(book.id, unitIndex, null, unitIndex, `pdf-page-${unitIndex}`, rawText, rawText.length, unitIndex);
+            return `($${n},$${n+1},$${n+2},$${n+3},$${n+4},$${n+5},$${n+6},$${n+7})`;
+          });
+          await client.query(`INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${values.join(",")}`, params);
+        }
+        await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [pages.length, book.id]);
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
+      return pages.length;
+    } finally {
+      await client.query("SELECT pg_advisory_unlock(hashtextextended($1::text, 0))", [book.id]);
+    }
+  });
 }
 
 // ── B7: CRUD ──────────────────────────────────────────────
@@ -1239,7 +1310,9 @@ async function advanceBookNow(
     "SELECT * FROM books WHERE id=$1",
     [bookId],
   );
-  if (preflightBooks[0]?.file_type === "epub") {
+  if (preflightBooks[0]?.file_type === "pdf") {
+    await ensurePdfReadingUnits(preflightBooks[0]);
+  } else if (preflightBooks[0]?.file_type === "epub") {
     await withTransaction(async (client) => {
       await ensureEpubReadingUnits(client, preflightBooks[0]);
     });
@@ -1263,22 +1336,20 @@ async function advanceBookNow(
     if (!units.length) throw new Error("EPUB reading chunk not found");
     text = units.map((unit: any) => unit.raw_text).join("\n\n");
     chapterTitle = units.find((unit: any) => unit.title)?.title || null;
-  } else {
-    const extracted = await extractRange(
-      book.file_path,
-      book.file_type,
-      start,
-      end,
+  } else if (book.file_type === "pdf") {
+    totalPages = await ensurePdfReadingUnits(book);
+    const { rows: units } = await query(
+      `SELECT unit_index,raw_text FROM book_reading_units WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 ORDER BY unit_index`,
+      [bookId, start, end],
     );
+    if (!units.length) throw new Error("PDF reading pages not found");
+    text = units.map((unit: any) => unit.raw_text).join("\n\n");
+    chapterTitle = null;
+  } else {
+    const extracted = await extractRange(book.file_path, book.file_type, start, end);
     text = extracted.text;
     totalPages = book.total_pages || extracted.totalUnits;
-    chapterTitle = await getChapterTitle(
-      book.file_path,
-      book.file_type,
-      start,
-      end,
-      text,
-    );
+    chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
   }
   const parsed =
     book.reading_experience === "story"

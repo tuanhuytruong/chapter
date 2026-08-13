@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.mjs",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.mjs && cp src/pdfExtractorWorker.mjs dist/pdfExtractorWorker.mjs",
     "start": "node dist/server.mjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
@@ -41,7 +41,9 @@
     "verify:add-book-upload": "tsx scripts/verify-add-book-upload.ts",
     "verify:same-day-reread": "tsx scripts/verify-same-day-reread.ts",
     "verify:book-detail-scroll": "tsx scripts/verify-book-detail-scroll.ts",
-    "verify:deep-reading-language": "tsx scripts/verify-deep-reading-language.ts"
+    "verify:deep-reading-language": "tsx scripts/verify-deep-reading-language.ts",
+    "verify:pdf-extractor": "tsx scripts/verify-pdf-extractor.ts",
+    "verify:pdf-cache": "tsx scripts/verify-pdf-cache.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
