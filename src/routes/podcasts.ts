@@ -1,12 +1,13 @@
 import { Router, type Request, type Response } from "express";
 import { createReadStream } from "fs";
-import { stat } from "fs/promises";
+import { mkdir, rename, stat, unlink, writeFile } from "fs/promises";
 import { query, withClient, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
 import { createPodcast, podcastPublic, prunePodcastCache, recoverQueuedPodcastJobs, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
+import { config } from "../config.js";
 
 export const podcastsRouter = Router();
 
@@ -275,6 +276,39 @@ function parseAudioRange(range: string | undefined, size: number): { start: numb
   return start >= size || start > end ? null : { start, end, partial: true };
 }
 
+const archiveHydrations = new Map<string, Promise<string>>();
+const cacheExpiresAt = () => new Date(Date.now() + Math.max(1, config.podcastCacheTtlHours) * 3600000);
+
+async function hydrateArchivedPodcast(episode: any): Promise<string> {
+  const existing = archiveHydrations.get(episode.id);
+  if (existing) return existing;
+  const task = (async () => {
+    await mkdir(config.podcastCacheDir, { recursive: true });
+    const finalPath = `${config.podcastCacheDir}/${episode.id}.mp3`;
+    const temporaryPath = `${finalPath}.${process.pid}.${Date.now()}.tmp`;
+    try {
+      const data = await downloadArchivedPodcast(episode.tg_file_id);
+      await writeFile(temporaryPath, data, { flag: "wx" });
+      await rename(temporaryPath, finalPath);
+      await query("UPDATE podcasts SET local_cache_path=$2,local_cache_until=$3,updated_at=now() WHERE id=$1", [episode.id, finalPath, cacheExpiresAt()]);
+      return finalPath;
+    } finally { await unlink(temporaryPath).catch(() => undefined); }
+  })();
+  archiveHydrations.set(episode.id, task);
+  try { return await task; } finally { archiveHydrations.delete(episode.id); }
+}
+
+async function streamLocalAudio(res: Response, filePath: string, rangeHeader: string | undefined): Promise<void> {
+  const size = (await stat(filePath)).size;
+  const parsed = parseAudioRange(rangeHeader, size);
+  if (!parsed) { res.status(416).setHeader("Content-Range", `bytes */${size}`).end(); return; }
+  const { start, end, partial } = parsed;
+  res.status(partial ? 206 : 200).setHeader("Content-Length", end - start + 1);
+  if (partial) res.setHeader("Content-Range", `bytes ${start}-${end}/${size}`);
+  if (size === 0) { res.end(); return; }
+  createReadStream(filePath, { start, end }).on("error", () => res.destroy()).pipe(res);
+}
+
 podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
   try {
     const episode = (await query<any>(
@@ -286,26 +320,14 @@ podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
     const rangeHeader = req.header("range");
     res.setHeader("Accept-Ranges", "bytes"); res.setHeader("Content-Type", "audio/mpeg"); res.setHeader("Cache-Control", "private, no-store");
     if (locallyPlayable) {
-      try {
-        const size = (await stat(episode.local_cache_path)).size;
-        const parsed = parseAudioRange(rangeHeader, size);
-        if (!parsed) return res.status(416).setHeader("Content-Range", `bytes */${size}`).end();
-        const { start, end, partial } = parsed;
-        res.status(partial ? 206 : 200).setHeader("Content-Length", end - start + 1);
-        if (partial) res.setHeader("Content-Range", `bytes ${start}-${end}/${size}`);
-        if (size === 0) return res.end();
-        return createReadStream(episode.local_cache_path, { start, end }).on("error", () => res.destroy()).pipe(res);
-      } catch {
-        if (!episode.tg_file_id) return res.status(503).json({ error: "Podcast audio is temporarily unavailable" });
-      }
+      try { await streamLocalAudio(res, episode.local_cache_path, rangeHeader); return; }
+      catch { if (!episode.tg_file_id) return res.status(503).json({ error: "Podcast audio is temporarily unavailable" }); }
     }
-    const data = await downloadArchivedPodcast(episode.tg_file_id);
-    const parsed = parseAudioRange(rangeHeader, data.length);
-    if (!parsed) return res.status(416).setHeader("Content-Range", `bytes */${data.length}`).end();
-    const { start, end, partial } = parsed;
-    res.status(partial ? 206 : 200).setHeader("Content-Length", end - start + 1);
-    if (partial) res.setHeader("Content-Range", `bytes ${start}-${end}/${data.length}`);
-    return res.end(data.subarray(start, end + 1));
+    // Telegram fallback is hydrated once into the protected local cache. Every
+    // later request (including Android's Range probes) gets the fast streamed
+    // local path instead of repeatedly buffering a remote archive download.
+    const cachePath = await hydrateArchivedPodcast(episode);
+    await streamLocalAudio(res, cachePath, rangeHeader);
   } catch { res.status(502).json({ error: "Podcast audio is temporarily unavailable" }); }
 });
 
