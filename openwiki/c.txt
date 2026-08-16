@@ -1,1 +1,6 @@
+---
+type: Concept
+title: Temporary File C
+description: Temporary file C for workspace tests.
+---
 c
