@@ -6,6 +6,11 @@ import { requireAuth, userFrom } from "../auth.js";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
+import { probePdfTextLayer } from "../extractor.js";
+
+const SCANNED_PDF_ERROR = "This PDF appears to be a scanned image without selectable text. Upload a text-based PDF or EPUB instead.";
+
+export class UploadValidationError extends Error {}
 
 export const uploadRouter = Router();
 uploadRouter.use(requireAuth);
@@ -20,6 +25,8 @@ export async function validateBookUpload(file: Express.Multer.File): Promise<"pd
     await handle.read(signature, 0, signature.length, 0);
     if (file.originalname.toLowerCase().endsWith(".pdf")) {
       if (signature.toString("ascii") !== "%PDF-") throw new Error("Uploaded file is not a valid PDF");
+      const probe = await probePdfTextLayer(file.path);
+      if (probe.classification === "image_only") throw new UploadValidationError(SCANNED_PDF_ERROR);
       return "pdf";
     }
   } finally {
@@ -50,8 +57,9 @@ uploadRouter.post("/", upload.single("file"), async (req: Request, res: Response
   let fileType: "pdf" | "epub";
   try {
     fileType = await validateBookUpload(req.file);
-  } catch {
+  } catch (error) {
     fs.unlink(req.file.path, () => undefined);
+    if (error instanceof UploadValidationError) return res.status(400).json({ error: error.message });
     return res.status(400).json({ error: "uploaded file content does not match a supported PDF or EPUB" });
   }
   try { await query("INSERT INTO uploaded_files (owner_id, file_path) VALUES ($1,$2)", [userFrom(req).id, req.file.path]); }

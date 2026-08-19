@@ -45,7 +45,8 @@
     "verify:book-detail-scroll": "tsx scripts/verify-book-detail-scroll.ts",
     "verify:deep-reading-language": "tsx scripts/verify-deep-reading-language.ts",
     "verify:pdf-extractor": "tsx scripts/verify-pdf-extractor.ts",
-    "verify:pdf-cache": "tsx scripts/verify-pdf-cache.ts"
+    "verify:pdf-cache": "tsx scripts/verify-pdf-cache.ts",
+    "verify:upload-content": "tsx scripts/verify-upload-content.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

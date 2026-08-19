@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
@@ -9,9 +9,9 @@ const dir = await mkdtemp(path.join(tmpdir(), "chapter-upload-verify-"));
 const file = (name: string, size: number) => ({ path: path.join(dir, name), originalname: name, size } as Express.Multer.File);
 
 try {
-  const pdf = file("valid.pdf", 12);
-  await writeFile(pdf.path, Buffer.from("%PDF-1.7\n%%EOF"));
-  assert.equal(await validateBookUpload(pdf), "pdf", "valid PDF signature is accepted");
+  const pdf = file("valid.pdf", 0);
+  await writeFile(pdf.path, await readFile(path.resolve("node_modules/pdf-parse/test/data/01-valid.pdf")));
+  assert.equal(await validateBookUpload(pdf), "pdf", "PDF with selectable text is accepted");
 
   const fakePdf = file("fake.pdf", 9);
   await writeFile(fakePdf.path, Buffer.from("not a pdf"));
@@ -33,7 +33,18 @@ try {
   await writeFile(fakeEpub.path, fakeEpubBuffer);
   await assert.rejects(() => validateBookUpload(fakeEpub), /not a valid EPUB/, "generic ZIP renamed to EPUB is rejected");
 
-  console.log("UPLOAD_CONTENT_CONTRACT_OK");
+  const scannedFixture = process.env.SCANNED_PDF_FIXTURE;
+  if (scannedFixture) {
+    const scanned = file("scanned.pdf", 0);
+    await writeFile(scanned.path, await readFile(scannedFixture));
+    await assert.rejects(
+      () => validateBookUpload(scanned),
+      /scanned image without selectable text/,
+      "image-only PDF is rejected with a helpful warning",
+    );
+  }
+
+  console.log("UPLOAD_CONTENT_CONTRACT_OK", JSON.stringify({ scannedFixtureChecked: Boolean(scannedFixture) }));
 } finally {
   await rm(dir, { recursive: true, force: true });
 }

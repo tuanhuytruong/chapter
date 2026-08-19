@@ -24,6 +24,37 @@ export interface ExtractResult {
   pages?: string[];
 }
 
+export type PdfTextLayerProbe = {
+  classification: "text" | "image_only";
+  totalPages: number;
+  meaningfulPages: number;
+};
+
+// A blank cover or illustration page is normal. A PDF is only treated as a scan
+// when no page contains enough native/selectable text to read at all.
+const PDF_MEANINGFUL_TEXT_CHARS = 20;
+
+/**
+ * Lightweight native-text check for upload validation. This uses the existing
+ * bounded PDF worker only; it never rasterizes pages or invokes OCR.
+ */
+export async function probePdfTextLayer(filePath: string): Promise<PdfTextLayerProbe> {
+  const extracted = await extractPdfRange(filePath, 1, Number.MAX_SAFE_INTEGER);
+  const pages = extracted.pages;
+  if (!pages || pages.length !== extracted.totalUnits) {
+    throw new Error("PDF text-layer probe was incomplete");
+  }
+  const meaningfulPages = pages.reduce(
+    (count, page) => count + (page.replace(/\s+/g, "").length >= PDF_MEANINGFUL_TEXT_CHARS ? 1 : 0),
+    0,
+  );
+  return {
+    classification: meaningfulPages > 0 ? "text" : "image_only",
+    totalPages: extracted.totalUnits,
+    meaningfulPages,
+  };
+}
+
 export interface EpubReadingUnit {
   unitIndex: number;
   title: string | null;
