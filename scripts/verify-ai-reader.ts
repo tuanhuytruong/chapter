@@ -110,10 +110,10 @@ assert.doesNotMatch(bookWikiComponent, /pendingScrollY/, "AI Reader scroll prese
 assert.match(bookWikiComponent, /<GlossaryLabel term="Evidence" language=\{language\}/);
 assert.match(bookWikiComponent, /<GlossaryLabel term=\{stateTerm\} language=\{language\}/);
 assert.match(bookWikiComponent, /onOpenReadingSession: \(logId: string\) => void/);
-assert.match(bookWikiComponent, /language=\{glossaryLanguage\} onSession=\{onOpenReadingSession\}/);
+assert.match(bookWikiComponent, /language=\{glossaryLanguage\}[\s\S]*onSession=\{onOpenReadingSession\}/);
 assert.match(bookWikiComponent, /onClick=\{\(\) => entry\.log_id && onSession\(entry\.log_id\)\}/);
 assert.match(bookWikiComponent, /onClick=\{\(\) => preserveScroll\(\(\) => setOpenSession/);
-assert.match(bookWikiComponent, /language === "vi" \? "Trang" : "Page"/);
+assert.match(bookWikiComponent, /language === "vi" \? "Trang" : "Pages"/);
 assert.match(bookWikiComponent, /\["Deepened", "Shifted", "Introduced", "Resolved", "Uncertain", "Implied"\]/);
 assert.doesNotMatch(bookWikiComponent, /<GlossaryLabel(?![^>]*language=)/);
 assert.doesNotMatch(bookWikiComponent, /<button(?! type="button")/);
