@@ -8,6 +8,10 @@ const { maxFileBytes: MAX_FILE_BYTES, maxPages: MAX_PAGES, maxCharsPerPage: MAX_
 
 function fail(message) { throw new Error(message); }
 
+// PostgreSQL TEXT rejects NUL (U+0000), while malformed PDF text runs can
+// contain it. Preserve every other Unicode character from the source PDF.
+function sanitizePdfText(text) { return text.replace(/\u0000/g, ""); }
+
 async function extract() {
   const { filePath, startPage, endPage } = workerData;
   const info = await stat(filePath);
@@ -31,7 +35,7 @@ async function extract() {
         const pageNumber = pageData.pageIndex + 1;
         if (pageNumber > MAX_PAGES) fail(`PDF exceeds ${MAX_PAGES} page limit`);
         const content = await pageData.getTextContent();
-        const text = content.items.map((item) => item.str).join(" ");
+        const text = content.items.map((item) => sanitizePdfText(String(item.str ?? ""))).join(" ");
         if (text.length > MAX_CHARS_PER_PAGE) fail(`PDF page ${pageNumber} exceeds ${MAX_CHARS_PER_PAGE} character limit`);
         totalChars += text.length;
         if (totalChars > MAX_TOTAL_CHARS) fail(`PDF exceeds ${MAX_TOTAL_CHARS} total character limit`);

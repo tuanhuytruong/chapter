@@ -73,6 +73,11 @@ const APP_TZ = "Asia/Bangkok";
 const MAX_DAILY_PAGES = 20;
 const READING_UNIT_INSERT_BATCH_SIZE = 500;
 
+/** PostgreSQL TEXT rejects NUL (U+0000); retain all other extracted Unicode. */
+function stripNul(text: string): string {
+  return text.replace(/\u0000/g, "");
+}
+
 function validDailyPages(value: unknown): number | null {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_DAILY_PAGES
@@ -202,7 +207,8 @@ export async function ensurePdfReadingUnits(
           const values = batch.map((rawText: string, index: number) => {
             const n = params.length + 1;
             const unitIndex = offset + index + 1;
-            params.push(book.id, unitIndex, null, unitIndex, `pdf-page-${unitIndex}`, rawText, rawText.length, unitIndex);
+            const safeText = stripNul(rawText);
+            params.push(book.id, unitIndex, null, unitIndex, `pdf-page-${unitIndex}`, safeText, safeText.length, unitIndex);
             return `($${n},$${n+1},$${n+2},$${n+3},$${n+4},$${n+5},$${n+6},$${n+7})`;
           });
           await client.query(`INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${values.join(",")}`, params);

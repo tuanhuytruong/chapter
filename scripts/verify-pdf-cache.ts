@@ -9,7 +9,7 @@ assert.equal(isCompletePdfCache({ count: 0, min_index: null, max_index: null }, 
 
 type Row = { unit_index: number; raw_text: string };
 let rows: Row[] = [];
-let totalPages = 3;
+let totalPages = 4;
 let extracts = 0;
 let lockTail = Promise.resolve();
 const makeClient = (failInsert = false) => {
@@ -35,14 +35,15 @@ const makeClient = (failInsert = false) => {
 const deps = (failInsert = false): PdfCacheDependencies => ({
   query: async () => ({ rows: [{ count: rows.length, min_index: rows.length ? Math.min(...rows.map(r => r.unit_index)) : null, max_index: rows.length ? Math.max(...rows.map(r => r.unit_index)) : null }] } as any),
   withClient: async (fn: any) => fn(makeClient(failInsert)),
-  extractRange: async () => { extracts++; await new Promise(r => setTimeout(r, 10)); return { text: "first\n\n\n\nthird", totalUnits: 3, pages: ["first", "", "third"] }; },
+  extractRange: async () => { extracts++; await new Promise(r => setTimeout(r, 10)); return { text: "first\n\n\n\nthird", totalUnits: 4, pages: ["first", "", "before\u0000after", "third"] }; },
 });
-const book = { id: "book-1", file_path: "/tmp/book.pdf", total_pages: 3 };
+const book = { id: "book-1", file_path: "/tmp/book.pdf", total_pages: 4 };
 rows = [{ unit_index: 1, raw_text: "stale" }, { unit_index: 3, raw_text: "stale" }];
 await Promise.all([ensurePdfReadingUnits(book, deps()), ensurePdfReadingUnits(book, deps())]);
 assert.equal(extracts, 1, "advisory-lock recheck prevents duplicate parsing");
-assert.deepEqual(rows, [{ unit_index: 1, raw_text: "first" }, { unit_index: 2, raw_text: "" }, { unit_index: 3, raw_text: "third" }], "empty pages remain rows in page order");
-assert.equal(totalPages, 3);
+assert.deepEqual(rows, [{ unit_index: 1, raw_text: "first" }, { unit_index: 2, raw_text: "" }, { unit_index: 3, raw_text: "beforeafter" }, { unit_index: 4, raw_text: "third" }], "empty pages remain ordered and NUL bytes are removed before caching");
+assert.equal(rows.some((row) => row.raw_text.includes("\u0000")), false, "cached text contains no PostgreSQL-invalid NUL bytes");
+assert.equal(totalPages, 4);
 await ensurePdfReadingUnits(book, deps());
 assert.equal(extracts, 1, "complete cache is a cache hit");
 rows = [{ unit_index: 1, raw_text: "old" }, { unit_index: 2, raw_text: "old" }];
