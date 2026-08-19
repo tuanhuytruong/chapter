@@ -721,8 +721,8 @@ export default function BookDetail() {
       </div>
 
       {/* Header */}
-      <div className="grid gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:grid-cols-[104px_minmax(0,1fr)] sm:gap-4 sm:p-5 lg:grid-cols-[144px_minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
-        <div className="flex h-36 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-natural-stone/25 bg-[#e8e6de] p-1.5 shadow-md shadow-natural-dark/10 sm:h-52 sm:w-36 sm:p-2 lg:row-span-2">
+      <div className="grid gap-3 rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm md:grid-cols-[104px_minmax(0,1fr)] md:gap-4 sm:p-5 lg:grid-cols-[144px_minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
+        <div className="flex h-36 w-[104px] shrink-0 items-center justify-center overflow-hidden rounded-[3px] border border-natural-stone/25 bg-[#e8e6de] p-1.5 shadow-md shadow-natural-dark/10 md:h-52 md:w-36 md:p-2 lg:row-span-2">
           {book.cover_url ? (
             <img
               src={book.cover_url}
@@ -737,8 +737,8 @@ export default function BookDetail() {
             <BookOpen className="w-8 h-8 text-natural-stone" />
           )}
         </div>
-        <div className="order-2 min-w-0 sm:order-none">
-          <h1 className="line-clamp-2 text-lg font-bold leading-snug text-natural-dark sm:text-xl sm:leading-tight">
+        <div className="order-2 min-w-0 md:order-none">
+          <h1 className="line-clamp-2 text-lg font-bold leading-snug text-natural-dark md:text-xl md:leading-tight">
             {book.title}
           </h1>
           <p className="mb-2 text-xs italic text-natural-stone">
@@ -774,20 +774,20 @@ export default function BookDetail() {
           </p>
         </div>
         <aside className="contents" aria-label="Book utilities">
-          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
+          <div className="order-3 col-span-full flex flex-col gap-3 border-t border-natural-border/70 pt-3 md:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:border-t-0 lg:pt-0">
             {selectedRound !== book.current_reading_round ? (
               <div className="rounded-xl border border-natural-border bg-natural-border/40 p-3 text-xs text-natural-stone">
                 Previous reading is read-only.
               </div>
             ) : book.can_edit && book.status === "finished" ? (
               <div className="flex flex-wrap gap-2">
-                <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone sm:min-h-0">
+                <span className="flex min-h-11 items-center gap-1.5 rounded-full bg-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone md:min-h-0">
                   <CheckCircle className="w-3.5 h-3.5" /> Finished
                 </span>
                 <button
                   onClick={startReread}
                   disabled={rereading}
-                  className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark sm:min-h-0 cursor-pointer disabled:cursor-wait disabled:opacity-45"
+                  className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-natural-border px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-stone hover:border-natural-sage hover:text-natural-dark md:min-h-0 cursor-pointer disabled:cursor-wait disabled:opacity-45"
                 >
                   {rereading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />} {rereading ? "Starting…" : "Re-read"}
                 </button>
@@ -844,7 +844,7 @@ export default function BookDetail() {
             )}
           </div>
 
-          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
+          <section className="order-4 col-span-full border-t border-natural-border/70 pt-3 md:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-2">
             <h3 className="mb-2 text-xs font-bold text-natural-dark">
               Reading Rhythm
             </h3>
@@ -857,7 +857,7 @@ export default function BookDetail() {
           </section>
 
           {book.can_edit && (
-            <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-2">
+            <section className="order-5 col-span-full border-t border-natural-border/70 pt-3 md:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-2">
               <div className="flex items-center gap-2">
                 <h3 className="flex items-center gap-1.5 text-sm font-bold text-natural-dark">
                   <Settings2 className="h-4 w-4" /> Settings
