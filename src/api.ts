@@ -710,7 +710,7 @@ export async function uploadBook(
         } catch (error) {
           reject(error);
         }
-      } else reject(new Error(`${xhr.status}: ${body?.error || xhr.statusText}`));
+      } else reject(new Error(body?.error || "Could not upload this file. Please try again."));
     };
     xhr.onerror = () => reject(new Error("upload network error"));
     xhr.open("POST", "/api/upload");

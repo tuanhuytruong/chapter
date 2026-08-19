@@ -7,6 +7,9 @@ assert.match(modal, /const \[uploadError, setUploadError\] = useState<string \| 
 assert.match(modal, /setUploadError\(null\);[\s\S]{0,200}const oldPath/, "new selection clears prior upload error");
 assert.match(modal, /setUploadError\(err\.message \|\| 'Could not upload this file/, "upload rejection is shown locally");
 assert.match(modal, /\{uploadError && <p role="alert"/, "modal renders an accessible inline upload alert");
+const api = await readFile(new URL("../src/api.ts", import.meta.url), "utf8");
+assert.match(api, /reject\(new Error\(body\?\.error \|\| "Could not upload this file/, "upload errors use the server's reader-facing message without an HTTP status prefix");
+assert.doesNotMatch(api, /xhr\.status}: \$\{body\?\.error/, "upload errors never expose the HTTP status prefix");
 
 const epub = validateUploadResult({
   file_path: "/private/upload.epub",
