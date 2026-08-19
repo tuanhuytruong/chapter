@@ -15,6 +15,9 @@ assert.match(daySummary, /text-sm text-natural-dark font-sans leading-relaxed/, 
 assert.match(daySummary, /text-sm leading-relaxed text-natural-dark/, "Deep Reading fallback prose uses text-sm");
 assert.match(daySummary, /whitespace-pre-wrap text-sm leading-relaxed text-natural-dark/, "Deep Reading section prose uses text-sm");
 assert.match(daySummary, /flex gap-1\.5 text-sm text-natural-muted font-sans/, "Key insights use 14px text-sm");
+assert.match(daySummary, /text-xs text-natural-stone font-sans bg-natural-cream px-2 py-0\.5 rounded-full">Session/, "Session badge uses 12px text-xs");
+assert.match(daySummary, /truncate rounded-full bg-natural-cream px-2 py-0\.5 text-xs text-natural-sage/, "chapter label uses 12px text-xs");
+assert.match(daySummary, /flex gap-1\.5 text-xs italic text-natural-stone font-sans border-l-2/, "quote uses 12px text-xs");
 
 const epub = validateUploadResult({
   file_path: "/private/upload.epub",

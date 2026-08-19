@@ -149,14 +149,14 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>
-          <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Session {log.session}</span>
+          <span className="text-xs text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Session {log.session}</span>
           {log.chapter_title ? (
-            <span className="inline-flex max-w-[480px] items-center gap-1 truncate rounded-full bg-natural-cream px-2 py-0.5 text-[10px] text-natural-sage" title={log.chapter_title}>
+            <span className="inline-flex max-w-[480px] items-center gap-1 truncate rounded-full bg-natural-cream px-2 py-0.5 text-xs text-natural-sage" title={log.chapter_title}>
               <FileText aria-hidden="true" className="h-3 w-3 shrink-0" />
               {log.chapter_title}
             </span>
           ) : (
-            <span className="text-[10px] text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">{fileType === 'epub' ? 'Chunks' : 'Pages'} {log.page_start}–{log.page_end}</span>
+            <span className="text-xs text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">{fileType === 'epub' ? 'Chunks' : 'Pages'} {log.page_start}–{log.page_end}</span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -195,7 +195,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       )}
 
       {log.quote && (
-        <p className="flex gap-1.5 text-[11px] italic text-natural-stone font-sans border-l-2 border-natural-clay pl-2">
+        <p className="flex gap-1.5 text-xs italic text-natural-stone font-sans border-l-2 border-natural-clay pl-2">
           <Quote className="w-3 h-3 shrink-0 mt-0.5" />{highlight ? <HighlightText text={log.quote} query={highlight} /> : log.quote}
         </p>
       )}
