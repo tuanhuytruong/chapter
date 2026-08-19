@@ -64,8 +64,8 @@ function isFallbackSummary(summary: string | null): boolean {
 
 function DeepReadingSummary({ text, highlight }: { text: string; highlight?: string }) {
   const sections = [...text.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=\n##\s+|$)/gm)].map((m) => ({ title: m[1].trim(), body: m[2].trim() }));
-  if (!sections.length) return <p className="text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={text} highlight={highlight} /></p>;
-  return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
+  if (!sections.length) return <p className="text-sm leading-relaxed text-natural-dark"><InlineMarkdown text={text} highlight={highlight} /></p>;
+  return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
 }
 
 const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled }) => {
@@ -175,7 +175,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
       {retryError && <p className="text-[10px] text-red-600">{retryError}</p>}
 
-      {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-xs text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
+      {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-sm text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
 
       {canEdit && (!log.summary || isFallbackSummary(log.summary)) && log.raw_text && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-natural-clay/30 bg-natural-clay/5 p-2">

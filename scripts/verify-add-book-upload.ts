@@ -10,6 +10,10 @@ assert.match(modal, /\{uploadError && <p role="alert"/, "modal renders an access
 const api = await readFile(new URL("../src/api.ts", import.meta.url), "utf8");
 assert.match(api, /reject\(new Error\(body\?\.error \|\| "Could not upload this file/, "upload errors use the server's reader-facing message without an HTTP status prefix");
 assert.doesNotMatch(api, /xhr\.status}: \$\{body\?\.error/, "upload errors never expose the HTTP status prefix");
+const daySummary = await readFile(new URL("../src/components/DaySummary.tsx", import.meta.url), "utf8");
+assert.match(daySummary, /text-sm text-natural-dark font-sans leading-relaxed/, "casual session prose uses text-sm");
+assert.match(daySummary, /text-sm leading-relaxed text-natural-dark/, "Deep Reading fallback prose uses text-sm");
+assert.match(daySummary, /whitespace-pre-wrap text-sm leading-relaxed text-natural-dark/, "Deep Reading section prose uses text-sm");
 
 const epub = validateUploadResult({
   file_path: "/private/upload.epub",

@@ -41,6 +41,7 @@
     "verify:today-review": "tsx scripts/verify-today-review.ts",
     "verify:review-api": "tsx scripts/verify-review-api.ts",
     "verify:add-book-upload": "tsx scripts/verify-add-book-upload.ts",
+    "verify:book-detail-session-typography": "tsx scripts/verify-add-book-upload.ts",
     "verify:same-day-reread": "tsx scripts/verify-same-day-reread.ts",
     "verify:book-detail-scroll": "tsx scripts/verify-book-detail-scroll.ts",
     "verify:deep-reading-language": "tsx scripts/verify-deep-reading-language.ts",
