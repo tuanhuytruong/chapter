@@ -10,7 +10,7 @@ export interface SessionUser {
 declare module "express-session" {
   interface SessionData {
     user?: SessionUser;
-    googleAuth?: { state: string; nonce: string; verifier: string; intent: "login" | "link"; userId?: string; expiresAt: number };
+    googleAuth?: { state: string; nonce: string; verifier: string; intent: "login" | "signup" | "link"; userId?: string; expiresAt: number };
   }
 }
 

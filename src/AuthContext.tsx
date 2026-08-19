@@ -12,6 +12,7 @@ interface AuthValue {
   user: CurrentUser | null;
   loading: boolean;
   login(username: string, password: string): Promise<void>;
+  signup(email: string, displayName: string, password: string, confirmPassword: string): Promise<void>;
   completePasswordReset(token: string, newPassword: string, confirmPassword: string): Promise<void>;
   updateUser(user: CurrentUser): void;
   logout(): Promise<void>;
@@ -26,7 +27,11 @@ async function authRequest(path: string, options?: RequestInit) {
     ...options,
   });
   const body = await response.text();
-  if (!response.ok) throw new Error(body || response.statusText);
+  if (!response.ok) {
+    let message = body || response.statusText;
+    try { message = JSON.parse(body).error || message; } catch { /* non-JSON error */ }
+    throw new Error(message);
+  }
   return body ? JSON.parse(body) : null;
 }
 
@@ -48,6 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await authRequest("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ username, password }),
+      });
+      clearMembershipCache();
+      setUser(data.user);
+    },
+    async signup(email, displayName, password, confirmPassword) {
+      const data = await authRequest("/api/auth/signup", {
+        method: "POST", body: JSON.stringify({ email, displayName, password, confirmPassword }),
       });
       clearMembershipCache();
       setUser(data.user);

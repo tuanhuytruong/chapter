@@ -12,6 +12,12 @@ export function passwordError(value: unknown): string | null {
   return null;
 }
 
+export function displayName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return normalized.length >= 1 && normalized.length <= 60 ? normalized : null;
+}
+
 export function newOpaqueToken(): string {
   return crypto.randomBytes(32).toString("base64url");
 }

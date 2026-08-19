@@ -57,6 +57,7 @@ export const config = {
   passwordResetTtlMinutes: Math.min(60, Math.max(15, Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 45))),
   authRateLimitWindowMs: boundedIntegerEnv("AUTH_RATE_LIMIT_WINDOW_MS", 15 * 60_000, 60_000, 60 * 60_000),
   authLoginMaxAttempts: boundedIntegerEnv("AUTH_LOGIN_MAX_ATTEMPTS", 10, 1, 100),
+  authSignupMaxAttempts: boundedIntegerEnv("AUTH_SIGNUP_MAX_ATTEMPTS", 5, 1, 100),
   authPasswordResetMaxAttempts: boundedIntegerEnv("AUTH_PASSWORD_RESET_MAX_ATTEMPTS", 5, 1, 100),
   authOauthMaxAttempts: boundedIntegerEnv("AUTH_OAUTH_MAX_ATTEMPTS", 20, 1, 100),
   // Ordinary web requests should fail rather than consume the pool indefinitely.

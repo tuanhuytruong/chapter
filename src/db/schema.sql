@@ -63,7 +63,7 @@ CREATE INDEX IF NOT EXISTS password_reset_tokens_active_lookup
 -- Durable, privacy-preserving counters for sensitive authentication routes.
 -- rate_key is a SHA-256 hash of proxy-trusted IP plus normalized identifier.
 CREATE TABLE IF NOT EXISTS chapter.auth_rate_limits (
-  scope TEXT NOT NULL CHECK (scope IN ('login','forgot_password','reset_password','oauth')),
+  scope TEXT NOT NULL CHECK (scope IN ('login','signup','forgot_password','reset_password','oauth')),
   rate_key TEXT NOT NULL,
   window_started_at TIMESTAMPTZ NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
@@ -72,6 +72,9 @@ CREATE TABLE IF NOT EXISTS chapter.auth_rate_limits (
 );
 CREATE INDEX IF NOT EXISTS auth_rate_limits_window_cleanup_idx
   ON chapter.auth_rate_limits (window_started_at);
+ALTER TABLE chapter.auth_rate_limits DROP CONSTRAINT IF EXISTS auth_rate_limits_scope_check;
+ALTER TABLE chapter.auth_rate_limits ADD CONSTRAINT auth_rate_limits_scope_check
+  CHECK (scope IN ('login','signup','forgot_password','reset_password','oauth'));
 ALTER TABLE chapter.users DROP CONSTRAINT IF EXISTS users_podcast_voice_gender_check;
 ALTER TABLE chapter.users ADD CONSTRAINT users_podcast_voice_gender_check
   CHECK (podcast_voice_gender IS NULL OR podcast_voice_gender IN ('female', 'male'));

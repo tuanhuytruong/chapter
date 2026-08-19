@@ -9,6 +9,7 @@ const schema = read("src/db/schema.sql");
 const migration = read("migrations/20260802_add_auth_rate_limits.sql");
 const expected = [
   "/api/auth/login",
+  "/api/auth/signup",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/auth/google",

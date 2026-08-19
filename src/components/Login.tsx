@@ -6,40 +6,13 @@ import { useAuth } from "../AuthContext";
 export default function Login() {
   const { login } = useAuth();
   const [params] = useSearchParams();
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
   async function submit(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    setSubmitting(true);
-    try {
-      await login(username, password);
-    } catch {
-      setError("Invalid username or password.");
-    } finally {
-      setSubmitting(false);
-    }
+    event.preventDefault(); setError(""); setSubmitting(true);
+    try { await login(identifier, password); } catch { setError("Invalid email, username, or password."); } finally { setSubmitting(false); }
   }
-
-  return (
-    <main className="min-h-screen bg-natural-bg flex items-center justify-center p-4 font-sans">
-      <form onSubmit={submit} className="w-full max-w-sm bg-natural-cream border border-natural-border rounded-[28px] p-7 shadow-sm space-y-5">
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-10 h-10 bg-natural-sage rounded-full text-white flex items-center justify-center"><BookMarked className="w-5 h-5" /></div>
-          <h1 className="font-bold text-xl text-natural-dark">Welcome to Chapter</h1>
-          <p className="text-xs text-natural-stone">Sign in to your reading shelf.</p>
-        </div>
-        <label className="block text-xs font-bold text-natural-dark">Username<input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Your username" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label>
-        <div><label className="block text-xs font-bold text-natural-dark">Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label><div className="mt-1.5 flex justify-end"><Link to="/forgot-password" className="text-xs font-bold text-natural-sage underline">Forgot password?</Link></div></div>
-        {params.get("auth_error") === "google" && <p role="alert" className="text-xs text-red-600">Google sign-in could not be completed. Please try again.</p>}
-        {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
-        <button disabled={submitting} className="w-full rounded-full bg-natural-sage py-2.5 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-60">{submitting ? <Loader2 className="mx-auto w-4 h-4 animate-spin" /> : "Sign in"}</button>
-        <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-natural-stone"><span className="h-px flex-1 bg-natural-border" />or<span className="h-px flex-1 bg-natural-border" /></div>
-        <button type="button" onClick={() => window.location.assign("/api/auth/google?intent=login")} className="min-h-11 w-full rounded-full border border-natural-border bg-natural-bg text-xs font-bold text-natural-dark hover:border-natural-sage/60">Continue with Google</button>
-      </form>
-    </main>
-  );
+  return <main className="min-h-screen bg-natural-bg flex items-center justify-center p-4 font-sans"><form onSubmit={submit} className="w-full max-w-sm bg-natural-cream border border-natural-border rounded-[28px] p-7 shadow-sm space-y-5"><div className="text-center space-y-2"><div className="mx-auto w-10 h-10 bg-natural-sage rounded-full text-white flex items-center justify-center"><BookMarked className="w-5 h-5" /></div><h1 className="font-bold text-xl text-natural-dark">Welcome to Chapter</h1><p className="text-xs text-natural-stone">Sign in to your reading shelf.</p></div><label className="block text-xs font-bold text-natural-dark">Email or username<input autoFocus required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@example.com" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label><div><label className="block text-xs font-bold text-natural-dark">Password<input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" className="mt-1.5 w-full rounded-xl border border-natural-border bg-natural-bg px-3 py-2.5 text-natural-dark placeholder:text-natural-stone/70 outline-none transition focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/35 dark:bg-natural-cream/15 dark:[color-scheme:dark]" /></label><div className="mt-1.5 flex justify-end"><Link to="/forgot-password" className="text-xs font-bold text-natural-sage underline">Forgot password?</Link></div></div>{params.get("auth_error") === "google" && <p role="alert" className="text-xs text-red-600">Google sign-in could not be completed. Please try again.</p>}{error && <p role="alert" className="text-xs text-red-600">{error}</p>}<button disabled={submitting} className="w-full rounded-full bg-natural-sage py-2.5 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-60">{submitting ? <Loader2 className="mx-auto w-4 h-4 animate-spin" /> : "Sign in"}</button><div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-natural-stone"><span className="h-px flex-1 bg-natural-border" />or<span className="h-px flex-1 bg-natural-border" /></div><button type="button" onClick={() => window.location.assign("/api/auth/google?intent=login")} className="min-h-11 w-full rounded-full border border-natural-border bg-natural-bg text-xs font-bold text-natural-dark hover:border-natural-sage/60">Continue with Google to sign in</button><p className="text-center text-xs text-natural-stone">New to Chapter? <Link to="/signup" className="font-bold text-natural-sage underline">Create an account</Link></p></form></main>;
 }

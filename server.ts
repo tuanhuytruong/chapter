@@ -42,6 +42,7 @@ import {
 } from "./src/telegram-link.js";
 import { isAvatarPresetValue } from "./src/avatar-presets.js";
 import {
+  displayName,
   newOpaqueToken,
   normalizeEmail,
   passwordError,
@@ -183,9 +184,11 @@ app.post("/api/auth/login", authRateLimit(
   if (typeof username !== "string" || typeof password !== "string")
     return res.status(400).json({ error: "username and password required" });
   try {
+    const identifier = username.trim();
+    const email = normalizeEmail(identifier);
     const { rows } = await query<any>(
-      "SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE username=$1 AND environment=$2",
-      [username.trim(), APP_ENV],
+      "SELECT id, username, display_name, avatar_url, password_hash FROM users WHERE environment=$1 AND (username=$2 OR lower(email)=lower($3))",
+      [APP_ENV, identifier, email || ""],
     );
     const row = rows[0];
     if (
@@ -197,6 +200,32 @@ app.post("/api/auth/login", authRateLimit(
   } catch {
     res.status(503).json({ error: "Authentication service unavailable" });
   }
+  },
+);
+
+app.post("/api/auth/signup", authRateLimit(
+    authRateLimitPolicies.signup(
+      config.authRateLimitWindowMs,
+      config.authSignupMaxAttempts,
+    ),
+  ),
+  async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+    const name = displayName(req.body?.displayName);
+    const { password, confirmPassword } = req.body || {};
+    if (!email || !name || passwordError(password) || password !== confirmPassword)
+      return res.status(400).json({ error: "Use a valid email, name, and matching password between 10 and 256 characters." });
+    try {
+      const passwordHash = await bcrypt.hash(password, 12);
+      const { rows } = await query<any>(
+        "INSERT INTO users (username, environment, password_hash, email, display_name) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, display_name, avatar_url",
+        [safeUsername(email), APP_ENV, passwordHash, email, name],
+      );
+      res.status(201).json({ user: await establishSession(req, rows[0]) });
+    } catch (error: any) {
+      if (error?.code === "23505") return res.status(409).json({ error: "We could not create this account. Try signing in or resetting your password." });
+      res.status(503).json({ error: "Account creation is unavailable. Please try again." });
+    }
   },
 );
 
@@ -310,9 +339,9 @@ app.get(
     ),
   ),
   (req, res) => {
-  const intent = req.query.intent === "link" ? "link" : "login";
+  const intent = req.query.intent === "link" ? "link" : req.query.intent === "signup" ? "signup" : "login";
   if (!authConfigured() || (intent === "link" && !req.session.user))
-    return res.redirect(`${config.appUrl}/login?auth_error=google`);
+    return res.redirect(`${config.appUrl}/${intent === "signup" ? "signup" : "login"}?auth_error=google`);
   const state = randomUrlToken(),
     nonce = randomUrlToken(),
     verifier = randomUrlToken();
@@ -344,6 +373,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const pending = req.session.googleAuth;
   delete req.session.googleAuth;
+  const authErrorPath = pending?.intent === "signup" ? "signup" : "login";
   if (
     !pending ||
     pending.expiresAt < Date.now() ||
@@ -351,7 +381,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     typeof req.query.code !== "string" ||
     !authConfigured()
   )
-    return res.redirect(`${config.appUrl}/login?auth_error=google`);
+    return res.redirect(`${config.appUrl}/${authErrorPath}?auth_error=google`);
   try {
     const client = new OAuth2Client(
       config.googleClientId,
@@ -432,7 +462,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
     await establishSession(req, row);
     res.redirect(`${config.appUrl}/`);
   } catch {
-    res.redirect(`${config.appUrl}/login?auth_error=google`);
+    res.redirect(`${config.appUrl}/${authErrorPath}?auth_error=google`);
   }
 });
 

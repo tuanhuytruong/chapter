@@ -34,6 +34,7 @@
     "verify:podcast-book-status": "tsx scripts/verify-podcast-book-status.ts",
     "verify:listen-rhythm": "tsx scripts/verify-listen-rhythm.ts",
     "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
+    "verify:auth-signup": "tsx scripts/verify-auth-signup.ts",
     "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",
     "verify:platform-db": "tsx scripts/verify-platform-db.ts",
     "verify:platform": "tsx scripts/verify-platform-headers.ts",

@@ -3,7 +3,7 @@ import type { Request, RequestHandler, Response } from "express";
 import { query } from "./db.js";
 
 export type AuthRateLimitPolicy = {
-  scope: "login" | "forgot_password" | "reset_password" | "oauth";
+  scope: "login" | "signup" | "forgot_password" | "reset_password" | "oauth";
   windowMs: number;
   maxAttempts: number;
   identifier: (req: Request) => string;
@@ -67,6 +67,12 @@ export const authRateLimitPolicies = {
     windowMs,
     maxAttempts,
     identifier: (req) => normalized(req.body?.username),
+  }),
+  signup: (windowMs: number, maxAttempts: number): AuthRateLimitPolicy => ({
+    scope: "signup",
+    windowMs,
+    maxAttempts,
+    identifier: (req) => normalized(req.body?.email),
   }),
   forgotPassword: (windowMs: number, maxAttempts: number): AuthRateLimitPolicy => ({
     scope: "forgot_password",
