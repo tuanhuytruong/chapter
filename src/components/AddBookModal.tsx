@@ -26,6 +26,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // Path of a file we uploaded but haven't saved yet — delete it if the user
   // closes the modal without saving.
@@ -129,6 +130,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
               const f = e.target.files?.[0];
               if (!f) return;
               const attempt = ++uploadAttemptRef.current;
+              setUploadError(null);
               const oldPath = uploadedPathRef.current;
               uploadedPathRef.current = null;
               clearUpload();
@@ -142,11 +144,14 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
                 }
                 setUpload({ filePath: r.file_path, filename: r.filename, fileType: r.file_type });
                 setFileType(r.file_type);
+                setUploadError(null);
                 uploadedPathRef.current = r.file_path; // mark for cleanup if not saved
                 onToast({ type: 'ok', msg: `Uploaded ${r.filename}` });
               } catch (err: any) {
-                if (attempt === uploadAttemptRef.current) clearUpload();
-                onToast({ type: 'err', msg: err.message });
+                if (attempt === uploadAttemptRef.current) {
+                  clearUpload();
+                  setUploadError(err.message || 'Could not upload this file. Please choose another PDF or EPUB.');
+                }
               } finally {
                 if (attempt === uploadAttemptRef.current) setUploading(false);
               }
@@ -163,6 +168,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             <p className="text-[10px] text-natural-stone mt-1">Max 100MB · PDF or EPUB</p>
             {!uploading && upload && !uploadReady && <p className="text-[10px] text-natural-stone mt-1">Use the server-detected {upload.fileType.toUpperCase()} type to add this file.</p>}
             {!uploading && !upload && <p className="text-[10px] text-natural-stone mt-1">Choose a file to enable Add Book.</p>}
+            {uploadError && <p role="alert" className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-800">{uploadError}</p>}
             {uploadedFilename && (
               <div aria-label="Uploaded file" title={uploadedFilename}
                 className="mt-1 w-full truncate rounded-xl border border-natural-border bg-natural-cream/30 px-3 py-2 text-xs font-mono text-natural-stone/70 cursor-default">
