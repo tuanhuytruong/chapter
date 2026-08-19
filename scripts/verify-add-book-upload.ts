@@ -14,6 +14,7 @@ const daySummary = await readFile(new URL("../src/components/DaySummary.tsx", im
 assert.match(daySummary, /text-sm text-natural-dark font-sans leading-relaxed/, "casual session prose uses text-sm");
 assert.match(daySummary, /text-sm leading-relaxed text-natural-dark/, "Deep Reading fallback prose uses text-sm");
 assert.match(daySummary, /whitespace-pre-wrap text-sm leading-relaxed text-natural-dark/, "Deep Reading section prose uses text-sm");
+assert.match(daySummary, /flex gap-1\.5 text-sm text-natural-muted font-sans/, "Key insights use 14px text-sm");
 
 const epub = validateUploadResult({
   file_path: "/private/upload.epub",

@@ -187,7 +187,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       {log.key_insights && log.key_insights.length > 0 && (
         <ul className="space-y-1">
           {log.key_insights.map((ins, i) => (
-            <li key={i} className="flex gap-1.5 text-[11px] text-natural-muted font-sans">
+            <li key={i} className="flex gap-1.5 text-sm text-natural-muted font-sans">
               <span className="text-natural-sage mt-0.5">•</span><InlineMarkdown text={ins.replace(/^[-•*]\s+/, "")} highlight={highlight} />
             </li>
           ))}
