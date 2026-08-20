@@ -1,6 +1,1 @@
----
-type: Concept
-title: Temporary File B
-description: Temporary file B for workspace tests.
----
 b
