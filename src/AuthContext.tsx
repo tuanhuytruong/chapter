@@ -20,6 +20,10 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
+function isStandalonePwa(): boolean {
+  return typeof window !== "undefined" && (window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true);
+}
+
 async function authRequest(path: string, options?: RequestInit) {
   const response = await fetch(path, {
     credentials: "same-origin",
@@ -52,21 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async login(username, password) {
       const data = await authRequest("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, isPwa: isStandalonePwa() }),
       });
       clearMembershipCache();
       setUser(data.user);
     },
     async signup(email, displayName, password, confirmPassword) {
       const data = await authRequest("/api/auth/signup", {
-        method: "POST", body: JSON.stringify({ email, displayName, password, confirmPassword }),
+        method: "POST", body: JSON.stringify({ email, displayName, password, confirmPassword, isPwa: isStandalonePwa() }),
       });
       clearMembershipCache();
       setUser(data.user);
     },
     async completePasswordReset(token, newPassword, confirmPassword) {
       const data = await authRequest("/api/auth/reset-password", {
-        method: "POST", body: JSON.stringify({ token, newPassword, confirmPassword }),
+        method: "POST", body: JSON.stringify({ token, newPassword, confirmPassword, isPwa: isStandalonePwa() }),
       });
       clearMembershipCache();
       setUser(data.user);

@@ -24,6 +24,7 @@ import { podcastRecapRouter } from "./src/routes/podcast-recap.js";
 import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
+import { bestEffortRecordSuccessfulLogin, bestEffortTouchLastActive, bestEffortTouchLastSeen, type AuthMethod } from "./src/userLifecycleTracking.js";
 import { getPool } from "./src/db.js";
 import {
   dateInAppTz,
@@ -140,6 +141,7 @@ async function establishSession(
     display_name: string;
     avatar_url?: string | null;
   },
+  authMethod: AuthMethod,
 ) {
   await new Promise<void>((resolve, reject) =>
     req.session.regenerate((error) => (error ? reject(error) : resolve())),
@@ -153,6 +155,7 @@ async function establishSession(
   await new Promise<void>((resolve, reject) =>
     req.session.save((error) => (error ? reject(error) : resolve())),
   );
+  bestEffortRecordSuccessfulLogin(row.id, authMethod, req);
   return req.session.user;
 }
 
@@ -196,7 +199,7 @@ app.post("/api/auth/login", authRateLimit(
       !(await bcrypt.compare(password, row.password_hash))
     )
       return res.status(401).json({ error: "Invalid username or password" });
-    res.json({ user: await establishSession(req, row) });
+    res.json({ user: await establishSession(req, row, "password") });
   } catch {
     res.status(503).json({ error: "Authentication service unavailable" });
   }
@@ -221,7 +224,7 @@ app.post("/api/auth/signup", authRateLimit(
         "INSERT INTO users (username, environment, password_hash, email, display_name) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, display_name, avatar_url",
         [safeUsername(email), APP_ENV, passwordHash, email, name],
       );
-      res.status(201).json({ user: await establishSession(req, rows[0]) });
+      res.status(201).json({ user: await establishSession(req, rows[0], "password") });
     } catch (error: any) {
       if (error?.code === "23505") return res.status(409).json({ error: "We could not create this account. Try signing in or resetting your password." });
       res.status(503).json({ error: "Account creation is unavailable. Please try again." });
@@ -321,7 +324,7 @@ app.post(
       return res
         .status(400)
         .json({ error: "This reset link is invalid or has expired." });
-    res.json({ user: await establishSession(req, user) });
+    res.json({ user: await establishSession(req, user, "password_reset") });
   } catch {
     res
       .status(503)
@@ -459,7 +462,7 @@ app.get("/api/auth/google/callback", async (req, res) => {
           )
         ).rows[0];
     }
-    await establishSession(req, row);
+    await establishSession(req, row, "google");
     res.redirect(`${config.appUrl}/`);
   } catch {
     res.redirect(`${config.appUrl}/${authErrorPath}?auth_error=google`);
@@ -470,6 +473,16 @@ app.post("/api/auth/logout", (req, res) =>
   req.session.destroy(() => res.status(204).end()),
 );
 app.use("/api", requireAuth);
+app.use("/api", (req, res, next) => {
+  const userId = userFrom(req).id;
+  bestEffortTouchLastSeen(userId);
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    res.once("finish", () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) bestEffortTouchLastActive(userId);
+    });
+  }
+  next();
+});
 app.get("/api/auth/profile", async (req: Request, res: Response) => {
   try {
     const { rows } = await query<{
