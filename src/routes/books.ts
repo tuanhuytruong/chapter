@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { query, withClient, withTransaction } from "../db.js";
 import {
   buildEpubReadingUnits,
@@ -53,6 +54,18 @@ import path from "path";
 
 export const booksRouter = Router();
 booksRouter.use(requireAuth);
+booksRouter.use((req, res, next) => {
+  const meaningful = req.method === "POST" && (
+    req.path === "/" || req.path === "/all/advance" ||
+    /\/advance$/.test(req.path) || /\/wiki\/regenerate$/.test(req.path) ||
+    /\/reading-lens\/retry$/.test(req.path) || /\/reading-lens\/synthesis$/.test(req.path)
+  );
+  if (meaningful) {
+    const ownerId = userFrom(req).id;
+    res.once("finish", () => { if (res.statusCode >= 200 && res.statusCode < 300) bestEffortTouchLastActive(ownerId); });
+  }
+  next();
+});
 
 async function ownerCanMutate(
   req: Request,

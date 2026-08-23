@@ -24,7 +24,7 @@ import { podcastRecapRouter } from "./src/routes/podcast-recap.js";
 import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
-import { bestEffortRecordSuccessfulLogin, bestEffortTouchLastActive, bestEffortTouchLastSeen, type AuthMethod } from "./src/userLifecycleTracking.js";
+import { bestEffortRecordSuccessfulLogin, bestEffortTouchLastSeen, type AuthMethod } from "./src/userLifecycleTracking.js";
 import { getPool } from "./src/db.js";
 import {
   dateInAppTz,
@@ -473,16 +473,7 @@ app.post("/api/auth/logout", (req, res) =>
   req.session.destroy(() => res.status(204).end()),
 );
 app.use("/api", requireAuth);
-app.use("/api", (req, res, next) => {
-  const userId = userFrom(req).id;
-  bestEffortTouchLastSeen(userId);
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
-    res.once("finish", () => {
-      if (res.statusCode >= 200 && res.statusCode < 300) bestEffortTouchLastActive(userId);
-    });
-  }
-  next();
-});
+app.use("/api", (req, _res, next) => { bestEffortTouchLastSeen(userFrom(req).id); next(); });
 app.get("/api/auth/profile", async (req: Request, res: Response) => {
   try {
     const { rows } = await query<{

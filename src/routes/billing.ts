@@ -3,6 +3,7 @@ import { requireAuth, userFrom } from "../auth.js";
 import { billingCatalog } from "../billing/catalog.js";
 import { billingMe, createBillingOrder, getBillingOrder } from "../billing/service.js";
 import { vietQrConfig } from "../billing/vietqr.js";
+import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 
 export const billingRouter = Router();
 billingRouter.use(requireAuth);
@@ -17,8 +18,9 @@ billingRouter.get("/me", async (req: Request, res: Response) => {
 });
 billingRouter.post("/orders", async (req: Request, res: Response) => {
   try {
-    const result = await createBillingOrder(userFrom(req).id, req.body?.sku, req.body?.requestKey);
+    const ownerId = userFrom(req).id, result = await createBillingOrder(ownerId, req.body?.sku, req.body?.requestKey);
     if (result.status === "unavailable") return res.status(503).json({ error: "bank-transfer checkout is unavailable" });
+    bestEffortTouchLastActive(ownerId);
     res.status(result.status === "created" ? 201 : 200).json(result);
   } catch (error) { res.status(400).json({ error: error instanceof Error ? error.message : "checkout request failed" }); }
 });

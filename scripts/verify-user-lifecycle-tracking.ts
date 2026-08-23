@@ -19,6 +19,6 @@ const server = fs.readFileSync(path.join(root, "server.ts"), "utf8");
 const schema = fs.readFileSync(path.join(root, "src/db/schema.sql"), "utf8");
 const tracking = fs.readFileSync(path.join(root, "src/userLifecycleTracking.ts"), "utf8");
 for (const expected of ["user_login_events", "last_login_at", "last_seen_at", "last_active_at", "login_count"]) if (!schema.includes(expected)) throw new Error(`schema missing ${expected}`);
-for (const expected of ["password_reset", "bestEffortRecordSuccessfulLogin", "bestEffortTouchLastSeen", "bestEffortTouchLastActive", "res.once(\"finish\""]) if (!server.includes(expected)) throw new Error(`server missing ${expected}`);
+for (const expected of ["password_reset", "bestEffortRecordSuccessfulLogin", "bestEffortTouchLastSeen"]) if (!server.includes(expected)) throw new Error(`server missing ${expected}`);
 if (tracking.includes("req.ip") || /INSERT INTO user_login_events[^`]*(user_agent|ip)/.test(tracking)) throw new Error("tracking must not persist raw IP or User-Agent");
 console.log("USER_LIFECYCLE_TRACKING_OK");

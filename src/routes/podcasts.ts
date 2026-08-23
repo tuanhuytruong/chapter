@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { createReadStream } from "fs";
 import { mkdir, rename, stat, unlink, writeFile } from "fs/promises";
 import { query, withClient, withTransaction } from "../db.js";
@@ -10,6 +11,15 @@ import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { config } from "../config.js";
 
 export const podcastsRouter = Router();
+podcastsRouter.use((req, res, next) => {
+  const meaningful = (req.method === "POST" && (req.path === "/" || /\/regenerate$/.test(req.path))) ||
+    (req.method === "PUT" && /\/playlist\/progress$/.test(req.path));
+  if (meaningful) {
+    const ownerId = userFrom(req).id;
+    res.once("finish", () => { if (res.statusCode >= 200 && res.statusCode < 300) bestEffortTouchLastActive(ownerId); });
+  }
+  next();
+});
 
 type CatalogBook = { id: string; title: string; author: string | null; cover_url: string | null; summary_lang: string | null; reading_round: number };
 

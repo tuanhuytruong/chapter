@@ -4,6 +4,7 @@ import { effectiveEntitlement, quotaFor } from "../entitlements.js";
 import { query } from "../db.js";
 import { usageSummary } from "../usage.js";
 import { generateCrossBookConnections, getCrossBookConnections, getCrossBookSource, hasConnectionSource } from "../crossBookConnections.js";
+import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 
 export const crossBookConnectionsRouter = Router();
 crossBookConnectionsRouter.use(requireAuth);
@@ -33,7 +34,9 @@ crossBookConnectionsRouter.post("/generate", async (req: Request, res: Response)
   try {
     const ownerId = userFrom(req).id;
     if (!await canGenerate(ownerId)) return res.status(403).json({ error: "Cross-book Connections is unavailable on the current plan" });
-    res.json(await generateCrossBookConnections(ownerId, req.body?.requestKey));
+    const result = await generateCrossBookConnections(ownerId, req.body?.requestKey);
+    bestEffortTouchLastActive(ownerId);
+    res.json(result);
   } catch (error: any) {
     if (error?.name === "FeatureUnavailableError") return res.status(403).json({ error: "Cross-book Connections is unavailable on the current plan" });
     if (error?.name === "QuotaExceededError") return res.status(429).json({ error: "Cross-book Connections quota reached" });
