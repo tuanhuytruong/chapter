@@ -12,7 +12,11 @@ openwiki:
 
 # References & Testing
 
-Verification scripts under `/scripts/` ensure platform integrity:
+Verification scripts under `/scripts/` ensure platform integrity across features such as AI reading, memberships, billing, and UI components:
 - `/scripts/verify-platform-db.ts`
 - `/scripts/verify-ai-reader.ts`
 - `/scripts/verify-today-insights-markdown.ts`
+- `/scripts/confirm-vietqr-payment.ts`
+- `/scripts/verify-entitlements.ts`
+
+Related concepts: [Quickstart](/openwiki/quickstart.md), [Operations](/openwiki/operations.md).
