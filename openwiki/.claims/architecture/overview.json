@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b7939cdf4b177ca0f8e7586d754edd52bede11aecc5d3e4cc9ae6d0ea1a33f72",
+  "claims": [
+    {
+      "id": "claim_c6fd54fe9d954aa38c70b2fbedab0845",
+      "statement": "The server entry point is repo://server.ts, which initializes an Express application, configures security headers, session storage via connect-pg-simple in PostgreSQL, and mounts modular feature routers under /api.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L1-L24",
+          "version": "repo-lines-v1:sha256:fc8678a74959dbe417817bf310ba5f7ada4177763317432a7080acf79a5cb56a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwYWIzOTg0OTZkZmE4ZWRhZTI4M2Q0ZWRiZjljMjVhYTU0MjM1NDY4ZWFlNTA1OWJhMzZkYTc5NzkzNGU3MDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1ZTNmZGMwZTI0YTFiOTBhNzMwNmQ3NzIyYmE1ZDZhZTJmMDZmMDcxOGNiNDZkMTg0MWVhY2RmNzczYWQzMWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2e03ff5254064947b0526732e773db18",
+      "statement": "Database operations are handled by repo://src/db.ts using a PostgreSQL connection pool configured to target the chapter schema.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L13-L50",
+          "version": "repo-lines-v1:sha256:6d4e3fae885d641b67fb9d2dc9904eb35401f63ca1cb5207d173472ce05c4bd4:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkMzA0YjMwODRkMDYyMjQ4MTM2ZGUyODFiYTAyMTM5NGU5NDhiM2M1OTc4MTU5MjA1ODM4ZWFjNzU5MzlmNGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkZGQxOGJlNGNkZGM0OTBhMzU0N2M1MWE2ZDM4MDgzMjA5MWQwYmMzZGMzYTZiYjU1ZTkyOGFjMTFiY2VkYjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZkNWI3NDI3NTUxYmU4NGQyNTM4OWJhMGQwNjY4MzUzMmY0NzBkODVhMjg5YjMwMTE0MjRlYzE3YWU0YmZiMDAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_76fad1be34734252a06ec463febd1037",
+      "statement": "Database queries use timed execution wrappers that enforce statement and lock timeouts for request versus background operations within transactions.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L56-L99",
+          "version": "repo-lines-v1:sha256:831a63a6bebed8cf431cbbf3b35386380e0dfae60f8f07450c843ac1c876e84a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxN2ZmZWRkZWJjMzM5Njc4MTE4MjFkNGE1YjFjMjgxMGE5OTYxMDFmOTliZDhlOTdjNWExMDRlMGJjMDM0YTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhZDk3ZjgyMWE5ODI1NjdlZDUwMTRlYjFhODY1MmY5Mzk1ZTlhNWYyOGUxMjMzOGY3YmRhYjllMjFlZWJiOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU5ZmE3ZmI4NTlkN2QxYWE4MWUzYmViZmY0NGQ4NmI3YWEwNTJlMWQ5YjJiNjM3N2M4MzhlNmJkYTBlOTgwYzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d67f9165a8b44be391e2ffa7e54e20b3",
+      "statement": "API routing is modularized into dedicated routers for books, reviews, upload, podcasts, entitlements, billing, monthly reviews, ask-reading, and cross-book connections.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L11-L24",
+          "version": "repo-lines-v1:sha256:a1b6240fdb9ed1f8e98077616907a30b62080a105743b9714e77aee20b85cdee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYmM4NGVmNGM4NjI2ZDRmY2FhODIwMjljOWVhYzIyNzNiNTYzNWU4NTM3ZDk3ZmQyZjUyZDEzODUyYWViNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwYWIzOTg0OTZkZmE4ZWRhZTI4M2Q0ZWRiZjljMjVhYTU0MjM1NDY4ZWFlNTA1OWJhMzZkYTc5NzkzNGU3MDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyMGJlMDNiMzYyMzZkMzA3Yjc0NTBhNTQ5NTRjNzVhZmRiZjk2NjVmZGIzMDkwOTkzYWRjNWY3NDVmNjU2NjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1ZTNmZGMwZTI0YTFiOTBhNzMwNmQ3NzIyYmE1ZDZhZTJmMDZmMDcxOGNiNDZkMTg0MWVhY2RmNzczYWQzMWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4d57b0e997734525abb805e0cb8f39bf",
+      "statement": "Core backend services integrate authentication, LLM capabilities, user lifecycle tracking, weekly goals, listen rhythms, and Telegram linking.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L25-L28",
+          "version": "repo-lines-v1:sha256:b06fb17ea105211a24276697b509f446687b4fb62d0d88e9502be371a634eec3:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmY5M2Y3ZmZhNTBiMmQ5MmMxZDA1NTAyNWY4ODc5YTg1MWEyNDk1NTJhMWU2OGFmMjE3NzE1ODhmMDBjZDYyMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmY5OGQzOTRjNjA0NmI5OWI1NDNlOTYyOThhNGUwOTZlYTVkOTk2NjdmOTg2YzAzOThlYjM1NmExYWM4ZDcyYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTlhZjM4ZDYyZWQ3MWU4N2E0NGEwN2MzZThhZjBjMzNjMGVhYjc5OTBiOWE4YmRjNzI1YmFlNWUzYjBiNjYyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODE5ZjgyYzVkMTEzMDMzNzYzYjJmZmQzMjRkMWNjM2QwMWIxODMxZWRmYmJiODc0MjRmYzdiYjllYzlkNjAzMiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-25T17:44:34.504Z"
+  }
+}

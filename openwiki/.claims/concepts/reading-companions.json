@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5cf9556fc478f0a8fb80313a896ec1b28303739f4e63a823633620cce7e19de1",
+  "claims": [
+    {
+      "id": "claim_e2ca9fc023544c9b95aef1f77afab06f",
+      "statement": "The reading progress companion uses helper functions like buildReadingProgressPrompt and parseReadingProgressCompanion to generate and parse structured JSON reading threads backed strictly by saved reading text.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingProgressCompanion.ts#L1-L5",
+          "version": "repo-lines-v1:sha256:03e72df706335af03bd553f4d9560a2fbd98d96f3dcfd9c56997db2da3c1da2a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGQ0ZGI1NGM0YjIwYzhkYjczOTY0MTY5ZjY2OTg5ZTUzY2E4Y2FhMWFkODc4YmQ1NjQyZjE3NzFlZDJiZDc0NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTY5ZDEzYWIzZjMyNThlMGY4NDE5NjllMDc0M2VmYWIyOTY3MTAyZWZjNmFhNDQzZDNmYWZiODJmYjVhNDFkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_16d6964455f747f3b779eba501d38f12",
+      "statement": "Reading progress companions are persisted in the database with upsertReadingProgressCompanion and marked stale when new sessions cover previous ranges via markReadingProgressCompanionStaleIfCovered.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingProgressCompanionRepository.ts#L1-L4",
+          "version": "repo-lines-v1:sha256:e1d6f613f142ae40fc091c4424492da79181adcc9e33ab7f1c1fadc5e5d1b031:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY2NGZiNTQwZTNhZWI3MzlmYzM1NGQ0Nzc5NTgyZjRkMmFjMzQxMjU2OGQyNWJlMDBmZjkwNDdhMGMyYmM4MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWZiZjFkMzUwOTUyMTBlNDEwMzg1MTU1YmU1NzlhNjMwZGQwYTgyZGE4YTIzNjZmZWI0Njk1NWJjN2Q1ZGM0MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3a4f31129384740b39e88c01d6dba63",
+      "statement": "ReadingProgressCard renders the reading progress companion's main thread, converging ideas, open threads, and carry-forward points with interactive session citation badges.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L1-L7",
+          "version": "repo-lines-v1:sha256:87816ec364f4cfe88b29b2471ac079402022207cfadadd0836a4b1486b8fa84a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjlkNTkyOGRhYjdkOGE1YWM1ODBjYTRhNTFkZWI1N2M2ZTFkZWEwZTNiOWFkOTdhZjAwOGU0MzBkMmM2NmJjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTJlMDIyZGM0NzBhNTA4Y2NjOTI5NWI1NzM1YjliOGViMjY3ZGVhNzViZDY5Mjc0NTI3MzEwZGE2NGE0NDliYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_760dba1f42d2418d9356bb5dbd7e18d2",
+      "statement": "Reading Lens parses untrusted model output into a structured ReadingLensAnalysis containing core arguments, argument maps, key concepts, assumptions, and verified verbatim quotes.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingLens.ts#L4-L53",
+          "version": "repo-lines-v1:sha256:012db4ffa71af9f131c7ff91e9dc5b9be105c294fccc7554185369060c43197a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNTM5OTQ5NWY4MWRiYTkyM2ExNTRiZTcyYWEwYjZmMjQ0ZjJkZWY2YWIyYjM2YzY2ZmUyNzUxNmM5ZGI4YTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5NDg5MWVhMzc5OTBjODNhMjFjOGI5NWMzOTE2ZjEyNmNhZTlmYTdkNTlkMDdhODViNTFmMDQyMGFlMjcxNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlhZDgwM2YzOGE1NjRmOTYyMzE0M2I2MGZkZmY2NjJjN2E2NTZhZDRjZDBhYzE0MWUxNWUxNmQxZGQ4YWE3NGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2058a1e9fe41449ea208afdda192d77e",
+      "statement": "Reading Lens analyses are stored and version-controlled via database repository functions such as upsertReadingLensAnalysis and listReadingLensAnalyses.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingLensRepository.ts#L1-L24",
+          "version": "repo-lines-v1:sha256:e1d0396269a64d720100cd93ace326968f4dc6fba0f8d0e39a1e1f0467d1524c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzN2RiZjMxZTUzYTdjYTYzOGFiODA1ZjQ1YmViMTFiMWRiYmUwNzMyY2ExOWI2M2E2NmJhNGRjYjgyZjRhNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-25T17:44:34.504Z"
+  }
+}

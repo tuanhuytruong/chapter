@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:d60e1d3a1e18dfa11df40a4513d5967e7fe7164e6f2469064b144e9124d67bfd",
+  "claims": [
+    {
+      "id": "claim_6d53874a00c246788601ac4bd2549040",
+      "statement": "The API client defines methods for listing, creating, updating, reordering, and deleting books under /api/books.",
+      "evidence": [
+        {
+          "resource": "repo://src/api.ts#L408-L425",
+          "version": "repo-lines-v1:sha256:f64ffbcb28ffb55bce0df54dd0f8e81a36dc10acd70576607f2870e6572f7807:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxYjQ5YzRmNjU5MTA1ZDg5NGM3ODVlMWM2ODA3YTNmZjJjNmJlNmUzNjFhZWUzNGY0ZTY0OGQ5NGQ5Yzc2MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMWU4NDkxNmIzZDMzMGE1ZWVhOTBhZDE1Nzg5MWFlODY3NjQyZGIwNzkzODMyOWJiNDhjYWMwYmY2ODcyYWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkNjIyMWZlZWVjZTdiOTNjMDQzNjFmNGQ0YzFjMTE0ZDMwNzlhNDUzODgwMmUzMzczM2U3YjFiZjVmNjU3NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyOGZiZDI1ODhjYzg1ZTljODgyNDMxMDIyYTgwMzRlYmUyM2I3OTM3MTgyNTE2MTI3ODJlNzdkN2NhMzc0ODUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ea86badac2824425899990f18c862e5f",
+      "statement": "The books router enforces authentication on all routes and tracks user activity for meaningful POST mutations.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L47-L60",
+          "version": "repo-lines-v1:sha256:d661b07c245d3420c050869949d425cf84619205c3f87fb45fe5126c4558f19c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmOTM2M2I0M2I5MTNmNWU3NjBkYTc3YjE2NTMxZTU4OTIzN2ViYmUyNTJmNjczMGY3MTlhOGUwNDIwMjViZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1Y2UzZDlkMzdjZjE0ZWU2YTFiMjVmYmY0MzQzODc5MjMyYzQyMzllZmEzYTFhZTNhZjkzMTgyY2RkZDQwZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4Y2FhZDVkZDVjNTc2YWM4ZTk5ZGVmNTE5NTIwZDc4YzI0YmFhYjg4OGZmNTdhYTYwY2E1MjgyNmQ4OTExZTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6070f395d00642ebbb35e0b46732d046",
+      "statement": "The POST /api/books/:id/advance endpoint processes reading session advancement, generates AI insights, and returns an AdvanceResult.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L443-L444",
+          "version": "repo-lines-v1:sha256:acc6fe15c8fdcff39bf8b862d03f6918c89fe00d8484eda6610ab8f6d58e9c97:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2FjMTJhODgyM2E1ZjUzMzg0ZTJhMWFmNzdhMTc1NmYyY2IzYzg1YWE5NDE1MDc0NjQ5Y2IzY2RjYTJmODJlZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZiY2Y4NTZjMGI2ZTI3YjQ2NDgxZmM0ZDk2OTJkZGVlYzQ5ZGM5NDVhYzI3NTJiZjJlYjlkNTcwOWM3MTIyMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGQwYTIxZmRlNTU3MDk1NWZlNzZlMzY3NGQ3ZGEyNDM1N2JiZThkMTUzNzQwNmVkNzgyYmJhYzgwZWI1MWQxYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTlkMTkxNjc0NTMzZmM2Zjg3ZDIwMGM3ZTFiYTNkNGQwNDIwNWZmODFmYzcyODQwMzkwNjZlMGVmODljMTc0ZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1d0fdedb21824ec7aef58d79c67bf7dd",
+      "statement": "EPUB books are parsed into reading units in batches and persisted in transactions to serve as stable progress cursors.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L116-L160",
+          "version": "repo-lines-v1:sha256:0705f80c0f97ca59e6da8ae703b98c9a090fe5313a5cb09987829ec8c68285b3:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNDNlYTFkNTM1NzgxYjU4MjJlOTFiNjBhZWU3ZTM5ZDU2YjljYmFlMGFlYmI0M2EzYWM1MDNmNmY4NTY4NmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3YmZkMjAzNmFiYzk0ZmRlZjBhNjgxODQwMzlkMzc2MTI3OTg4OWQwMTMyOGQyOGNhYzMyZjlkMjQ0ZGNhMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2MWE3MmE5ZWI3OGRjMDM3MWM1YTc3Yzc2MmU4MjJiYTQ5Y2VkYmMzYjhiOGZhNjQ4ZjU2YzUxOTUxYjhjYjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e169989a12444621a5c9618e1000f1f7",
+      "statement": "PDF reading unit caching utilizes PostgreSQL advisory locks derived from book UUIDs to prevent concurrent duplicate ingestion.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L189-L200",
+          "version": "repo-lines-v1:sha256:4e6311590a3a0244de695a65517fafe91fbc8f6bc07c26e3142d2a4d5b7d6eb0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjZmViOWUxOTk3NmYxZTdmNzg5ODgyYzE2MDYyYzVlZGZjMWFhYzA3YzlkNGNkNGY2Y2Q2Njg1MmJlYTdlYTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhN2IwMjZhMTM1NzIzZjgyOTI1Zjc0ODdlNDMyOGZmZjBkOTU1ZDFmMzFjYzRhYThjNTExNDdiYTkzMWJjYTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjODE0MjViN2VkYTdmYTM2Njg4MTMwYjQ3ZGExZmRjODg0YzMxZmE4ZWEyM2I0Yjk3MjQ5OTQyMDMzOTMyYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwZDIzMmZkNjI0M2JiMTIyYTQxZjM0MDllODUzMDNjMWM1ZGFhMGJkNmRkZjg1YjU5YzYwODBhZGFkOTFmMDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4f6042c782614b0a9a4614f818a22e86",
+      "statement": "Spaced-repetition review endpoints allow fetching due reviews and submitting review outcomes.",
+      "evidence": [
+        {
+          "resource": "repo://src/api.ts#L476-L481",
+          "version": "repo-lines-v1:sha256:a8360117cbd8241f12652c190928027af4c7d14bdd982a9653e19d94eff962bc:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQ1ZWI4ZGEwMWMzZmFhODAyNTc2ZjY0NTJkM2U4MDNkODIyODhjYzIzZDc3MGM1ZmFiMGIwYTA5YzcxNzdjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDk5MGViNmNjZGIwZmVmY2MzYzlhODgzYzg3OWM5ODY2YmUzMzkzMWNhYWFiZjM2NjJkN2FjNGM0MTNlYzhiMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTVmNzZhNTViNGU5ZTM1ZGQzMjcyY2E5MDdlMGM4YzlmNWI0YTg4YmY1Y2FjNDU4MmMyYTk3MjEzOTk0YjY4OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGYwNjQ1MjNjMTEyNGViZDc1ODY5NWYxYjBhOTkwZTNlYjQ5OWYzZjgyZGEyYzRkNDc5YzUwOTM3YzZkOTE5YyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_908d53270b464c01856d62d493e7a61b",
+      "statement": "Entitlements and billing endpoints manage subscription tiers, usage limits, and order creation.",
+      "evidence": [
+        {
+          "resource": "repo://src/api.ts#L503-L510",
+          "version": "repo-lines-v1:sha256:7d78cfd136b6e823d0b8bc0b7f5911f919b7c64e3d3695ac76b0457ff8ed7d49:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2Y4NGI1Mjc5NTAxODc4MDMyZDM2YTU2ZjVmNjFmNDc5YWVkNGMzMzFmMDBjYmY2NWFmMzJiMWUzZWFhNjdhOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzAyYzQxNGI1NGNmODZkZmI0ZjkwZGZlN2Q3YmRiZmE2NjZiN2RkZGQzMmYxMjg2ZjIzMGE1YjUzMjQxODE4YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjBmOWI5ZDQzZDhkMmQzN2EzYmQ5Y2ExOTUwMzVhMzU4ZTBiNDQ5ZjZjMWVhYjk1MDgzOGM2MzdkNzc3ODIxMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDc2N2E5MjZlNzc4YzBlYTg3ZDliMWIzNjA4MWNhZGMzYjBjZTU4NzI3NjllMTZlY2JmZjY0ZGZjYmI3NDc2ZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_14e72aa0467b417faeba2e0ec02bb0ae",
+      "statement": "All daily progress and calendar calculations operate in the Asia/Bangkok (UTC+7) timezone.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L75-L78",
+          "version": "repo-lines-v1:sha256:548d356399d81775d589a23fb5d1f4057ce64249f68fd85a24387d70fae114fa:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGU2MzMyMzRhZDI2YjIzNDQ1NWI0NWZiODZmZWU3ZmJhZjYwNjMwMzA2MzhkMTgyOWRhMzI2MGIzNzdiNmRkMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmI4NGNmYzM1NWE2MjU3NWVjMzVlZjA1MmRjNDQ4YjNjNjRkMGE5NmZiY2I4NmQ1ZDEwYTdjZjYyMmRiMzE3NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTJmMTVkNjcxMGEzNjA4MmQ0MmM3NmZmM2Q4MzVmM2Q5MzZiMTYyMTdlYjJkY2JkMzBhMTA4ZDljZGNkMGE4OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGIwNWVhYmJiOTM4YWFkOTBkOWY4ZjNiOTJjNmY5NGE0NjZmNGZlMzYwMWNkMTViNWM5YjVmZDI4NTU4OTMxZiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-25T17:44:34.504Z"
+  }
+}

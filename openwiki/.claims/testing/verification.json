@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c5be90f189384a091d7b25b3b10106ae64b6769b0a06120b7d1454a947634668",
+  "claims": [
+    {
+      "id": "claim_d442e026af93411da97d93e6aad0dbee",
+      "statement": "The project defines numerous verify:* npm scripts in package.json to test isolated features, database schemas, and platform behavior.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L6-L54",
+          "version": "repo-lines-v1:sha256:247fd206b11b378e1c0ec505a7f51113185f93b04b61ecac9e742a1b2edad68e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_050e2e3135174ae998e7ac5b9dea215b",
+      "statement": "The build script bundles the frontend with Vite and server code with esbuild, outputting to dist/server.mjs and copying worker scripts.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L8-L8",
+          "version": "repo-lines-v1:sha256:571ea9019bcf198fc9896ed77ac354728670d77566d79b9779eec6841cf2f4a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTcxZWE5MDE5YmNmMTk4ZmM5ODk2ZWQ3N2FjMzU0NzI4NjcwZDc3NTY2ZDc5Yjk3NzllZWM2ODQxY2YyZjRhOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTcxZWE5MDE5YmNmMTk4ZmM5ODk2ZWQ3N2FjMzU0NzI4NjcwZDc3NTY2ZDc5Yjk3NzllZWM2ODQxY2YyZjRhOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2VjNjM0N2IwOTY3NDhhM2FlMDRmODI0NjdjMGUwZmUzYTA4ZDk4ZDFlMjYzZGQyNDUyZjJjZjkxZjU2NmY3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGE4MjRkMDVkZjRmMzY1N2Q0ZGZjMmVmZWU0ZTk2OWNkZWRlZGM5NmJkYzU1NTEyZjhiZWZiNjg0OGMwNjY5MCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ec0abef5c2654caf987054a787b61510",
+      "statement": "Type checking is executed via npm run lint, running tsc --noEmit against the TypeScript configuration.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L11-L11",
+          "version": "repo-lines-v1:sha256:fa41d399835d18ee00bc2cfa6693538b74378a1f8fb7f27314d22f98a17fe0e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmE0MWQzOTk4MzVkMThlZTAwYmMyY2ZhNjY5MzUzOGI3NDM3OGExZjhmYjdmMjczMTRkMjJmOThhMTdmZTBlMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmE0MWQzOTk4MzVkMThlZTAwYmMyY2ZhNjY5MzUzOGI3NDM3OGExZjhmYjdmMjczMTRkMjJmOThhMTdmZTBlMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkYjQxMmNkZDhiNDljNGM3MTkzYzZiMWZmMTNiNDZmZDhmNWIzMjBhZTlhODgwNDc0MDY2ZWIxZmI2MWYwNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWVlYWQzMTRhOTJkNTYyNWQzNjQ1OTIyZDQ4MDExNjM2ODcwMjM3NmVhMjJiY2IwMjg2Nzc2NTNhOWFhMWJjNyJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-25T17:44:34.504Z"
+  }
+}

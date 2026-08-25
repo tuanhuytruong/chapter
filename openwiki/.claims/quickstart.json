@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:149b290fd7d77cca02367c54e32f42e90dc12873519917e370da806d882f2329",
+  "claims": [
+    {
+      "id": "claim_473c7e89e6fb44d990aa149589279f45",
+      "statement": "Chapter is a self-hosted reading companion built with React 19, Vite, TypeScript, Express, PostgreSQL, and OpenAI-compatible LLM/TTS providers.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L1-L10",
+          "version": "repo-lines-v1:sha256:245fdb4772f4e48867970973bdd5731da742beaac7e5224c78dd5526606a5279:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjM2YyNzkxOTI4OTAxNTIyY2Q0NjRiOTBmODNjMGMyYzM5NDAyMjZmMzYxMDA2OTQwMTBlNDBkNGUxNzJmY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMwOTQzOTNlODE4ZmViYjkwNmJiZmVmNjNlM2ZhZDkyZDUwNTMzMWU5YjhiNmUxMmQ0MmQ3NTczYzQ1N2EyMjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5e3242e12f8b4f749f4e64507c03a9a6",
+      "statement": "The primary entry points are repo://server.ts for the backend Express server and repo://src/App.tsx for the frontend application.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L1-L50",
+          "version": "repo-lines-v1:sha256:ce9a6d6c5e5c03990ce7ef45c5613a7d3748a9d06f15c9b467c227cc2d51dcaf:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2MTQ4NjgzYjEzOGQ2MDcxNGUxNGJjMWMzNzJmZjJkZmU2MmEzZGZhYjExM2M5YWY2ZjU1M2UzNmI2MzVjNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiZDViMzU0MzMwMmQ0ZTk5Y2YwMDQ1OThiOTdkNmE1ZTExNGM5YjJjN2RjNDg2YTkwNjE1ZjI5MmQyYzAyOGUifQ"
+        },
+        {
+          "resource": "repo://src/App.tsx#L1-L30",
+          "version": "repo-lines-v1:sha256:1c8694f482fe30a50cc5b623a6405526aebdf2f5de27e3b631c4d3ed267221a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxYjAxYWNkNzMxNTM1NzQxZTJlZmFlM2EwMzdhYjI2YjkxODJhMjFhMjNiZmI2ZmU3N2E5NjM5YjhlNDMxZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5ZTRjMzc2ZWFlZmJjYjg1ZDk1MzI4ODAyYTY5NTJlNTk5M2JjNGZmYWIzNDdlY2Y4YjkzOTY2NGYzY2ViMzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5c2b92e6e8fe4a19a9f8baa2c0addacd",
+      "statement": "The repository uses focused verification scripts in repo://scripts/ (such as verify-platform-db.ts and verify-ai-reader.ts) for testing and verification.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L6-L54",
+          "version": "repo-lines-v1:sha256:247fd206b11b378e1c0ec505a7f51113185f93b04b61ecac9e742a1b2edad68e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-25T17:44:34.504Z"
+  }
+}

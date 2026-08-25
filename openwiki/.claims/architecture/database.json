@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:96276cf1f1cd9aa412957d0718b30acf9217fffccd29f5adf5bb1991bf2d5cfe",
+  "claims": [
+    {
+      "id": "claim_f2dd2def582a4ef2b5d23bddce43ded0",
+      "statement": "PostgreSQL DATE columns (OID 1082) are parsed into plain YYYY-MM-DD strings to avoid time-zone shifts and JSON ISO serialization issues.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L8-L11",
+          "version": "repo-lines-v1:sha256:0b94040b23332cd87137da6e42e3a8182e30ee35ba28d50af3b7b6c5fdd74be5:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTk0ZjI5NGY4YzhlYWE0MjViMzJiMzQ2NTc3YTY0ZjA4ZTE0NmU5OTJiYzdiMDI4NDNiYmU1MGUxOGQxNDVjOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDY4MjkyYzZhNGYzY2FhMDRhMjEzOGU0NTA2NGQ5MTgwODcwYmI2YzM5MzQyZmYxMGMxZTFiN2I3ZGE0MGZlZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGFiZDZmMDFhMGQyNjE2NmYzMmRlMTk0MWY5ODJiYWVjYjIxYzFmYzJkYTIwYzJiNDEwYjBiNmU4MDdiYjNiNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4b2bfc279c614e81b51b6cfa5bd4ad91",
+      "statement": "Query timeouts are categorized into request and background statement and lock timeout budgets, applied locally via set_config per transaction or query.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L101-L109",
+          "version": "repo-lines-v1:sha256:12cdf1b7a72a9287faa61871dfdbdf96d586d70fb354e1f0fc46e156a69db355:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzExZWE2Yzc5N2E3YjhlMjEzZDUwZjBmNWI0YTZiOGU0Njg4NmVkNmQ2NjZiNjJkNmZjN2ZlYjYzYzIxMzRlYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmI1ODBlOTY0ZjgzYTQ3M2Y0M2Q0NDM4NDYyOTQ5ZDY4YjU2MDBmZGE3ODdmMTYzNzQ1ZDAwZGU4OWNiZjM2YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTYyMjFkNmFkNzAwMTZiNjI3YjE4ZDc3Y2QzMzViNTlmNDIxMDNkZTcxNDRiMGM3OTY3ZDFiYTc4MjcwZTFiOCJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L15-L23",
+          "version": "repo-lines-v1:sha256:9e98fdfd5e7f9cb083767fa3a752aef14afe41056cf85bfe0f0ef83f24c7afd9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQ1ZDliNmIyMGVmZGIwNjZjMzI4ZTM3YTllMmQ2NmEwZDY3NTAyZjM2MjQwNWExYzc2YzEyZTBmNGFhZTRhMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWExZDFhNjMzOTAyMjljNzk4MzQ3ZTgzYTA0MDU0NDFjOTQwMDAzNTI4NGFkMTY4YzFiZjZjZGYxZDcwYTM3MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGFiZDZmMDFhMGQyNjE2NmYzMmRlMTk0MWY5ODJiYWVjYjIxYzFmYzJkYTIwYzJiNDEwYjBiNmU4MDdiYjNiNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDc3MzE4MDljOGUzNDYzMDExY2QxYTE1ZThmZWRkM2E3NjgzNmM1ZTcyOGEwMGQ5NjY3ZDU1MjQ5MjBhN2E5NSJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L56-L62",
+          "version": "repo-lines-v1:sha256:a433d5496cbde29b1b57f7a3d15c8ff39333ea00c63f507deffacb5632292b96:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDE3ZmZlZGRlYmMzMzk2NzgxMTgyMWQ0YTViMWMyODEwYTk5NjEwMWY5OWJkOGU5N2M1YTEwNGUwYmMwMzRhMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmFkOTdmODIxYTk4MjU2N2VkNTAxNGViMWE4NjUyZjkzOTVlOWE1ZjI4ZTEyMzM4ZjdiZGFiOWUyMWVlYmI5NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTM3ZWZkMDExMzZhOWQxZTUzZWM3YjZkY2JhNTI2YzdkNDZiOWFhMTJlNzZhY2Q4MmQyNWExM2UzMGJhMDhkZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_38cce00f4bcc470db814f421c8bb47c1",
+      "statement": "Transaction helpers (withTransaction and withBackgroundTransaction) wrap queries in BEGIN/COMMIT blocks with automatic ROLLBACK on failure and structured logging.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L120-L152",
+          "version": "repo-lines-v1:sha256:47d5bf60fea16d221f9f5bea0d13ec5e42f043ffade64d864c5fe81d38cd776b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjN2E2MTNmYTUzOTIzNjQyYmIzYWRlZWUyZDA0YWU4NWVmOWFkN2E2M2YxYjQzNjBhZTQxM2FmZmRlZDg4NmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1ZDVkYzg5Y2Y3YzU5MDkwNDc2YjEwOTQ3YWQyNmY3ZjA3NDY0MzI5MjgwMTE1NzNhNWUwODcwYWQ0MTY4MGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_498a063ae6c246619b386d5f4a3b2faf",
+      "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic and parse schema.sql by stripping comments and splitting statements.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L154-L200",
+          "version": "repo-lines-v1:sha256:7e5bc2ca30e5fd708f52004ec569c214d9d608380b217edbe27e1cda28de5850:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkZjEzZTIwMGIxMThhN2Q4ZTIxYjQzZjY0OGNhZDUwM2MxOTQ1OWFhYjFlNTljMzViMjMxMDY1NDgxNzJmYTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyMmNiYzQyZTExZDVmZWM2MGYwODNlZDQzY2MzOThjYmJkYjM5MmQwNjg3MDk5ZjU3OTI1MmE5ZjkxNzkzNGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_daa6f13e4a2b4f98b0e5490d69b89eee",
+      "statement": "The schema defines core authentication and user tables including users, user_login_events, password_reset_tokens, and auth_rate_limits with environment and security constraints.",
+      "evidence": [
+        {
+          "resource": "repo://src/db/schema.sql#L19-L100",
+          "version": "repo-lines-v1:sha256:66ce5e626f2f4b37c21f802f091cbd167d724ca81ca071dfa1bfac29511a859f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyOGYwYmNkMzc2NDc1MTAwZTU4ZTQwYzM2ZTMyNzhkZWJmN2NmYWEyMWFhMDg2ODI0ZWYwMWEzNmU3Y2U1OTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljOTE3ZDg2OGRhMmY5ODk5NTY2NmJmYzdmNDBiMTgwNmUzZmNlZTM4NmVhMWZlMTdhZTIzZjkzYTEzNWQxYTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwOTdiMWRmOWQxMDljMmJkODlmYWIxOTJmYzU3ZGIwMTE2YTY1OGY4ZjAwNmYzMDU5ZTcwZjQzNzY4MTAyY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5ODNhZTM5M2ZkZjZjYTY3MTVjOWU1OTExNzM1Yjg1MGMzMjUwYTNmOGMyYTAxZDAwZmQ0ZjAzMjI5NzliZmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c9bfbe00c7a42a5a521ae83787a84c2",
+      "statement": "Migrations are versioned SQL scripts (such as 20260825_add_reading_progress_companions.sql) that apply incremental schema updates transactionally.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260825_add_reading_progress_companions.sql#L1-L3",
+          "version": "repo-lines-v1:sha256:2ac65f60f7d108e3f3751cf7c527a0a68f18069670c8bb5f0df6ece04acc9574:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjNjMzRhNmJhZWNmNGJjOThmMjFmNTZmOWYxZmMwMDMwNTFiNjFhYWVjMTRmY2Q4ZDdlODBiNjM0MWYyZWNjZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjRjN2MyZmQyMjRlMzlkMzBlYzNjMTY4MTFjN2Q2NDUwNzlhNzRjNmYyZWE4ZmZiNWZkOTYyM2E0YTQyNjU3ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-25T17:44:34.504Z"
+  }
+}
