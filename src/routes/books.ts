@@ -31,16 +31,8 @@ import {
   listReadingLensAnalyses,
   upsertReadingLensAnalysis,
 } from "../readingLensRepository.js";
-import {
-  getSynthesis,
-  markReadingLensSynthesisStaleIfCovered,
-  upsertSynthesis,
-} from "../readingLensSynthesisRepository.js";
-import {
-  buildJourneySynthesisPrompt,
-  parseJourneySynthesis,
-  type JourneySource,
-} from "../journeySynthesis.js";
+import { markReadingProgressCompanionStaleIfCovered, getReadingProgressCompanion, upsertReadingProgressCompanion } from "../readingProgressCompanionRepository.js";
+import { buildReadingProgressPrompt, parseReadingProgressCompanion, type ProgressSource } from "../readingProgressCompanion.js";
 import {
   getTelegramConfig,
   sendTelegramMessage,
@@ -58,7 +50,7 @@ booksRouter.use((req, res, next) => {
   const meaningful = req.method === "POST" && (
     req.path === "/" || req.path === "/all/advance" ||
     /\/advance$/.test(req.path) || /\/wiki\/regenerate$/.test(req.path) ||
-    /\/reading-lens\/retry$/.test(req.path) || /\/reading-lens\/synthesis$/.test(req.path)
+    /\/reading-lens\/retry$/.test(req.path) || /\/reading-progress$/.test(req.path)
   );
   if (meaningful) {
     const ownerId = userFrom(req).id;
@@ -969,127 +961,13 @@ booksRouter.post(
   },
 );
 
-booksRouter.get(
-  "/:id/reading-lens/synthesis",
-  async (req: Request, res: Response) => {
-    try {
-      const book = (
-        await query("SELECT reading_experience FROM books WHERE id=$1", [
-          req.params.id,
-        ])
-      ).rows[0];
-      if (!book || book.reading_experience !== "analytical")
-        return res.status(404).json({ error: "analytical book not found" });
-      const round = Number(req.query.round);
-      res.json(await getSynthesis(req.params.id, Number.isFinite(round) ? round : undefined));
-    } catch (e: any) {
-      res
-        .status(503)
-        .json({
-          error: "reading lens synthesis unavailable",
-          detail: e.message,
-        });
-    }
-  },
-);
-booksRouter.post(
-  "/:id/reading-lens/synthesis",
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-    if (!(await ownerCanMutate(req, res, id))) return;
-    try {
-      const book = (
-        await query(
-          "SELECT summary_lang,reading_experience FROM books WHERE id=$1",
-          [id],
-        )
-      ).rows[0];
-      if (!book || book.reading_experience !== "analytical")
-        return res
-          .status(400)
-          .json({ error: "Story Thread books do not use Reading Lens" });
-      const { rows } = await query<any>(
-        "SELECT rla.*,rl.date,rl.session FROM reading_lens_analyses rla JOIN reading_log rl ON rl.id=rla.log_id WHERE rla.book_id=$1 AND rla.schema_version=1 ORDER BY rl.date ASC,rl.session ASC,rl.id ASC",
-        [id],
-      );
-      if (rows.length < 3)
-        return res
-          .status(409)
-          .json({ error: "at least three Reading Lens sessions are required" });
-      const prior = await getSynthesis(id);
-      const watermarkIndex = prior?.last_log_id
-        ? rows.findIndex(
-            (r: any) =>
-              r.log_id === prior.last_log_id &&
-              r.date === prior.last_log_date &&
-              r.session === prior.last_log_session,
-          )
-        : -1;
-      const usableWatermark = !!prior && !prior.stale && watermarkIndex >= 0;
-      if (usableWatermark && watermarkIndex === rows.length - 1)
-        return res.json(prior);
-      // Rebuild all chronology when stale or watermark is absent/invalid.
-      const selected = usableWatermark ? rows.slice(watermarkIndex + 1) : rows;
-      if (!selected.length) return res.json(prior);
-      const refs = rows.map((r: any) => ({
-        logId: r.log_id,
-        session: r.session,
-      }));
-      const sources: JourneySource[] = selected.map((r: any) => ({
-        logId: r.log_id,
-        session: r.session,
-        analystSummary: r.analyst_summary,
-        coreArgument: r.analysis?.coreArgument || "",
-        argumentMap: r.analysis?.argumentMap || [],
-        keyConcepts: r.analysis?.keyConcepts || [],
-        assumptionsAndLimits: r.analysis?.assumptionsAndLimits || [],
-        questionsToCarryForward: r.analysis?.questionsToCarryForward || [],
-        durableInsights: r.analysis?.durableInsights || [],
-        quote: r.analysis?.quote ?? null,
-        confidenceNotes: r.analysis?.confidenceNotes || [],
-      }));
-      const lang = book.summary_lang === "vi" ? "vi" : "en";
-      const priorData = prior
-        ? {
-            throughLine: prior.through_line,
-            evolvingConcepts: prior.evolving_concepts,
-            resolvedQuestions: prior.resolved_questions,
-            openQuestions: prior.open_questions,
-            tensions: prior.tensions,
-            confidenceNotes: prior.confidence_notes,
-            outputLanguage: prior.output_language,
-          }
-        : null;
-      const raw = await callJsonLLM(
-        "You synthesize a private Reading Lens journey using supplied sessions only.",
-        buildJourneySynthesisPrompt({
-          priorSynthesis: priorData,
-          sources,
-          language: lang,
-        }),
-        0.2,
-      );
-      const data = parseJourneySynthesis(raw, priorData, refs);
-      res.json(
-        await upsertSynthesis(
-          id,
-          data,
-          rows.length,
-          {
-            logId: rows.at(-1).log_id,
-            date: rows.at(-1).date,
-            session: rows.at(-1).session,
-          },
-          (prior?.source_revision || 0) + 1,
-        ),
-      );
-    } catch (e: any) {
-      res
-        .status(500)
-        .json({ error: "reading lens synthesis failed", detail: e.message });
-    }
-  },
-);
+booksRouter.get("/:id/reading-progress", async (req: Request, res: Response) => {
+  try { const book = (await query<any>("SELECT current_reading_round FROM books WHERE id=$1", [req.params.id])).rows[0]; if (!book) return res.status(404).json({ error: "book not found" }); const requested=Number(req.query.round); const round=Number.isInteger(requested)&&requested>=1?requested:book.current_reading_round; const exists=(await query("SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",[req.params.id,round])).rows[0]; if (!exists) return res.status(404).json({error:"reading round not found"}); res.json(await getReadingProgressCompanion(req.params.id,round)); } catch(e:any) { res.status(503).json({error:"reading progress unavailable",detail:e.message}); }
+});
+booksRouter.post("/:id/reading-progress", async (req: Request, res: Response) => {
+ const {id}=req.params; if (!(await ownerCanMutate(req,res,id))) return;
+ try { const book=(await query<any>("SELECT current_reading_round,status,summary_lang FROM books WHERE id=$1",[id])).rows[0]; if (!book) return res.status(404).json({error:"book not found"}); if(book.status!=="active") return res.status(409).json({error:"reading progress cannot be refreshed while this book is not active"}); const round=book.current_reading_round; const {rows}=await query<any>(`SELECT id,date,session,page_start,page_end,raw_text FROM reading_log WHERE book_id=$1 AND reading_round=$2 AND raw_text IS NOT NULL AND btrim(raw_text) <> '' ORDER BY date ASC,session ASC,id ASC`,[id,round]); if(!rows.length) return res.status(409).json({error:"at least one saved session with source text is required"}); const prior=await getReadingProgressCompanion(id,round);const last=rows.at(-1);if(prior&&!prior.stale&&prior.last_log_id===last.id&&prior.last_log_date===last.date&&prior.last_log_session===last.session)return res.json(prior);const sources:ProgressSource[]=rows.map((r:any)=>({logId:r.id,session:r.session,pageStart:r.page_start,pageEnd:r.page_end,text:r.raw_text}));const language=book.summary_lang==="vi"?"vi":"en";const raw=await callJsonLLM("You create only grounded, cited reading-progress JSON.",buildReadingProgressPrompt({sources,language}),0.2);const data=parseReadingProgressCompanion(raw,sources,language);res.json(await upsertReadingProgressCompanion(id,round,data,rows.length,{logId:last.id,date:last.date,session:last.session},(prior?.source_revision||0)+1)); } catch(e:any) {res.status(500).json({error:"reading progress generation failed",detail:e.message});}
+});
 
 // ── B6: Advance all active (define BEFORE /:id/advance to avoid route clash) ──
 // POST /api/books/all/advance
@@ -1442,6 +1320,7 @@ async function advanceBookNow(
     };
   });
   if (result?.log?.raw_text) {
+    await markReadingProgressCompanionStaleIfCovered(result.bookId, result.log.id);
     // Enrichment starts only after the reading transaction commits.
     if (result.readingExperience === "story") {
       void generateStoryThreadForLog(result.log, {
@@ -1541,7 +1420,7 @@ async function generateReadingLensForLog(
         analysis,
         readingLensSummary(analysis),
       );
-      await markReadingLensSynthesisStaleIfCovered(log.book_id, log.id);
+      await markReadingProgressCompanionStaleIfCovered(log.book_id, log.id);
       return;
     } catch (error) {
       const languageMismatch = error instanceof Error && error.name === "ReadingLensLanguageError";

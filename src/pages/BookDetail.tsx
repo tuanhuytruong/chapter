@@ -27,7 +27,7 @@ import {
 import type { UpgradePrompt, RhythmResponse } from "../api";
 import type {
   BookRow,
-  JourneySynthesisRow,
+  ReadingProgressCompanionRow,
   LogRow,
   ReadingLensRow,
   ReadingRoundRow,
@@ -38,7 +38,7 @@ import { dailyTargetLabel } from "../readingUnits";
 import DaySummary from "../components/DaySummary";
 import ReadingLensCard from "../components/ReadingLensCard";
 import { resolveGlossaryLanguage, GlossaryTerm, type GlossaryLanguage } from "../components/ContextualGlossary";
-import JourneySynthesisCard from "../components/JourneySynthesisCard";
+import ReadingProgressCard from "../components/ReadingProgressCard";
 import StreakHeatmap from "../components/StreakHeatmap";
 import MomentumScore from "../components/MomentumScore";
 import Toast from "../components/Toast";
@@ -179,9 +179,9 @@ export default function BookDetail() {
   const [storyRetryingLogId, setStoryRetryingLogId] = useState<string | null>(
     null,
   );
-  const [journeySynthesis, setJourneySynthesis] =
-    useState<JourneySynthesisRow | null>(null);
-  const [lensSynthesizing, setLensSynthesizing] = useState(false);
+  const [readingProgress, setReadingProgress] =
+    useState<ReadingProgressCompanionRow | null>(null);
+  const [readingProgressLoading, setReadingProgressLoading] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<
     string | null
@@ -250,12 +250,11 @@ export default function BookDetail() {
       try {
         // Persisted companion data is shared read-only. Generation/retry remains
         // owner-only, but every signed-in reader can see completed analyses.
+        setReadingProgress(await api.getReadingProgress(id, selected));
         if (b.reading_experience === "story")
           setStoryThread(await api.getStoryThread(id, selected));
-        else {
+        else
           setLenses(await api.getReadingLens(id, selected));
-          setJourneySynthesis(await api.getJourneySynthesis(id, selected));
-        }
       } catch (e: any) {
         // Companion analysis is non-critical, especially for a fresh book
         // with no sessions yet. The detail page remains usable.
@@ -653,17 +652,12 @@ export default function BookDetail() {
     }
   };
 
-  const synthesizeReadingLens = async () => {
+  const refreshReadingProgress = async () => {
     if (!id) return;
-    setLensSynthesizing(true);
-    try {
-      const result = await api.synthesizeJourney(id);
-      setJourneySynthesis(result);
-    } catch (e: any) {
-      setToast({ type: "err", msg: e.message });
-    } finally {
-      setLensSynthesizing(false);
-    }
+    setReadingProgressLoading(true);
+    try { setReadingProgress(await api.refreshReadingProgress(id)); }
+    catch (e: any) { setToast({ type: "err", msg: e.message }); }
+    finally { setReadingProgressLoading(false); }
   };
 
   const generateMindmap = async () => {
@@ -1266,13 +1260,7 @@ export default function BookDetail() {
             )}
             {logView !== "ai-reader" && (
               <div id="reader-panel" role="tabpanel" aria-labelledby={logView === "journey" ? "journey-tab" : "list-tab"}>
-                <JourneySynthesisCard
-                  synthesis={journeySynthesis}
-                  sessionCount={lenses.length}
-                  canEdit={Boolean(book.can_edit)}
-                  loading={lensSynthesizing}
-                  onSynthesize={synthesizeReadingLens}
-                />
+                <ReadingProgressCard companion={readingProgress} readingRound={selectedRound ?? book.current_reading_round} logCount={logs.length} hasRawText={logs.some((log) => Boolean(log.raw_text?.trim()))} canEdit={Boolean(book.can_edit)} bookStatus={book.status} loading={readingProgressLoading} onRefresh={refreshReadingProgress} onOpenReadingSession={openSavedReadingSession} />
                 {logs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
                     <BookOpen className="w-8 h-8 text-natural-stone" />

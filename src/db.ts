@@ -192,7 +192,7 @@ export async function verifyCoreSchema(): Promise<void> {
     "onboarding_progress", "podcasts", "subscriptions", "usage_events",
     "membership_prompt_state", "monthly_reviews", "ask_reading_answers",
     "cross_book_connections", "podcast_recaps", "billing_orders",
-    "billing_confirmations", "billing_transactions", "reading_lens_synthesis",
+    "billing_confirmations", "billing_transactions", "reading_progress_companions",
     "auth_rate_limits",
   ];
   const { rows } = await query<{ relation: string | null }>(
