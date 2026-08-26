@@ -4,6 +4,7 @@ import { query } from "../db.js";
 import { callLLM } from "../llm.js";
 import { config } from "../config.js";
 import { isPodcastSourceTooBrief, podcastMinimumWords, podcastPrompt, podcastWordCount, validatePodcastScript } from "./prompt.js";
+import { resolvePodcastChapter, resolvePodcastChapters } from "./chapters.js";
 import { synthesizePodcast } from "./tts.js";
 import { archivePodcast, deleteArchivedPodcast, logPodcastArchiveConfig, verifyPodcastArchive } from "./telegram.js";
 
@@ -35,11 +36,9 @@ async function markPodcastUnavailable(ownerId: string, bookId: string, round: nu
 
 async function autoQueueNextEligiblePodcast(ownerId: string, bookId: string, round: number, afterChapterKey: string, gender: "female" | "male", remaining = MAX_AUTO_SKIP_CHAIN): Promise<void> {
   if (remaining <= 0) return;
-  const after = (await query<{ unit_index: number }>("SELECT min(unit_index)::int AS unit_index FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2", [bookId, afterChapterKey])).rows[0];
-  if (!after) return;
-  const next = (await query<{ chapter_key: string }>(`SELECT chapter_key FROM book_reading_units
-    WHERE book_id=$1 AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' AND chapter_key <> $3 AND unit_index > $2
-    ORDER BY unit_index LIMIT 1`, [bookId, after.unit_index, afterChapterKey])).rows[0];
+  const resolved = await resolvePodcastChapters(bookId);
+  const index = resolved.chapters.findIndex((chapter) => chapter.chapter_key === afterChapterKey);
+  const next = index >= 0 ? resolved.chapters[index + 1] : null;
   if (!next) return;
   const result = await createPodcast(ownerId, bookId, next.chapter_key, gender, remaining - 1);
   if (result.status === "unavailable") return;
@@ -64,8 +63,9 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
   const units = await query<any>(`SELECT chapter_key, title, raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index`, [bookId, chapterKey]);
   const unit = units.rows[0];
   if (!unit) throw new Error("This EPUB chapter needs to be indexed before Podcast can use it");
-  const chapterTitle = units.rows.map((row) => typeof row.title === "string" ? row.title.trim() : "").find(Boolean) || null;
-  if (!chapterTitle) { const error: any = new Error("This EPUB section has no chapter heading and is not available as a podcast episode."); error.code = "CHAPTER_HEADING_REQUIRED"; throw error; }
+  const resolvedTarget = await resolvePodcastChapter(bookId, chapterKey);
+  const chapterTitle = resolvedTarget.chapter?.chapter_title || null;
+  if (!chapterTitle) { const error: any = new Error("This EPUB section is not available as a podcast episode."); error.code = "CHAPTER_HEADING_REQUIRED"; throw error; }
   const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
   if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
   const language = resolvePodcastLanguage(source.summary_lang, chapterText); const voice = voices[language][voiceGender];

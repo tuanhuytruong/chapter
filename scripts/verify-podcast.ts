@@ -147,9 +147,11 @@ try {
   const routeSource = readFileSync(new URL("../src/routes/podcasts.ts", import.meta.url), "utf8");
   assert(routeSource.includes('statusByChapter.get(chapter.chapter_key) !== "unavailable"'), "playlist next target skips unavailable chapters");
   assert(routeSource.includes('chapter_number: chapter?.chapter_number ?? null'), "ready playlist episodes retain stable source chapter ordinals");
-  assert(routeSource.includes("title IS NOT NULL AND title <> ''"), "catalog and playlist filter titleless EPUB front matter");
+  assert(routeSource.includes("resolvePodcastChapters(book.id)"), "catalog and playlist share the book-level chapter resolver");
+  const resolverSource = readFileSync(new URL("../src/podcast/chapters.ts", import.meta.url), "utf8");
+  assert(resolverSource.includes('headed.length >= 2') && resolverSource.includes('headed.length / normalized.length >= 0.4') && resolverSource.includes('`Section ${index + 1}`'), "headingless EPUBs resolve stable fallback sections at book level");
   const generatorSource = readFileSync(new URL("../src/podcast/generate.ts", import.meta.url), "utf8");
-  assert(generatorSource.includes("CHAPTER_HEADING_REQUIRED") && generatorSource.includes("no chapter heading"), "direct podcast creation rejects titleless EPUB fragments");
+  assert(generatorSource.includes("resolvePodcastChapter(bookId, chapterKey)"), "generation validates chapter keys against the resolved book-level mode");
   const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
   assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
   assert(playerSource.includes('String(episode.chapter_number ?? "?").padStart') && !playerSource.includes('`Chapter ${index + 1}`'), "player never renumbers filtered ready episodes");

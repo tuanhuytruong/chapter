@@ -9,6 +9,7 @@ import { createPodcast, podcastPublic, prunePodcastCache, recoverQueuedPodcastJo
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { config } from "../config.js";
+import { resolvePodcastChapters } from "../podcast/chapters.js";
 
 export const podcastsRouter = Router();
 podcastsRouter.use((req, res, next) => {
@@ -65,28 +66,17 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
     for (const book of books) await ensureChapterUnits(book);
     const result = [] as any[];
     const bookIds = books.map((book) => book.id);
-    const [units, episodes, narrators] = bookIds.length ? await Promise.all([
-      query<any>(`SELECT book_id, chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
-        FROM book_reading_units WHERE book_id = ANY($1) AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' GROUP BY book_id, chapter_key ORDER BY book_id, min(unit_index)`, [bookIds]),
+    const [episodes, narrators] = bookIds.length ? await Promise.all([
       query<any>("SELECT * FROM podcasts WHERE user_id=$1 AND book_id = ANY($2)", [ownerId, bookIds]),
       query<any>("SELECT book_id,reading_round,voice_gender FROM podcast_narrators WHERE book_id = ANY($1)", [bookIds]),
-    ]) : [{ rows: [] }, { rows: [] }, { rows: [] }];
-    const unitsByBook = new Map<string, any[]>();
-    for (const unit of units.rows) {
-      const rows = unitsByBook.get(unit.book_id) || [];
-      rows.push(unit);
-      unitsByBook.set(unit.book_id, rows);
-    }
+    ]) : [{ rows: [] }, { rows: [] }];
     const episodesByBookChapter = new Map(episodes.rows.map((episode) => [`${episode.book_id}\0${episode.reading_round}\0${episode.chapter_key}`, podcastPublic(episode)]));
     const narratorByBookRound = new Map(narrators.rows.map((narrator) => [`${narrator.book_id}\0${narrator.reading_round}`, narrator.voice_gender]));
     for (const book of books) {
       const round = book.reading_round || 1;
-      const chapters = (unitsByBook.get(book.id) || []).map(({ book_id: _bookId, ...unit }, index) => ({
-        ...unit,
-        chapter_number: index + 1,
-        episode: episodesByBookChapter.get(`${book.id}\0${round}\0${unit.chapter_key}`) || null,
-      }));
-      result.push({ ...book, narrator_gender: narratorByBookRound.get(`${book.id}\0${round}`) || null, chapters });
+      const resolved = await resolvePodcastChapters(book.id);
+      const chapters = resolved.chapters.map((chapter) => ({ ...chapter, episode: episodesByBookChapter.get(`${book.id}\0${round}\0${chapter.chapter_key}`) || null }));
+      result.push({ ...book, chapter_mode: resolved.mode, narrator_gender: narratorByBookRound.get(`${book.id}\0${round}`) || null, chapters });
     }
     res.json(result);
   } catch (error: any) { console.warn("[podcast] catalog failed:", error.message); res.status(500).json({ error: "Podcast catalog unavailable" }); }
@@ -99,14 +89,13 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
     const book = rows[0];
     if (!book) return res.status(404).json({ error: "Podcast book not found" });
     await ensureChapterUnits(book);
-    const [units, episodes, narrator] = await Promise.all([
-      query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
-        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
+    const [episodes, narrator, resolved] = await Promise.all([
       query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
+      resolvePodcastChapters(book.id),
     ]);
     const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
-    res.json({ ...book, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: units.rows.map((unit, index) => ({ ...unit, chapter_number: index + 1, episode: byChapter.get(unit.chapter_key) || null })) });
+    res.json({ ...book, chapter_mode: resolved.mode, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: resolved.chapters.map((chapter) => ({ ...chapter, episode: byChapter.get(chapter.chapter_key) || null })) });
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });
 
@@ -127,23 +116,25 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     const round = book.reading_round || 1;
     const [episodes, progress, chapters, narrator] = await Promise.all([
       query<any>(`SELECT p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at, min(u.unit_index)::int AS chapter_order
-        FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key AND u.title IS NOT NULL AND u.title <> ''
+        FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key
         WHERE p.user_id=$1 AND p.book_id=$2 AND p.reading_round=$3 AND p.status IN ('ready','archive_pending')
         GROUP BY p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at ORDER BY min(u.unit_index), p.created_at`, [userId, book.id, round]),
       query<any>("SELECT podcast_id,current_time_seconds,completed_at,updated_at FROM podcast_playback_progress WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]),
-      query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page
-        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
+      resolvePodcastChapters(book.id),
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2 LIMIT 1", [book.id, round]),
     ]);
+    const allowedKeys = new Set(chapters.chapters.map((chapter) => chapter.chapter_key));
+    episodes.rows = episodes.rows.filter((episode) => allowedKeys.has(episode.chapter_key));
     const readyByChapter = new Set(episodes.rows.map((episode) => episode.chapter_key));
     const allStatus = await query<any>("SELECT chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
     const statusByChapter = new Map(allStatus.rows.map((episode) => [episode.chapter_key, episode.status]));
-    const chapterRows = chapters.rows.map((chapter, index) => ({ ...chapter, chapter_number: index + 1 }));
+    const chapterRows = chapters.chapters;
     const chapterByKey = new Map(chapterRows.map((chapter) => [chapter.chapter_key, chapter]));
     const next = chapterRows.find((chapter) => !readyByChapter.has(chapter.chapter_key) && statusByChapter.get(chapter.chapter_key) !== "unavailable") || null;
     res.json({
       book_id: book.id,
       reading_round: round,
+      chapter_mode: chapters.mode,
       episodes: episodes.rows.map((episode) => {
         const chapter = chapterByKey.get(episode.chapter_key);
         return { ...podcastPublic(episode), chapter_key: episode.chapter_key, chapter_number: chapter?.chapter_number ?? null, chapter_title: chapter?.chapter_title || episode.chapter_title || null };

@@ -358,6 +358,7 @@ export interface PodcastNextChapter {
 
 export interface PodcastPlaylist {
   book_id: string;
+  chapter_mode?: "headed" | "fallback";
   reading_round: number;
   episodes: PodcastEpisode[];
   progress: PodcastPlaylistProgress | null;
@@ -366,6 +367,7 @@ export interface PodcastPlaylist {
 
 export interface PodcastCatalogBook {
   id: string;
+  chapter_mode?: "headed" | "fallback";
   title: string;
   author: string | null;
   cover_url?: string | null;
