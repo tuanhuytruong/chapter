@@ -325,7 +325,7 @@ CREATE TABLE IF NOT EXISTS chapter.podcasts (
 );
 ALTER TABLE chapter.podcasts DROP CONSTRAINT IF EXISTS podcasts_status_check;
 ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
-  CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed'));
+  CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed', 'unavailable'));
 CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
 

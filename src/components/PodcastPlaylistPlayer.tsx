@@ -127,8 +127,15 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
     if (auto) setAutoGenerating(true);
     const target = next.chapter_key;
     try {
-      await api.createPodcast(bookId, target);
+      const created = await api.createPodcast(bookId, target);
       onEpisodeCreated?.();
+      if (created.status === "unavailable") {
+        setPreparedNote("This brief chapter is being skipped; preparing the next eligible chapter…");
+        await refresh();
+        setGenerating(false);
+        if (auto) setAutoGenerating(false);
+        return;
+      }
     } catch (error: any) {
       if (String(error?.message || "").startsWith("409:")) { setGenerating(false); if (auto) setAutoGenerating(false); onNeedVoice?.(target); return; }
       setGenerating(false);
@@ -177,7 +184,7 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
     };
     const timer = window.setInterval(() => void poll(), 5000);
     void poll();
-  }, [bookId, playlist, generating, activeIndex, canGenerate, onNeedVoice, persist, onEpisodeCreated]);
+  }, [bookId, playlist, generating, activeIndex, canGenerate, onNeedVoice, persist, onEpisodeCreated, refresh]);
 
   // Put the current row at the top of the queue whenever playback changes, so
   // the first visible list item always confirms what is playing.

@@ -138,7 +138,7 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     const allStatus = await query<any>("SELECT chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
     const statusByChapter = new Map(allStatus.rows.map((episode) => [episode.chapter_key, episode.status]));
     const chapterRows = chapters.rows.map((chapter, index) => ({ ...chapter, chapter_number: index + 1 }));
-    const next = chapterRows.find((chapter) => !readyByChapter.has(chapter.chapter_key)) || null;
+    const next = chapterRows.find((chapter) => !readyByChapter.has(chapter.chapter_key) && statusByChapter.get(chapter.chapter_key) !== "unavailable") || null;
     res.json({
       book_id: book.id,
       reading_round: round,

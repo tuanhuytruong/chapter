@@ -314,7 +314,8 @@ export interface PodcastEpisode {
     | "archiving"
     | "archive_pending"
     | "ready"
-    | "failed";
+    | "failed"
+    | "unavailable";
   language: "vi" | "en";
   voice_model: string;
   word_count: number | null;

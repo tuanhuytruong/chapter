@@ -1,9 +1,14 @@
+export const MIN_PODCAST_SOURCE_WORDS = 30;
 export const NORMAL_PODCAST_MIN_WORDS = 100;
 export const SHORT_CHAPTER_SOURCE_WORDS = 180;
 export const SHORT_PODCAST_MIN_WORDS = 30;
 
 export function podcastWordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+export function isPodcastSourceTooBrief(chapterText: string): boolean {
+  return podcastWordCount(chapterText) < MIN_PODCAST_SOURCE_WORDS;
 }
 
 export function podcastMinimumWords(chapterText: string): number {

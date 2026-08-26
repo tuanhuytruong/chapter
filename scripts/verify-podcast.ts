@@ -1,12 +1,13 @@
 import { newDb } from "pg-mem";
 import express from "express";
 import { mkdtemp, writeFile, rm } from "fs/promises";
+import { readFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import { setPool } from "../src/db.ts";
 import { podcastsRouter } from "../src/routes/podcasts.ts";
 import { archiveFilename } from "../src/podcast/telegram.ts";
-import { NORMAL_PODCAST_MIN_WORDS, SHORT_PODCAST_MIN_WORDS, podcastMinimumWords, podcastPrompt, validatePodcastScript } from "../src/podcast/prompt.ts";
+import { MIN_PODCAST_SOURCE_WORDS, NORMAL_PODCAST_MIN_WORDS, SHORT_PODCAST_MIN_WORDS, isPodcastSourceTooBrief, podcastMinimumWords, podcastPrompt, validatePodcastScript } from "../src/podcast/prompt.ts";
 import { resolvePodcastLanguage } from "../src/podcast/generate.ts";
 
 const db = newDb();
@@ -136,11 +137,16 @@ try {
   assert(narrationPrompt.includes("front matter") && narrationPrompt.includes("Khi gấp lại những dòng giới thiệu này"), "Podcast prompt blocks generic introductory-page framing");
   const shortSource = Array(47).fill("word").join(" ");
   const normalSource = Array(180).fill("word").join(" ");
+  assert(isPodcastSourceTooBrief(Array(MIN_PODCAST_SOURCE_WORDS - 1).fill("word").join(" ")) && !isPodcastSourceTooBrief(shortSource), "under-30 source is unavailable while 47-word source remains eligible");
   assert(podcastMinimumWords(shortSource) === SHORT_PODCAST_MIN_WORDS && podcastMinimumWords(normalSource) === NORMAL_PODCAST_MIN_WORDS, "short source chapters receive a distinct compact episode threshold");
   assert(validatePodcastScript(shortSource, SHORT_PODCAST_MIN_WORDS) === null, "a grounded 47-word short opening episode is accepted");
   assert(String(validatePodcastScript(Array(29).fill("word").join(" "), SHORT_PODCAST_MIN_WORDS)).includes("minimum 30"), "short chapters still reject scripts under 30 words");
   assert(String(validatePodcastScript(shortSource, NORMAL_PODCAST_MIN_WORDS)).includes("minimum 100"), "normal chapters retain the 100-word floor");
   const compactPrompt = podcastPrompt({ title: "Book", author: "Author", chapterTitle: "Opening", language: "en", chapterText: shortSource, minimumWords: SHORT_PODCAST_MIN_WORDS }).system;
   assert(compactPrompt.includes("compact 30–90 word episode") && compactPrompt.includes("do not pad"), "short chapter prompt stays grounded without filler");
+  const routeSource = readFileSync(new URL("../src/routes/podcasts.ts", import.meta.url), "utf8");
+  assert(routeSource.includes('statusByChapter.get(chapter.chapter_key) !== "unavailable"'), "playlist next target skips unavailable chapters");
+  const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
+  assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
   console.log("PODCAST_ROUTE_FIXTURES_OK");
 } finally { server.close(); await rm(cache, { recursive: true, force: true }); await pool.end(); }

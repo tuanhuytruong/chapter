@@ -3,7 +3,7 @@ import path from "path";
 import { query } from "../db.js";
 import { callLLM } from "../llm.js";
 import { config } from "../config.js";
-import { podcastMinimumWords, podcastPrompt, validatePodcastScript } from "./prompt.js";
+import { isPodcastSourceTooBrief, podcastMinimumWords, podcastPrompt, podcastWordCount, validatePodcastScript } from "./prompt.js";
 import { synthesizePodcast } from "./tts.js";
 import { archivePodcast, deleteArchivedPodcast, logPodcastArchiveConfig, verifyPodcastArchive } from "./telegram.js";
 
@@ -21,7 +21,31 @@ export function resolvePodcastLanguage(requested: string | null, chapterText: st
 function safeArchiveMessage(error: unknown) { return `Archive pending: ${String(error instanceof Error ? error.message : error).slice(0, 700)}`; }
 export function podcastPublic(row: any) { const { tg_file_id, tg_file_unique_id, tg_chat_id, tg_message_id, local_cache_path, local_cache_until, user_id, book_id, chapter_key, error_message, ...safe } = row; return safe; }
 
-export async function createPodcast(ownerId: string, bookId: string, chapterKey: string, gender?: "female" | "male"): Promise<any> {
+const TOO_BRIEF_PREFIX = "SOURCE_TOO_BRIEF:";
+const MAX_AUTO_SKIP_CHAIN = 5;
+
+async function markPodcastUnavailable(ownerId: string, bookId: string, round: number, chapterKey: string, title: string | null, language: "vi" | "en", voice: string, sourceWords: number): Promise<any> {
+  const row = (await query<any>(`INSERT INTO podcasts (user_id,book_id,log_id,reading_round,chapter_key,chapter_title,language,voice_model,status,word_count,error_message)
+    VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,'unavailable',$8,$9)
+    ON CONFLICT (book_id,chapter_key,reading_round) DO UPDATE SET
+      status='unavailable', language=EXCLUDED.language, voice_model=EXCLUDED.voice_model, word_count=EXCLUDED.word_count, error_message=EXCLUDED.error_message, updated_at=now()
+    RETURNING *`, [ownerId, bookId, round, chapterKey, title, language, voice, sourceWords, `${TOO_BRIEF_PREFIX}${sourceWords}`])).rows[0];
+  return podcastPublic(row);
+}
+
+async function autoQueueNextEligiblePodcast(ownerId: string, bookId: string, round: number, afterChapterKey: string, gender: "female" | "male", remaining = MAX_AUTO_SKIP_CHAIN): Promise<void> {
+  if (remaining <= 0) return;
+  const after = (await query<{ unit_index: number }>("SELECT min(unit_index)::int AS unit_index FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2", [bookId, afterChapterKey])).rows[0];
+  if (!after) return;
+  const next = (await query<{ chapter_key: string }>(`SELECT chapter_key FROM book_reading_units
+    WHERE book_id=$1 AND chapter_key IS NOT NULL AND chapter_key <> $3 AND unit_index > $2
+    ORDER BY unit_index LIMIT 1`, [bookId, after.unit_index, afterChapterKey])).rows[0];
+  if (!next) return;
+  const result = await createPodcast(ownerId, bookId, next.chapter_key, gender, remaining - 1);
+  if (result.status === "unavailable") return;
+}
+
+export async function createPodcast(ownerId: string, bookId: string, chapterKey: string, gender?: "female" | "male", remainingAutoSkips = MAX_AUTO_SKIP_CHAIN): Promise<any> {
   const { rows } = await query<any>(`SELECT b.id,b.title,b.author,b.file_type,b.summary_lang,b.reading_round,b.status
     FROM books b WHERE b.id=$1 AND b.owner_id=$2`, [bookId, ownerId]);
   const source = rows[0]; if (!source) throw new Error("Book chapter was not found"); if (source.file_type !== "epub") throw new Error("Podcast is available for EPUB books only");
@@ -43,11 +67,17 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
   const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
   if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
   const language = resolvePodcastLanguage(source.summary_lang, chapterText); const voice = voices[language][voiceGender];
+  const sourceWords = podcastWordCount(chapterText);
+  if (isPodcastSourceTooBrief(chapterText)) {
+    const unavailable = await markPodcastUnavailable(ownerId, bookId, source.reading_round || 1, unit.chapter_key, unit.title, language, voice, sourceWords);
+    void autoQueueNextEligiblePodcast(ownerId, bookId, source.reading_round || 1, unit.chapter_key, voiceGender, remainingAutoSkips).catch((error) => console.warn("[podcast] too-brief continuation failed:", error.message));
+    return unavailable;
+  }
   const existing = (await query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND chapter_key=$2 AND reading_round=$3", [bookId, unit.chapter_key, source.reading_round || 1])).rows[0];
   if (existing) {
     // An ordinary Create/Try again must never replace a listenable episode or race
     // an already-queued worker. Explicit regeneration is the only destructive path.
-    if (["ready", "archive_pending", "queued", "scripting", "synthesizing", "archiving"].includes(existing.status)) return podcastPublic(existing);
+    if (["ready", "archive_pending", "queued", "scripting", "synthesizing", "archiving", "unavailable"].includes(existing.status)) return podcastPublic(existing);
     const retried = (await query<any>("UPDATE podcasts SET status='queued',language=$2,voice_model=$3,error_message=NULL,updated_at=now() WHERE id=$1 RETURNING *", [existing.id, language, voice])).rows[0];
     void generatePodcast(existing.id).catch((error) => console.warn("[podcast] background generation failed:", error.message));
     return podcastPublic(retried);
@@ -67,6 +97,7 @@ export async function regeneratePodcast(ownerId: string, episodeId: string): Pro
   const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [episode.book_id, episode.chapter_key]);
   const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
   if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
+  if (isPodcastSourceTooBrief(chapterText)) return podcastPublic(await markPodcastUnavailable(ownerId, episode.book_id, episode.reading_round, episode.chapter_key, episode.chapter_title, resolvePodcastLanguage(episode.summary_lang, chapterText), episode.voice_model, podcastWordCount(chapterText)));
   const language = resolvePodcastLanguage(episode.summary_lang, chapterText);
   // Regeneration keeps the narrator of the episode's own Book + Round.
   const narrator = (await query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [episode.book_id, episode.reading_round])).rows[0];
@@ -104,6 +135,10 @@ export async function generatePodcast(id: string): Promise<void> {
     await verifyPodcastArchive(config.podcastTelegramArchiveChatId);
     const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [current.book_id, current.chapter_key]);
     const chapterText = units.rows.map((row) => row.raw_text).join("\n\n"); if (!chapterText) throw new Error("No raw EPUB text exists for this chapter");
+    if (isPodcastSourceTooBrief(chapterText)) {
+      await markPodcastUnavailable(current.user_id, current.book_id, current.reading_round, current.chapter_key, current.chapter_title, current.language, current.voice_model, podcastWordCount(chapterText));
+      return;
+    }
     const minimumWords = podcastMinimumWords(chapterText);
     const prompt = podcastPrompt({ title: current.book_title, author: current.author, chapterTitle: current.chapter_title, language: current.language, chapterText, minimumWords });
     let script = await callLLM(prompt.system, prompt.user, 0.75, true, false, 300000, { priority: "background", traceLabel: "podcast-script", model: config.podcastLlmModel || undefined });
