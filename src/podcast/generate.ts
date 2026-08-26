@@ -3,7 +3,7 @@ import path from "path";
 import { query } from "../db.js";
 import { callLLM } from "../llm.js";
 import { config } from "../config.js";
-import { podcastPrompt, validatePodcastScript } from "./prompt.js";
+import { podcastMinimumWords, podcastPrompt, validatePodcastScript } from "./prompt.js";
 import { synthesizePodcast } from "./tts.js";
 import { archivePodcast, deleteArchivedPodcast, logPodcastArchiveConfig, verifyPodcastArchive } from "./telegram.js";
 
@@ -104,10 +104,11 @@ export async function generatePodcast(id: string): Promise<void> {
     await verifyPodcastArchive(config.podcastTelegramArchiveChatId);
     const units = await query<any>("SELECT raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index", [current.book_id, current.chapter_key]);
     const chapterText = units.rows.map((row) => row.raw_text).join("\n\n"); if (!chapterText) throw new Error("No raw EPUB text exists for this chapter");
-    const prompt = podcastPrompt({ title: current.book_title, author: current.author, chapterTitle: current.chapter_title, language: current.language, chapterText });
+    const minimumWords = podcastMinimumWords(chapterText);
+    const prompt = podcastPrompt({ title: current.book_title, author: current.author, chapterTitle: current.chapter_title, language: current.language, chapterText, minimumWords });
     let script = await callLLM(prompt.system, prompt.user, 0.75, true, false, 300000, { priority: "background", traceLabel: "podcast-script", model: config.podcastLlmModel || undefined });
-    if (validatePodcastScript(script)) script = await callLLM(prompt.system, `${prompt.user}\n\nReturn plain spoken prose only. No Markdown, headings, or lists.`, 0.65, true, false, 300000, { priority: "background", traceLabel: "podcast-script-retry", model: config.podcastLlmModel || undefined });
-    const invalid = validatePodcastScript(script); if (invalid) throw new Error(`Podcast script invalid: ${invalid}`);
+    if (validatePodcastScript(script, minimumWords)) script = await callLLM(prompt.system, `${prompt.user}\n\nReturn plain spoken prose only. No Markdown, headings, or lists.`, 0.65, true, false, 300000, { priority: "background", traceLabel: "podcast-script-retry", model: config.podcastLlmModel || undefined });
+    const invalid = validatePodcastScript(script, minimumWords); if (invalid) throw new Error(`Podcast script invalid: ${invalid}`);
     await query("UPDATE podcasts SET status='synthesizing',script_text=$2,word_count=$3,updated_at=now() WHERE id=$1", [id, script, script.split(/\s+/).length]);
     const audio = await synthesizePodcast(script, current.voice_model); audioPath = audio.filePath;
     await query("UPDATE podcasts SET status='archiving',duration_s=$2,updated_at=now() WHERE id=$1", [id, audio.durationS]);

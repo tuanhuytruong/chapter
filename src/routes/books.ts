@@ -990,7 +990,28 @@ booksRouter.post(
 );
 
 booksRouter.get("/:id/reading-progress", async (req: Request, res: Response) => {
-  try { const book = (await query<any>("SELECT current_reading_round FROM books WHERE id=$1", [req.params.id])).rows[0]; if (!book) return res.status(404).json({ error: "book not found" }); const requested=Number(req.query.round); const round=Number.isInteger(requested)&&requested>=1?requested:book.current_reading_round; const exists=(await query("SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",[req.params.id,round])).rows[0]; if (!exists) return res.status(404).json({error:"reading round not found"}); res.json(await getReadingProgressCompanion(req.params.id,round)); } catch(e:any) { res.status(503).json({error:"reading progress unavailable",detail:e.message}); }
+  try {
+    const book = (await query<any>("SELECT current_reading_round FROM books WHERE id=$1", [req.params.id])).rows[0];
+    if (!book) return res.status(404).json({ error: "book not found" });
+    const requestedRound = req.query.round;
+    const hasExplicitRound = requestedRound !== undefined;
+    const requested = Number(requestedRound);
+    if (hasExplicitRound && (!Number.isInteger(requested) || requested < 1)) {
+      return res.status(400).json({ error: "round must be a positive integer" });
+    }
+    const round = hasExplicitRound ? requested : book.current_reading_round;
+    const exists = (await query("SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2", [req.params.id, round])).rows[0];
+    // A newly added book has its current round before its first saved session.
+    // That is an empty companion state, not an error. Explicit unavailable
+    // historical/future round requests remain a real 404.
+    if (!exists) {
+      if (!hasExplicitRound && round === book.current_reading_round) return res.json(null);
+      return res.status(404).json({ error: "reading round not found" });
+    }
+    res.json(await getReadingProgressCompanion(req.params.id, round));
+  } catch (e: any) {
+    res.status(503).json({ error: "reading progress unavailable", detail: e.message });
+  }
 });
 booksRouter.post("/:id/reading-progress", async (req: Request, res: Response) => {
  const {id}=req.params; if (!(await ownerCanMutate(req,res,id))) return;
