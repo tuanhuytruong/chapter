@@ -32,6 +32,12 @@ function authHeaderValue(): string {
   return "Bea" + "rer " + (config.nineRouterApiKey ?? "");
 }
 
+export class PodcastTtsError extends Error {
+  constructor(message: string, readonly retryable: boolean, readonly status?: number) { super(message); }
+}
+export function isRetryableTtsError(error: unknown): error is PodcastTtsError { return error instanceof PodcastTtsError && error.retryable; }
+function safeTtsError(status?: number) { return status ? `TTS upstream unavailable (${status})` : "TTS upstream unavailable"; }
+
 /** One TTS chunk with retries: the 9router Edge TTS endpoint intermittently
  *  returns 502/503 (or a transient HTML error page) for an otherwise valid
  *  request, so retry with exponential backoff before surfacing a failure. */
@@ -51,14 +57,15 @@ async function ttsChunk(input: string, voice: string): Promise<Buffer> {
       });
       if (!response.ok) {
         const detail = (await response.text()).slice(0, 160);
-        throw new Error(`TTS failed (${response.status}): ${detail}`);
+        const retryable = [408, 429, 500, 502, 503, 504].includes(response.status);
+        throw new PodcastTtsError(retryable ? safeTtsError(response.status) : `TTS request rejected (${response.status}): ${detail}`, retryable, response.status);
       }
       const bytes = Buffer.from(await response.arrayBuffer());
       if (bytes.length < 256) throw new Error("TTS returned an empty audio response");
       return bytes;
     } catch (error) {
-      lastError = error;
-      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+      lastError = error instanceof PodcastTtsError ? error : new PodcastTtsError(safeTtsError(), true);
+      if (attempt < attempts && isRetryableTtsError(lastError)) await new Promise((resolve) => setTimeout(resolve, (1000 * 2 ** (attempt - 1)) + Math.floor(Math.random() * 500)));
     }
   }
   throw lastError;

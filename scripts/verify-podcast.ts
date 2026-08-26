@@ -152,6 +152,10 @@ try {
   assert(resolverSource.includes('headed.length >= 2') && resolverSource.includes('headed.length / normalized.length >= 0.4') && resolverSource.includes('`Section ${index + 1}`'), "headingless EPUBs resolve stable fallback sections at book level");
   const generatorSource = readFileSync(new URL("../src/podcast/generate.ts", import.meta.url), "utf8");
   assert(generatorSource.includes("resolvePodcastChapter(bookId, chapterKey)"), "generation validates chapter keys against the resolved book-level mode");
+  assert(generatorSource.includes("recoverRetryablePodcastTts") && generatorSource.includes("tts_retry_count") && generatorSource.includes("script_text"), "retryable TTS recovery reuses persisted scripts with a durable bounded budget");
+  const ttsSource = readFileSync(new URL("../src/podcast/tts.ts", import.meta.url), "utf8");
+  assert(ttsSource.includes("PodcastTtsError") && ttsSource.includes("[408, 429, 500, 502, 503, 504]"), "TTS classifies retryable provider/edge failures safely");
+  assert(generatorSource.includes("finishSynthesizedPodcast(current, audio.filePath") && generatorSource.includes("retainPendingArchive"), "archive outages preserve local playback after synthesis");
   const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
   assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
   assert(playerSource.includes('String(episode.chapter_number ?? "?").padStart') && !playerSource.includes('`Chapter ${index + 1}`'), "player never renumbers filtered ready episodes");

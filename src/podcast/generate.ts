@@ -5,7 +5,7 @@ import { callLLM } from "../llm.js";
 import { config } from "../config.js";
 import { isPodcastSourceTooBrief, podcastMinimumWords, podcastPrompt, podcastWordCount, validatePodcastScript } from "./prompt.js";
 import { resolvePodcastChapter, resolvePodcastChapters } from "./chapters.js";
-import { synthesizePodcast } from "./tts.js";
+import { isRetryableTtsError, synthesizePodcast } from "./tts.js";
 import { archivePodcast, deleteArchivedPodcast, logPodcastArchiveConfig, verifyPodcastArchive } from "./telegram.js";
 
 export type PodcastRow = { id: string; book_id: string; log_id: string | null; chapter_key: string; chapter_title: string | null; status: string; language: "vi" | "en"; voice_model: string; script_text: string | null; local_cache_path: string | null; local_cache_until: string | null };
@@ -123,6 +123,50 @@ async function retainPendingArchive(id: string, audioPath: string, durationS: nu
   await query("UPDATE podcasts SET status='archive_pending',duration_s=$2,local_cache_path=$3,local_cache_until=$4,error_message=$5,updated_at=now() WHERE id=$1", [id, durationS, cachePath, cacheExpiresAt(), safeArchiveMessage(error)]);
 }
 
+const MAX_TTS_RECOVERY_ATTEMPTS = 6;
+const TTS_RETRY_DELAY_MINUTES = 2;
+
+async function deferRetryableTts(id: string, error: unknown): Promise<boolean> {
+  if (!isRetryableTtsError(error)) return false;
+  const row = (await query<any>(`UPDATE podcasts SET
+    tts_retry_count=tts_retry_count+1,
+    tts_next_retry_at=CASE WHEN tts_retry_count+1 < $2 THEN now() + ($3::text || ' minutes')::interval ELSE NULL END,
+    status=CASE WHEN tts_retry_count+1 < $2 THEN 'synthesizing' ELSE 'failed' END,
+    error_message=CASE WHEN tts_retry_count+1 < $2 THEN 'TTS_RETRYABLE:' || $4 ELSE 'TTS upstream remained unavailable. Try again later.' END,
+    updated_at=now() WHERE id=$1 RETURNING tts_retry_count`, [id, MAX_TTS_RECOVERY_ATTEMPTS, TTS_RETRY_DELAY_MINUTES, error.status || 0])).rows[0];
+  return Boolean(row && row.tts_retry_count < MAX_TTS_RECOVERY_ATTEMPTS);
+}
+
+async function finishSynthesizedPodcast(current: any, audioPath: string, durationS: number): Promise<void> {
+  await query("UPDATE podcasts SET status='archiving',duration_s=$2,tts_next_retry_at=NULL,error_message=NULL,updated_at=now() WHERE id=$1", [current.id, durationS]);
+  try {
+    const archived = await archivePodcast(audioPath, config.podcastTelegramArchiveChatId, current.user_name, current.book_title, current.chapter_title, durationS);
+    await fs.mkdir(config.podcastCacheDir, { recursive: true });
+    const cachePath = path.join(config.podcastCacheDir, `${current.id}.mp3`); await fs.rename(audioPath, cachePath);
+    await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,error_message=NULL,tts_next_retry_at=NULL,updated_at=now() WHERE id=$1`, [current.id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, cacheExpiresAt()]);
+  } catch (error) { await retainPendingArchive(current.id, audioPath, durationS, error); }
+}
+
+export async function recoverRetryablePodcastTts(batchSize = 2): Promise<void> {
+  const due = await query<any>(`WITH candidate AS (SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id
+      WHERE p.status='synthesizing' AND p.script_text IS NOT NULL AND p.tts_next_retry_at <= now() AND p.tts_retry_count < $1 AND b.status='active'
+      ORDER BY p.tts_next_retry_at LIMIT $2 FOR UPDATE SKIP LOCKED)
+    UPDATE podcasts p SET tts_next_retry_at=now() + interval '15 minutes',updated_at=now()
+    FROM candidate c WHERE p.id=c.id RETURNING p.*`, [MAX_TTS_RECOVERY_ATTEMPTS, Math.max(1, Math.min(5, batchSize))]);
+  for (const episode of due.rows) {
+    let audioPath: string | undefined;
+    try {
+      const book = (await query<any>("SELECT b.title AS book_title,b.author,COALESCE(u.display_name,u.username) AS user_name FROM books b JOIN users u ON u.id=b.owner_id WHERE b.id=$1", [episode.book_id])).rows[0];
+      const audio = await synthesizePodcast(episode.script_text, episode.voice_model); audioPath = audio.filePath;
+      await finishSynthesizedPodcast({ ...episode, ...book }, audio.filePath, audio.durationS); audioPath = undefined;
+    } catch (error: any) {
+      const deferred = await deferRetryableTts(episode.id, error);
+      if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1", [episode.id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000)]);
+      console.warn(`[podcast] TTS-only recovery failed for ${episode.id}:`, error.message);
+    } finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
+  }
+}
+
 export async function generatePodcast(id: string): Promise<void> {
   // Claim and transition in one statement. A paused book, a duplicate worker, or
   // any episode no longer queued produces no row and therefore no side effects.
@@ -146,19 +190,14 @@ export async function generatePodcast(id: string): Promise<void> {
     let script = await callLLM(prompt.system, prompt.user, 0.75, true, false, 300000, { priority: "background", traceLabel: "podcast-script", model: config.podcastLlmModel || undefined });
     if (validatePodcastScript(script, minimumWords)) script = await callLLM(prompt.system, `${prompt.user}\n\nReturn plain spoken prose only. No Markdown, headings, or lists.`, 0.65, true, false, 300000, { priority: "background", traceLabel: "podcast-script-retry", model: config.podcastLlmModel || undefined });
     const invalid = validatePodcastScript(script, minimumWords); if (invalid) throw new Error(`Podcast script invalid: ${invalid}`);
-    await query("UPDATE podcasts SET status='synthesizing',script_text=$2,word_count=$3,updated_at=now() WHERE id=$1", [id, script, script.split(/\s+/).length]);
+    await query("UPDATE podcasts SET status='synthesizing',script_text=$2,word_count=$3,tts_retry_count=0,tts_next_retry_at=NULL,updated_at=now() WHERE id=$1", [id, script, script.split(/\s+/).length]);
     const audio = await synthesizePodcast(script, current.voice_model); audioPath = audio.filePath;
-    await query("UPDATE podcasts SET status='archiving',duration_s=$2,updated_at=now() WHERE id=$1", [id, audio.durationS]);
-    try {
-      const archived = await archivePodcast(audio.filePath, config.podcastTelegramArchiveChatId, current.user_name, current.book_title, current.chapter_title, audio.durationS);
-      await fs.mkdir(config.podcastCacheDir, { recursive: true });
-      const cachePath = path.join(config.podcastCacheDir, `${id}.mp3`); await fs.rename(audio.filePath, cachePath); audioPath = undefined;
-      await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,error_message=NULL,updated_at=now() WHERE id=$1`, [id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, cacheExpiresAt()]);
-    } catch (error) {
-      await retainPendingArchive(id, audio.filePath, audio.durationS, error); audioPath = undefined;
-      console.warn(`[podcast] archive pending for ${id}; protected local playback remains available:`, safeArchiveMessage(error));
-    }
-  } catch (error: any) { await query("UPDATE podcasts SET status='failed',error_message=$2,updated_at=now() WHERE id=$1", [id, String(error.message || error).slice(0, 1000)]).catch(() => undefined); throw error; }
+    await finishSynthesizedPodcast(current, audio.filePath, audio.durationS); audioPath = undefined;
+  } catch (error: any) {
+    const deferred = await deferRetryableTts(id, error).catch(() => false);
+    if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1", [id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000)]).catch(() => undefined);
+    throw error;
+  }
   finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
 }
 

@@ -5,7 +5,7 @@ import { mkdir, rename, stat, unlink, writeFile } from "fs/promises";
 import { query, withClient, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
-import { createPodcast, podcastPublic, prunePodcastCache, recoverQueuedPodcastJobs, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
+import { createPodcast, podcastPublic, prunePodcastCache, recoverQueuedPodcastJobs, recoverRetryablePodcastTts, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { config } from "../config.js";
@@ -353,6 +353,7 @@ export async function runPodcastMaintenance(): Promise<void> {
       if (!locked) return;
       try {
         await recoverQueuedPodcastJobs();
+        await recoverRetryablePodcastTts();
         await prunePodcastCache();
         await retryPendingPodcastArchives();
       } finally {
