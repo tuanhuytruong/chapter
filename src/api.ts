@@ -307,6 +307,7 @@ export interface PodcastEpisode {
   log_id: string | null;
   chapter_key: string;
   chapter_title: string | null;
+  chapter_number: number | null;
   status:
     | "queued"
     | "scripting"
@@ -327,6 +328,7 @@ export interface PodcastEpisode {
 export interface PodcastChapter {
   chapter_key: string;
   chapter_title: string | null;
+  chapter_number: number;
   start_unit: number;
   end_unit: number;
   start_page: number | null;

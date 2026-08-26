@@ -146,7 +146,9 @@ try {
   assert(compactPrompt.includes("compact 30–90 word episode") && compactPrompt.includes("do not pad"), "short chapter prompt stays grounded without filler");
   const routeSource = readFileSync(new URL("../src/routes/podcasts.ts", import.meta.url), "utf8");
   assert(routeSource.includes('statusByChapter.get(chapter.chapter_key) !== "unavailable"'), "playlist next target skips unavailable chapters");
+  assert(routeSource.includes('chapter_number: chapter?.chapter_number ?? null'), "ready playlist episodes retain stable source chapter ordinals");
   const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
   assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
+  assert(playerSource.includes('Section ${episode.chapter_number ?? "?"}') && !playerSource.includes('`Chapter ${index + 1}`'), "player never renumbers filtered ready episodes");
   console.log("PODCAST_ROUTE_FIXTURES_OK");
 } finally { server.close(); await rm(cache, { recursive: true, force: true }); await pool.end(); }

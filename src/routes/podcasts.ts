@@ -81,11 +81,12 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
     const narratorByBookRound = new Map(narrators.rows.map((narrator) => [`${narrator.book_id}\0${narrator.reading_round}`, narrator.voice_gender]));
     for (const book of books) {
       const round = book.reading_round || 1;
-      result.push({
-        ...book,
-        narrator_gender: narratorByBookRound.get(`${book.id}\0${round}`) || null,
-        chapters: (unitsByBook.get(book.id) || []).map(({ book_id: _bookId, ...unit }) => ({ ...unit, episode: episodesByBookChapter.get(`${book.id}\0${round}\0${unit.chapter_key}`) || null })),
-      });
+      const chapters = (unitsByBook.get(book.id) || []).map(({ book_id: _bookId, ...unit }, index) => ({
+        ...unit,
+        chapter_number: index + 1,
+        episode: episodesByBookChapter.get(`${book.id}\0${round}\0${unit.chapter_key}`) || null,
+      }));
+      result.push({ ...book, narrator_gender: narratorByBookRound.get(`${book.id}\0${round}`) || null, chapters });
     }
     res.json(result);
   } catch (error: any) { console.warn("[podcast] catalog failed:", error.message); res.status(500).json({ error: "Podcast catalog unavailable" }); }
@@ -138,11 +139,15 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     const allStatus = await query<any>("SELECT chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
     const statusByChapter = new Map(allStatus.rows.map((episode) => [episode.chapter_key, episode.status]));
     const chapterRows = chapters.rows.map((chapter, index) => ({ ...chapter, chapter_number: index + 1 }));
+    const chapterByKey = new Map(chapterRows.map((chapter) => [chapter.chapter_key, chapter]));
     const next = chapterRows.find((chapter) => !readyByChapter.has(chapter.chapter_key) && statusByChapter.get(chapter.chapter_key) !== "unavailable") || null;
     res.json({
       book_id: book.id,
       reading_round: round,
-      episodes: episodes.rows.map((episode) => ({ ...podcastPublic(episode), chapter_key: episode.chapter_key })),
+      episodes: episodes.rows.map((episode) => {
+        const chapter = chapterByKey.get(episode.chapter_key);
+        return { ...podcastPublic(episode), chapter_key: episode.chapter_key, chapter_number: chapter?.chapter_number ?? null, chapter_title: chapter?.chapter_title || episode.chapter_title || null };
+      }),
       progress: progress.rows[0] || null,
       next_chapter: next ? { ...next, has_narrator: !!narrator.rows[0], episode_status: statusByChapter.get(next.chapter_key) || null } : null,
     });
