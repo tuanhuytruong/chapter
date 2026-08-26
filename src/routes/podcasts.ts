@@ -67,7 +67,7 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
     const bookIds = books.map((book) => book.id);
     const [units, episodes, narrators] = bookIds.length ? await Promise.all([
       query<any>(`SELECT book_id, chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
-        FROM book_reading_units WHERE book_id = ANY($1) AND chapter_key IS NOT NULL GROUP BY book_id, chapter_key ORDER BY book_id, min(unit_index)`, [bookIds]),
+        FROM book_reading_units WHERE book_id = ANY($1) AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' GROUP BY book_id, chapter_key ORDER BY book_id, min(unit_index)`, [bookIds]),
       query<any>("SELECT * FROM podcasts WHERE user_id=$1 AND book_id = ANY($2)", [ownerId, bookIds]),
       query<any>("SELECT book_id,reading_round,voice_gender FROM podcast_narrators WHERE book_id = ANY($1)", [bookIds]),
     ]) : [{ rows: [] }, { rows: [] }, { rows: [] }];
@@ -101,7 +101,7 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
     await ensureChapterUnits(book);
     const [units, episodes, narrator] = await Promise.all([
       query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page, sum(char_count)::int AS char_count
-        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
+        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
       query<any>("SELECT * FROM podcasts WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
     ]);
@@ -127,12 +127,12 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     const round = book.reading_round || 1;
     const [episodes, progress, chapters, narrator] = await Promise.all([
       query<any>(`SELECT p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at, min(u.unit_index)::int AS chapter_order
-        FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key
+        FROM podcasts p JOIN book_reading_units u ON u.book_id=p.book_id AND u.chapter_key=p.chapter_key AND u.title IS NOT NULL AND u.title <> ''
         WHERE p.user_id=$1 AND p.book_id=$2 AND p.reading_round=$3 AND p.status IN ('ready','archive_pending')
         GROUP BY p.id, p.book_id, p.reading_round, p.chapter_key, p.chapter_title, p.language, p.status, p.word_count, p.duration_s, p.created_at ORDER BY min(u.unit_index), p.created_at`, [userId, book.id, round]),
       query<any>("SELECT podcast_id,current_time_seconds,completed_at,updated_at FROM podcast_playback_progress WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]),
       query<any>(`SELECT chapter_key, min(title) AS chapter_title, min(unit_index)::int AS start_unit, max(unit_index)::int AS end_unit, min(page_label) AS start_page, max(page_label) AS end_page
-        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
+        FROM book_reading_units WHERE book_id=$1 AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' GROUP BY chapter_key ORDER BY min(unit_index)`, [book.id]),
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2 LIMIT 1", [book.id, round]),
     ]);
     const readyByChapter = new Set(episodes.rows.map((episode) => episode.chapter_key));

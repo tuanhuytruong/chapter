@@ -38,7 +38,7 @@ async function autoQueueNextEligiblePodcast(ownerId: string, bookId: string, rou
   const after = (await query<{ unit_index: number }>("SELECT min(unit_index)::int AS unit_index FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2", [bookId, afterChapterKey])).rows[0];
   if (!after) return;
   const next = (await query<{ chapter_key: string }>(`SELECT chapter_key FROM book_reading_units
-    WHERE book_id=$1 AND chapter_key IS NOT NULL AND chapter_key <> $3 AND unit_index > $2
+    WHERE book_id=$1 AND chapter_key IS NOT NULL AND title IS NOT NULL AND title <> '' AND chapter_key <> $3 AND unit_index > $2
     ORDER BY unit_index LIMIT 1`, [bookId, after.unit_index, afterChapterKey])).rows[0];
   if (!next) return;
   const result = await createPodcast(ownerId, bookId, next.chapter_key, gender, remaining - 1);
@@ -64,12 +64,14 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
   const units = await query<any>(`SELECT chapter_key, title, raw_text FROM book_reading_units WHERE book_id=$1 AND chapter_key=$2 ORDER BY unit_index`, [bookId, chapterKey]);
   const unit = units.rows[0];
   if (!unit) throw new Error("This EPUB chapter needs to be indexed before Podcast can use it");
+  const chapterTitle = units.rows.map((row) => typeof row.title === "string" ? row.title.trim() : "").find(Boolean) || null;
+  if (!chapterTitle) { const error: any = new Error("This EPUB section has no chapter heading and is not available as a podcast episode."); error.code = "CHAPTER_HEADING_REQUIRED"; throw error; }
   const chapterText = units.rows.map((row) => row.raw_text || "").join("\n\n");
   if (!chapterText.trim()) throw new Error("No raw EPUB text exists for this chapter");
   const language = resolvePodcastLanguage(source.summary_lang, chapterText); const voice = voices[language][voiceGender];
   const sourceWords = podcastWordCount(chapterText);
   if (isPodcastSourceTooBrief(chapterText)) {
-    const unavailable = await markPodcastUnavailable(ownerId, bookId, source.reading_round || 1, unit.chapter_key, unit.title, language, voice, sourceWords);
+    const unavailable = await markPodcastUnavailable(ownerId, bookId, source.reading_round || 1, unit.chapter_key, chapterTitle, language, voice, sourceWords);
     void autoQueueNextEligiblePodcast(ownerId, bookId, source.reading_round || 1, unit.chapter_key, voiceGender, remainingAutoSkips).catch((error) => console.warn("[podcast] too-brief continuation failed:", error.message));
     return unavailable;
   }
@@ -83,7 +85,7 @@ export async function createPodcast(ownerId: string, bookId: string, chapterKey:
     return podcastPublic(retried);
   }
   const inserted = await query<any>(`INSERT INTO podcasts (user_id,book_id,log_id,reading_round,chapter_key,chapter_title,language,voice_model,status)
-    VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,'queued') RETURNING *`, [ownerId, bookId, source.reading_round || 1, unit.chapter_key, unit.title, language, voice]);
+    VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,'queued') RETURNING *`, [ownerId, bookId, source.reading_round || 1, unit.chapter_key, chapterTitle, language, voice]);
   void generatePodcast(inserted.rows[0].id).catch((error) => console.warn("[podcast] background generation failed:", error.message));
   return podcastPublic(inserted.rows[0]);
 }
