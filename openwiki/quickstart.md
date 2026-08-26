@@ -5,7 +5,7 @@ description: Entry point for navigating the wiki and understanding the Chapter r
 tags: [quickstart, overview, navigation]
 verified:
   - by: openwiki/0.4.0
-    at: 2026-08-25T17:44:34.504Z
+    at: 2026-08-26T19:17:20.603Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json

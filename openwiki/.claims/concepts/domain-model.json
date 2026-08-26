@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c470473148bbb70234fa19b0af8f2f61f65efd4c5ca50a38544dbc08a6e634c6",
+  "claims": [
+    {
+      "id": "claim_459df64de5234fed83a1b299c5d35955",
+      "statement": "Books support an owner-private reading_intention field representing personal motivation or learning goals when starting a book.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260826_add_book_reading_intention.sql#L1-L3",
+          "version": "repo-lines-v1:sha256:ca4edc3165773766ad99e1a07a38b6cc68cd3c7f016384ddf99d9d475581776f:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzM2MzNlNmE5YzE2M2M2NzQ3ZmI5OTc5ZjA3NzkwMDUwNzlhZTQ1ZTZmZDIwY2Q0NWVmNDMwMDU2MjAzYWJiNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGNjYmY4ZjZkYTJlNTlmMmZjNTNiNzI0ZmI1YjZkNDk4OTI2NDdmMjJmOGI1NjQxMjdkY2Y3NDkzOGU0YWM5MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/types.ts#L51-L54",
+          "version": "repo-lines-v1:sha256:446d2d68d88bde5cf6134c5e9372fd248526f56f1681f73eee53e1caa3d068d4:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmI3ODAzY2RlM2ZjMzY1Y2I3ZWJiMmJjYzExMjExNmNjYWQ3MDU4ZDA3ZmY5ZmQ3ZmFmM2YxMDNhOWQxMzViNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGI0ZmM2ZTM2Mjg0NWUxMzA4ZTlhYmY0ODBhMTUyMzQ0ODdlMjVmYWRhYjU2NmE3YTQwOTE4YWU4NTBhMGViYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmE1ZDgwMmNmM2M5ODZkNzgxY2ExNmEzNzIzNWU3NGY2NTg5MDAzMGYxODgxYmM4ZGI2MzU2ZjJjODllMDg5NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTYwOTc4OWVlMTUzMWY5MDFjMWVjNDM2YTYyOWNjYmY5OGJiMGVlZTY5YjQyZTViOGYwMjhlNmEyYTE3YzgzZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_fd626f9b918d4dd6b54bb32281bbf107",
+      "statement": "Podcasts support an unavailable status constraint to handle situations where source material or generation prerequisites become invalid.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260826_add_podcast_unavailable_status.sql#L1-L9",
+          "version": "repo-lines-v1:sha256:3b6eea495f9822b147866d144d20b939d1bdc3da9368a875629028867d933d5b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjNjMzRhNmJhZWNmNGJjOThmMjFmNTZmOWYxZmMwMDMwNTFiNjFhYWVjMTRmY2Q4ZDdlODBiNjM0MWYyZWNjZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTgzZThjMWY0YWQ2MTJhNWJkOTIwNjdjMjliZGI5YjE1OTdmZDU0MWViZWQ0MTAyNjA3OWFhYmQ2YTRhNWJmMyJ9"
+        },
+        {
+          "resource": "repo://src/db/schema.sql#L328-L328",
+          "version": "repo-lines-v1:sha256:8224fe6c3ca26e1d28ae2d035d6d51789ee86f40daa29b4279126d534bf84de3:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODIyNGZlNmMzY2EyNmUxZDI4YWUyZDAzNWQ2ZDUxNzg5ZWU4NmY0MGRhYTI5YjQyNzkxMjZkNTM0YmY4NGRlMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODIyNGZlNmMzY2EyNmUxZDI4YWUyZDAzNWQ2ZDUxNzg5ZWU4NmY0MGRhYTI5YjQyNzkxMjZkNTM0YmY4NGRlMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTdjNWQyOWFjYjg2YWJiOWQwZDA2OTVkNzdhYWYyYzMxN2ZjMjdmMDI4MzhjNTcwYjFlZGIxMWM0MjE1MzcwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2RmOWIxODBjNjk5ZjNhMDgzZmJmNmJlN2VjMWZjYTM0MjA1OTc5Y2M1YWM3ZjNhMjdlMjEyNmE5ZjVlOWMwMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1491fb2dcee044ed858758a0e61415e2",
+      "statement": "Reading progress companions synthesize reading logs into main threads, converging insights, open threads, and carry-forward points with a stale flag for updates.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L5-L7",
+          "version": "repo-lines-v1:sha256:bcc7fb616368b34ce8a10245bfe9093c7e5efcecdf9062f68ee64aeaaaa77df1:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDE2MDU2OGMyNzUyNzBjMWFmNDJiYWQzOWRkNzJhYzNhZWZjNTcyNTgyMWYwNjdjNTljYmY0ZDk5ODQyYTUyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVhOWZhMDc0OWNlYzc2ZWJmNzlhYzA2NGQwZmM1ZGM0ZDhkZGE4NjA4ZWJhMjg3YTc3Mzg2MDRmZjFlOTE1YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDc4OTkwYzVhOTg4MjZkMGExY2Y4ZWQxNzc4ZWMxMGZjZWY4OGE4Y2ZiZjAwMGI4OWVmYTZmOTE0Zjc5NTg2MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        },
+        {
+          "resource": "repo://src/types.ts#L81-L82",
+          "version": "repo-lines-v1:sha256:b98d8d325c29c6de2b957e286ea94dac34328baee1fe96efa732e2f47febeeab:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjdjYjUwNTFmZjNkNTVmOTU4YzQ5OTk2YzgzMzkxNjY1YzE0OTgwMDQ3MmJmNDE0MDc2ZmM2OGUwYjlhZDZmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NDNjYjBhNTRjZWY5NTNiOWQyNGQ0ZjE5NzMwYzNkNjM3ZDliMDdjMTVhOGZkZTU4ZmIwMWEwNTdkNjU3MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmE4ZTZlZTFmNzE4ZTBjMmExNGMyZDZlYzg5MmRiZWNjMTcxNTM1ZTM1OWMyMDVmOWQ2ZDRlYjg1ZTVhYTBmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTI4NWMyNTg0MmEyMzIxYzlhNjY4YmFmNTZkZWM2ODU1OTY4N2UzYzBlOWVjZmRkMjE0NDZhMzVlYjY3ZDIxNiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-26T19:17:20.603Z"
+  }
+}

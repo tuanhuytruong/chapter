@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9fcefb2b09a7ae1512c2fcf8098468f962c65a9b45b96204a64c52e6f3c63f3d",
+  "claims": [
+    {
+      "id": "claim_270d10b2150941b1af2dead4ac2ad31f",
+      "statement": "Chapter relies on standalone TypeScript verification scripts under scripts/ for end-to-end integration checks rather than traditional heavy testing frameworks.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-podcast.ts",
+          "version": "repo-file-v1:sha256:c8dee80075b9d0052f88957b1ba9401a048bf52940eacbc0ef7ca92f857f46ff"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3d404de340340458290527dc1966980",
+      "statement": "Verification scripts like verify-podcast.ts and verify-reading-intention-reflection.ts instantiate ephemeral in-memory PostgreSQL databases via pg-mem to test database schema migrations, API routes, and feature behaviors safely.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-podcast.ts",
+          "version": "repo-file-v1:sha256:c8dee80075b9d0052f88957b1ba9401a048bf52940eacbc0ef7ca92f857f46ff"
+        },
+        {
+          "resource": "repo://scripts/verify-reading-intention-reflection.ts",
+          "version": "repo-file-v1:sha256:975865c30a6099e932ea7e5a17b2f67c424c2c732b4923f942034f4dfd261685"
+        }
+      ]
+    },
+    {
+      "id": "claim_f3f2ef15a90f4d2290e8628a2667f1b0",
+      "statement": "Verification scripts enforce strict assertion contracts on HTTP status codes, JSON response structures, and streaming behaviors such as HTTP Range requests for audio playback.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-podcast.ts#L53-L100",
+          "version": "repo-lines-v1:sha256:e7b614f91a033578e8a903f2dac77bb5f6cec1aea639e75ec8566283beda1e84:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyNjA0OTMxZWM1N2RkYTdkYmZjYzZmMmRlOTNmZjEwNmFkMjYxZjQ4YzQ2MjBmMTI5ZWViODI4NzE3YzQzMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNjU5MTM3YzcxNTUzNjUyMTM1MjJiMDM5ZjM0NDgxMGQ2N2ZkNjkxNDI4NDE0OGEwMTc3NDAwNTk3YTY5MTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImExYzhjNTI2ODBhZmM0NzgyZTNiMGYzNjVjZDFmOWYyMzBhOWI3ZGQxZWMyY2ZiNjZlMjMyZWZhYzE5MWIwYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0Zjk1MjAwNjY1NmMwYWQyYjgxMDlmNzk3NjQ2N2ZjZWJkNmU4ZTU0NWNhYTMzODQ0MGZmOWM3ZGZmYTdiZTQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-26T19:17:20.603Z"
+  }
+}

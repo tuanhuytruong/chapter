@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:088213e8fa43ecf59ac32ce8304439a7f39bd2dbf0a149b0ba334321efa0d843",
+  "claims": [
+    {
+      "id": "claim_426b9d8855e04f99b593a51d89f4639a",
+      "statement": "The backend server is initialized in server.ts using Express, configuring environment variables, database connections, and importing modular route handlers.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L1-L25",
+          "version": "repo-lines-v1:sha256:5c3c48075a1d3c3915c2c96f1c881272654528a47fe0e3ccf4320eaa29e2b34e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmOTNmN2ZmYTUwYjJkOTJjMWQwNTUwMjVmODg3OWE4NTFhMjQ5NTUyYTFlNjhhZjIxNzcxNTg4ZjAwY2Q2MjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmZDI4MDk1OWNkZTY3MTRhZDZjN2E3YjM0MjZmMTQ0ZWUzYWFiYWYyMTFmZTUzYzA3NGQ3MmVlYzI5ZDhjMDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3b3d2870b3f248a59343aaecb5fbc711",
+      "statement": "The Express application sets up robust security headers including strict Content Security Policy, X-Frame-Options DENY, and automatic no-store caching headers for all /api/ endpoints.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L62-L86",
+          "version": "repo-lines-v1:sha256:0fc9bebe81da11dbcb33222ab9c6fb696fe062f2d86246880428aa6fb6d2d202:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1YzYwZTM5MWM0YzFkYzU4OTI2MjMzNDE0Y2EzZWVjNzY3Mzg4MGM3OGY4MzZlMWU0M2I3MmNiYzY1MDkwOTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5ZjVlODRjODUzMzA3MDRlMDEwYmQ4NDlhYTgxZWM2YjI2M2MzYTliMDIyY2IyYTQ5NTFkZjA3YWRlYTYxY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiNTBjMzhlNzQ3NWFmZjdhOWZmZmQ5ZmVkNjNhYmJlNjRlOTY2MGJhMGRlMTQ1Mzg5ZjQyNjZjMTY3YjVmOTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8422b935699044719c0a4d9a9a292bae",
+      "statement": "Session management uses express-session backed by PostgreSQL via connect-pg-simple storing sessions in the chapter schema.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L90-L100",
+          "version": "repo-lines-v1:sha256:4c32e5fef987ffdda3ebf28f4a65572ed2e0a081a295580f44385ec9378a4e4d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1Njk4OGM0ZTg2OTRlYzJkYWExOThlYjgyNjNjMDJmYTYyMzkwYWZlZjI5OWNkYzk4M2U4YjBhMDk3NWEwM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyNDQ1ZDFmNmMxZWY3OTU1MWZmOTZiMTFlMzhkZWJkYjJiMWI2YTQ4Yzk0MGZlNjMyNzMxZDUzMGU4YTZkY2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiNTBjMzhlNzQ3NWFmZjdhOWZmZmQ5ZmVkNjNhYmJlNjRlOTY2MGJhMGRlMTQ1Mzg5ZjQyNjZjMTY3YjVmOTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5MjkzNzRkMTFmMTM5YzJmNWRhYzE0NWRhMmEyYmY1ZmNkODM3MDcxMjQ0ZDExMzQ1YmE2OTA1MzdmY2JlNDAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ca6ca33b16ab470ebe77a0a39af08753",
+      "statement": "Modular API routers are mounted for books, reviews, upload, podcasts, entitlements, billing, monthly reviews, ask-reading, cross-book connections, and podcast recaps.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L11-L23",
+          "version": "repo-lines-v1:sha256:c59373c62f124209c098f96025d69b2afe2655eb37a7d57aa4e0b67bb917a611:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYmM4NGVmNGM4NjI2ZDRmY2FhODIwMjljOWVhYzIyNzNiNTYzNWU4NTM3ZDk3ZmQyZjUyZDEzODUyYWViNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0NzhkYWE3NDhkODM1ZjFlY2VlNTZmM2EyY2EwODljODdlMjI3MjhkZGExZjllNGU1MGFjMTNhYWNkN2Q3NzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyMGJlMDNiMzYyMzZkMzA3Yjc0NTBhNTQ5NTRjNzVhZmRiZjk2NjVmZGIzMDkwOTkzYWRjNWY3NDVmNjU2NjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkNzQyMzgzMTg5ZDBlNDgwZDAwY2JjMmQ2MWRkYWU3NTZjYzdkNTNmNzlhMWVlYmY5YmJjZWI5MWEzNjM1NmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_921a171c81604c69af0ace870fb067ed",
+      "statement": "A public health check endpoint GET /health returns { ok: true } without requiring session authentication or database queries.",
+      "evidence": [
+        {
+          "resource": "repo://server.ts#L88-L89",
+          "version": "repo-lines-v1:sha256:617c6fc46f859d9c0795d3e0270e79d595ef6a5b9ce7f7c75c4b620df843d547:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjVhNDBmMzZhMDE4ZTg0MTI2YWZjNzVlMzYyOWYwNzg0MzU5YmZmODUwMTg1YjcwOTIwYzUxMDBjNzgzNjM4OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTI4ZmE0MzUxMjJiODliOTg4NzZjYzk3YThmOTEzYzFiMzY3MDM1ZDc4NmVjN2E2YTg3NTNlN2M0MGExODNlYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWJlZjg0NmY5NjZiMmNmYmRhM2ExMTg2MjAzODk5Mjk1OTk5NGE3ZjIzNzRkZmJkYjczZTM3NzBmNjQyYjE2MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmVjYzY1ZGMyM2I0MWFkYjQ2NzE2YmI4YzFiMTg0YjlhYzlhNDMzNzc2NzAwNmM3NzFiMWMzMDQ0ZDBkOTM2OSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-26T19:17:20.603Z"
+  }
+}

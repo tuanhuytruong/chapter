@@ -3,9 +3,6 @@ type: concept
 title: Reading Companions & Synthesis
 description: Domain concepts for reading companions, journey synthesis, and reading lens analysis repositories.
 tags: [reading-companions, reading-progress, reading-lens, synthesis]
-verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-25T17:44:34.504Z
 sources:
   - id: openwiki-source-ddf75957c1dba6e13c946ffe
     resource: repo://src/components/ReadingProgressCard.tsx
@@ -18,6 +15,9 @@ sources:
   - id: openwiki-source-2a69351402984e7a3ad6fd01
     resource: repo://src/readingProgressCompanionRepository.ts
 generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
+verified:
+  - by: openwiki/0.4.0
+    at: 2026-08-26T19:17:20.603Z
 ---
 
 # Reading Companions & Synthesis

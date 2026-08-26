@@ -5,7 +5,7 @@ description: High-level architectural overview of the Chapter reading companion 
 tags: [architecture, overview, backend, database, routing]
 verified:
   - by: openwiki/0.4.0
-    at: 2026-08-25T17:44:34.504Z
+    at: 2026-08-26T19:17:20.603Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts

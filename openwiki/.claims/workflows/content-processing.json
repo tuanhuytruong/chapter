@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3053133d936f52f44c8656f97f33fcde6305d3ab6abcd83a71348821ac102e51",
+  "claims": [
+    {
+      "id": "claim_446aaeebf5ee41b582fd531f6bef180d",
+      "statement": "Book uploads (EPUB or PDF) are validated for format integrity and selectable text, while filenames are sanitized and normalized to ASCII.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-upload-content.ts",
+          "version": "repo-file-v1:sha256:0e11dff6211a5a63c0676f1fed42814f8b3a732f23975f752040bc2037e3aa42"
+        },
+        {
+          "resource": "repo://src/routes/upload.ts",
+          "version": "repo-file-v1:sha256:3176fe2b509f178c67ddc3f3236eabe457cf4d0ad9be147fc02f5285150c96d1"
+        }
+      ]
+    },
+    {
+      "id": "claim_72307629c5a44e838a6ce54d3ad9ed34",
+      "statement": "Podcast narrator voice selection is persisted per book and reading round, supporting re-read rounds with fresh voice picker sessions.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-podcast.ts",
+          "version": "repo-file-v1:sha256:c8dee80075b9d0052f88957b1ba9401a048bf52940eacbc0ef7ca92f857f46ff"
+        },
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        }
+      ]
+    },
+    {
+      "id": "claim_84e90a6b5dac4a5ab5baadba7f77e965",
+      "statement": "Podcast language is automatically resolved from chapter text linguistic signals or overridden by explicit configuration.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        }
+      ]
+    },
+    {
+      "id": "claim_7f25fcf656324d28923a2d8fddbe3082",
+      "statement": "Chapters with insufficient word counts are marked unavailable and automatically skip to the next eligible chapter.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        }
+      ]
+    },
+    {
+      "id": "claim_199e2dac11a9412b98f6b54018165c55",
+      "statement": "Retryable TTS failures use bounded retry budgets, and archive outages preserve local cache playback via archive_pending status.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        },
+        {
+          "resource": "repo://src/podcast/tts.ts",
+          "version": "repo-file-v1:sha256:29139d304bae546b39f56a49ac2e66886501b33965da9a51a15f5663aeec3889"
+        }
+      ]
+    },
+    {
+      "id": "claim_c2d661e731bc45a0bbdb898e7e38a314",
+      "statement": "Reading progress, resume cursors, and audio streaming with HTTP Range requests are supported for podcast playback.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/podcasts.ts",
+          "version": "repo-file-v1:sha256:778bab2fffb0e4109d0c2503ebb931f5584c3449956bf760fe8dacb70b381947"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-26T19:17:20.603Z"
+  }
+}

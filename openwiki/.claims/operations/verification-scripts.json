@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:793a53921f19371349f7294c4570f30db13b939895b9130b298606267e8b028f",
+  "claims": [
+    {
+      "id": "claim_600d88e4d92f4e33a71a83fe548e0d68",
+      "statement": "verify-podcast.ts validates podcast catalog grouping, EPUB chapter extraction, Telegram archiving simulation, audio range requests, and playlist resume progress persistence.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-podcast.ts",
+          "version": "repo-file-v1:sha256:c8dee80075b9d0052f88957b1ba9401a048bf52940eacbc0ef7ca92f857f46ff"
+        }
+      ]
+    },
+    {
+      "id": "claim_7a3e2c9a40e540d584c3b3e8964b0d1b",
+      "statement": "verify-reading-intention-reflection.ts tests reading intention database schema constraints, column migrations, and AI reflection output contracts.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-reading-intention-reflection.ts",
+          "version": "repo-file-v1:sha256:975865c30a6099e932ea7e5a17b2f67c424c2c732b4923f942034f4dfd261685"
+        }
+      ]
+    },
+    {
+      "id": "claim_73ff1377fe8441109312ffb932d2e5cc",
+      "statement": "verify-reading-progress-companion.ts verifies AI reading progress companion prompts, JSON parsing invariants, and session boundary checks.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-reading-progress-companion.ts",
+          "version": "repo-file-v1:sha256:96174cf8a750f4845fd0803690d1c723cf54a3748b24d07039efc7bb6a3d1274"
+        }
+      ]
+    },
+    {
+      "id": "claim_e97a3902e48e4cd5b5037007a8e7f161",
+      "statement": "verify-upload-content.ts verifies PDF and EPUB upload validation, scanned non-selectable PDF rejection, mojibake unicode filename repair, and secure filename sanitization.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-upload-content.ts",
+          "version": "repo-file-v1:sha256:0e11dff6211a5a63c0676f1fed42814f8b3a732f23975f752040bc2037e3aa42"
+        }
+      ]
+    },
+    {
+      "id": "claim_ad4344530e7d4183867477c97f2ff928",
+      "statement": "The core database schema defines the complete relational model inside the PostgreSQL chapter schema for users, authentication, books, chapters, and podcasts.",
+      "evidence": [
+        {
+          "resource": "repo://src/db/schema.sql#L15-L15",
+          "version": "repo-lines-v1:sha256:dd379caf65d9b1571d26bb5eff518941ad201e8401552d85e0d6bab81477b5eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQzNzljYWY2NWQ5YjE1NzFkMjZiYjVlZmY1MTg5NDFhZDIwMWU4NDAxNTUyZDg1ZTBkNmJhYjgxNDc3YjVlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQzNzljYWY2NWQ5YjE1NzFkMjZiYjVlZmY1MTg5NDFhZDIwMWU4NDAxNTUyZDg1ZTBkNmJhYjgxNDc3YjVlYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGM0NWZlZTkzY2NmZTRlNjZiZDljZjBjNTg4NDJjNDcyODhjNDNhYjdlNmQ4NGQ1NGMzZWM4OTM0NjgzMjhhOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5N2IxZGY5ZDEwOWMyYmQ4OWZhYjE5MmZjNTdkYjAxMTZhNjU4ZjhmMDA2ZjMwNTllNzBmNDM3NjgxMDJjYyJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-26T19:17:20.603Z"
+  }
+}

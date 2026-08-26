@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:d69e9cbac5ab0f734a75053acbbac43ccbc60a0c1d1cdef646484722f20bb86a",
+  "claims": [
+    {
+      "id": "claim_c6a2036918dd46d4929e7d93833fd572",
+      "statement": "The frontend React application mounts through src/main.tsx into React's StrictMode on the root DOM element.",
+      "evidence": [
+        {
+          "resource": "repo://src/main.tsx",
+          "version": "repo-file-v1:sha256:5580d48b0fec68698a113d45a640b88d479dc35eb1f4b87c51f67c6cc81cee9b"
+        }
+      ]
+    },
+    {
+      "id": "claim_689ac6c0b14842b29d682bdedb3f58c3",
+      "statement": "Client-side routing is configured in src/App.tsx using react-router-dom, switching between authentication routes and AppShell-wrapped authenticated views.",
+      "evidence": [
+        {
+          "resource": "repo://src/App.tsx#L22-L29",
+          "version": "repo-lines-v1:sha256:7422fd61c474cd9be4bb3fb7f25ba44fd748c5df80c051ffb47ed65a7ecd19b6:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDcyYTIyM2VjMTQwYmQ4OTY4NjJiYzYyMDA1ODJiZGRjMjk3MWNhNDVmMDU5Mjk2ZmU5NzI1NjQ2YzdlNDc1MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzAzOTJlMmZmZmM4OGI2NmFjYjRlZDBjNDE4NWI1NGIxZjZkM2E2NmFiMTRmMzRkMDRjMTMxOTQxN2M2Yjc5OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2RiYTJhMmVmMDBkNmJjZDNkM2QzMzk1ZTM3ZThmZTkxYjc1ZDc5OTg3ZTJlYTAzMTQ3NDhiZTk5NTYxZTdiZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cf7ffe5d5bfe42e1874abf8ab6796d06",
+      "statement": "The AppShell component provides persistent top navigation, mobile bottom navigation, review count badges, theme toggles, and user profile links.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/AppShell.tsx#L65-L89",
+          "version": "repo-lines-v1:sha256:c088a0fff4df70184fd9d710dee3b9796f6477535ccb82241be34ea945956d80:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzMGEwOWE2MjUyOTJhZjNlODYwMWY0OTk1NDIzMTYwMDg5MmQyNWM0ZWIwYTg2MTdkZDFmMjlhMjIxYjY1ODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTAwNTlmNDhjYTU2ZjZiNTBmZGM2OWExNWM3YjdlNjMzY2MxZTEzNjA4ZGFhNTBlZDkyM2JlYjBmNjM2ZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2Yjc4MWRhNDU5YzEwODA3ZTk3ZTAyODc3Mjg4ZmQ3M2YyNzcyMjdiYTcyZjI3YjJhMjJlZDJmMmE0MTYzMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiYjY1MzZlMjRkMjY2Y2ZmYmRhNDRlMWEzMGUzMWJiODA4NWNmZTBmMGI4YzM4YzFhYWQwNTZkOGI3Y2Q5NWEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.0",
+    "at": "2026-08-26T19:17:20.603Z"
+  }
+}
