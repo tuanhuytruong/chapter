@@ -158,6 +158,8 @@ try {
   assert(generatorSource.includes("finishSynthesizedPodcast(current, audio.filePath") && generatorSource.includes("retainPendingArchive"), "archive outages preserve local playback after synthesis");
   const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
   assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
+  assert(playerSource.includes("DEFAULT_LISTENING_MINUTES: ListeningMinutes = 30") && playerSource.includes("[15, 30, 45, 60, 90]") && !playerSource.includes("No timer"), "podcast listening sessions have only finite approved timer choices");
+  assert(playerSource.includes("stopAfterCurrentRef.current = true") && playerSource.includes("if (stopAfterCurrentRef.current) { playbackIntent.current = null; setSessionPromptOpen(true); return; }") && playerSource.includes("!stopAfterCurrentEpisode && canGenerate"), "expired sessions finish the current episode then stop autoplay and auto-generation even at the boundary");
   assert(playerSource.includes('String(episode.chapter_number ?? "?").padStart') && !playerSource.includes('`Chapter ${index + 1}`'), "player never renumbers filtered ready episodes");
   console.log("PODCAST_ROUTE_FIXTURES_OK");
 } finally { server.close(); await rm(cache, { recursive: true, force: true }); await pool.end(); }

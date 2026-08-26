@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ListMusic, Loader2, Play, RotateCcw, Sparkles } from "lucide-react";
+import { Clock3, ListMusic, Loader2, Play, RotateCcw, Sparkles } from "lucide-react";
 import { api, type PodcastEpisode, type PodcastPlaylist } from "../api";
 
 function episodeName(episode: PodcastEpisode) {
@@ -7,6 +7,9 @@ function episodeName(episode: PodcastEpisode) {
 }
 
 const pendingStatuses = new Set(["queued", "scripting", "synthesizing", "archiving"]);
+const LISTENING_OPTIONS_MINUTES = [15, 30, 45, 60, 90] as const;
+type ListeningMinutes = typeof LISTENING_OPTIONS_MINUTES[number];
+const DEFAULT_LISTENING_MINUTES: ListeningMinutes = 30;
 
 export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, compact = false, playRequest = null, onPlayed, onNeedVoice, refreshKey = 0, onEpisodeCreated, onListened }: { bookId: string; canGenerate?: boolean; compact?: boolean; playRequest?: { bookId: string; episodeId: string } | null; onPlayed?: () => void; onNeedVoice?: (chapterKey: string) => void; refreshKey?: number; onEpisodeCreated?: () => void; onListened?: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -17,6 +20,9 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
   // the next chapter key) prevents a fast generation from cascading several
   // chapters ahead while the listener remains past the 30% mark.
   const autoTriggeredForEpisode = useRef<string | null>(null);
+  const lastListeningTime = useRef<number | null>(null);
+  const listenedSecondsRef = useRef(0);
+  const stopAfterCurrentRef = useRef(false);
   const queueRef = useRef<HTMLDivElement | null>(null);
   const nowItemRef = useRef<HTMLLIElement | null>(null);
   const [playlist, setPlaylist] = useState<PodcastPlaylist | null>(null);
@@ -26,6 +32,11 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
   const [generating, setGenerating] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [preparedNote, setPreparedNote] = useState<string | null>(null);
+  const [sessionMinutes, setSessionMinutes] = useState<ListeningMinutes>(DEFAULT_LISTENING_MINUTES);
+  const [listenedSeconds, setListenedSeconds] = useState(0);
+  const [stopAfterCurrentEpisode, setStopAfterCurrentEpisode] = useState(false);
+  const [sessionPromptOpen, setSessionPromptOpen] = useState(false);
+  const [timerChoicesOpen, setTimerChoicesOpen] = useState(false);
 
   useEffect(() => {
     if (!playRequest || playRequest.bookId !== bookId || pendingRequest.current) return;
@@ -97,7 +108,11 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
     });
   }, [active, resumeAt]);
 
-  const selectAndPlay = (index: number, fromStart = false) => {
+  const startListeningSession = (minutes: ListeningMinutes = DEFAULT_LISTENING_MINUTES) => {
+    setSessionMinutes(minutes); setListenedSeconds(0); listenedSecondsRef.current = 0; setStopAfterCurrentEpisode(false); stopAfterCurrentRef.current = false; setSessionPromptOpen(false); setTimerChoicesOpen(false); lastListeningTime.current = null;
+  };
+  const selectAndPlay = (index: number, fromStart = false, restartSession = true) => {
+    if (restartSession) startListeningSession();
     const episode = episodes[index];
     if (!episode) return;
     if (index === activeIndex && audioRef.current) {
@@ -111,7 +126,11 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
     setActiveIndex(index);
   };
 
-  const playBook = (fromStart = false) => selectAndPlay(fromStart ? 0 : (activeIndex ?? 0), fromStart);
+  const playBook = (fromStart = false) => selectAndPlay(fromStart ? 0 : (activeIndex ?? 0), fromStart, true);
+  const continueListening = (minutes: ListeningMinutes = DEFAULT_LISTENING_MINUTES) => {
+    startListeningSession(minutes);
+    if (activeIndex !== null && activeIndex + 1 < episodes.length) selectAndPlay(activeIndex + 1, true, false);
+  };
 
   // Generate the next chapter. Manual mode auto-plays the fresh episode only
   // when it is the listener's turn (nothing is playing, or the latest ready
@@ -123,6 +142,7 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
     if (!next || generating || !canGenerate) return;
     if (!next.has_narrator) { onNeedVoice?.(next.chapter_key); return; }
     const auto = mode === "auto";
+    if (auto && stopAfterCurrentEpisode) return;
     setGenerating(true);
     if (auto) setAutoGenerating(true);
     const target = next.chapter_key;
@@ -184,7 +204,7 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
     };
     const timer = window.setInterval(() => void poll(), 5000);
     void poll();
-  }, [bookId, playlist, generating, activeIndex, canGenerate, onNeedVoice, persist, onEpisodeCreated, refresh]);
+  }, [bookId, playlist, generating, activeIndex, canGenerate, onNeedVoice, persist, onEpisodeCreated, refresh, stopAfterCurrentEpisode]);
 
   // Put the current row at the top of the queue whenever playback changes, so
   // the first visible list item always confirms what is playing.
@@ -207,8 +227,10 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
       <div><p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-natural-sage"><ListMusic className="h-3.5 w-3.5" /> Listen through this book</p><p className="mt-1 text-[11px] text-natural-stone">{episodes.length ? `${episodes.length} ready episode${episodes.length === 1 ? "" : "s"} · Round ${playlist?.reading_round}` : `Round ${playlist?.reading_round} · no episodes yet`}</p></div>
       {episodes.length > 0 && <div className="flex gap-1"><button type="button" onClick={() => playBook(false)} className="min-h-10 rounded-full bg-natural-sage px-3 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45"><Play className="mr-1 inline h-3.5 w-3.5" />{playlist?.progress && !playlist.progress.completed_at ? "Continue" : "Play book"}</button><button type="button" onClick={() => playBook(true)} className="min-h-10 rounded-full px-3 text-xs font-bold text-natural-stone hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45" aria-label="Play book from beginning"><RotateCcw className="h-3.5 w-3.5" /></button></div>}
     </div>
-    {active && <div className="mt-3 rounded-xl bg-white/75 p-3"><p className="text-xs font-bold text-natural-dark">Now playing · {episodeName(active)}</p><audio key={active.id} ref={audioRef} className="mt-2 w-full" controls preload="metadata" src={`/api/podcasts/${active.id}/audio`} onLoadedMetadata={(event) => handleAudioReady(event.currentTarget)} onCanPlay={(event) => handleAudioReady(event.currentTarget)} onPlay={() => setPlaying(true)} onPause={() => { setPlaying(false); save(false); }} onTimeUpdate={(event) => { const audio = event.currentTarget; const now = Date.now(); if (now - lastSavedAt.current > 15000) { lastSavedAt.current = now; save(false, audio.currentTime); } const nextChapter = playlist?.next_chapter; const playingLatestReady = activeIndex !== null && activeIndex === episodes.length - 1; if (canGenerate && nextChapter && playingLatestReady && !generating && !autoGenerating && audio.duration > 0) { const isPending = nextChapter.episode_status != null && pendingStatuses.has(nextChapter.episode_status); if (!isPending && audio.currentTime / audio.duration >= 0.3 && autoTriggeredForEpisode.current !== active?.id) { autoTriggeredForEpisode.current = active?.id || null; void generateNext("auto"); } } }} onEnded={() => { setPlaying(false); save(true); if (activeIndex !== null && activeIndex + 1 < episodes.length) { const nextEpisode = episodes[activeIndex + 1]; void persist(nextEpisode, 0, false); playbackIntent.current = { episodeId: nextEpisode.id, reset: true }; setActiveIndex(activeIndex + 1); } }} onError={() => setPlaying(false)} />
-      {playing && <p className="mt-1 text-[10px] text-natural-stone">The next ready chapter will continue automatically.</p>}</div>}
+    {active && <div className="mt-3 rounded-xl bg-white/75 p-3"><p className="text-xs font-bold text-natural-dark">Now playing · {episodeName(active)}</p><audio key={active.id} ref={audioRef} className="mt-2 w-full" controls preload="metadata" src={`/api/podcasts/${active.id}/audio`} onLoadedMetadata={(event) => handleAudioReady(event.currentTarget)} onCanPlay={(event) => handleAudioReady(event.currentTarget)} onPlay={() => { setPlaying(true); lastListeningTime.current = audioRef.current?.currentTime ?? null; }} onPause={() => { setPlaying(false); lastListeningTime.current = null; save(false); }} onTimeUpdate={(event) => { const audio = event.currentTarget; const now = Date.now(); if (now - lastSavedAt.current > 15000) { lastSavedAt.current = now; save(false, audio.currentTime); } const previous = lastListeningTime.current; lastListeningTime.current = audio.currentTime; if (!audio.paused && previous !== null && audio.currentTime >= previous && audio.currentTime - previous < 5) { listenedSecondsRef.current += audio.currentTime - previous; setListenedSeconds(listenedSecondsRef.current); } const reachedLimit = listenedSecondsRef.current >= sessionMinutes * 60; if (reachedLimit && !stopAfterCurrentRef.current) { stopAfterCurrentRef.current = true; setStopAfterCurrentEpisode(true); } const nextChapter = playlist?.next_chapter; const playingLatestReady = activeIndex !== null && activeIndex === episodes.length - 1; if (!stopAfterCurrentEpisode && canGenerate && nextChapter && playingLatestReady && !generating && !autoGenerating && audio.duration > 0) { const isPending = nextChapter.episode_status != null && pendingStatuses.has(nextChapter.episode_status); if (!isPending && audio.currentTime / audio.duration >= 0.3 && autoTriggeredForEpisode.current !== active?.id) { autoTriggeredForEpisode.current = active?.id || null; void generateNext("auto"); } } }} onEnded={() => { setPlaying(false); lastListeningTime.current = null; save(true); if (stopAfterCurrentRef.current) { playbackIntent.current = null; setSessionPromptOpen(true); return; } if (activeIndex !== null && activeIndex + 1 < episodes.length) { const nextEpisode = episodes[activeIndex + 1]; void persist(nextEpisode, 0, false); playbackIntent.current = { episodeId: nextEpisode.id, reset: true }; setActiveIndex(activeIndex + 1); } }} onError={() => setPlaying(false)} />
+      {playing && <p className="mt-1 text-[10px] text-natural-stone">{stopAfterCurrentEpisode ? "This listening session ends after this chapter." : "The next ready chapter will continue automatically."}</p>}
+      <div className="mt-2 flex flex-wrap items-center gap-2"><button type="button" onClick={() => setTimerChoicesOpen((open) => !open)} className="min-h-9 rounded-full border border-natural-border px-3 text-[11px] font-semibold text-natural-stone hover:bg-white"><Clock3 className="mr-1 inline h-3.5 w-3.5" />Listening · {sessionMinutes} min</button>{timerChoicesOpen && <div className="flex flex-wrap gap-1">{LISTENING_OPTIONS_MINUTES.map((minutes) => <button key={minutes} type="button" onClick={() => startListeningSession(minutes)} className={`min-h-9 rounded-full px-3 text-[11px] font-bold ${minutes === sessionMinutes ? "bg-natural-sage text-white" : "border border-natural-border text-natural-stone hover:bg-white"}`}>{minutes} min</button>)}</div>}</div>
+      {sessionPromptOpen && <div className="mt-3 rounded-xl border border-natural-sage/30 bg-natural-sage/10 p-3"><p className="text-sm font-bold text-natural-dark">Continue listening?</p><p className="mt-1 text-xs text-natural-stone">Your {sessionMinutes}-minute listening session has ended.</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => continueListening()} className="min-h-10 rounded-full bg-natural-sage px-3 text-xs font-bold text-white">Continue 30 min</button><button type="button" onClick={() => setTimerChoicesOpen(true)} className="min-h-10 rounded-full border border-natural-border px-3 text-xs font-bold text-natural-dark">Choose time</button><button type="button" onClick={() => { setSessionPromptOpen(false); setStopAfterCurrentEpisode(false); stopAfterCurrentRef.current = false; }} className="min-h-10 rounded-full px-3 text-xs font-bold text-natural-stone">Stop here</button></div></div>}</div>}
     {!compact && episodes.length > 0 && <div ref={queueRef} className="mt-3 max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(121,134,102,0.45) transparent" }}><ol className="space-y-1 pb-64" aria-label="Playlist queue">{episodes.map((episode, index) => { const activeNow = index === activeIndex; return <li key={episode.id} ref={activeNow ? nowItemRef : undefined}><button type="button" onClick={() => selectAndPlay(index)} className={`flex min-h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-xs ${activeNow ? "bg-white text-natural-dark font-bold" : "text-natural-stone hover:bg-white/70"}`}><span className="w-5 shrink-0 text-[10px] font-bold text-natural-sage">{activeNow ? "NOW" : String(episode.chapter_number ?? "?").padStart(2, "0")}</span><span className="truncate">{episodeName(episode)}</span></button></li>; })}</ol></div>}
     {next && <div className="mt-3 rounded-xl border border-dashed border-natural-sage/40 bg-white/60 p-3">
       <p className="text-[11px] font-semibold text-natural-stone">Next chapter not recorded yet: <span className="font-bold text-natural-dark">{next.chapter_title || "Untitled chapter"}</span>{next.start_page != null ? ` · p. ${next.start_page}` : ""}</p>
