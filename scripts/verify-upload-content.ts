@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
 import { validateBookUpload } from "../src/routes/upload.ts";
+import { displayUploadFilename, storedUploadFilename, uploadExtension } from "../src/upload.ts";
 
 const dir = await mkdtemp(path.join(tmpdir(), "chapter-upload-verify-"));
 const file = (name: string, size: number) => ({ path: path.join(dir, name), originalname: name, size } as Express.Multer.File);
@@ -48,3 +49,15 @@ try {
 } finally {
   await rm(dir, { recursive: true, force: true });
 }
+
+
+const mojibake = "Chiáº¿n Binh Cáº§u Vá»“ng - Andrea Hirata & Dáº¡ Tháº£o.epub";
+const vietnamese = "Chiến Binh Cầu Vồng - Andrea Hirata & Dạ Thảo.epub";
+assert.equal(displayUploadFilename(mojibake), vietnamese, "lossless Latin-1 mojibake is repaired for display");
+assert.equal(displayUploadFilename("Atomic Habits.PDF"), "Atomic Habits.PDF", "ASCII display filename remains unchanged");
+assert.equal(uploadExtension(mojibake), ".epub", "repaired EPUB extension is recognized");
+assert.equal(uploadExtension("Atomic Habits.PDF"), ".pdf", "case-insensitive PDF extension is recognized");
+const stored = storedUploadFilename(mojibake, "testuuid");
+assert.equal(stored, "chien-binh-cau-vong-andrea-hirata-da-thao-testuuid.epub", "stored filename is ASCII, no-diacritic, and deterministic with supplied suffix");
+assert.match(stored, /^[a-z0-9.-]+$/, "stored filename contains only safe ASCII characters");
+console.log("unicode upload filename fixtures passed");

@@ -13,6 +13,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
 }) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
+  const [readingIntention, setReadingIntention] = useState('');
   const [upload, setUpload] = useState<{ filePath: string; filename: string; fileType: 'pdf' | 'epub' } | null>(null);
   const [fileType, setFileType] = useState<'pdf' | 'epub'>('pdf');
   const [dailyPages, setDailyPages] = useState(3);
@@ -82,6 +83,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
       await api.createBook({
         title: title.trim(),
         author: author.trim() || 'Unknown',
+        reading_intention: readingIntention.trim() || null,
         file_path: filePath.trim(),
         file_type: fileType,
         daily_pages: dailyPages,
@@ -123,6 +125,12 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Author</label>
             <input value={author} onChange={e => setAuthor(e.target.value)}
               className="w-full px-3 py-2 mt-1 bg-natural-cream/50 border border-natural-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="James Clear" />
+          </div>
+          <div>
+            <label htmlFor="reading-intention" className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading intention <span className="normal-case font-normal">(optional)</span></label>
+            <textarea id="reading-intention" value={readingIntention} onChange={e => setReadingIntention(e.target.value)} maxLength={500} rows={3}
+              className="mt-1 w-full resize-y rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-2 text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-natural-sage" placeholder="What do you hope to get from this book?" />
+            <p className="mt-1 text-[10px] text-natural-stone">A private note for your end-of-book reflection.</p>
           </div>
           <div className="md:row-span-2">
             <label className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">File *</label>

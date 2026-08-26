@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS chapter.books (
   cover_url     TEXT,
   reflection_text TEXT,
   reflection_at TIMESTAMPTZ,
+  reading_intention TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -209,6 +210,7 @@ ALTER TABLE chapter.books ADD CONSTRAINT books_reading_experience_check
 -- Migration: one persisted end-of-book reflection per book (idempotent).
 ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reflection_text TEXT;
 ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reflection_at TIMESTAMPTZ;
+ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS reading_intention TEXT;
 
 -- Migration: reading queue columns (idempotent).
 ALTER TABLE chapter.books

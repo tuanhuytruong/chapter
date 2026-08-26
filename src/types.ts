@@ -50,6 +50,8 @@ export interface BookRow {
   cover_url?: string;
   reflection_text?: string | null;
   reflection_at?: string | null;
+  /** Owner-private reason for choosing this book; never exposed to shared readers. */
+  reading_intention?: string | null;
   created_at: string;
   progress?: number;
   owner_id?: string | null;

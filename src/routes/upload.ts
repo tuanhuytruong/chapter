@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { upload } from "../upload.js";
+import { displayUploadFilename, upload, uploadExtension } from "../upload.js";
 import { config } from "../config.js";
 import { query } from "../db.js";
 import { requireAuth, userFrom } from "../auth.js";
@@ -23,7 +23,7 @@ export async function validateBookUpload(file: Express.Multer.File): Promise<"pd
   try {
     const signature = Buffer.alloc(5);
     await handle.read(signature, 0, signature.length, 0);
-    if (file.originalname.toLowerCase().endsWith(".pdf")) {
+    if (uploadExtension(file.originalname) === ".pdf") {
       if (signature.toString("ascii") !== "%PDF-") throw new Error("Uploaded file is not a valid PDF");
       const probe = await probePdfTextLayer(file.path);
       if (probe.classification === "image_only") throw new UploadValidationError(SCANNED_PDF_ERROR);
@@ -67,7 +67,7 @@ uploadRouter.post("/", upload.single("file"), async (req: Request, res: Response
   res.status(201).json({
     file_path: req.file.path,
     file_type: fileType,
-    filename: req.file.originalname,
+    filename: displayUploadFilename(req.file.originalname),
     size: req.file.size,
     books_dir: config.booksDir,
   });

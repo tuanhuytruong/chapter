@@ -153,6 +153,7 @@ export default function BookDetail() {
   >("active");
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [readingIntention, setReadingIntention] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [summaryLang, setSummaryLang] = useState<"auto" | "vi" | "en">("auto");
   const [summaryMode, setSummaryMode] = useState<SummaryMode>("casual");
@@ -233,6 +234,7 @@ export default function BookDetail() {
       setStatus(b.status);
       setTitle(b.title);
       setAuthor(b.author);
+      setReadingIntention(b.reading_intention || "");
       setCoverUrl(b.cover_url || "");
       setSummaryLang(b.summary_lang || "auto");
       setSummaryMode(b.summary_mode || "casual");
@@ -484,6 +486,7 @@ export default function BookDetail() {
         status,
         title: title.trim(),
         author: author.trim(),
+        reading_intention: readingIntention.trim() || null,
         cover_url: coverUrl || undefined,
         summary_lang: summaryLang,
         ...(book?.reading_experience === "analytical"
@@ -886,6 +889,21 @@ export default function BookDetail() {
                       onChange={(e) => setAuthor(e.target.value)}
                       className="mt-1 min-h-11 w-full rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-1.5 text-xs"
                     />
+                  </div>
+                  <div>
+                    <label htmlFor="book-reading-intention" className="text-[10px] font-bold uppercase tracking-wider text-natural-stone">
+                      Reading intention <span className="normal-case font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      id="book-reading-intention"
+                      value={readingIntention}
+                      onChange={(e) => setReadingIntention(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      placeholder="What do you hope to get from this book?"
+                      className="mt-1 w-full resize-y rounded-xl border border-natural-border bg-natural-cream/50 px-3 py-2 text-xs leading-relaxed"
+                    />
+                    <p className="mt-1 text-[10px] text-natural-stone">Private. Used only for your end-of-book reflection.</p>
                   </div>
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-natural-stone flex items-center gap-1">
