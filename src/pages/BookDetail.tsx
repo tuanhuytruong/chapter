@@ -52,6 +52,7 @@ import { ContextualUpgradeCard } from "../components/ContextualUpgradeCard";
 import { GuideCard } from "../onboarding";
 import ChapterDropdown from "../components/ChapterDropdown";
 import { BookDetailSkeleton } from "../components/ContentSkeleton";
+import { captureAnalyticsEvent } from "../analytics";
 
 function InlineMarkdown({ text }: { text: string }) {
   // Defensive: LLMs sometimes emit "**Label:*** text" (bold close + stray list
@@ -424,8 +425,21 @@ export default function BookDetail() {
   const readToday = async () => {
     if (!id) return;
     setAdvancing(true);
+    captureAnalyticsEvent("reading_session_started", {
+      book_id: id,
+      reading_round: book?.current_reading_round,
+      file_type: book?.file_type,
+    });
     try {
       const result = await api.advance(id);
+      captureAnalyticsEvent("reading_session_completed", {
+        book_id: id,
+        reading_round: book?.current_reading_round,
+        file_type: book?.file_type,
+        session_number: result.session,
+        units_read: Math.max(0, result.pageEnd - result.pageStart + 1),
+        finished_book: result.finished,
+      });
       if (result.finished) {
         // Fetch next queued book
         const books = await api.listBooks();
@@ -1212,6 +1226,13 @@ export default function BookDetail() {
                 role="tab"
                 id="ai-reader-tab"
                 onClick={() => {
+                  if (logView !== "ai-reader") {
+                    captureAnalyticsEvent("book_wiki_opened", {
+                      book_id: id,
+                      reading_round: selectedRound ?? book.current_reading_round,
+                      file_type: book.file_type,
+                    });
+                  }
                   setHasOpenedAiReader(true);
                   setLogView("ai-reader");
                 }}

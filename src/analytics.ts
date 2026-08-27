@@ -22,3 +22,10 @@ export function identifyAnalyticsUser(userId: string): void {
 export function resetAnalyticsUser(): void {
   if (projectApiKey) posthog.reset();
 }
+
+export function captureAnalyticsEvent(
+  event: string,
+  properties?: Record<string, boolean | number | string | null | undefined>,
+): void {
+  if (projectApiKey) posthog.capture(event, properties);
+}

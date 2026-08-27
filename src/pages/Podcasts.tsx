@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BookOpen, ChevronDown, Headphones, Loader2, Play, RefreshCw } from "lucide-react";
 import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode } from "../api";
 import PodcastPlaylistPlayer from "../components/PodcastPlaylistPlayer";
+import { captureAnalyticsEvent } from "../analytics";
 
 const pending = new Set(["queued", "scripting", "synthesizing", "archiving"]);
 const duration = (seconds: number | null) => seconds ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
@@ -28,7 +29,16 @@ export default function Podcasts() {
   useEffect(() => { if (!books.some((book) => book.chapters.some((chapter) => chapter.episode && pending.has(chapter.episode.status)))) return; const timer = window.setInterval(() => void refresh(), 5000); return () => window.clearInterval(timer); }, [books]);
   const creatingKey = useMemo(() => creating, [creating]);  const create = async (bookId: string, chapterKey: string, gender?: "female" | "male") => {
     setCreating(`${bookId}:${chapterKey}`);
-    try { await api.createPodcast(bookId, chapterKey, gender); setVoiceTarget(null); await refresh(); }
+    try {
+      const episode = await api.createPodcast(bookId, chapterKey, gender);
+      captureAnalyticsEvent("podcast_generation_requested", {
+        book_id: bookId,
+        episode_id: episode.id,
+        voice_gender: gender || null,
+      });
+      setVoiceTarget(null);
+      await refresh();
+    }
     catch (e: any) { if (String(e.message).startsWith("409:")) setVoiceTarget({ bookId, chapterKey }); else setError(e.message); }
     finally { setCreating(null); }
   };

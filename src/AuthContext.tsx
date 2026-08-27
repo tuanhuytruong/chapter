@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { identifyAnalyticsUser, resetAnalyticsUser } from "./analytics";
+import { captureAnalyticsEvent, identifyAnalyticsUser, resetAnalyticsUser } from "./analytics";
 import { clearMembershipCache } from "./membershipCache";
 
 export interface CurrentUser {
@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       clearMembershipCache();
       setUser(data.user);
+      captureAnalyticsEvent("login_completed", { method: "password" });
     },
     async signup(email, displayName, password, confirmPassword) {
       const data = await authRequest("/api/auth/signup", {
@@ -72,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       clearMembershipCache();
       setUser(data.user);
+      captureAnalyticsEvent("sign_up_completed", { method: "password" });
     },
     async completePasswordReset(token, newPassword, confirmPassword) {
       const data = await authRequest("/api/auth/reset-password", {

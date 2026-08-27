@@ -5,6 +5,7 @@ import { api, fetchCover, uploadBook, deleteUpload } from '../api';
 import type { ReadingExperience, SummaryMode } from '../types';
 import { GuideCard } from '../onboarding';
 import ChapterDropdown from './ChapterDropdown';
+import { captureAnalyticsEvent } from "../analytics";
 
 export default function AddBookModal({ onClose, onAdded, onToast }: {
   onClose: () => void;
@@ -80,7 +81,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
     }
     setSubmitting(true);
     try {
-      await api.createBook({
+      const book = await api.createBook({
         title: title.trim(),
         author: author.trim() || 'Unknown',
         reading_intention: readingIntention.trim() || null,
@@ -93,6 +94,13 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
         reading_experience: readingExperience,
         status: addToQueue ? 'queued' : 'active',
       } as any);
+      captureAnalyticsEvent("book_added", {
+        book_id: book.id,
+        file_type: book.file_type,
+        reading_experience: book.reading_experience,
+        initial_status: book.status,
+        has_reading_intention: Boolean(readingIntention.trim()),
+      });
       submittedRef.current = true; // keep the uploaded file
       uploadedPathRef.current = null;
       onToast({ type: 'ok', msg: `Added "${title}"` });
