@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { identifyAnalyticsUser, resetAnalyticsUser } from "./analytics";
 import { clearMembershipCache } from "./membershipCache";
 
 export interface CurrentUser {
@@ -50,6 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (user) identifyAnalyticsUser(user.id);
+  }, [user]);
+
   const value: AuthValue = {
     user,
     loading,
@@ -79,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async logout() {
       clearMembershipCache();
       await authRequest("/api/auth/logout", { method: "POST" });
+      resetAnalyticsUser();
       setUser(null);
     },
   };
