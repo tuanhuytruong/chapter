@@ -8,6 +8,7 @@ import RecallCard from "../components/review/RecallCard";
 import ReviewEmptyState from "../components/review/ReviewEmptyState";
 import { GuideCard } from "../onboarding";
 import { notifyReviewsChanged } from "../reviewEvents";
+import { captureAnalyticsEvent } from "../analytics";
 
 type DueBook = { id: string; title: string; author: string; cover_url: string | null; due_count: number };
 type ReviewMode = "focused" | "flow";
@@ -69,6 +70,7 @@ export default function Review() {
     setError(null);
     try {
       await api.submitReview(card.id, remembered);
+      captureAnalyticsEvent("review_completed", { remembered, mode });
       setCards((current) => current.slice(1));
       setDone((value) => value + 1);
       setRevealed(mode === "flow");

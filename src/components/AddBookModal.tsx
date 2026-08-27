@@ -145,6 +145,10 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
             <input type="file" accept=".pdf,.epub" onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) return;
+              captureAnalyticsEvent("book_upload_started", {
+                selected_file_type: f.name.toLowerCase().endsWith(".epub") ? "epub" : f.name.toLowerCase().endsWith(".pdf") ? "pdf" : "other",
+                size_bytes: f.size,
+              });
               const attempt = ++uploadAttemptRef.current;
               setUploadError(null);
               const oldPath = uploadedPathRef.current;
@@ -160,12 +164,19 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
                 }
                 setUpload({ filePath: r.file_path, filename: r.filename, fileType: r.file_type });
                 setFileType(r.file_type);
+                captureAnalyticsEvent("book_upload_completed", {
+                  file_type: r.file_type,
+                  size_bytes: r.size,
+                });
                 setUploadError(null);
                 uploadedPathRef.current = r.file_path; // mark for cleanup if not saved
                 onToast({ type: 'ok', msg: `Uploaded ${r.filename}` });
               } catch (err: any) {
                 if (attempt === uploadAttemptRef.current) {
                   clearUpload();
+                  captureAnalyticsEvent("book_upload_failed", {
+                    error_kind: String(err?.message || "").includes("network") ? "network" : "upload_rejected",
+                  });
                   setUploadError(err.message || 'Could not upload this file. Please choose another PDF or EPUB.');
                 }
               } finally {

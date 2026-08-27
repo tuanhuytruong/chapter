@@ -3,6 +3,7 @@ import { CheckCircle2, CircleGauge, Loader2, Save, Target, TrendingUp } from "lu
 import { api } from "../api";
 import type { WeeklyGoalMetric, WeeklyGoalProgress } from "../weekly-goal";
 import ChapterDropdown from "../components/ChapterDropdown";
+import { captureAnalyticsEvent } from "../analytics";
 
 const labels: Record<WeeklyGoalMetric, string> = { sessions: "reading sessions", units: "pages / chunks" };
 
@@ -26,7 +27,11 @@ export default function Momentum() {
     event.preventDefault(); const numeric = Number(target);
     if (!Number.isInteger(numeric) || numeric < 1) { setError("Enter a whole-number target of at least 1."); return; }
     setSaving(true); setError(null);
-    try { await api.saveWeeklyGoal(metric, numeric); await load(); }
+    try {
+      await api.saveWeeklyGoal(metric, numeric);
+      captureAnalyticsEvent("weekly_goal_set", { metric, target: numeric, was_update: Boolean(progress?.goal) });
+      await load();
+    }
     catch (e: any) { setError(e.message || "Could not save weekly goal."); }
     finally { setSaving(false); }
   };

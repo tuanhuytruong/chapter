@@ -473,6 +473,11 @@ export default function BookDetail() {
       setPendingEnrichmentLogId(result.log.id);
       setEnrichmentPending(true);
     } catch (e: any) {
+      captureAnalyticsEvent("reading_session_failed", {
+        book_id: id,
+        file_type: book?.file_type,
+        error_kind: String(e?.message || "").match(/^\d{3}:/) ? "server" : "network_or_client",
+      });
       setToast({ type: "err", msg: e.message });
     } finally {
       setAdvancing(false);
