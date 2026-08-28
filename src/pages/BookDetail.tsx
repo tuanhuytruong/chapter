@@ -21,9 +21,9 @@ import {
   api,
   computeStreak,
   progressPct,
-  daysToFinish,
   fetchCover,
 } from "../api";
+import { formatForecastDate, getReadingForecast } from "../readingForecast";
 import type { UpgradePrompt, RhythmResponse } from "../api";
 import type {
   BookRow,
@@ -566,6 +566,7 @@ export default function BookDetail() {
   }
 
   const pct = progressPct(book);
+  const forecast = getReadingForecast(book, logs);
   const streak = computeStreak(logs.map((l) => l.date));
   const todayStr = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Bangkok",
@@ -767,10 +768,17 @@ export default function BookDetail() {
                 {streak}d streak
               </span>
             </GlossaryTerm>
-            {daysToFinish(book) !== null && (
+            {forecast.kind !== "unavailable" && (
               <GlossaryTerm term="Pace" language={glossaryLanguage}>
                 <span className="text-[11px] text-natural-stone">
-                  Pace: about {daysToFinish(book)} days left
+                  {forecast.kind === "observed" ? (
+                    <>
+                      At your recent pace · around {formatForecastDate(forecast.completionDate)}
+                      <span className="sr-only"> · about {forecast.readingDaysLeft} reading days left</span>
+                    </>
+                  ) : (
+                    <>Your current plan · about {forecast.readingDaysLeft} days left</>
+                  )}
                 </span>
               </GlossaryTerm>
             )}

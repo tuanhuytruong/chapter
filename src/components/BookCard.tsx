@@ -52,7 +52,7 @@ const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean }>
           {streak ? <span className="flex items-center gap-0.5 text-natural-clay font-bold"><Flame className="w-3 h-3 fill-natural-clay" />{streak}d</span> : null}
         </div>
         {daysToFinish(book) !== null && (
-          <p className="text-[10px] text-natural-stone/70 font-sans">~{daysToFinish(book)} days to finish</p>
+          <p className="text-[10px] text-natural-stone/70 font-sans">Your current plan · ~{daysToFinish(book)} days</p>
         )}
       </div>
     </button>
