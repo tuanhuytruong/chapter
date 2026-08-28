@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user) identifyAnalyticsUser(user.id);
+    if (user) identifyAnalyticsUser(user.id, user.username);
   }, [user]);
 
   const value: AuthValue = {

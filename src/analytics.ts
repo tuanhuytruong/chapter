@@ -15,8 +15,12 @@ if (projectApiKey) {
   });
 }
 
-export function identifyAnalyticsUser(userId: string): void {
-  if (projectApiKey) posthog.identify(userId);
+/**
+ * `account_handle` is the app username: an operator-friendly identifier, never
+ * an email, display name, or reading/private-content field.
+ */
+export function identifyAnalyticsUser(userId: string, accountHandle: string): void {
+  if (projectApiKey) posthog.identify(userId, { account_handle: accountHandle });
 }
 
 export function resetAnalyticsUser(): void {
