@@ -4,8 +4,8 @@ title: Frontend Architecture
 description: Frontend React application, page components, state management, and routing structure.
 tags: [frontend, architecture, react, routing, components, state]
 verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-26T19:17:20.603Z
+  - by: openwiki/0.4.3
+    at: 2026-08-28T01:29:33.698Z
 sources:
   - id: openwiki-source-54631e6ebf1d3b815c4a5eed
     resource: repo://src/App.tsx
