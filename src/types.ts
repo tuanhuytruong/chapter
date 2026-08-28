@@ -120,6 +120,23 @@ export interface StoryThreadRow {
   page_end: number;
 }
 
+export type ReadingMarkerKind = "idea" | "question" | "quote" | "return_to";
+
+export interface ReadingMarkerRow {
+  id: string;
+  book_id: string;
+  log_id: string;
+  reading_round: number;
+  page_position: number;
+  kind: ReadingMarkerKind;
+  note: string;
+  created_at: string;
+  session: number;
+  page_start: number;
+  page_end: number;
+  position_label: string;
+}
+
 export interface LogRow {
   id: string;
   book_id: string;

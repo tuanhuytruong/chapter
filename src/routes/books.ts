@@ -77,6 +77,12 @@ async function ownerCanMutate(
 const APP_TZ = "Asia/Bangkok";
 const MAX_DAILY_PAGES = 20;
 const MAX_READING_INTENTION_CHARS = 500;
+const MAX_MARKER_NOTE_CHARS = 500;
+const MARKER_KINDS = new Set(["idea", "question", "quote", "return_to"]);
+
+function markerPositionLabel(fileType: string, position: number): string {
+  return `${fileType === "epub" ? "Chunk" : "Page"} ${position}`;
+}
 
 function normalizeReadingIntention(value: unknown): string | null {
   if (value === undefined || value === null) return null;
@@ -853,6 +859,81 @@ booksRouter.get("/:id/rounds", async (req: Request, res: Response) => {
     res
       .status(503)
       .json({ error: "reading rounds unavailable", detail: e.message });
+  }
+});
+
+// Personal markers are private even when a book's reading history is shared.
+booksRouter.get("/:id/markers", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const round = Number(req.query.round);
+  if (!Number.isInteger(round) || round < 1)
+    return res.status(400).json({ error: "round must be a positive integer" });
+  if (!(await ownerCanMutate(req, res, id))) return;
+  try {
+    const { rows } = await query(
+      `SELECT m.id, m.book_id, m.log_id, m.reading_round, m.page_position, m.kind, m.note, m.created_at,
+              l.session, l.page_start, l.page_end,
+              CASE WHEN b.file_type='epub' THEN 'Chunk ' ELSE 'Page ' END || m.page_position::text AS position_label
+       FROM reading_markers m
+       JOIN reading_log l ON l.id=m.log_id
+       JOIN books b ON b.id=m.book_id
+       WHERE m.book_id=$1 AND m.owner_id=$2 AND m.reading_round=$3
+       ORDER BY l.date ASC, l.session ASC, m.created_at ASC`,
+      [id, userFrom(req).id, round],
+    );
+    res.json(rows);
+  } catch (e: any) {
+    res.status(503).json({ error: "markers unavailable", detail: e.message });
+  }
+});
+
+booksRouter.post("/:id/markers", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!(await ownerCanMutate(req, res, id))) return;
+  const { log_id, page_position, kind } = req.body || {};
+  const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+  if (typeof log_id !== "string" || !Number.isInteger(page_position) || !MARKER_KINDS.has(kind))
+    return res.status(400).json({ error: "log_id, page_position, and a valid marker kind are required" });
+  if (note.length > MAX_MARKER_NOTE_CHARS)
+    return res.status(400).json({ error: `note must be at most ${MAX_MARKER_NOTE_CHARS} characters` });
+  try {
+    const book = (await query<any>("SELECT file_type, status, current_reading_round FROM books WHERE id=$1", [id])).rows[0];
+    if (!book) return res.status(404).json({ error: "book not found" });
+    if (book.status !== "active")
+      return res.status(409).json({ error: "markers cannot be created while this book is not active" });
+    const log = (await query<any>(
+      "SELECT id, reading_round, session, page_start, page_end FROM reading_log WHERE id=$1 AND book_id=$2",
+      [log_id, id],
+    )).rows[0];
+    if (!log || log.reading_round !== book.current_reading_round)
+      return res.status(400).json({ error: "marker must belong to a saved session in the active reading round" });
+    if (page_position < log.page_start || page_position > log.page_end)
+      return res.status(400).json({ error: "marker position must be inside the saved session" });
+    const { rows } = await query(
+      `INSERT INTO reading_markers (book_id, owner_id, reading_round, log_id, page_position, kind, note)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT (book_id, owner_id, log_id, page_position, kind, note) DO UPDATE SET note=EXCLUDED.note
+       RETURNING id, book_id, log_id, reading_round, page_position, kind, note, created_at`,
+      [id, userFrom(req).id, log.reading_round, log_id, page_position, kind, note],
+    );
+    res.status(201).json({ ...rows[0], session: log.session, page_start: log.page_start, page_end: log.page_end, position_label: markerPositionLabel(book.file_type, page_position) });
+  } catch (e: any) {
+    res.status(503).json({ error: "marker could not be saved", detail: e.message });
+  }
+});
+
+booksRouter.delete("/:id/markers/:markerId", async (req: Request, res: Response) => {
+  const { id, markerId } = req.params;
+  if (!(await ownerCanMutate(req, res, id))) return;
+  try {
+    const result = await query(
+      "DELETE FROM reading_markers WHERE id=$1 AND book_id=$2 AND owner_id=$3 RETURNING id",
+      [markerId, id, userFrom(req).id],
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "marker not found" });
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(503).json({ error: "marker could not be deleted", detail: e.message });
   }
 });
 

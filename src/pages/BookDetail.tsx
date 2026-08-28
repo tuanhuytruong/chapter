@@ -28,6 +28,7 @@ import type { UpgradePrompt, RhythmResponse } from "../api";
 import type {
   BookRow,
   ReadingProgressCompanionRow,
+  ReadingMarkerRow,
   LogRow,
   ReadingLensRow,
   ReadingRoundRow,
@@ -51,6 +52,7 @@ import PodcastPanel from "../components/PodcastPanel";
 import { ContextualUpgradeCard } from "../components/ContextualUpgradeCard";
 import { GuideCard } from "../onboarding";
 import ChapterDropdown from "../components/ChapterDropdown";
+import ReadingMarkers from "../components/ReadingMarkers";
 import { BookDetailSkeleton } from "../components/ContentSkeleton";
 import { captureAnalyticsEvent } from "../analytics";
 
@@ -139,6 +141,7 @@ export default function BookDetail() {
   const navigate = useNavigate();
   const [book, setBook] = useState<BookRow | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [markers, setMarkers] = useState<ReadingMarkerRow[]>([]);
   const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
   const [rounds, setRounds] = useState<ReadingRoundRow[]>([]);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
@@ -195,6 +198,18 @@ export default function BookDetail() {
     null,
   );
 
+  const refreshMarkers = useCallback(async () => {
+    if (!id || !book?.can_edit || !selectedRound) return;
+    try { setMarkers(await api.getMarkers(id, selectedRound)); }
+    catch (e: any) { setToast({ type: "err", msg: e.message || "Markers unavailable" }); }
+  }, [id, book?.can_edit, selectedRound]);
+
+  const deleteMarker = async (markerId: string) => {
+    if (!id || !window.confirm("Delete this private marker?")) return;
+    try { await api.deleteMarker(id, markerId); await refreshMarkers(); }
+    catch (e: any) { setToast({ type: "err", msg: e.message || "Could not delete marker" }); }
+  };
+
   const openPodcast = () => {
     setOpeningPodcast(true);
     window.requestAnimationFrame(() => {
@@ -240,6 +255,9 @@ export default function BookDetail() {
       setSummaryLang(b.summary_lang || "auto");
       setSummaryMode(b.summary_mode || "casual");
       setLogs(l);
+      if (b.can_edit) {
+        try { setMarkers(await api.getMarkers(id, selected)); } catch { setMarkers([]); }
+      } else setMarkers([]);
 
       try {
         // Listening side of the twin-track rhythm, scoped to this book + round
@@ -1344,6 +1362,7 @@ export default function BookDetail() {
                       />
                     ) : (
                       <div className="space-y-3">
+                        <ReadingMarkers markers={markers} canEdit={!!book.can_edit} onDelete={deleteMarker} onGoToSession={openSavedReadingSession} />
                         {logsByDate.map(([date, dayLogs]) => (
                           <div key={date} className="space-y-1">
                             {dayLogs.map((log, si) => (
@@ -1369,6 +1388,7 @@ export default function BookDetail() {
                                   onRetryComplete={load}
                                   isNavigationTarget={navigationTargetLogId === log.id}
                                   onNavigationHandled={() => setNavigationTargetLogId(null)}
+                                  onMarkerCreated={refreshMarkers}
                                 />
                                 <ReadingLensCard
                                   lens={lenses.find(

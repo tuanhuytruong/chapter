@@ -295,6 +295,23 @@ DROP INDEX IF EXISTS idx_reading_log_book_date;
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
 
+-- Private reader-owned anchors into a saved session. Marker text is never
+-- included in shared book detail queries.
+CREATE TABLE IF NOT EXISTS chapter.reading_markers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  reading_round INT NOT NULL CHECK (reading_round >= 1),
+  log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  page_position INT NOT NULL CHECK (page_position >= 0),
+  kind TEXT NOT NULL CHECK (kind IN ('idea', 'question', 'quote', 'return_to')),
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (book_id, owner_id, log_id, page_position, kind, note)
+);
+CREATE INDEX IF NOT EXISTS idx_reading_markers_book_owner_round_created
+  ON chapter.reading_markers (book_id, owner_id, reading_round, created_at DESC);
+
 -- Podcast episodes are private owner-scoped jobs. Telegram identifiers stay
 -- server-side and are never included in reader-facing API responses. It follows
 -- reading_log so the foreign key is valid on a clean database bootstrap.

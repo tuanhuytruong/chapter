@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Quote, FileText, RotateCcw, StickyNote } from 'lucide-react';
-import type { LogRow, SummaryMode } from '../types';
+import { ChevronDown, ChevronUp, Quote, FileText, RotateCcw, StickyNote, Bookmark } from 'lucide-react';
+import type { LogRow, ReadingMarkerKind, SummaryMode } from '../types';
 import { api } from '../api';
 
 // Light cleanup of raw PDF/EPUB-extracted text for display: collapse runs of
@@ -28,6 +28,7 @@ interface DaySummaryProps {
   onRetryComplete?: () => void;
   isNavigationTarget?: boolean;
   onNavigationHandled?: () => void;
+  onMarkerCreated?: () => void;
 }
 
 /** Highlight search matches in text */
@@ -68,7 +69,7 @@ function DeepReadingSummary({ text, highlight }: { text: string; highlight?: str
   return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled, onMarkerCreated }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [navigationHighlight, setNavigationHighlight] = useState(false);
   const [open, setOpen] = useState(false);
@@ -77,6 +78,11 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [saving, setSaving] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
+  const [markOpen, setMarkOpen] = useState(false);
+  const [markerKind, setMarkerKind] = useState<ReadingMarkerKind>("idea");
+  const [markerNote, setMarkerNote] = useState("");
+  const [savingMarker, setSavingMarker] = useState(false);
+  const [markerError, setMarkerError] = useState<string | null>(null);
 
   // Capture pointer-down before the browser can focus/reflow the control.
   const captureScroll = (button: HTMLButtonElement) => {
@@ -119,6 +125,16 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       window.clearTimeout(clearHighlight);
     };
   }, [isNavigationTarget, onNavigationHandled]);
+
+  const saveMarker = useCallback(async () => {
+    if (!bookId) return;
+    setSavingMarker(true); setMarkerError(null);
+    try {
+      await api.createMarker(bookId, { log_id: log.id, page_position: log.page_start, kind: markerKind, note: markerNote });
+      setMarkerNote(""); setMarkOpen(false); onMarkerCreated?.();
+    } catch (e: any) { setMarkerError(e.message || "Could not save marker"); }
+    finally { setSavingMarker(false); }
+  }, [bookId, log.id, log.page_start, markerKind, markerNote, onMarkerCreated]);
 
   const retrySummary = useCallback(async () => {
     setRetrying(true);
@@ -165,6 +181,11 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
               <RotateCcw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} />
             </button>
           )}
+          {canEdit && bookId && (
+            <button type="button" onClick={() => { setMarkerError(null); setMarkOpen(value => !value); }} aria-expanded={markOpen} aria-label="Mark this session" className="flex min-h-8 items-center gap-1 rounded-full px-2 text-[10px] font-bold text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
+              <Bookmark className="h-3.5 w-3.5" /> Mark
+            </button>
+          )}
           {log.raw_text && (
             <button type="button" onPointerDown={(event) => captureScroll(event.currentTarget)} onClick={(event) => preserveScroll(event.currentTarget, () => setOpen(o => !o))} aria-label={open ? 'Collapse source text' : 'Expand source text'} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
               {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -174,6 +195,15 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       </div>
 
       {retryError && <p className="text-[10px] text-red-600">{retryError}</p>}
+      {markOpen && <div className="rounded-xl border border-natural-border bg-natural-bg/50 p-3">
+        <p className="text-[11px] font-bold text-natural-dark">Private marker · {fileType === "epub" ? "Chunk" : "Page"} {log.page_start}</p>
+        <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Marker type">
+          {(["idea", "question", "quote", "return_to"] as ReadingMarkerKind[]).map((kind) => <button key={kind} type="button" onClick={() => setMarkerKind(kind)} className={`rounded-full px-2 py-1 text-[10px] ${markerKind === kind ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone"}`}>{kind === "return_to" ? "Return to" : kind[0].toUpperCase() + kind.slice(1)}</button>)}
+        </div>
+        <textarea value={markerNote} onChange={(event) => setMarkerNote(event.target.value)} maxLength={500} rows={2} placeholder="Optional private note" className="mt-2 w-full rounded-lg border border-natural-border bg-natural-cream px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-natural-sage" />
+        {markerError && <p className="mt-1 text-[10px] text-red-600">{markerError}</p>}
+        <div className="mt-2 flex justify-end gap-2"><button type="button" onClick={() => setMarkOpen(false)} className="text-xs text-natural-stone">Cancel</button><button type="button" onClick={saveMarker} disabled={savingMarker} className="rounded-lg bg-natural-sage px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">{savingMarker ? "Saving…" : "Save marker"}</button></div>
+      </div>}
 
       {log.summary && (summaryMode === 'deep_reading' ? <DeepReadingSummary text={log.summary} highlight={highlight} /> : <p className="text-sm text-natural-dark font-sans leading-relaxed">{highlight ? <HighlightText text={log.summary} query={highlight} /> : log.summary}</p>)}
 

@@ -3,7 +3,10 @@ import type {
   BookRow,
   ReadingProgressCompanionRow,
   ReadingLensRow,
+  ReadingMarkerKind,
+  ReadingMarkerRow,
   StoryThreadRow,
+  SummaryMode,
 } from "./types";
 import type { ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
@@ -431,6 +434,12 @@ export const api = {
 
   getLog: (id: string, round?: number) =>
     req<LogRow[]>(`${BASE}/${id}/log${round ? `?round=${round}` : ""}`),
+  getMarkers: (id: string, round: number) =>
+    req<ReadingMarkerRow[]>(`${BASE}/${id}/markers?round=${encodeURIComponent(round)}`),
+  createMarker: (id: string, body: { log_id: string; page_position: number; kind: ReadingMarkerKind; note?: string }) =>
+    req<ReadingMarkerRow>(`${BASE}/${id}/markers`, { method: "POST", body: JSON.stringify(body) }),
+  deleteMarker: (id: string, markerId: string) =>
+    req<{ ok: true }>(`${BASE}/${id}/markers/${markerId}`, { method: "DELETE" }),
   getReadingRounds: (id: string) =>
     req<ReadingRoundRow[]>(`${BASE}/${id}/rounds`),
   reread: (id: string) =>
