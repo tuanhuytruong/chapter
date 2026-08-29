@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:818dad8a82576e4af54782e31db22603caf0affc8be1129f0194dfd952e13723",
+  "claims": [
+    {
+      "id": "claim_06eeb48f24ce4d518cd565730b67cecd",
+      "statement": "PostgreSQL connections are managed via node-postgres pool in src/db.ts, automatically parsing OID 1082 (DATE columns) into plain YYYY-MM-DD strings to prevent JSON serialization timezone shift issues.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L1-L11",
+          "version": "repo-lines-v1:sha256:7f3d732d6401249186448933191ca88fd3150ddf9b5b810561d63da59d864d32:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmZTI2MGQ5OWY2ZTI2NzI0YjZjZmIzYTM0OWNhZmM5MjQ1ODdhOGY0YTk3M2M0YTNiYTAwOWIzMjhhNTY3YjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYmQ2ZjAxYTBkMjYxNjZmMzJkZTE5NDFmOTgyYmFlY2IyMWMxZmMyZGEyMGMyYjQxMGIwYjZlODA3YmIzYjcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4bb84ee41e2c4343ad17653cfa815bef",
+      "statement": "Database operations differentiate between fast HTTP request budgets and background batch budgets, enforcing local statement and lock timeouts within explicit BEGIN/COMMIT/ROLLBACK transactions.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L120-L140",
+          "version": "repo-lines-v1:sha256:a5e4c396e87a2667681fa26564aa6305e9093524d9c3cd64c2f075e69518b380:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjN2E2MTNmYTUzOTIzNjQyYmIzYWRlZWUyZDA0YWU4NWVmOWFkN2E2M2YxYjQzNjBhZTQxM2FmZmRlZDg4NmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4YzM5OWUyNGFjZWZjNGVlYWI5M2IxYjMzOGQ0ODVjNzFlZTliNzAyNjQyN2M4ZmY5MzExNGNhMDIxNzJkZjkifQ"
+        },
+        {
+          "resource": "repo://src/db.ts#L16-L23",
+          "version": "repo-lines-v1:sha256:fcc04652eaefcc815da0a8a9954333896da429f088840c4f504c48ce1c342df5:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODA5ZDE5N2NiNDg1MmU4OTE0ODE1NWM3MTNhYjZlNTkzMTczZTA2NzUyNjE1ODZiMzBjMDYzMmQ0MzYxMmVlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWExZDFhNjMzOTAyMjljNzk4MzQ3ZTgzYTA0MDU0NDFjOTQwMDAzNTI4NGFkMTY4YzFiZjZjZGYxZDcwYTM3MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmE2YjMzNTZjNDAwODM0ZjdmYWFlNWIwZTU4MjIzMjQ4ZWM4MmEzNTY5NmVkNjI0ZmVmN2ZlYWU3NmYzYzA2ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDc3MzE4MDljOGUzNDYzMDExY2QxYTE1ZThmZWRkM2E3NjgzNmM1ZTcyOGEwMGQ5NjY3ZDU1MjQ5MjBhN2E5NSJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L56-L98",
+          "version": "repo-lines-v1:sha256:263985c88b91d78e38f6391a4396497533abde667dd4cb9485309596089af55e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxN2ZmZWRkZWJjMzM5Njc4MTE4MjFkNGE1YjFjMjgxMGE5OTYxMDFmOTliZDhlOTdjNWExMDRlMGJjMDM0YTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhZDk3ZjgyMWE5ODI1NjdlZDUwMTRlYjFhODY1MmY5Mzk1ZTlhNWYyOGUxMjMzOGY3YmRhYjllMjFlZWJiOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4OTUxOGViN2Q0MjIwYjIzYzNiMWRlZDA0NTYzZjVlOGE3NzY0MjZjYjE5YmNiN2E5ODk5NTcxODM1ODU3YjEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c22188bb03414ebf9914f679422a04a9",
+      "statement": "The database schema is housed under the chapter schema and includes core tables for users, login tracking, password resets, and sliding-window auth rate limiting.",
+      "evidence": [
+        {
+          "resource": "repo://src/db/schema.sql#L15-L33",
+          "version": "repo-lines-v1:sha256:db3f67a684bde57d56b4d6199b178256bf343379aa52d488e2033391d2f565de:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkMzc5Y2FmNjVkOWIxNTcxZDI2YmI1ZWZmNTE4OTQxYWQyMDFlODQwMTU1MmQ4NWUwZDZiYWI4MTQ3N2I1ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjNDVmZWU5M2NjZmU0ZTY2YmQ5Y2YwYzU4ODQyYzQ3Mjg4YzQzYWI3ZTZkODRkNTRjM2VjODkzNDY4MzI4YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1OGZjNTgzOTRiOWQ5ZTA5N2ZjZmY1ZjQ5Zjk0YTc4YjZiZWFmNTIxMjk3MTkzN2EzYzFkOTczODYyNzZmZTIifQ"
+        },
+        {
+          "resource": "repo://src/db/schema.sql#L86-L97",
+          "version": "repo-lines-v1:sha256:97ee1d443ae55138a94ba75cc1fcfe83f573fe0174b7f2179b95c04bc2f36746:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1MzM3YzMxYTQzYWJmMGVhNzU3NzllZTk3YjUwNzgyNTY1YzQyYzY4ZjJmZjkxY2E4NjMzZjg0NDM2MDhiNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwNDM2MWNjZDJjOWU5NjliY2E5Yzk5NTI3ODcxZTNlMGEwYmU0NDAxMjJjNzZhOWViNTJhOTU5MzY4NTc5OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViNzQ4ZWQ2MGZkNzAyOTUwZmU5NmU4YzAzOTg1MzUzYzIwYWJlZWJhYTc3N2Q2YTg3OGI1YTVmYzRhYjM1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiNjI0OTcwOGMzMWI3OTQzNTRhZGIzYmI4MjJmZThhNjc3MDA1OTQ3NTQwY2RjZmM5M2FmZGU5OWQ3YTQ3NGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b7f62345885486e98b1b193bef172b8",
+      "statement": "Books track active reading positions and configurations, while book reading rounds preserve multi-pass reading history and lifecycle status across sessions.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260802_add_reading_rounds.sql",
+          "version": "repo-file-v1:sha256:3a5689a4c72c11022f61cb2aa01b7c2d884d99a47ec1c01c2dcfe42f61e872bc"
+        },
+        {
+          "resource": "repo://src/db/schema.sql#L112-L142",
+          "version": "repo-lines-v1:sha256:38da57992574f77cf88469816b71e05cbf0f0302d9ec99793d196f6da4f1025a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3MjY3NTViNmI4NzYxZGUzZDc3ZTBmYzJlYjVmZTgxMTI2MjQ1MTA5OWI3MjZlOTIzYTUzNDhmOGY2NWM4MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NWZjZGU5YmVjYmVlZDQxNDU1OTk5ODNlMjRlNTkyZmI5NDBjMzI5OTdjOWFhNmY0OGYwNDZkMmIwYzBjMTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiNzQ4ODViODIzNDA0MzA5NmI0OTlhNmU0YjJiN2RhODZjZjU4YTk5YmIzOGUwM2FjNjgzODdhOWYyMzJjMWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_daa3744da7a549f69d0b0ed08901fc1d",
+      "statement": "Migration 20260829_backfill_reading_round_history.sql idempotently backfills historical reading rounds from existing reading log entries prior to the lifecycle table introduction.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260829_backfill_reading_round_history.sql#L1-L37",
+          "version": "repo-lines-v1:sha256:d3da48b78617e9e79b22858ec10e9b68d7cd820361f48a16b64c22b177f75b2e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzYzM0YTZiYWVjZjRiYzk4ZjIxZjU2ZjlmMWZjMDAzMDUxYjYxYWFlYzE0ZmNkOGQ3ZTgwYjYzNDFmMmVjY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4M2U4YzFmNGFkNjEyYTViZDkyMDY3YzI5YmRiOWIxNTk3ZmQ1NDFlYmVkNDEwMjYwNzlhYWJkNmE0YTViZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e6d98403609f4a86b7d9a36775809788",
+      "statement": "Specialized tables manage podcast generation jobs, narrator configuration per reading round, playback progress, and availability status.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260728_add_podcast.sql",
+          "version": "repo-file-v1:sha256:4d50167c12b23e18019302bc6a51e3e0955f5c5849e0b8dba1785ac8753e12b3"
+        },
+        {
+          "resource": "repo://migrations/20260805_podcast_narrator_per_round.sql",
+          "version": "repo-file-v1:sha256:b54345c99e2505ea5a8841d3218d736a438e6e3fc79d1ccdf8b12d1a73c6d634"
+        },
+        {
+          "resource": "repo://migrations/20260826_add_podcast_unavailable_status.sql",
+          "version": "repo-file-v1:sha256:ba4a2ac2925a3a361094b1b026ae8b373adc87623e76c1fe87e8bf784bc4ff88"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}

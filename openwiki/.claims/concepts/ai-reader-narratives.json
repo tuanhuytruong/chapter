@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:658863ec26716a3601810f5551113a1c3a6682525c05e8dfe8091b16136807c7",
+  "claims": [
+    {
+      "id": "claim_15ab4ceeb2484ac4bc1afb6637646396",
+      "statement": "The AI Reader processes persisted session text and reading logs rather than raw uploaded files during runtime inference.",
+      "evidence": [
+        {
+          "resource": "repo://src/aiReader.ts#L2-L8",
+          "version": "repo-lines-v1:sha256:739dfb250379115ce8179f7f928f95ec2f24dbab9cb6796091a82b8a609e25e6:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWFmMjJjZjA3MzI1OTJjMjQ3MTQxY2JlNjFlZmExMTAxMjYxMmY1YTMxMjJiOWFmOWJiYWY1MmY1NzI0ZDE5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTcyYTQyOTM4MmIyZTE0NzE4ZTBlMzdiMDU3MGE4YTE3MDI5OTFmY2Q4NDk4Y2Q4NDA2MGE4YmY0ZjA1MDE3YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjEsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzYyZmM5NDY4YzVlOGRiZjgxZTJmMjg1OTQ2NjVjZmIxMTQ2M2I2YjNjZjI1NWRjNzdiNDIzMjEyYWQxM2YyNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGE3N2U1ZjRhOGY0MDJhMTE0N2U2ZmM0MDE2MWM1YjY0ZDgzNmVmYTc4OTAyYTg2MzExMmViYTQ5MGIyMjMzNCJ9"
+        },
+        {
+          "resource": "repo://src/aiReader.ts#L487-L501",
+          "version": "repo-lines-v1:sha256:c76c68df4d62d4a54a17876d06e5bd9504fda08944762322020bdaa0b47c480e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MTg4ZGZhOTFjZGMxZjZhODkwZGZkMDlkZWFkNTQ3M2U3NzBhZjBjNTdiMDE5NDZiYWEyYTM5OGJmNWFmNTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTgwZDc3OWViNTcxNDA0YjA3YjljY2E4YmU5OTdmNTE3ZWY0MDhjM2MxNWM5YzhiM2MwNmEwMGYyZGIyMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjNGQ1NGRiMzRkMGViNzJlY2FkYjRlNDNiNWFhMjkzYWZiZTQyOTExN2U4YWI4NDJhMjA1YTAwZWE0OTRmODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZjZmY2RkNTlkYjNiNDgyYWVmODQxODY2OTQ4ZWUyZmY0YTVmZWZmOTg5ZDA1ZWZmNDE0MTY0YmYyMGE0NzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e78e4c74cacb4827aaec30062e83a783",
+      "statement": "Reading rounds and historical reading progress are tracked across sessions, enabling continuity mapping and lifecycle distinction.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260829_backfill_reading_round_history.sql#L6-L35",
+          "version": "repo-lines-v1:sha256:4cd83fd30709e737a6db44d1ce20e062948a511f86581f4729b964dad8ca6ffc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyMmUzZTA4NGUxYTJjYjRmMjVmMGM3MjZkN2VmNzUzNjQwNDM4OTAwMDIwM2VmMTU2OWI1ZDAwMjRlMjk0NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYzkwNzZlZjEwMGE2MGRiNmNhNGNlOTIwNTljMzA4NGRmN2RmODNlMWMwZTMzZDk1OTkzMTljM2FkNDE5OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFhMDkzYzMxZTZhYjUxOTY0OWIxOGZjYjQzYzVjODUzNjRlZWE3NjZjMWJiMWMzZGU0N2E4YTQ1MDRjY2UzMzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MGNiMzU5ZDc1OWMxNzI4OWZjNzIzMGNkNDNiOGVjMjFkZGE2MWRiNjFmM2QwNDFlMDE4MjRmMGYwYjVhYTEifQ"
+        },
+        {
+          "resource": "repo://src/aiReader.ts#L50-L56",
+          "version": "repo-lines-v1:sha256:7fa285cf4cf0b6614ad3dbcd2b627301281705e4faa41667db91f70829a365d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTkwMzljNjdiNmYwM2I2NjdhYmE4MjhkMjFmNDQ5ZGNiMmEwNGVhMzkxNTQ2NWQyZmM5NjhlMDU4NzVmODc1YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODg2MjEyOWUxZGQzNjgzZTcxNDFlNjFmOTc4ZWU5NjJiOTNlN2VmMjU5M2U5MmZmMjFlMjA5YjE2Y2M3YWI1MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDg3MmZmYjU0NDQxOTc3M2QzODNlOWQ4MDM3MzJiZjY4OTAxY2QzYWQ2YjhjOTJjYTliMDIwMmJmODgyOTcxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODgzODY3NmY0NWZmNjI5NzQ5OTkxMWI1MzFjM2VhNGU1MmQxODdiMWFiYTEwZTViNTg3NTAzOTY4NmIxZTg5NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f2b56d9e9324c5d90ea66e954dbd24a",
+      "statement": "Chunk analysis processes individual sessions into structured insights, which are subsequently synthesized into a comprehensive BookWiki with thread and entity maps.",
+      "evidence": [
+        {
+          "resource": "repo://src/aiReader.ts#L228-L245",
+          "version": "repo-lines-v1:sha256:f3b2651d3794dc82a9b42df31e3044bc37274eab2134691b73cfe53cfa8fcef9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYmY2M2M5NDkzYjViZjAxMTA0YTUwMWEwYzA5MTk3ZGQyOWJlNjRkY2I5ZWYyNjQ1ZWNiNGM1ZDBkNGEwNmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5YTU0ZmFhYzRkMGQzMGYyYzFiYTRmNmEyM2Y5NDVlYTQ5NDBkMTNmZjFhOTNjYWMzNDI3MWZjZWM1MTFlYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1OTgyYzkzMWZjOTQ5NDJiMzRlNDYzZDE1Y2Q5MGRmZjRmZjQ5NjMzOWY2YjgyNWM5NjgyMDRhNDU2NjVkYmYifQ"
+        },
+        {
+          "resource": "repo://src/aiReader.ts#L58-L79",
+          "version": "repo-lines-v1:sha256:b727f0425b88f0d9165a26a9bd7122368ee845e6ce179fc017d6b16c83b9d60a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViNmFiYTgxNjBkNDIzMGVjYjQ5MWM5MTIxYmIwN2ZhZjBkMTBkYzUxNWMxY2U2MzFkYjg0MjJmMDQ4NmFjNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1ODAzYTRmYzE0MTU2OTk3OWM4NGYxY2JmNzJkNmRjY2RiMjZhNzhkNDU3ZTRmMGNlMmYwNDY0MmEyNTBjZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNhZWI2MmM4YmJkMzEzYjZkYWEyYzg4Yzc5N2M2MDQ1MGQ0MWYzOWY0YTU1MzA1ZGI2NmI0ZTEwMDJhZjViODgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a2ea9bad7b2d491fbea58b14b4ed4791",
+      "statement": "Cross-book connections aggregate evidence from reading logs, lens analyses, and wikis across multiple books to generate multi-book synthesis artifacts.",
+      "evidence": [
+        {
+          "resource": "repo://src/crossBookConnections.ts#L15-L25",
+          "version": "repo-lines-v1:sha256:bd370910cbb57cceeb98623e01b733a35f3fa0534c7280887937301f2f61075b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZjA3OGNlZmEzZWE2MDgzNmM3Njg1ZTRlYmY2MDIzODE1ODE0MGI2NTc2NDI5YmU4ODZlYTNiODA3Yjg2OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMTY5YWJhNTRiZTNjZmNkMzAwNWVmMmJjYmQ0YjI0MjIwZDAzNzM2MWQ3ODA2ZjU0YWM3YTZjNGE3MjFlYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMDUyOTUyYjNhOTI0MTAwNzVmZTY4NzgzM2E0NmVjMzY5YmEyYzQzYmFkY2Q1ZDc5YjRkZTY0NDg1NGFiYTIifQ"
+        },
+        {
+          "resource": "repo://src/crossBookConnections.ts#L30-L43",
+          "version": "repo-lines-v1:sha256:9f4ced50e3d7e9033b7e7f83874e214508435c624f276d80faf0d54298a04a3a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MDU5OWM0ODg5ODY5YjRmYjA1MjEwMTQxN2MyZWQzMGU4YmFjZDA3ZmMwZmM4ODljODhiZmYwNGJjMmQyYTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0Nzc2MzQ4ZDYzNWU3OTkzMzQ4YmEzYWQ5OTk5MzVkMjRiYTJjMzI0Njk4OWYxNGVkOGQ0ZGZjZGNhZWRiNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiNmUzZDU1NjY4MDkyMzMzOWE1MTQyOGY1MDM1OGY4MDY4NTRjMzdkYmM2ZjE4MjNkNDE0ZjhhODhlOTlhMzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ad4350baa5bf4e69ab41e1bba326800f",
+      "statement": "Resilient batching and strict JSON parsing ensure robust LLM interaction with automatic fallback to single-session analysis upon batch failure.",
+      "evidence": [
+        {
+          "resource": "repo://src/aiReader.ts#L153-L157",
+          "version": "repo-lines-v1:sha256:850a6d81927c1823e790cc9cc079decc94a66796aaa831121eeb0bc8bc81b985:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmJiZjcxYzhiZDc0ZGZiNGRmOTFkOWNkNjgwMTNkODAyOTg5ZGY4NDI0YzA3Y2Q5NGFiNDUzMmYxODc3Y2EwMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2Q5NGFmMzFjY2IzZmQxNGUxZjJmZDFlYjJlNzI5MjZmMGVjZTlmYmIwZTI5YTlmNmYxZmMzZDk2YzVlMzgwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjU1NTJmZTM4NjRhYWZkODAyYTZiNTM3NDQ1NzkxNjZiNDhmMTdjYWZlZTc3ZjQwYmM4YjgwYTUwMGY2NTNlMyJ9"
+        },
+        {
+          "resource": "repo://src/aiReader.ts#L274-L295",
+          "version": "repo-lines-v1:sha256:2b55aab0514a419fd0e1750b418870deaa39ba35fe785670fc9289ef36e45658:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlNDQyYzA0YTA2YzY1MzYzZmM3YjFhNDBhNGUzYzc3MzkwYzMwMDQzZGMxMWNiNDAzMjJmOGVmOTUxOGZiYWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRlYWU0YzQ0OGEyNTMyZjA4M2FmMzg3Y2I1NTgxYTljMjNjOGU2YjRmOWVkNjY3Y2IxNTQ3OTVjMGIyYTI0MjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzNzQ5NjEzNDUxYTYzZTI1OTFhZDdiMjIxZmM3ZDBiZWY0YzZhNjU2YzVhMGVjYTNjY2RlZWU3N2MyMmM2ODgifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:0b93af1c3a18d7aef0bce3c32c39f859887a1d7045ce3da13932144e26e6706c",
+  "claims": [
+    {
+      "id": "claim_9eabb26db3a845079f9fd34cec6dce6e",
+      "statement": "The application uses .env.example as a template for environment configuration, requiring DATABASE_URL, Telegram bot tokens, and PM2 settings.",
+      "evidence": [
+        {
+          "resource": "repo://.env.example",
+          "version": "repo-file-v1:sha256:9409be8616ea39476d17c8c841b6a0eb1d8664e2d167bcb1083d74c6e542ca8f"
+        }
+      ]
+    },
+    {
+      "id": "claim_f3d43d10ee174e46a5250c353e56cb38",
+      "statement": "Application schema is automatically initialized and ensured on server startup via ensureSchema reading src/db/schema.sql.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L154-L185",
+          "version": "repo-lines-v1:sha256:61e508ea5279bfee5ac1573f9b59cb1c8897997f37ee8e569bc22530c0bf6ade:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwZmE5M2FiODU4Zjg5NDExMjYxNDY5MGE2NWM0YWFmOGRkNDk5ZGM3ZjA0YzJlMzkwNTBiMDgxYjc1MDkyYzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0ce83d23c93646469047ca6f392a6f0a",
+      "statement": "verifyCoreSchema checks that all mandatory feature tables exist in the chapter PostgreSQL schema before serving authenticated traffic.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L187-L207",
+          "version": "repo-lines-v1:sha256:ca29effaed52c415eaab48d4c63e500ddfd666aee797b364fa5523f2f20bc4c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhYWQ5NTIxMTAzNTU5NTk0ZjU5ZWE3MTYxN2RjNWQ4OTAzYWI3NWEwODE4MzY0YjQ0OGZlMzdiYmY4OTk5NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4OTlkZGRlNTZkYjg1MWUzYjkyYzFkYzc5NmExN2EyZWVjNjUxYjNjMDY5MzU1MGJmNmMzNDVkNTRiNzliYmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_163d8ef5196b479ca23c45b83815227d",
+      "statement": "Deployment scripts verify core database relations during updates using psql queries against the chapter schema.",
+      "evidence": [
+        {
+          "resource": "repo://update.sh#L87-L97",
+          "version": "repo-lines-v1:sha256:4973bd2c91183366b4dce36d2283ba48a7b46bab5c96729e8e44a3861984c4b6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxMTFjNmVhMjRhZmRlZmRmYWQ1YzE3MTE1ZjlkNTVkZWM2ZDU1YjYxNTkzNWZiNWFjM2I4NjcwYjA2NDE2ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZjhlZDI5MDgwMjIxYjBjNTMwM2IzODlkYjNkOTJiNmYzNTY4YTBjZDk4NmM2YmEzMTVlODE0ZTZiNTlkZDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjliMGQwYmE2Y2VkM2RhZmVjNjY5MjQ2YjRjM2FmMGM3MDc5NTgyMTQ2NzY4MTQ3NmQzNDQ5NWQwODdiODQ2ZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYTQ1MDkyY2YzYzAzMWViNzNkZjY2NDUzZjI3NDRhOWExM2RhMDM0MTRjNWQ1NWNiYzUxYjA0ZjM5OGZkMzAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_884ec0cafa2f418ea9c28d4ec2fe0ca8",
+      "statement": "Background tasks and scheduled batch writes execute under withBackgroundTransaction with relaxed statement and lock timeout budgets.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L147-L152",
+          "version": "repo-lines-v1:sha256:f73fae36dcc88dfca0a1a6e3642f223eeb5a0e2ab8ac52382e97962c7521ca55:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNmNDMxZWE3ZWZlZGJhNGQ2MTg2MWEyOWJlMDY0YTg3ZGEwM2VkZjBmN2U0YzQ1MWRmMGE4MzBlZGYwMjllYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTUzOTY0ZGMyZTdlNGVkMDA2MjYxMjc2NGE4NTQxODBhNDhlMDI1YmY0YTZhNjJiOWIwYzI0NDA2NmMxNGFmOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTVkNWRjODljZjdjNTkwOTA0NzZiMTA5NDdhZDI2ZjdmMDc0NjQzMjkyODAxMTU3M2E1ZTA4NzBhZDQxNjgwYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b3bdead78b634f3ba711cefa8a83db2f",
+      "statement": "Production deployments are orchestrated via PM2 and update.sh, performing git pulls, builds, schema validation, and health checks.",
+      "evidence": [
+        {
+          "resource": "repo://update.sh#L66-L122",
+          "version": "repo-lines-v1:sha256:ed5d587665e48d551a2e15d44fd88c629bb87e52f92fe4acb065c07e127fdedf:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYzUwOThkNzRhM2Y3OTQyOWM4YmQxNGExYmI2YWE3MmU5ZTgwNTkxNzBmZjI3MDI0NzE5NDdmZjVjMzVlMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyYjdjNDIyYjUzMzA3ZWZiYzIzYTQ2Mjg5MWY5NmI5OGQwZWY5NzNlNzhiNmMzNDVhOTNmMjlmMWEyMmMwZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}

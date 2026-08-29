@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f604100df94beb7098bf0a061a2d0386863eb1c3c1403b2ba38ab00608613096",
+  "claims": [
+    {
+      "id": "claim_230eb79b31a44c04a1abd75b620f8204",
+      "statement": "Chapter integrates with OpenAI-compatible LLM endpoints and TTS speech providers configured via environment variables such as NINE_ROUTER_URL and PODCAST_TTS_URL.",
+      "evidence": [
+        {
+          "resource": "repo://src/config.ts#L30-L33",
+          "version": "repo-lines-v1:sha256:af8639537390117cde29d9ecb975bfe7d8025f5290bd40fe5a00d1aacbca11d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2Y4ODIwZjg1ZjUxNjkyMWQyYzJmOGRiZDlkMGI3MWQ4NGE1ZWZjZTQxZDdiYjlkOTJiODAzNTRhYzZjZjZkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDE2NDNlZGRkN2MzMDY3MTJmNjYyYjNhYTE0ZmNiNmUzMTk1NGFiYTMzYmQ2NWZkZTMyNDUyOTQzYjExOTViNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE0N2UyNmEyOTJkMDg0ZmNjZTFjZDBhMzYzNjdlMTUyNzM3MjNlMDgyOTY1ZjIwNjNiNmExZjdmYTMxNDBiMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmE0ODMwMWFkMGU4YWUwOGZiZWIyMWQ1MDdmZWU4ZWNmYzNhYTMzMDI3MzJhMjZiNDdiMGZkZGEyNWU5YzRmYSJ9"
+        },
+        {
+          "resource": "repo://src/config.ts#L42-L43",
+          "version": "repo-lines-v1:sha256:4b1487c7de6c720da6a4f1383f52f718c9f0cff058404d2c178639a889eeee8c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTUyNWRiY2FlYjQyN2Y2YjM0NWYxZGQ2OTIzYjQwMGY3MWJmMDM3MWE3NTkwMDJlOTdmZjQ5YWY0NzYwYjIyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGMwZTA1OGM4NDcwN2M4ZmM5YjBhMjU0NGU3ZjBmYmJlMzY2YzQ5MDBmZGViZGVjN2VmMWQyZDQzZGEzZDcxNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjE1YThmMjYwZTg0ZGYzMzlhYjIxYTYyNzA5YWQyYzA5MzA3ZTdmNDRkODA0M2QwYzc2NzMyYjhhNTljNmY5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjQ4MzMwNzAzNDY4NmNlZGI4ZDlmMjY3MTA0YzIzMmY1OTI2MDc5ZTkzZGFjMGQxNDYxMDdjMmVmYzUwYWJjYiJ9"
+        },
+        {
+          "resource": "repo://src/llm.ts#L208-L226",
+          "version": "repo-lines-v1:sha256:8353c1fe1b12a892ccd1593c6a8b39dfc0b91583ab1105073ed309a3b4fe4667:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmYWY2YWQ2MWE3NjAxOTc4Yzk0ZDAwYmJhZmU5MjJmOTFmMGM0MDQ4M2VhNWE4MjMyMmY2YzQ0NzczMWVjZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM1ODE1MTg1ZGRkNGNlNWI1MTVhOTViOWFlYTY3ZTgwZGRmMTRjMDk5NTY5NGMxZDViZWYwMDA4ZDBjMzkwZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0MWQyMzg1OTY1ZjVjZjVhYTIyMDFjODQ4ZjYwODJjOTY3ZmM0MzZhODE1MTNmNmY3Yjc3MTZmMjk3YjM0NzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bda33ad6f84144c1b94bbd955e7487d8",
+      "statement": "The callLLM function in src/llm.ts accepts system and user prompts, temperature, strict mode, JSON mode, timeout configuration, and LlmCallOptions including priority, traceLabel, and model overrides.",
+      "evidence": [
+        {
+          "resource": "repo://src/llm.ts#L208-L216",
+          "version": "repo-lines-v1:sha256:4c6d70156f6ddbad4f10a268d8c89d567a4d4e70f0423b7dcb7f4c0a91e131f9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmZhZjZhZDYxYTc2MDE5NzhjOTRkMDBiYmFmZTkyMmY5MWYwYzQwNDgzZWE1YTgyMzIyZjZjNDQ3NzMxZWNkMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjEzNzM0NmMxZGM2Njc3ZjJiNmQ2MGVhNDNjZDg0ZDUxOGM3MTU1ZDlmYjNiNDMzZGUwNjYxZjIwN2RlOTBmMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzU4MTUxODVkZGQ0Y2U1YjUxNWE5NWI5YWVhNjdlODBkZGYxNGMwOTk1Njk0YzFkNWJlZjAwMDhkMGMzOTBkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjVmOGE5YmU4ODc5YTg0YmVhMmE1ODc1MzNkM2ZkMGYwNTBlOWExOTZiMDljZmMwZTcyNWE0OTkwYWRiNjk5NCJ9"
+        },
+        {
+          "resource": "repo://src/llm.ts#L41-L48",
+          "version": "repo-lines-v1:sha256:20c4833a0016a0cc2af441476c7dae171ff9f3ba9e7cc5c548bfd40e1665cc12:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzYxM2QwMTEzYTUyMzc4MTg4NDQ4NDBhY2I5ZGU4YTQ5ODljZDE1ODZiMGY0ZDFlOTFhYmY1ZTQwNGQ2NTIxOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2IyMmE3Njc4N2JiMWIxYTc5M2VmOTQ5YzNjNDNmZWFmMjJiNWVmYTIzMjg5NTNiNDNmY2NiZDI5NTY5MjQ4MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjNhZGQzZGQ5OTE3MDQzZGU5OTUzMzZhMGI1MmZiYjI4OWI0MjNiOWE0MDIxM2E2NDIwMDcxMmI1Njk4NjVhMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_77a122497d714fd79aecef25f2eb91ec",
+      "statement": "A shared process-local scheduler in src/llm.ts paces requests according to NINE_ROUTER_MAX_RPS and limits concurrency with NINE_ROUTER_MAX_CONCURRENCY, prioritizing interactive workloads over background analysis.",
+      "evidence": [
+        {
+          "resource": "repo://src/llm.ts#L56-L102",
+          "version": "repo-lines-v1:sha256:fbeaa87b39d3be9d73ba6ade248a38e41fc24192c016c8654d3a9f25015b7176:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNzI3NzEzOTljNjYzN2E3MjkxZTZhYjU1MjY3ZWYxZjZjMTU0ZjMyNDdjYmY1ZTU2MmMyOWUyNzk2NTA2YmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyZjY1NjJlZWI5M2RmYTUxY2E2OTk3NGI5MjFkZWUwYmRhOTBmY2ZjMDdiOGQ3MjllODVmNDE4NTg2N2UxMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1OTQ5MWMyNmQ2YmFhMDI3YzIzZGNiYzRlMmU1ZjI3NzBlNzI3NzM4ODc2ZTcyODljNjljMWFhZTdiNjQxZDQifQ"
+        },
+        {
+          "resource": "repo://src/llm.ts#L9-L36",
+          "version": "repo-lines-v1:sha256:e8365775d3cc146d86c870862a5862c0cd1db24d0e370b9255596de51b28c917:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlZjEwOTlhZWQyYjRjOTg2ZDg0NmI0ODNmYTYzMmY4OGE4MjUyYTM2MGY0MTc5YTlhMjA3NTI2NmNlZWNjMTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkYmYzNTBiYjdkMjUxNGVhZjBiYjRmYTFhYjYxZDRmMmIwOTI1Yzc2MTc0MTkwZDJmZTAzYzRiNTM0ZGQ2MTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1NjI3MzQ5OTM2YWQ5NGNkZjExZDc4NmMwZGUzMTUzYjM5MThiMzQ1ODE2MTEzOGI2N2M0MmZhNmJkNGQ3MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiMjZlYmExZTljZmE0YjhhYTA3MmIxZTU3YmQyYTIzNjZlZmJjYjQyYjljZDFhZjM4ZmRhOGY3YTNiOWQ0OTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8c0c0d5b18694ae9a3d4296b8b1512f7",
+      "statement": "Automatic retries with exponential backoff handle network failures, timeouts, rate limits (HTTP 429), and server errors (HTTP 5xx), while missing URLs trigger fallback responses when strict mode is disabled.",
+      "evidence": [
+        {
+          "resource": "repo://src/llm.ts#L187-L201",
+          "version": "repo-lines-v1:sha256:42f65c32664983895c773f4732737863bb4b61f41cc1582431a880bbbd49e7a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhNjM1N2ZkNDBiMjM2OGYyYTY5NzZjN2NiYmE2ZmZjZDljOGRmNjg5NGQ4YWYxMTZhNWNhNmY1YjcyNzc3YzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3NTZlZGRiYmEzMmQwOWYyN2VkZmM3ZTlkMWIxNzFhOGQ5MWRmM2M0YmZiMWQwMjVkZTBlOTc4ZTE3NDdlYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3NjhjYWI2OGVmNjZiNGVhY2UwNzdhMGMzY2NhYmFmNTNhM2ZiODkwMTBkYmRmMmEzNzE4NTY3MzdmYjdiZmMifQ"
+        },
+        {
+          "resource": "repo://src/llm.ts#L228-L300",
+          "version": "repo-lines-v1:sha256:abce329fe326e2ece496d63bca009ec3b228a263b8372593609aefa9e7ac0a06:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2NTk1ZjRlZTVmZjYzZDUwOTUwNDE5ZGMzNDQxNDUxMzg1MWRjOTczNmZkMTdhNGY3YmZhOTMwYjI2MWI2ZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhODRkNTA1NDNmZDgwYWI0MjMxNjZiYTMyMDhjZmE4YjM0NDc1MDYxMGQ1Y2M0OTI0ZmVkMjc3OGRmOTIyYzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0NDk5MDliZWIzMWZhNGNlODI5MjdkZWM2NmY4ZTUyMDQ5MWZlZGU2MGY0YTIzMzE5MDBiY2U3MzJhY2JmMTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzOGM1YjIyY2RiZTFlODQxNTkzM2JiMDgxMjg1NTdhMTVlNmU2MTE3NWQxNDlmNTBiMmM1ZjM5NmRiYzlhNTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_99aeca40d1764ce89120d93b5b7561cd",
+      "statement": "Summary output language validation ensures generated responses satisfy requested language contracts (Vietnamese or English) by inspecting prose tokens and diacritics.",
+      "evidence": [
+        {
+          "resource": "repo://src/llm.ts#L132-L185",
+          "version": "repo-lines-v1:sha256:b449f86cf45784ffe66d4e5718aa020e1d6a62a8aa45662c3a1d97e32c899db3:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiNDA1NWNiOTkyYzFiOWQzZDUyNjEzNjZlMmFmYzEyMWQzOTkxM2JlY2NkMjU0ZTlhODdiYmNiYThmOTM4OTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkNjU3NDNkMzVhNWQwZWMxMWNjNDRhMTIwNDdkYmUyMDM3Y2JjMDI2YzM0N2QzMWU4NzdmZDAxYWZmMmRmN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkNjQ0NmFlN2MxODlkYzk3YzNiZDUwMDFiMjNjYWI0N2E0NTczZGQwN2RjOGFjNjEzNGQ1MzM4MTNhNDc0ZmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_17deb45692574f93a4f8d2fb477450d6",
+      "statement": "The TTS integration in src/podcast/tts.ts chunks long scripts into sentence-based segments, validates character limits against PODCAST_TTS_MAX_CHARS, and synthesizes audio via an OpenAI-compatible audio endpoint.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/tts.ts#L7-L17",
+          "version": "repo-lines-v1:sha256:274563633587b267adb40d2b3484ace63f985c4ee0f2f7acd5415bc7b46ca2c9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiN2Y2YzYwNzk2NDVhZGJlMDU2ODlhNDkwYjM1ZGZmZjlhYTZmYzMwZjFkMDBmMTlhMGI3OWY3YjhlZWY3Y2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyNjZjYTg1M2JhNmRlZWI1MGVkYjg1YTI5ZWU0MmJiYTlmNTk1NjcwM2RmNGRhZGNlMTkxZWMxMGY4YmVhZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxMzg3ZjEyNjJiMTI1MGJiODZiZjAwOGExMWRiMWM2OTJkNDI3Yjg0YmViMjhhNWJhMjU1Yzc0MmU2ZTFmM2QifQ"
+        },
+        {
+          "resource": "repo://src/podcast/tts.ts#L80-L87",
+          "version": "repo-lines-v1:sha256:b993b859e3a3089f42b28699ab7c7a0c32c213564a0d312f404aef71fb9b5414:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzgwNzVmYjVhMWVlMTVhZmZhNWUyOGY4ZjllYzg5YmM4OGViMDQwMDZiMzYxZjA5MGQwYjE0YWZhNmVmOWE3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjk5YmNlMDY2MDBiODU2ODFjNzViZWIxMmU1OGIyYTA4ZDJmZGI3ZWJlMDM3MGU1ZjhiYzI4Y2Y2Yzc1MTI2OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZWRjNjJiMDE0NjQ3ZWE2MWYwNWU1M2Y2NTg4YzJjMjk5MTU1OTAwMzkxMGU1Y2JkYTAzMGJmOGI3ZmI3NDQxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_08277f75d63c42ce9b8b0381f0eacb4d",
+      "statement": "Audio part files produced by TTS chunk requests are combined into a single episode MP3 file using FFmpeg concatenation with temporary manifest files.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/tts.ts#L19-L29",
+          "version": "repo-lines-v1:sha256:a4776d7f4c6509b48251afa2dd5b07b45cf4aebeee76bdab70693295db2258a7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MmU0MjlkNDI0MmUwMTE0NmYzZGUxMjRiMzAyNjJhYmZmMmYzOTQwYTkwZTY0ZjI1NTRhNjI0OGU1MmMzNzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhNDYxNjgxNzhiYzEwNzAxMzY4NjEwOTBlOTc1ZjBkMzU5ZDdmYzdiMTMxNzQ4NGNlNzVhYzM1ZGU1MTAyMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQzMTllOWU3ZDkxMjNlN2U3MTA0NGM0ZWUxNTY5ZDNiNWZjM2MxMTM2M2Q3OTY2ZjNmMzMyNWNhYzE4OGQwODEifQ"
+        },
+        {
+          "resource": "repo://src/podcast/tts.ts#L80-L87",
+          "version": "repo-lines-v1:sha256:b993b859e3a3089f42b28699ab7c7a0c32c213564a0d312f404aef71fb9b5414:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzgwNzVmYjVhMWVlMTVhZmZhNWUyOGY4ZjllYzg5YmM4OGViMDQwMDZiMzYxZjA5MGQwYjE0YWZhNmVmOWE3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjk5YmNlMDY2MDBiODU2ODFjNzViZWIxMmU1OGIyYTA4ZDJmZGI3ZWJlMDM3MGU1ZjhiYzI4Y2Y2Yzc1MTI2OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZWRjNjJiMDE0NjQ3ZWE2MWYwNWU1M2Y2NTg4YzJjMjk5MTU1OTAwMzkxMGU1Y2JkYTAzMGJmOGI3ZmI3NDQxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_291fc82cc80d4bfc9c9c4cb287582814",
+      "statement": "TTS chunk synthesis includes automatic retries with exponential backoff for retryable HTTP errors (408, 429, 500-504) and timeouts, with higher-level podcast recovery tracking retry counts and retry delays.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/generate.ts#L126-L198",
+          "version": "repo-lines-v1:sha256:8b0a260246b675d8b03a676fddcaf937964f36f724594724b72678b900d4f399:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZmQ4MDQ2YTExMGZmMWY2YzFmYWZhNzAwZWJkYjk2YWMyZjU1ODcwYmM0Yzc1ZWZmMTExODhmY2Y3NDVmOGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhNzYxYjgwMGMyMmZjODI4NGY3ZjNkNTQ4ZGQzNmRmYzU3YTlkOTI3MTA5MjgwM2NlZjlkM2ExNDI3ZmNjMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFmNTdlODA1ZmI2MGZhNzg5ODVhMzY2ZDA3MWQ5NWYxNDdjOGNlZDk4MjI2YmQwY2E1ZjdjYjMyOTk5Y2NjYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwNWMzZDllYzgzMDg5OWRjZGY4MWY2ZDFlZTY5YzgzNmI2OTg3NGM2YzMwNDhhNDI5NDg3NzlhZGU4YjgxNGUifQ"
+        },
+        {
+          "resource": "repo://src/podcast/tts.ts#L35-L72",
+          "version": "repo-lines-v1:sha256:4fc0a4e8f694d1216b70ba987759e5d3ca1f8fbfa6338f87170edc7d5406524c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MTJlNGY5NWZmNWNmNDcwZWQyZjAzZjUwMWM1NTMzMTRkOWNkOWZmOThkOTBmM2QyZWY4NjEzYmIwNzBhM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiZDg4ZmQ3OGZjMzQ3Y2U1ZTBlYzU3YTlkMGZkMWEwYzI4MGE4YzBjMjVlNmUyNWRlNjhiOGU3ZGMzZDFhYjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExNDE2ZjgwYmE4ZDY4Y2ZhYzQ5NjU1MGNkYTc2ODNiNDAxZjRhMmU1YTY0ZGI2YTliYTNjNGU3YmFhNTQzZmQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}

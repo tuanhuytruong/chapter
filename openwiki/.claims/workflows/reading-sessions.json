@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b0c93e4a6223d7609e589c20ff9db10c5c096a1c49358ae20ed0415635501c12",
+  "claims": [
+    {
+      "id": "claim_5aa26247a2fa4607b1c0cb3406835803",
+      "statement": "OpenWiki supports casual reading, deep reading, and story thread modes via aiReader.ts, readingLens.ts, and storyThread.ts.",
+      "evidence": [
+        {
+          "resource": "repo://src/aiReader.ts",
+          "version": "repo-file-v1:sha256:4aa2351956c63fa96dedb4ee15b1d5d515b9c16ef0d1410a9afb8713f524ec48"
+        },
+        {
+          "resource": "repo://src/readingLens.ts",
+          "version": "repo-file-v1:sha256:1914a4fda1fd4093fbd9bb70f50da561f17adc664652219cc4e94ea03e4c5e1f"
+        },
+        {
+          "resource": "repo://src/storyThread.ts",
+          "version": "repo-file-v1:sha256:0f882e36a8afba7009651ac8ed845b4837076661f8a7651aa8cef2dd532e8988"
+        }
+      ]
+    },
+    {
+      "id": "claim_b1f3b40832f74c0797eb1e1020711924",
+      "statement": "PDF and EPUB extraction is performed by extractor.ts and pdfExtractorWorker.mjs, calculating structured reading units and page boundaries.",
+      "evidence": [
+        {
+          "resource": "repo://src/extractor.ts",
+          "version": "repo-file-v1:sha256:4106c1808f404dbbc9223f03cf440c27bfcec07d417b760802c3f67f5814e67d"
+        },
+        {
+          "resource": "repo://src/pdfExtractorWorker.mjs",
+          "version": "repo-file-v1:sha256:ff166a29c2bd91e5778765905c238670a0707758062d149efcd383d2e0ab7c7c"
+        }
+      ]
+    },
+    {
+      "id": "claim_490fc0c4d8a74c579b0fc02582d0ce29",
+      "statement": "Reading sessions follow an end-to-end workflow of starting, conducting, and concluding via API routes and AI Reader synthesis.",
+      "evidence": [
+        {
+          "resource": "repo://src/aiReader.ts",
+          "version": "repo-file-v1:sha256:4aa2351956c63fa96dedb4ee15b1d5d515b9c16ef0d1410a9afb8713f524ec48"
+        },
+        {
+          "resource": "repo://src/api.ts",
+          "version": "repo-file-v1:sha256:38f6f1157754fe68a420becf95a72f611b423889dd9dcf53fff93e5bb0367d30"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}

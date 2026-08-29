@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:657be7f48fb26cbcef5cf21826fe64cfa5408143c34ded0269344fcf252f3656",
+  "claims": [
+    {
+      "id": "claim_1070853313ea4c64b9838b9f58493103",
+      "statement": "Podcast narration voices are managed per book and per reading round in the chapter.podcast_narrators table, ensuring re-read rounds select their narrator voice independently.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260805_podcast_narrator_per_round.sql",
+          "version": "repo-file-v1:sha256:b54345c99e2505ea5a8841d3218d736a438e6e3fc79d1ccdf8b12d1a73c6d634"
+        },
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        }
+      ]
+    },
+    {
+      "id": "claim_f1a22f8cbc044183a05ad34eaa03db29",
+      "statement": "When an EPUB chapter is too brief, the episode status is set to unavailable with a source-too-brief error message, and the system automatically queues the next eligible chapter in sequence.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        },
+        {
+          "resource": "repo://src/podcast/prompt.ts",
+          "version": "repo-file-v1:sha256:3cc67dee7e6fbcba49751befc075cdc4bba20168906e169c0a150771c40b037c"
+        }
+      ]
+    },
+    {
+      "id": "claim_4113451e4c374886bbc408fe684e903d",
+      "statement": "Chapter podcasts progress through asynchronous states (queued, scripting, synthesizing, archiving, ready) utilizing OpenAI-compatible TTS endpoints, chunking, FFmpeg audio concatenation, and Telegram archiving.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/generate.ts",
+          "version": "repo-file-v1:sha256:d213762de325b3ddf03d63c5a9eca81799666f49c65e18b6a59b8f73e7a6664d"
+        },
+        {
+          "resource": "repo://src/podcast/tts.ts",
+          "version": "repo-file-v1:sha256:29139d304bae546b39f56a49ac2e66886501b33965da9a51a15f5663aeec3889"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f8476e72197469288e6c7aad1a42b07",
+      "statement": "Podcast recaps aggregate reading logs, lens analyses, and book wiki summaries to generate structured multilingual audio recaps citing valid source references.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcastRecap.ts",
+          "version": "repo-file-v1:sha256:6f777fc148a98c11a23d8c976b5b3957ac1b1dbbab225aac89c017a5f0b2941a"
+        }
+      ]
+    },
+    {
+      "id": "claim_cc0cdbc1d51a4e87adc908a34545fac1",
+      "statement": "The TTS client implements exponential backoff retries for transient upstream errors and background recovery for failed synthesis tasks.",
+      "evidence": [
+        {
+          "resource": "repo://src/podcast/tts.ts",
+          "version": "repo-file-v1:sha256:29139d304bae546b39f56a49ac2e66886501b33965da9a51a15f5663aeec3889"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}

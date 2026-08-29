@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9270d6c86e7ee6174687697984e46c0d160507350055eab68489538c9c649ee6",
+  "pageVersion": "sha256:824de848aa613dab2437c54e580bdce7cd10ce3a84a313bae83fc4dfa2778f08",
   "claims": [
     {
       "id": "claim_c6fd54fe9d954aa38c70b2fbedab0845",
@@ -51,10 +51,50 @@
           "version": "repo-lines-v1:sha256:b06fb17ea105211a24276697b509f446687b4fb62d0d88e9502be371a634eec3:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmY5M2Y3ZmZhNTBiMmQ5MmMxZDA1NTAyNWY4ODc5YTg1MWEyNDk1NTJhMWU2OGFmMjE3NzE1ODhmMDBjZDYyMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmY5OGQzOTRjNjA0NmI5OWI1NDNlOTYyOThhNGUwOTZlYTVkOTk2NjdmOTg2YzAzOThlYjM1NmExYWM4ZDcyYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTlhZjM4ZDYyZWQ3MWU4N2E0NGEwN2MzZThhZjBjMzNjMGVhYjc5OTBiOWE4YmRjNzI1YmFlNWUzYjBiNjYyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODE5ZjgyYzVkMTEzMDMzNzYzYjJmZmQzMjRkMWNjM2QwMWIxODMxZWRmYmJiODc0MjRmYzdiYjllYzlkNjAzMiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_55ba298ef22045b784c453319c72c3a5",
+      "statement": "The frontend entry point is repo://src/main.tsx, which bootstraps the React application into the DOM.",
+      "evidence": [
+        {
+          "resource": "repo://src/main.tsx",
+          "version": "repo-file-v1:sha256:0867979c6795393a8e4601bb6f3956bff717b44961c90891848dd3dfe8004c18"
+        }
+      ]
+    },
+    {
+      "id": "claim_1fa20c298b3c4e61b951cb977f47352e",
+      "statement": "The frontend root component repo://src/App.tsx configures client-side routing via React Router and wraps authenticated views with authentication and onboarding providers.",
+      "evidence": [
+        {
+          "resource": "repo://src/App.tsx",
+          "version": "repo-file-v1:sha256:492631834cf400c4c642233b4a7b65ea3addbafbd2e0d561b22c4d37ef3fbbaa"
+        }
+      ]
+    },
+    {
+      "id": "claim_6c967b6e8f8e4162ac163e02063e85ce",
+      "statement": "The API client layer in repo://src/api.ts defines strongly typed request handlers and data structures corresponding to backend REST endpoints.",
+      "evidence": [
+        {
+          "resource": "repo://src/api.ts",
+          "version": "repo-file-v1:sha256:38f6f1157754fe68a420becf95a72f611b423889dd9dcf53fff93e5bb0367d30"
+        }
+      ]
+    },
+    {
+      "id": "claim_569adb707e574e6da394a283233ea5ce",
+      "statement": "Configuration handling in repo://src/config.ts centralizes environment variables from .env.local, validating deployment modes, timeouts, and third-party integration settings.",
+      "evidence": [
+        {
+          "resource": "repo://src/config.ts",
+          "version": "repo-file-v1:sha256:4a63fb17c8dde35f8e15023552650f4d6043f94ed98e296f8819bc489bf22506"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.4.3",
-    "at": "2026-08-29T00:58:11.655Z"
+    "at": "2026-08-29T19:44:06.027Z"
   }
 }

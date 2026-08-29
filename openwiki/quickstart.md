@@ -1,11 +1,11 @@
 ---
 type: Quickstart & Task Routing Map
-title: Quickstart & Task Routing Map
-description: High-level navigation, repository overview, and task-routing map for Chapter - an advanced book tracking and reading intelligence platform.
+title: Quickstart & Navigation
+description: Core quickstart, repository navigation, local setup, and task-routing map for Chapter - an advanced book tracking and reading intelligence platform.
 tags: [quickstart, documentation, overview, navigation, architecture, workflows]
 verified:
   - by: openwiki/0.4.3
-    at: 2026-08-29T00:58:11.655Z
+    at: 2026-08-29T19:44:06.027Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -13,25 +13,25 @@ sources:
     resource: repo://README.md
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
+generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
 ---
 
-# Quickstart & Task Routing Map
+# Quickstart & Navigation
 
-Welcome to the **Chapter** documentation quickstart and task routing map. Chapter is an advanced book tracking and reading intelligence platform designed for maintaining a personal library, recording reading sessions, and building a calm, source-grounded view of each book over time.
+Welcome to the **Chapter** documentation quickstart and navigation guide. Chapter is a self-hosted reading companion built with React 19, Vite, TypeScript, Express, PostgreSQL, and OpenAI-compatible LLM/TTS providers. It supports PDF and EPUB books, session summaries, reading continuity tools, private chapter podcasts, and optional Telegram delivery.
 
-This page provides a high-level navigation guide, repository overview, top-level directory layout, key entrypoints, and routing map across the OpenWiki documentation.
+This page provides a high-level navigation guide, repository overview, top-level directory layout, local setup instructions, key entrypoints, and routing map across the OpenWiki documentation.
 
 ## Repository Overview
 
-Chapter is a self-hosted reading companion built with React 19, Vite, TypeScript, Express, PostgreSQL, and OpenAI-compatible LLM/TTS providers. It supports PDF and EPUB books, session summaries, reading continuity tools, private chapter podcasts, and optional Telegram delivery.
+Chapter is a self-hosted reading companion built with React 19, Vite, TypeScript, Express, PostgreSQL, and OpenAI-compatible LLM/TTS providers.
 
 ### Key Entrypoints & Directory Layout
 
 - **Backend Server Entrypoint**: `repo://server.ts` — Express application, middleware configuration, API route registration, and static asset serving.
 - **Frontend Entrypoint**: `repo://src/main.tsx` and `repo://src/App.tsx` — React 19 root initialization, routing setup, and client-side application state.
 - **Database Layer**: `repo://src/db.ts` — PostgreSQL connection pool management, schema auto-migration, and query execution utilities.
-- **Verification & Testing Scripts**: `repo://scripts/` — Focused TypeScript verification scripts (e.g., `verify-platform-db.ts`, `verify-ai-reader.ts`, `verify-reading-lens.ts`) used for robust automated testing and platform health checks.
+- **Verification & Testing Scripts**: `repo://scripts/` — Focused TypeScript verification scripts (e.g., `verify-platform-db.ts`, `verify-ai-reader.ts`) used for robust automated testing and platform health checks.
 - **Package Configuration**: `repo://package.json` — Dependency declarations, build scripts, and verification tasks.
 
 ## Documentation Navigation & Task-Routing Map
@@ -41,30 +41,64 @@ Use the following routing map to navigate the OpenWiki documentation according t
 | Topic / Domain | Target Wiki Page | Description & Key Contents |
 | :--- | :--- | :--- |
 | **System Architecture** | [/openwiki/architecture/overview.md](/openwiki/architecture/overview.md) | Comprehensive system architecture, backend server layout, frontend components, and data storage. |
-| **Database Schema** | [/openwiki/database/schema.md](/openwiki/database/schema.md) | PostgreSQL database schema documentation, migrations, and table relationships. |
-| **Analytics & Forecast** | [/openwiki/integrations/analytics-and-forecast.md](/openwiki/integrations/analytics-and-forecast.md) | Analytics integration, Posthog identity management, and reading forecast features. |
-| **Testing & Verification** | [/openwiki/testing/verification.md](/openwiki/testing/verification.md) | Focused verification scripts, testing guidance, and platform health verification procedures. |
-| **Reading Workflows** | [/openwiki/workflows/reading-markers.md](/openwiki/workflows/reading-markers.md) | End-to-end user and system workflows for reading markers, session summaries, and reading lenses. |
+| **Database Schema** | [/openwiki/architecture/database-schema.md](/openwiki/architecture/database-schema.md) | PostgreSQL database schema documentation, migrations, and table relationships. |
+| **Database Operations** | [/openwiki/operations/database.md](/openwiki/operations/database.md) | Runbook for database operations, migrations, and environment setup. |
+| **Testing & Verification** | [/openwiki/testing/testing-guide.md](/openwiki/testing/testing-guide.md) | Focused verification scripts, testing guidance, and platform health verification procedures. |
+| **Reading Workflows** | [/openwiki/workflows/reading-sessions.md](/openwiki/workflows/reading-sessions.md) | End-to-end reading session lifecycle and text extraction workflow. |
+| **Podcasts & Audio** | [/openwiki/workflows/podcasts.md](/openwiki/workflows/podcasts.md) | Chapter podcast generation, narration, and audio workflows. |
+| **AI Reader & Narratives** | [/openwiki/concepts/ai-reader-narratives.md](/openwiki/concepts/ai-reader-narratives.md) | Domain concepts for AI Reader, reading rounds, and narrative continuity. |
+| **LLM & TTS Integrations** | [/openwiki/integrations/llm-tts.md](/openwiki/integrations/llm-tts.md) | LLM and TTS provider integration details. |
+| **Telegram Integration** | [/openwiki/integrations/telegram.md](/openwiki/integrations/telegram.md) | Telegram bot integration and notification delivery. |
 
-## Local Development & Verification Quickstart
+## Local Development, Installation & Production Build
 
-1. **Install Dependencies**:
+### 1. Prerequisites
+- Node.js (v18+ recommended)
+- PostgreSQL (running locally or accessible via connection string)
+
+### 2. Installation & Configuration
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd chapter
+   ```
+
+2. **Install dependencies**:
    ```bash
    npm install
    ```
 
-2. **Configure Environment**:
-   Copy `.env.example` to `.env.local` and populate required variables such as `DATABASE_URL`, `NINE_ROUTER_URL`, `NINE_ROUTER_MODEL`, `NINE_ROUTER_API_KEY`, `SESSION_SECRET`, and `CHAPTER_BOOKS_DIR`.
-
-3. **Run Locally**:
+3. **Configure environment variables**:
+   Copy `.env.example` to `.env.local`:
    ```bash
-   npm run dev
+   cp .env.example .env.local
    ```
-   The development server starts via `tsx server.ts` on port 3000 (or configured `PORT`), automatically verifying and establishing database schemas on boot.
+   Populate required variables in `.env.local` such as:
+   - `DATABASE_URL` (e.g., `postgresql://postgres:postgres@localhost:5432/chapter`)
+   - `NINE_ROUTER_URL`, `NINE_ROUTER_MODEL`, `NINE_ROUTER_API_KEY` (or OpenAI-compatible equivalents)
+   - `SESSION_SECRET`
+   - `CHAPTER_BOOKS_DIR`
 
-4. **Run Verification Scripts**:
-   Verify platform health and specific feature subsystems using package scripts:
-   ```bash
-   npx tsx scripts/verify-platform-db.ts
-   npx tsx scripts/verify-ai-reader.ts
-   ```
+### 3. Running Locally
+Start the development server (runs backend and frontend in development mode via Vite and Express):
+```bash
+npm run dev
+```
+The server starts via `tsx server.ts` on port 3000 (or configured `PORT`), automatically verifying and establishing database schemas on boot.
+
+### 4. Building for Production
+To build the application for production deployment:
+```bash
+npm run build
+```
+This compiles the frontend assets and prepares the server bundle. Start the production server with:
+```bash
+npm start
+```
+
+### 5. Running Verification Scripts
+Verify platform health and specific feature subsystems using package scripts:
+```bash
+npx tsx scripts/verify-platform-db.ts
+npx tsx scripts/verify-ai-reader.ts
+```

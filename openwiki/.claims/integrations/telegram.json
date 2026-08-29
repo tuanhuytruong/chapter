@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b3dfcb1a7ae0e28fd9a829e59089994a5c57efa57a6c4f15f564ddb1f5d19e35",
+  "claims": [
+    {
+      "id": "claim_8a5c00d0d113413b934e5e692b73a022",
+      "statement": "Telegram bot configuration is loaded server-wide via getTelegramConfig() referencing TELEGRAM_BOT_TOKEN from environment configuration.",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram.ts#L17-L21",
+          "version": "repo-lines-v1:sha256:4f1a04b4aa5ede7ba6fa955796c5f8a40c31d0085bbf972747f18cd25bf6f9e8:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmI5NjRlMmE3YTQ3ZWViM2FhMjc5NzA4NjUzODlmNGRiMTJmZTQ4MzhkMTViOTQwN2FhZjJjNjU2NzIwNmJlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWQ2ZDczMTgzOTRjMTRkMjU0Mzc0MTgxNzlkZDUzMjlhN2FkMmQ2YTBkMjQ5ZjMwNGYxYjBmMjdjNWMyNjYxZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjUwYTJhYmJhMDcxYzQ3NThhZmYwN2EwNWE4NjhhZDk5MWEwZjE5ODljMWNhNGZkYjlhODViOTU5NDY2NTMxMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_962492fb7dda4a09ab0b7ef80ffcdf85",
+      "statement": "Messages are sent to Telegram chats via sendTelegramMessage() using fetch() against the Telegram Bot API with a 10-second timeout and MarkdownV2 parse mode.",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram.ts#L23-L51",
+          "version": "repo-lines-v1:sha256:935d6daf187d6b7aa05674b8fc4263afc27f08c48fb98200e6d8d30794a51640:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkMjgzYTdjNDViZjI2NWMxZjI4ZDE2NTYwY2M5NDc4M2RmMTM2MjcxNmQ5ZmYwNGJmZjc3MmIxZTAwMTQ3YzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyZjQyZjI5ZTAyYWQ3YjlmMDA3ZjU3ZmI4MGRmZTI4ZDJlMjcyNzk2MGNmZGIxZjI0OWMxYTdjZGIwZjgzNDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNiNmY1YmZmMjk3NDhkOGUxNzY2MzY1ZTgxMWI1YTYzNTk4Y2FmMWJhMDU2ODZmZjBjNDE5OWI5NjkyM2I3MjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b1d27576f7c048f0ad1491fb9c171359",
+      "statement": "formatDailyMessage() formats book reading summaries into Telegram MarkdownV2 messages with proper escaping of reserved characters.",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram.ts#L53-L70",
+          "version": "repo-lines-v1:sha256:42065c6951c4c11d22e37e8f81988f14ab37bedac9cda67cec4eb0a5cf4eebce:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5N2FjNzMzYzIzOTVhZTc1OTQwM2UwMjJlNDliZWEzMjdhNjNhY2QwZTEzNWMwY2EzMzE2MDY1MTk2NTk0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3ZGUzN2FkNTRmMWU5YjEwNTQ5MjgwOTAxYzgyN2FkZTRhYjFjZDQyZTRhMzNkOWRkMzc2NzY3ZmIwNzI1YWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_53d50e850f2d45c298750f453ce4918e",
+      "statement": "Account linking tokens are generated as 24-byte base64url strings via createLinkToken().",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram-link.ts#L6-L8",
+          "version": "repo-lines-v1:sha256:f4358b7a1d8357084a6bb4a4824376fa11deaff44563b125cdc670cce31b754d:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDAzNmQ0NmU1ODAwYmRkOTQ4ZmU5YzYxNjA4ZTAxMWFkNGZhZGQ4ZjJjMjg3ZjU1MjY3NDZjMzA1MWFhY2VjZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDEzNTkzZmEyZDkwN2Y1ODE3YzBhZjk1YWM4ZTkwNmJkM2M5NDI4NGNkNDQwMmVlZGQ3MDgxM2M0ZjRkMjc2MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODIxYzQ2ZjNhNGZkOWRjMTVkYWU5YTdmNThmN2NjOTlmMzMxZDYxM2RlOTRjMTI0YzU0NmM4MWI1MjllZDBkMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ecdd3bab2b3a4ef3bc881cb4b68d71e5",
+      "statement": "Incoming Telegram start commands with chapter linking tokens are parsed and validated via parseStartToken().",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram-link.ts#L10-L14",
+          "version": "repo-lines-v1:sha256:9dc91c8fc9b55dd089adc17b6e86f8d0bd38d5b747bed0386e201d89fc2e2dbe:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWFiOGNiNTRkYTE2M2EzMzc3MmMyMzc0YmI5ZDg4OWFhN2IzNTlmNTEzNWY4YjgzZDNmZWZjNzcxMDhhZTczNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGVmMGRmYzgwZTUyMGU0MTFiMzBiZDBiMGZlMzZlYTk5MDA2MzZiNTk2Mjg3M2IyYWUzZWI2MGE1MzUzNjc3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzM2YjIxN2E2NjQzZTRjMmE3NzI0Y2Y1OGY3ZjUyNWRiZjVjYzZhNTllYzFmYWE4ODhkYjIxZTVkODcyMThhZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c7c09e45e7b6453d8b2a86b87349cd97",
+      "statement": "Telegram chat link tokens enforce a 15-minute TTL checked by linkExpiresAt() and isLinkActive().",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram-link.ts#L16-L22",
+          "version": "repo-lines-v1:sha256:e8450ba84993f1a399d8adb1526c0b65f3c260b2982ca63a591e3acb05c54de9:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmMyNGQ5YzU3ZGJiNmI3ZmI2NGE4NjFjNTA1NGU0NmVhYzU5ZTA5ODJkMTdlZDFjODRmM2FhNGQ0MjIyYTQ3YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmE3Y2Q1OGVmNGEyNDYwNTQ3NzgyMTY0ZGUzOTVlMjRlMDUzNWRmMDlkYjJlNDI3YmEyNjAwYTllODI0OWNiZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDEzOWUxZjYwZDgxNTMyMzQyMDkwM2UzZmNlYTI4MzI1YTNmMzA1OTRhNjk2Zjg1MDhjNTg4YzdlNzhkMGY4MCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cc25266fff5c4cc7b838e9eb9c836484",
+      "statement": "telegramUpdate() extracts chat ID and link token from incoming Telegram update payloads.",
+      "evidence": [
+        {
+          "resource": "repo://src/telegram-link.ts#L28-L34",
+          "version": "repo-lines-v1:sha256:32a313762d364fb3febd0e39a450b789460cc5861d1c24b9a5439090ac307c0f:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzc3NTQzYzA0ZWY5NjVjNjUzYzRjYjdiNDQxMzJhZGJhNWQxMzZiZDJjYjllNjdmZDEyNDgxMzk0NGQ3ZDYxYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGRjMGU3YzRmNjYyMWJmNDFjMGJhNGRlZGRkNWYyODc4YmIwZWI5Y2E4NDcxMzNiZDBjMDI0NGM2NGEyOGY0OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTY4YTI3NmJhYzQ4NWE0MGZiYWI4MDNhYzFmNTBmYzRjM2Y0YjJmNDIxMDRhZWZmNTcxM2FlNDdmNDNjYjJiZSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T19:44:06.027Z"
+  }
+}
