@@ -1,40 +1,50 @@
 ---
 type: guide
-title: Testing and Verification Procedures
-description: Comprehensive documentation on running verification scripts, test suites, and local builds for the OpenWiki platform.
-tags: [testing, verification, scripts, build, quality-assurance]
+title: Testing & Verification Scripts
+description: Documentation covering verification scripts, test suites, type checking, and build procedures for OpenWiki.
+tags: [testing, verification, scripts, build, quality-assurance, linting]
 verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-25T17:44:34.504Z
+  - by: openwiki/0.4.3
+    at: 2026-08-29T00:58:11.655Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
-generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
+  - id: openwiki-source-ad027b3e91609f1451769138
+    resource: repo://scripts/verify-chapter-markers.ts
+  - id: openwiki-source-6d428306e6d9164f86db303a
+    resource: repo://scripts/verify-posthog-identity.ts
+  - id: openwiki-source-1ebac31355226f017070baba
+    resource: repo://scripts/verify-reading-forecast.ts
+generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
 ---
 
-# Testing & Verification
+# Testing & Verification Scripts
 
-The OpenWiki platform includes a robust set of verification scripts, TypeScript type-checking tools, and build pipelines to ensure system integrity, database schema consistency, and feature correctness.
+The OpenWiki platform includes a dedicated suite of verification scripts located in the `scripts/` directory, alongside standard type checking, linting, and build pipelines. These scripts ensure schema integrity, privacy compliance, algorithmic correctness, and feature reliability.
 
 ## Overview of Verification Scripts
 
-Verification scripts are located in the `scripts/` directory and are typically executed via npm run scripts defined in `package.json`. These scripts validate specific subsystems, ranging from reading progress companions and AI readers to database integrity and platform headers.
+Verification scripts are stand-alone TypeScript files executed via Node (using loaders like `tsx`) or direct script entrypoints defined in `package.json`. These scripts validate specific subsystems, ranging from chapter markers and privacy filters to reading forecasts and database schemas.
+
+### Seed Verification Scripts
+
+The repository features several key verification scripts highlighting different aspects of platform validation:
+
+- **`scripts/verify-chapter-markers.ts`**: Asserts chapter marker database table schemas, API routes (`/books/:id/markers`), UI component integrations (`ReadingMarkers`, `DaySummary`), and uniqueness/conflict handling constraints [repo://scripts/verify-chapter-markers.ts#L1-L16].
+- **`scripts/verify-posthog-identity.ts`**: Enforces analytics privacy guarantees. It verifies that `posthog.identify()` receives only safe identifiers (`userId` and `account_handle`) and explicitly excludes sensitive user attributes such as email, display names, book titles, raw text, or notes [repo://scripts/verify-posthog-identity.ts#L1-L11].
+- **`scripts/verify-reading-forecast.ts`**: Tests the reading forecast algorithm (`getReadingForecast` and `formatForecastDate`) across various session histories, sparse reading logs, date gaps, reading rounds, and book completion states [repo://scripts/verify-reading-forecast.ts#L1-L54].
 
 ### Running Verification Scripts
 
-To run any verification script, use the corresponding npm command:
+You can run individual verification scripts directly using `npx tsx` or via npm run scripts defined in `package.json`:
 
 ```bash
-npm run verify:reading-progress-companion
-npm run verify:ai-reader
-npm run verify:auth-rate-limit
+npx tsx scripts/verify-chapter-markers.ts
+npx tsx scripts/verify-posthog-identity.ts
+npx tsx scripts/verify-reading-forecast.ts
 ```
 
-### Representative Verification Scripts
-
-- **`scripts/verify-reading-progress-companion.ts`**: Validates reading progress companion prompt generation, parsing logic, and schema conformance for reading sessions [repo://scripts/verify-reading-progress-companion.ts#L1-L20].
-- **Database & Platform Verification**: Scripts such as `scripts/verify-platform-db.ts` and `scripts/verify-platform-headers.ts` ensure database connectivity, migration validity, and correct HTTP/platform header handling.
-- **Feature-Specific Verification**: Dozens of focused scripts (e.g., `verify-quotes-archive.ts`, `verify-podcast.ts`, `verify-library-shelf-switcher.ts`) test isolated features against expected behaviors and mock data.
+The project defines numerous verify:* scripts in `package.json` to test isolated features, database schemas, and platform behavior [repo://package.json#L6-L54].
 
 ## Type Checking & Linting
 
@@ -44,31 +54,17 @@ Before running builds or deploying changes, TypeScript type-checking ensures no 
 npm run lint
 ```
 
-This runs `tsc --noEmit` against the project configuration (`tsconfig.json`).
+This runs `tsc --noEmit` against the TypeScript configuration (`tsconfig.json`) [repo://package.json#L11].
 
 ## Building the Project
 
-The application bundles both client-side assets (using Vite) and server-side code (using esbuild for Node.js):
+The build pipeline bundles both client-side assets and server-side code:
 
 ```bash
 npm run build
 ```
 
 The build process:
-1. Runs Vite to bundle the frontend application.
-2. Uses esbuild to bundle `server.ts` into an ESM module (`dist/server.mjs`).
+1. Bundles the frontend with Vite.
+2. Bundles server code with esbuild, outputting to `dist/server.mjs`.
 3. Copies necessary worker scripts (such as `src/pdfExtractorWorker.mjs`) to the distribution directory [repo://package.json#L8].
-
-## Local Development & Startup
-
-To start the local development server with hot-reloading via `tsx`:
-
-```bash
-npm run dev
-```
-
-To run the production-built server locally:
-
-```bash
-npm start
-```

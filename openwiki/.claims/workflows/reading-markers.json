@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:28dfbbf249df91e557e1848abc136b5ef9aa07efbbc87914970700c8ee00df0e",
+  "claims": [
+    {
+      "id": "claim_166348bf9d464489ade0687ce354a7ce",
+      "statement": "The chapter.reading_markers table stores bookmarks with book_id, owner_id, reading_round, log_id, page_position, kind (idea, question, quote, return_to), and note.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260828_add_reading_markers.sql#L3-L14",
+          "version": "repo-lines-v1:sha256:673289dd4b73a43515b6c81368e5fd7da4f2fe010563f819b2d2c92797605903:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwM2M5NzA5ZmY5ODNjZjhjYTUyZTc1MDk3NDcwZDVjMGU3MDc5YWVkNWNjYzdlZDMwNDM3YTI2OTIyYWVlZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiM2U3ZTM2YzBmMmFjZTY5MGRkNjljODhiYzIwNzc2MDc0OTJkYjk2MDA4YTJmMDA1MGM2YmQ2NzQyOWRhOGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1Mzc1MzA4ZTliY2ExOGMwYjQ1OTYwN2M4OTk0NWZlZjJjZDRiYzk4ZjVjZDYwOWEwMmQxNzU3NGZiYmEyMzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_68cec119ef5e4e449ea7521ceafaf570",
+      "statement": "GET /api/books/:id/markers fetches markers for a given book, owner, and reading round, joined with session logs.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L873-L884",
+          "version": "repo-lines-v1:sha256:e44d0ba62a5b8a2747bfd2465edfd40cd1383155f8e9180f0f32190b1dcf9b11:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxNTIxMmQxNDljMzUyYWYwMTA5N2VhMmZhNDEyYjk2ZjRlM2U1YjM0MjViZjc1ZWRkNDc5ZTVmOWFlODc3MjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2OWE1OGRmM2JlNjNiN2QyYTM4Mzk5NzliYWUyZGFlZGFjNDFhOTlkYWI3MmU0YjQ5ZWVjZjQyMDFmYzY5ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM1NzA1N2JjZDNiZDc2MDgyY2JkMWE4Y2UwMzk5NDBjNjg1ZTczN2NiOWE2ZjFiNDg2ZThjMGNiYWQxYzgyYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNiNWJlMGRiZWI5NWJjY2RhZWRkMTBiMGEzZmQ4NmM5ZmRlM2QyNmMxZGQ3YjAzODE5OWRkYTIyMzlhZDE4ZTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cde902f1b26c49aeb701a82d59f1add8",
+      "statement": "POST /api/books/:id/markers validates that the book is active and that the marker position falls within the referenced session before upserting.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L890-L923",
+          "version": "repo-lines-v1:sha256:c627f9c28537c37c5f11f5e1c8a06bdbb100c39a3aeb34c2835d96bab81d1f64:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2ZjVjMjY3NzRhYjc1NTExMDM3MzkxMDdiZGYwMzcxZjQ2ZmYyN2MxNThmNGFkYjRiNDdlNTJiYzFlNjlhODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzYmE4YzZhYTI2NTJlZDgxOWFhOGIyMmE1MzZmMTM2YmE5NTc4MWE3NDAxZTFhMjI0YTEyZmVhZTVmMjA1OWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b1763a6bbcb14dea981435dcf1af31b4",
+      "statement": "DELETE /api/books/:id/markers/:markerId deletes a marker belonging to the authenticated owner.",
+      "evidence": [
+        {
+          "resource": "repo://src/routes/books.ts#L925-L938",
+          "version": "repo-lines-v1:sha256:178d4b24a15829cb96133d0a7ce745cfb33d03fd6ceb45a23387017b83bca707:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5YThkMzA1MmI3ZDVjNTQzZmE2Mjk4OWQxNzJhZjNhMDgwZDNlMjVmMzIzMmNjYTJhOTdjOWE3OTc0Zjg5ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM1ZWNkNmM3ZDQ3MjU4NWNmOTUwNmZhZGZmMzRjMWRmMDEzZjM0MTU2MWMwMTYwMTJlZDg3OTMyNDRjMzIyNGUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c498b4d527bf48609dc5c47b60445eff",
+      "statement": "The ReadingMarkers component renders private bookmarks with action buttons to delete or jump to session logs.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/ReadingMarkers.tsx#L12-L32",
+          "version": "repo-lines-v1:sha256:3b556d4d2668a1006d62d00e1790f09d4687dff640ea20292cb7b1817ec0310f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ZjA5ZDY2ZTM1YTRjODI5NDgzN2Y5ZTY4NzI2YTNjNzVhODAzN2Q3ZjY0ZGYxMDZlODk4MTgzZmMyNzA0ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhODM2Nzg1NWExZDcyNDZlZjY2MjRhYzM1OGE1YjIwMDRiMDA5NDE2NzdjZTM2MTgwMjhmZmQzNWMwZWUxYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjOTk1MTc1OTcyMzQ4MjI4ZTAyMzQ1MGY5YjRhYzc3YzQ4OTNlY2Y5MGI0NWJlMTQ3ZTE0OGIwNDliODM2NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_04ec4f14364a48a6b648fd559327efb3",
+      "statement": "The DaySummary component provides an inline form to create private markers attached to specific reading sessions.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/DaySummary.tsx#L129-L137",
+          "version": "repo-lines-v1:sha256:8cbb238891d98158ceba6648c542777cc9631e1d66d595f6edff0b55a8b03b1a:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2E5ZGFiOWNhNjVlYjNiZWU0NGIzZWQyYWIxZDJlNGJiOTlhYzRjODI1ZWQzOWVhMzA4NzkyYWVmZDQ3ZmFhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZkY2ExMmQ2MTBiODU3ZTZlZjBjYmIzMjRhMzg3YzQyNzcyY2Q3YTQ5M2E4NzljNjg2MjZjNzU4MmFmZDYwOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjQ5MTY2MjZkYjU2MzU2ZjgyZTc0NDUzZmY5MmFjZmMyMGVlNjUwMmQzZDZlNGM4N2JlY2ZmOTIwOGRmMzBjMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2JjMTYxOGJmMzlmYWZlNmYwNGU0ODQ2YjAwZGRhYmQxOGM2MWRjNmI4NmM0Y2I0MjZiYzI5NjAzNWE1ZmI3NyJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T00:58:11.655Z"
+  }
+}

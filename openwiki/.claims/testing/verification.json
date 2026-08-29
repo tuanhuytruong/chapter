@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c5be90f189384a091d7b25b3b10106ae64b6769b0a06120b7d1454a947634668",
+  "pageVersion": "sha256:cf6441bd9c9fc0367a0a254ecb8e0308a6cc420e00b9fb91d80b3204ed339748",
   "claims": [
     {
       "id": "claim_d442e026af93411da97d93e6aad0dbee",
@@ -31,10 +31,40 @@
           "version": "repo-lines-v1:sha256:fa41d399835d18ee00bc2cfa6693538b74378a1f8fb7f27314d22f98a17fe0e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmE0MWQzOTk4MzVkMThlZTAwYmMyY2ZhNjY5MzUzOGI3NDM3OGExZjhmYjdmMjczMTRkMjJmOThhMTdmZTBlMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmE0MWQzOTk4MzVkMThlZTAwYmMyY2ZhNjY5MzUzOGI3NDM3OGExZjhmYjdmMjczMTRkMjJmOThhMTdmZTBlMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkYjQxMmNkZDhiNDljNGM3MTkzYzZiMWZmMTNiNDZmZDhmNWIzMjBhZTlhODgwNDc0MDY2ZWIxZmI2MWYwNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWVlYWQzMTRhOTJkNTYyNWQzNjQ1OTIyZDQ4MDExNjM2ODcwMjM3NmVhMjJiY2IwMjg2Nzc2NTNhOWFhMWJjNyJ9"
         }
       ]
+    },
+    {
+      "id": "claim_5479412f8df3403f91dc2d66087772a5",
+      "statement": "scripts/verify-chapter-markers.ts verifies chapter marker database schemas, API routes, and UI component integrations.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-chapter-markers.ts#L1-L16",
+          "version": "repo-lines-v1:sha256:c67ade0b4b6fc69ff93494c5aeb23b06cbc722bee59137b5f6d238c8686cb405:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5YThlMGYxOGMyYmI3MzNkNDhlYzU3ZmE1YzM1YTZjNDc4Y2Q0OTUxNDNhNTEwNzQ2OWUzOTQ3OWZjZmJiMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d7c9752000164c36a0fa96b026814598",
+      "statement": "scripts/verify-posthog-identity.ts asserts that posthog.identify() only receives safe identifiers and excludes sensitive user attributes.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-posthog-identity.ts#L1-L11",
+          "version": "repo-lines-v1:sha256:0a0e84d1910f95bd29416b4c4d675ab2acf5279d817dcf1793467b27dab7e56c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkYzAxNjU3ZDBlMTQxMDJmMDVmNzEwODMwZDEzNTQwNDlmMTc0NjAyNTAwMzgyNTQ0NzkwYjAxODE4ZWM0ZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c984b8013044bf0b0660f62accc8b69",
+      "statement": "scripts/verify-reading-forecast.ts validates the reading forecast calculation logic across various session logs and book completion states.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-reading-forecast.ts#L1-L54",
+          "version": "repo-lines-v1:sha256:88e9beff29b1557687d01e9c85fb7b4ec624b5d5bb297aab778860d6bb95eb75:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWYzODgyMDU1M2UxYTZlZGFhZGRkMWFhNWE4MjUyNjE2Njk4MWVmZTVjMTMzZmJiMWVjN2Q4OWJjYTFjNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-25T17:44:34.504Z"
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T00:58:11.655Z"
   }
 }

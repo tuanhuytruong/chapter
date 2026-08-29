@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c49e04ca58774bd00d828b0d720834d76263accdd14cfab31a546457c00b2aea",
+  "claims": [
+    {
+      "id": "claim_4912e1c90a0842fe8690750ffaa7cbcc",
+      "statement": "The Chapter application uses PostgreSQL with schema isolation under the chapter schema, managed centrally via connection pooling and schema verification helpers.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts",
+          "version": "repo-file-v1:sha256:afe0eab9c16ca680f74a31cbeb8a26b8752295db2a8184fba78d0c084a7fb408"
+        },
+        {
+          "resource": "repo://src/db/schema.sql",
+          "version": "repo-file-v1:sha256:c76967e2d2fd84ca2399d5c5442554c18c3ba469ac5004fd5d19abc0ffef2d9a"
+        }
+      ]
+    },
+    {
+      "id": "claim_f97729a07da940edb209cbec928e9605",
+      "statement": "The reading_markers table provides session-scoped bookmarks and annotations (ideas, questions, quotes, return_to) linked to books, users, and reading logs with cascade deletion.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260828_add_reading_markers.sql",
+          "version": "repo-file-v1:sha256:dffa9da68941b67e36b79c790af3da1bfd38adec519bae0f11667068e9a4b38a"
+        },
+        {
+          "resource": "repo://src/db/schema.sql",
+          "version": "repo-file-v1:sha256:c76967e2d2fd84ca2399d5c5442554c18c3ba469ac5004fd5d19abc0ffef2d9a"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T00:58:11.655Z"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:28bd54e007d448a6b5f1b26c637daa9bcac716a7fa1162e2206de783b2ec3c28",
+  "claims": [
+    {
+      "id": "claim_6df7c6e36d5f43eba09961c50b206aac",
+      "statement": "OpenWiki initializes PostHog analytics conditionally when VITE_POSTHOG_KEY is present in the environment.",
+      "evidence": [
+        {
+          "resource": "repo://src/analytics.ts#L4-L16",
+          "version": "repo-lines-v1:sha256:72012b1b3d28a55def7e7efaaefc1610ab80ea142151be1fc01c96c8c0ab427a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YjZjYmEwOWZkZDRhN2YxNzBhOTRlNjMxYzBkOGU1NGVlZDUxMzI0Y2ViMmYxYWMwY2M3OTRmMDQ5MmRmZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyNzE1N2QwNGExNmQ3ODdhZDQwYmZhOTgwMzEzZDk1MDk0OWY4NmM0NDlhZjQxNzU2NTFlNDY4OTEyNGI2NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2MTMxOGFiMmY4MDQ2MWIxMDM1ZTJlMmJjYzkyYmVlZTExOGMwNjY1ZjQ0NTc0YWYxZmE5OGVlZjEwYmEzYzAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_98fe17bf1279404bb0bea2073056cefb",
+      "statement": "Analytics user identification transmits only opaque user IDs and metadata-friendly account handles while explicitly barring emails, display names, and private reading content.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-posthog-identity.ts#L6-L9",
+          "version": "repo-lines-v1:sha256:9f84311a166f0f2435bc749a2910ad7b74f8b777305774b66c0ef39a2f3c3099:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzYzYzk5MjA5YjlkYTZhYjNjZDg2NzY3NGY5ZjU0NDcxZjY4ZDA5ODRjZTQ5MTM1ZjE0ZmE2NzkzMDQ2MjMyNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTFmZTdhY2JmNGVkMDY4MGU0ODFhNDZlMWNkY2QyYWE3MzNlZDE0ZWFkNzc4OWNlYjc1MDZlZmEwMjJhZGIzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTI5OTBhMmQ5NWZiMGM1YzRhNjQ2OGQxMTAzYTAzNzRhY2MyZTU3OTQ1YTE3ZDA2Nzk5ZGRhYmE3NzJiZDBiMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODkwYjY3ZTkwMWMyMGRjZTBiODk3Zjc5NDY5YWM5Y2NlMmJkNjc5MGM5OGEwNGZmN2IwNDA2ZmJlYTAwZTZlMiJ9"
+        },
+        {
+          "resource": "repo://src/analytics.ts#L22-L24",
+          "version": "repo-lines-v1:sha256:848bbff2f6ab79f3c007339713a2bbcdd9529372063e4cc3916e3db0c1486329:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjBmNzFmYWIxZTkxZDE4NjkxOWU5MjVhNjBkODU1ZjhkZTNlOTBmMGIyN2M5NDY2N2VmOGUxYzVjMTAxMzc0MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTg2OTRkMGEyNzcxNDZlZWQwMzMzZTRjNjExODRjYTMxYTZhMjc1YmZmNWM4ZGRjODZmZmNjZDc5ZmVlYWEwMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWMzMTZjY2E2YzAxOTQ0MjU2ODk5NjdlNGI0MGYxZGJiNGFiNWJiYzRiNDkxMjc0YzRhYzM0OTViZmU0MWEwYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e3c10978b2a74ea48b5262c7ec68b47b",
+      "statement": "Product analytics capture predefined event types spanning book additions, uploads, reading sessions, podcast generation, and user lifecycle events.",
+      "evidence": [
+        {
+          "resource": "repo://src/analytics.ts#L30-L46",
+          "version": "repo-lines-v1:sha256:6ae93d3d673182f893f6133eb558c3d9b33426446051b6fb9bacd812ced46900:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjZjFlZmQzZTI4YmQ0NWU0YWJiZTYxMTk2NTBhYmVhYWQzYmM1NjczNzYzZDEyMzA4YzMwN2Q0YWUzOGQxYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTBiMmY0M2UwODQ3MjgxZTBmN2M5NTZhNzE3M2Q3ZTQ3MGVlYmQ3MzQzOWU1ZGUzMjI2Y2ZlODA1NWM3OWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjNDlhZTgyZjc5NDMzZGE3Yjk3NmU4OWUyZGU0YzZmYzBhOGVhMWI4MDAzMGIxMWVjMzIwOGFiNDhkMWJjOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwMjZhY2NiZWZjMzRhODA3MzY3MmYxNjg1ZDlhNWVkNDM3NDhlYjE4OGNlMThiYmUwYzA3YTdiMTNkNjZjOTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1edd93be3ee84dc8815e1010d697b438",
+      "statement": "Reading forecasts return unavailable when a book is finished or has zero remaining units.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingForecast.ts#L37-L45",
+          "version": "repo-lines-v1:sha256:ae8ab8949938c453631597aeb877af35f463b0046ab3ac8a9cf04dbfc86e7d50:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGU0ZDQ0YTFiZTljOWRhN2UxMWNkNDQ1NjNhZmEzZDQ4YjU0YjY1YzBhZGE5ZjY5Y2RmNjgyMjE5MTc0YzBjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDI1YjgwMjRlOTk4NDQwNGRmY2Y1YjM4NGVjZmI2M2M5NWZlNjQ4MDc1NzlkYWI1YzRkM2ZlODk5ZjU4MzUyNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDFhZTdjNWIwNDIzMDFlZDg5ZWFmMjFjOGVmMjc2OWVjZGZkNmExODQ5NzU3ZDNiYzNlNTdjYWNlMDFkYmExNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_98f62d0b09dc4236b620146816f1e234",
+      "statement": "Observed reading forecasts require at least two distinct recent reading days within a 28-day window and calculate calendar-paced completion dates.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingForecast.ts#L47-L83",
+          "version": "repo-lines-v1:sha256:a3edee7f9e3c5fbc597fe43f70873d708f1115378433a7c54fec63455e481d79:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYzVkMGI5MzVkNDM4N2NiM2NlNjg5ZDkyZTFhZjgzZjEyMzYyMjY0ZjJlYzNiNGQ4OWJlY2IwOTFjNWQxNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM1ODI4OWM5YThkOTllODJkMGJhMTFjODdiOWI2ZGQzMzFhZGQ3M2U4YWM0ZTZjNGI0ZTcwYzQ3NGNkOGU4ZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0Yjk3MmFjNzI3N2Q3NWZkMmQzZmNiNGZhYzk2YjM2YmZmZmU3NjU3MjUwNjY3ZmRmYmViM2JiMTA1M2IwODUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_477e351eea764ea1ba4939aac068f288",
+      "statement": "When observed reading days are insufficient, the forecast falls back to the configured daily reading plan if daily_pages is positive.",
+      "evidence": [
+        {
+          "resource": "repo://src/readingForecast.ts#L85-L92",
+          "version": "repo-lines-v1:sha256:f2b4cdd8c739f4d0bb88efd2fd9a1f0a12b471c30986f58b7ce16d68b38858db:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzIzMzBkN2I3ZmY5MWIzMzc5NDIxN2VhNjhkYjU5MjA4NDNiNjgxYmY4MWIxYjE3NTMwOTlhMTQ1MTIzNzc2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI0ZGJhMmE5N2I0ODEwODZmNmNmZGU3YzA2NGI5NWE3NGZhNmM4YTM3N2MzMzY0OGViZTcyNjk2OGZiNWUwNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdkODYzMmU1NGU5Mjk4YWJiOTU4NzI3ZTJkNTE0MDhhYmFmMTM2NjAzNTM3OTEwMTQwYWJmNjViMzBhYjYxMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmQ3NjRlMWQ4Y2I3MDMzNmU4NGUxN2YzYzFhNTY1YmY2ZTJjMmYxNjUzNmY5YTA1ZDIxNzQ5MGViNWQwYzY5YiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0be4ff85c3e4f8fa682d7f48f801aed",
+      "statement": "Automated verification scripts assert privacy invariants for PostHog identity and validate reading forecast calculations across various log patterns.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-posthog-identity.ts#L1-L11",
+          "version": "repo-lines-v1:sha256:0a0e84d1910f95bd29416b4c4d675ab2acf5279d817dcf1793467b27dab7e56c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkYzAxNjU3ZDBlMTQxMDJmMDVmNzEwODMwZDEzNTQwNDlmMTc0NjAyNTAwMzgyNTQ0NzkwYjAxODE4ZWM0ZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/verify-reading-forecast.ts#L1-L54",
+          "version": "repo-lines-v1:sha256:88e9beff29b1557687d01e9c85fb7b4ec624b5d5bb297aab778860d6bb95eb75:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWYzODgyMDU1M2UxYTZlZGFhZGRkMWFhNWE4MjUyNjE2Njk4MWVmZTVjMTMzZmJiMWVjN2Q4OWJjYTFjNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.4.3",
+    "at": "2026-08-29T00:58:11.655Z"
+  }
+}

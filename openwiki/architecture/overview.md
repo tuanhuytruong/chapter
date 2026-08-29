@@ -1,62 +1,78 @@
 ---
-type: Architecture Overview
-title: Architecture Overview
-description: High-level architectural overview of the Chapter reading companion backend server, database configuration, routing, and core business domains.
-tags: [architecture, overview, backend, database, routing]
+type: architecture-overview
+title: System Architecture Overview
+description: Core system architecture detailing the Express and PostgreSQL backend, React frontend, authentication, database migrations, reading markers, and PostHog analytics identity integration.
+tags: [architecture, backend, frontend, database, posthog, reading-markers]
 verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-26T19:17:20.603Z
+  - by: openwiki/0.4.3
+    at: 2026-08-29T00:58:11.655Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
   - id: openwiki-source-70d4664310eebb80ab5b564c
     resource: repo://src/db.ts
-generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
+generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
 ---
 
-# Architecture Overview
+# System Architecture Overview
 
-Chapter is a full-stack reading companion application built with Node.js, Express, React, Vite, and PostgreSQL (via `pg`).
+Chapter is a full-stack reading companion application designed for book lovers to track reading progress, manage libraries, generate AI-powered podcasts, capture insights, and review reading habits. 
+
+The system comprises an Express backend server interfacing with a PostgreSQL database (or compatible SQL store via `pg`), and a single-page React frontend built with Vite and React Router.
 
 ```mermaid
 flowchart TD
-    Client[React Frontend / Vite] -->|HTTP / API Routes| Server[Express Server /server.ts]
-    Server -->|Database Queries & Transactions| DB[(PostgreSQL Database / chapter schema)]
-    Server -->|External LLM / TTS / APIs| AI[AI, Podcast, & Telegram Services]
+    Client[React Frontend / Vite SPA] -->|HTTP / REST API & JSON| Server[Express Backend /server.ts]
+    Server -->|Session Storage & App Data| DB[(PostgreSQL Database / chapter schema)]
+    Server -->|LLM / TTS / External APIs| AI[AI & Podcast Services]
+    Client -->|Analytics Tracking & Identify| PH[PostHog Analytics]
 ```
 
-## Backend Server Structure
+---
 
-The backend entry point is `repo://server.ts`, which initializes an Express application, sets up security headers (helmet-like custom CSP, HSTS, frame options), configures session management with PostgreSQL via `connect-pg-simple`, and mounts various domain-specific API routers under `/api`.
+## 1. Backend Architecture & Server Layout
 
-- **Server Initialization & Configuration**: `repo://server.ts` loads environment variables (`.env.local`), sets up trust proxy configurations for production reverse proxies, handles compression, and applies strict security headers.
-- **Middleware & Sessions**: Session state is persisted in PostgreSQL using `connect-pg-simple` within the `chapter` schema. Authentication checks and rate-limiting middleware (`repo://src/auth.ts`, `repo://src/auth-rate-limit.ts`) protect sensitive routes.
+The backend entry point is `repo://server.ts`, which sets up the Express application instance, configures security headers, session storage, and mounts modular feature routers under `/api`.
 
-## Database Setup & Persistence
+### Key Responsibilities & Middleware
+- **Security & Headers**: Implements custom Content Security Policy (CSP), HTTP Strict Transport Security (HSTS), frame options (`DENY`), and rate limiting (`repo://src/auth-rate-limit.ts`) for sensitive auth routes.
+- **Session Management**: Session state is backed by PostgreSQL via `connect-pg-simple` operating within the `chapter` database schema (`repo://server.ts`).
+- **Proxy Trust**: Configured with `app.set("trust proxy", 1)` to support secure cookies behind production reverse proxies.
 
-Database interactions are managed via `repo://src/db.ts`, which wraps the `pg` connection pool.
+### Modular API Routers
+Routes are modularized into dedicated feature files and mounted in `repo://server.ts`:
+- **Books & Reading**: `repo://src/routes/books.ts` handles book management, reading sessions, progress tracking, and private **reading markers** (`/api/books/:id/markers`).
+- **Reviews & Community**: `repo://src/routes/reviews.ts` handles user reviews.
+- **Uploads**: `repo://src/routes/upload.ts` manages EPUB, PDF, and cover image uploads.
+- **Podcasts**: `repo://src/routes/podcasts.ts` and `repo://src/routes/podcast-recap.ts` manage audio generation queues and feeds.
+- **Entitlements & Billing**: `repo://src/routes/entitlements.ts` and `repo://src/routes/billing.ts` manage subscription tiers and payment gateways.
+- **Analytics & Reviews**: `repo://src/routes/monthly-review.ts` provides monthly retrospectives.
+- **AI & Cross-Book Intelligence**: `repo://src/routes/ask-reading.ts` and `repo://src/routes/cross-book-connections.ts` power LLM-based Q&A and cross-book synthesis (`repo://src/llm.ts`).
+- **Telegram Integration**: `repo://src/telegram-link.ts` handles webhook linking for Telegram bot reminders and quick capture.
 
-- **Connection Pool**: Configured with automatic fallback between environment-provided `DATABASE_URL` and local development defaults, forcing the `chapter` schema (`search_path=chapter`).
-- **Query Execution & Timeouts**: Provides helper functions (`query`, `backgroundQuery`, `withTransaction`) that enforce strict statement and lock timeouts for request vs. background operations, and handles safe DATE type parsing for PostgreSQL.
-- **Migrations & Schema**: Database schema and migrations are maintained in `repo://migrations/`, ensuring robust schema verification and bootstrap via `ensureSchema` and `verifyCoreSchema`.
+---
 
-## Routing & API Endpoints
+## 2. Database Layer & Persistence
 
-Routing is modularized into discrete Express routers mounted in `repo://server.ts`:
+Database interactions are managed through `repo://src/db.ts`, which wraps the node-postgres (`pg`) connection pool.
 
-| Router Module | Mount Path / Prefix | Responsibilities |
-| :--- | :--- | :--- |
-| **Books Router** | `/api/books` | Book management, reading progress, chapters, and highlights. |
-| **Reviews Router** | `/api/reviews` | User book reviews and ratings. |
-| **Upload Router** | `/api/upload` | File uploads for EPUBs, PDFs, and cover images. |
-| **Podcasts Router** | `/api/podcasts` | Podcast generation, audio feeds, and background maintenance (`repo://src/routes/podcasts.ts`). |
-| **Entitlements & Billing** | `/api/entitlements`, `/api/billing` | User subscription tiers, feature gates, and payment integrations. |
-| **Monthly Reviews & Analytics** | `/api/monthly-reviews` | Aggregated reading statistics and monthly retrospectives. |
-| **Ask Reading & AI** | `/api/ask-reading`, `/api/cross-book-connections` | AI-powered Q&A over books and cross-book insight generation (`repo://src/llm.ts`). |
-| **Telegram Link** | Telegram webhook / link tokens | Telegram bot integration for reading reminders and quick capture (`repo://src/telegram-link.ts`). |
+- **Schema Isolation**: Forces the search path to the `chapter` schema (`search_path=chapter`) across connections.
+- **Query Execution & Timeouts**: Enforces timed execution wrappers (`query`, `backgroundQuery`, `withTransaction`) that apply strict statement and lock timeouts tailored for interactive requests versus background tasks (`repo://src/db.ts`).
+- **Migrations & Verification**: Schema bootstrap and migrations are handled via `ensureSchema` and `verifyCoreSchema` (`repo://src/db.ts`).
 
-## Core Business Domains
+---
 
-1. **User Lifecycle & Authentication**: Manages registration, password hashing (`bcrypt`), OAuth2 (Google), secure session cookies, login tracking (`repo://src/userLifecycleTracking.ts`), and password reset flows (`repo://src/email.ts`).
-2. **Reading & Progress Tracking**: Tracks book reading state, weekly goals (`repo://src/weekly-goal.ts`), listen rhythms (`repo://src/listenRhythm.ts`), and achievements (`repo://src/achievements.ts`).
-3. **AI Integration**: Integrates with LLMs for reading assistance, automated podcast recaps, and conceptual synthesis across multiple books.
+## 3. Frontend Architecture & Client Routing
+
+The client-side application is built as a single-page React application (`repo://src/App.tsx`), styled with Tailwind CSS, and bundled with Vite.
+
+- **Authentication Context**: `repo://src/AuthContext.tsx` manages active session state, loading gates, and redirects unauthenticated visitors to login/signup flows.
+- **App Shell & Views**: `repo://src/components/AppShell.tsx` wraps authenticated routes (`/`, `/today`, `/books/:id`, `/insights`, `/review`, `/calendar`, `/momentum`, `/achievements`, `/profile`, `/account`, `/pricing`, `/quotes`).
+- **Analytics & PostHog Identity**: `repo://src/analytics.ts` initializes PostHog analytics (`posthog-js`), associating user IDs and account handles upon successful authentication (`posthog.identify`) and resetting session tracking on logout (`posthog.reset`).
+
+---
+
+## 4. Recent Architectural Additions
+
+1. **Reading Markers**: Private, session-scoped bookmarks and annotations tied to active reading rounds (`repo://src/routes/books.ts`), enabling readers to drop specific page markers with notes.
+2. **PostHog Identity Integration**: Frontend analytics (`repo://src/analytics.ts`) tightly coupled with user lifecycle events to track user engagement and feature adoption securely.
