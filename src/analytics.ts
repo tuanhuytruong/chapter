@@ -2,6 +2,15 @@
 import posthog from "posthog-js";
 
 const projectApiKey = import.meta.env.VITE_POSTHOG_KEY?.trim();
+const deploymentEnvironment = import.meta.env.VITE_POSTHOG_ENVIRONMENT?.trim();
+
+if (projectApiKey && !deploymentEnvironment) {
+  console.warn("PostHog is enabled without VITE_POSTHOG_ENVIRONMENT; events will be labeled unknown.");
+}
+
+const analyticsContext = {
+  environment: deploymentEnvironment || "unknown",
+};
 
 if (projectApiKey) {
   posthog.init(projectApiKey, {
@@ -13,6 +22,8 @@ if (projectApiKey) {
     person_profiles: "identified_only",
     disable_session_recording: true,
   });
+  // Applies to explicit events and PostHog-managed pageview/pageleave events.
+  posthog.register(analyticsContext);
 }
 
 /**
