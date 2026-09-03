@@ -134,9 +134,14 @@ export function resolveSummaryOutputLanguage(
   sourceText: string,
 ): "vi" | "en" {
   if (requestedLang === "vi" || requestedLang === "en") return requestedLang;
-  const vietnameseTokens = /\b(và|của|là|trong|với|cho|được|không|những|một|này|từ|theo|khi|để|về|có|người|như|sự|đến|cần)\b/giu;
+  const vietnameseTokens =
+    /\b(và|của|là|trong|với|cho|được|không|những|một|này|từ|theo|khi|để|về|có|người|như|sự|đến|cần)\b/giu;
   const tokenEvidence = (sourceText.match(vietnameseTokens) || []).length;
-  const diacriticEvidence = (sourceText.match(/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu) || []).length;
+  const diacriticEvidence = (
+    sourceText.match(
+      /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu,
+    ) || []
+  ).length;
   return tokenEvidence + diacriticEvidence >= 3 ? "vi" : "en";
 }
 
@@ -499,10 +504,10 @@ export async function callNineRouter(
 ): Promise<string> {
   const url = process.env.NINE_ROUTER_URL;
   const model = process.env.NINE_ROUTER_MODEL || "qwen3";
-  const effectiveLang: "auto" | "vi" | "en" =
-    input.summaryMode === "deep_reading"
-      ? resolveSummaryOutputLanguage(input.lang, input.extractedText)
-      : input.lang || "auto";
+  const effectiveLang = resolveSummaryOutputLanguage(
+    input.lang,
+    input.extractedText,
+  );
 
   if (!url) {
     if (strict) throw new Error("NineRouter is not configured");
@@ -573,7 +578,7 @@ export async function callNineRouter(
       if (!text) throw new Error("9router returned empty content");
       if (!text.trim()) throw new Error("9router returned blank content");
       const output = text.trim();
-      if (input.summaryMode === "deep_reading") {
+      {
         const validation = validateSummaryOutputLanguage(output, effectiveLang);
         if (!validation.valid) {
           console.warn(

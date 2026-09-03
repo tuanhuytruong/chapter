@@ -31,8 +31,18 @@ import {
   listReadingLensAnalyses,
   upsertReadingLensAnalysis,
 } from "../readingLensRepository.js";
-import { markReadingProgressCompanionStaleIfCovered, getReadingProgressCompanion, upsertReadingProgressCompanion } from "../readingProgressCompanionRepository.js";
-import { buildReadingProgressPrompt, parseReadingProgressCompanion, type ProgressSource } from "../readingProgressCompanion.js";
+import {
+  markReadingProgressCompanionStaleIfCovered,
+  getReadingProgressCompanion,
+  upsertReadingProgressCompanion,
+} from "../readingProgressCompanionRepository.js";
+import {
+  buildReadingProgressPrompt,
+  parseReadingProgressCompanion,
+  resolveReadingProgressLanguage,
+  validateReadingProgressLanguage,
+  type ProgressSource,
+} from "../readingProgressCompanion.js";
 import {
   getTelegramConfig,
   sendTelegramMessage,
@@ -47,14 +57,20 @@ import path from "path";
 export const booksRouter = Router();
 booksRouter.use(requireAuth);
 booksRouter.use((req, res, next) => {
-  const meaningful = req.method === "POST" && (
-    req.path === "/" || req.path === "/all/advance" ||
-    /\/advance$/.test(req.path) || /\/wiki\/regenerate$/.test(req.path) ||
-    /\/reading-lens\/retry$/.test(req.path) || /\/reading-progress$/.test(req.path)
-  );
+  const meaningful =
+    req.method === "POST" &&
+    (req.path === "/" ||
+      req.path === "/all/advance" ||
+      /\/advance$/.test(req.path) ||
+      /\/wiki\/regenerate$/.test(req.path) ||
+      /\/reading-lens\/retry$/.test(req.path) ||
+      /\/reading-progress$/.test(req.path));
   if (meaningful) {
     const ownerId = userFrom(req).id;
-    res.once("finish", () => { if (res.statusCode >= 200 && res.statusCode < 300) bestEffortTouchLastActive(ownerId); });
+    res.once("finish", () => {
+      if (res.statusCode >= 200 && res.statusCode < 300)
+        bestEffortTouchLastActive(ownerId);
+    });
   }
   next();
 });
@@ -86,11 +102,19 @@ function markerPositionLabel(fileType: string, position: number): string {
 
 function normalizeReadingIntention(value: unknown): string | null {
   if (value === undefined || value === null) return null;
-  if (typeof value !== "string") throw Object.assign(new Error("reading_intention must be text"), { statusCode: 400 });
+  if (typeof value !== "string")
+    throw Object.assign(new Error("reading_intention must be text"), {
+      statusCode: 400,
+    });
   const normalized = value.trim();
   if (!normalized) return null;
   if (normalized.length > MAX_READING_INTENTION_CHARS) {
-    throw Object.assign(new Error(`reading_intention must be at most ${MAX_READING_INTENTION_CHARS} characters`), { statusCode: 400 });
+    throw Object.assign(
+      new Error(
+        `reading_intention must be at most ${MAX_READING_INTENTION_CHARS} characters`,
+      ),
+      { statusCode: 400 },
+    );
   }
   return normalized;
 }
@@ -144,7 +168,11 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
   // This is a proven N-query ingestion hot spot for long EPUBs. Chunking keeps
   // each statement below PostgreSQL's parameter limit while preserving the
   // transaction, generated unit order, and all-or-nothing semantics.
-  for (let offset = 0; offset < units.length; offset += READING_UNIT_INSERT_BATCH_SIZE) {
+  for (
+    let offset = 0;
+    offset < units.length;
+    offset += READING_UNIT_INSERT_BATCH_SIZE
+  ) {
     const batch = units.slice(offset, offset + READING_UNIT_INSERT_BATCH_SIZE);
     const values: string[] = [];
     const params: any[] = [];
@@ -179,12 +207,21 @@ async function ensureEpubReadingUnits(client: any, book: any): Promise<number> {
 
 /** Cache stats are complete only for the exact contiguous page range 1..expected. */
 export function isCompletePdfCache(
-  stats: { count: number | string; min_index: number | string | null; max_index: number | string | null },
+  stats: {
+    count: number | string;
+    min_index: number | string | null;
+    max_index: number | string | null;
+  },
   expectedTotalPages: unknown,
 ): boolean {
   const expected = Number(expectedTotalPages);
-  return Number.isInteger(expected) && expected > 0 && Number(stats.count) === expected
-    && Number(stats.min_index) === 1 && Number(stats.max_index) === expected;
+  return (
+    Number.isInteger(expected) &&
+    expected > 0 &&
+    Number(stats.count) === expected &&
+    Number(stats.min_index) === 1 &&
+    Number(stats.max_index) === expected
+  );
 }
 
 export interface PdfCacheDependencies {
@@ -193,7 +230,11 @@ export interface PdfCacheDependencies {
   extractRange: typeof extractRange;
 }
 
-const pdfCacheDependencies: PdfCacheDependencies = { query, withClient, extractRange };
+const pdfCacheDependencies: PdfCacheDependencies = {
+  query,
+  withClient,
+  extractRange,
+};
 
 async function pdfCacheStats(runQuery: any, bookId: string) {
   const { rows } = await runQuery(
@@ -212,31 +253,69 @@ export async function ensurePdfReadingUnits(
   const cached = await pdfCacheStats(dependencies.query, book.id);
   if (isCompletePdfCache(cached, book.total_pages)) return Number(cached.count);
   return dependencies.withClient(async (client: any) => {
-    await client.query("SELECT pg_advisory_lock(hashtextextended($1::text, 0))", [book.id]);
+    await client.query(
+      "SELECT pg_advisory_lock(hashtextextended($1::text, 0))",
+      [book.id],
+    );
     try {
       const rechecked = await pdfCacheStats(client.query.bind(client), book.id);
-      if (isCompletePdfCache(rechecked, book.total_pages)) return Number(rechecked.count);
+      if (isCompletePdfCache(rechecked, book.total_pages))
+        return Number(rechecked.count);
       // Intentionally outside a transaction, while the session lock prevents duplicate parsing.
-      const extracted = await dependencies.extractRange(book.file_path, "pdf", 1, Number.MAX_SAFE_INTEGER);
+      const extracted = await dependencies.extractRange(
+        book.file_path,
+        "pdf",
+        1,
+        Number.MAX_SAFE_INTEGER,
+      );
       const pages = extracted.pages;
-      if (!pages || pages.length !== extracted.totalUnits || pages.length < 1 || pages.some((page: unknown) => typeof page !== "string"))
+      if (
+        !pages ||
+        pages.length !== extracted.totalUnits ||
+        pages.length < 1 ||
+        pages.some((page: unknown) => typeof page !== "string")
+      )
         throw new Error("PDF extractor returned an invalid page map");
       await client.query("BEGIN");
       try {
-        await client.query("DELETE FROM book_reading_units WHERE book_id=$1", [book.id]);
-        for (let offset = 0; offset < pages.length; offset += READING_UNIT_INSERT_BATCH_SIZE) {
-          const batch = pages.slice(offset, offset + READING_UNIT_INSERT_BATCH_SIZE);
+        await client.query("DELETE FROM book_reading_units WHERE book_id=$1", [
+          book.id,
+        ]);
+        for (
+          let offset = 0;
+          offset < pages.length;
+          offset += READING_UNIT_INSERT_BATCH_SIZE
+        ) {
+          const batch = pages.slice(
+            offset,
+            offset + READING_UNIT_INSERT_BATCH_SIZE,
+          );
           const params: any[] = [];
           const values = batch.map((rawText: string, index: number) => {
             const n = params.length + 1;
             const unitIndex = offset + index + 1;
             const safeText = stripNul(rawText);
-            params.push(book.id, unitIndex, null, unitIndex, `pdf-page-${unitIndex}`, safeText, safeText.length, unitIndex);
-            return `($${n},$${n+1},$${n+2},$${n+3},$${n+4},$${n+5},$${n+6},$${n+7})`;
+            params.push(
+              book.id,
+              unitIndex,
+              null,
+              unitIndex,
+              `pdf-page-${unitIndex}`,
+              safeText,
+              safeText.length,
+              unitIndex,
+            );
+            return `($${n},$${n + 1},$${n + 2},$${n + 3},$${n + 4},$${n + 5},$${n + 6},$${n + 7})`;
           });
-          await client.query(`INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${values.join(",")}`, params);
+          await client.query(
+            `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${values.join(",")}`,
+            params,
+          );
         }
-        await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [pages.length, book.id]);
+        await client.query("UPDATE books SET total_pages=$1 WHERE id=$2", [
+          pages.length,
+          book.id,
+        ]);
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");
@@ -244,7 +323,10 @@ export async function ensurePdfReadingUnits(
       }
       return pages.length;
     } finally {
-      await client.query("SELECT pg_advisory_unlock(hashtextextended($1::text, 0))", [book.id]);
+      await client.query(
+        "SELECT pg_advisory_unlock(hashtextextended($1::text, 0))",
+        [book.id],
+      );
     }
   });
 }
@@ -353,11 +435,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const parsedDailyPages =
     daily_pages === undefined ? 3 : validDailyPages(daily_pages);
   if (parsedDailyPages === null) {
-    return res
-      .status(400)
-      .json({
-        error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}`,
-      });
+    return res.status(400).json({
+      error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}`,
+    });
   }
   const lang = ["auto", "vi", "en"].includes(summary_lang)
     ? summary_lang
@@ -426,12 +506,10 @@ booksRouter.post("/", async (req: Request, res: Response) => {
     res.status(201).json(rows[0]);
   } catch (e: any) {
     const statusCode = Number.isInteger(e?.statusCode) ? e.statusCode : 503;
-    res
-      .status(statusCode)
-      .json({
-        error: statusCode === 403 ? e.message : "DB unavailable",
-        detail: statusCode === 403 ? undefined : e.message,
-      });
+    res.status(statusCode).json({
+      error: statusCode === 403 ? e.message : "DB unavailable",
+      detail: statusCode === 403 ? undefined : e.message,
+    });
   }
 });
 
@@ -511,11 +589,9 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   if (req.body.daily_pages !== undefined) {
     const parsedDailyPages = validDailyPages(req.body.daily_pages);
     if (parsedDailyPages === null)
-      return res
-        .status(400)
-        .json({
-          error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}`,
-        });
+      return res.status(400).json({
+        error: `daily_pages must be an integer between 1 and ${MAX_DAILY_PAGES}`,
+      });
     req.body.daily_pages = parsedDailyPages;
   }
   if (
@@ -528,7 +604,9 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "reading_experience is immutable" });
   if (req.body.reading_intention !== undefined) {
     try {
-      req.body.reading_intention = normalizeReadingIntention(req.body.reading_intention);
+      req.body.reading_intention = normalizeReadingIntention(
+        req.body.reading_intention,
+      );
     } catch (e: any) {
       return res.status(e.statusCode || 400).json({ error: e.message });
     }
@@ -541,11 +619,9 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
     existing.reading_experience === "story" &&
     req.body.summary_mode !== undefined
   ) {
-    return res
-      .status(400)
-      .json({
-        error: "Story Thread books do not use analytical summary styles",
-      });
+    return res.status(400).json({
+      error: "Story Thread books do not use analytical summary styles",
+    });
   }
   const sets: string[] = [];
   const vals: any[] = [];
@@ -618,10 +694,17 @@ booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
     );
     if (!allowed.rows.length)
       return res.status(404).json({ error: "story book not found" });
-    const requestedRound = req.query.round === undefined ? null : Number(req.query.round);
-    if (requestedRound !== null && (!Number.isInteger(requestedRound) || requestedRound < 1))
-      return res.status(400).json({ error: "round must be a positive integer" });
-    const readingRound = requestedRound ?? allowed.rows[0].current_reading_round;
+    const requestedRound =
+      req.query.round === undefined ? null : Number(req.query.round);
+    if (
+      requestedRound !== null &&
+      (!Number.isInteger(requestedRound) || requestedRound < 1)
+    )
+      return res
+        .status(400)
+        .json({ error: "round must be a positive integer" });
+    const readingRound =
+      requestedRound ?? allowed.rows[0].current_reading_round;
     const round = await query(
       "SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",
       [id, readingRound],
@@ -630,8 +713,13 @@ booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
     // created on the first reading session). Empty thread list is valid for
     // the default round; only an explicitly requested missing round is an
     // error.
-    if (!round.rows.length && readingRound > allowed.rows[0].current_reading_round)
-      return res.status(404).json({ error: "reading round not found for book" });
+    if (
+      !round.rows.length &&
+      readingRound > allowed.rows[0].current_reading_round
+    )
+      return res
+        .status(404)
+        .json({ error: "reading round not found for book" });
     res.json(await listStoryThreadAnalyses(id, readingRound));
   } catch (e: any) {
     res
@@ -892,50 +980,104 @@ booksRouter.post("/:id/markers", async (req: Request, res: Response) => {
   if (!(await ownerCanMutate(req, res, id))) return;
   const { log_id, page_position, kind } = req.body || {};
   const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
-  if (typeof log_id !== "string" || !Number.isInteger(page_position) || !MARKER_KINDS.has(kind))
-    return res.status(400).json({ error: "log_id, page_position, and a valid marker kind are required" });
+  if (
+    typeof log_id !== "string" ||
+    !Number.isInteger(page_position) ||
+    !MARKER_KINDS.has(kind)
+  )
+    return res
+      .status(400)
+      .json({
+        error: "log_id, page_position, and a valid marker kind are required",
+      });
   if (note.length > MAX_MARKER_NOTE_CHARS)
-    return res.status(400).json({ error: `note must be at most ${MAX_MARKER_NOTE_CHARS} characters` });
+    return res
+      .status(400)
+      .json({
+        error: `note must be at most ${MAX_MARKER_NOTE_CHARS} characters`,
+      });
   try {
-    const book = (await query<any>("SELECT file_type, status, current_reading_round FROM books WHERE id=$1", [id])).rows[0];
+    const book = (
+      await query<any>(
+        "SELECT file_type, status, current_reading_round FROM books WHERE id=$1",
+        [id],
+      )
+    ).rows[0];
     if (!book) return res.status(404).json({ error: "book not found" });
     if (book.status !== "active")
-      return res.status(409).json({ error: "markers cannot be created while this book is not active" });
-    const log = (await query<any>(
-      "SELECT id, reading_round, session, page_start, page_end FROM reading_log WHERE id=$1 AND book_id=$2",
-      [log_id, id],
-    )).rows[0];
+      return res
+        .status(409)
+        .json({
+          error: "markers cannot be created while this book is not active",
+        });
+    const log = (
+      await query<any>(
+        "SELECT id, reading_round, session, page_start, page_end FROM reading_log WHERE id=$1 AND book_id=$2",
+        [log_id, id],
+      )
+    ).rows[0];
     if (!log || log.reading_round !== book.current_reading_round)
-      return res.status(400).json({ error: "marker must belong to a saved session in the active reading round" });
+      return res
+        .status(400)
+        .json({
+          error:
+            "marker must belong to a saved session in the active reading round",
+        });
     if (page_position < log.page_start || page_position > log.page_end)
-      return res.status(400).json({ error: "marker position must be inside the saved session" });
+      return res
+        .status(400)
+        .json({ error: "marker position must be inside the saved session" });
     const { rows } = await query(
       `INSERT INTO reading_markers (book_id, owner_id, reading_round, log_id, page_position, kind, note)
        VALUES ($1,$2,$3,$4,$5,$6,$7)
        ON CONFLICT (book_id, owner_id, log_id, page_position, kind, note) DO UPDATE SET note=EXCLUDED.note
        RETURNING id, book_id, log_id, reading_round, page_position, kind, note, created_at`,
-      [id, userFrom(req).id, log.reading_round, log_id, page_position, kind, note],
+      [
+        id,
+        userFrom(req).id,
+        log.reading_round,
+        log_id,
+        page_position,
+        kind,
+        note,
+      ],
     );
-    res.status(201).json({ ...rows[0], session: log.session, page_start: log.page_start, page_end: log.page_end, position_label: markerPositionLabel(book.file_type, page_position) });
+    res
+      .status(201)
+      .json({
+        ...rows[0],
+        session: log.session,
+        page_start: log.page_start,
+        page_end: log.page_end,
+        position_label: markerPositionLabel(book.file_type, page_position),
+      });
   } catch (e: any) {
-    res.status(503).json({ error: "marker could not be saved", detail: e.message });
+    res
+      .status(503)
+      .json({ error: "marker could not be saved", detail: e.message });
   }
 });
 
-booksRouter.delete("/:id/markers/:markerId", async (req: Request, res: Response) => {
-  const { id, markerId } = req.params;
-  if (!(await ownerCanMutate(req, res, id))) return;
-  try {
-    const result = await query(
-      "DELETE FROM reading_markers WHERE id=$1 AND book_id=$2 AND owner_id=$3 RETURNING id",
-      [markerId, id, userFrom(req).id],
-    );
-    if (!result.rows.length) return res.status(404).json({ error: "marker not found" });
-    res.json({ ok: true });
-  } catch (e: any) {
-    res.status(503).json({ error: "marker could not be deleted", detail: e.message });
-  }
-});
+booksRouter.delete(
+  "/:id/markers/:markerId",
+  async (req: Request, res: Response) => {
+    const { id, markerId } = req.params;
+    if (!(await ownerCanMutate(req, res, id))) return;
+    try {
+      const result = await query(
+        "DELETE FROM reading_markers WHERE id=$1 AND book_id=$2 AND owner_id=$3 RETURNING id",
+        [markerId, id, userFrom(req).id],
+      );
+      if (!result.rows.length)
+        return res.status(404).json({ error: "marker not found" });
+      res.json({ ok: true });
+    } catch (e: any) {
+      res
+        .status(503)
+        .json({ error: "marker could not be deleted", detail: e.message });
+    }
+  },
+);
 
 // GET /api/books/:id/log — full shared reading history. Readers can inspect
 // one another's sessions in All Readers; mutation routes remain owner-scoped.
@@ -999,7 +1141,12 @@ booksRouter.get("/:id/reading-lens", async (req: Request, res: Response) => {
     if (!allowed.rows.length)
       return res.status(404).json({ error: "analytical book not found" });
     const round = Number(req.query.round);
-    res.json(await listReadingLensAnalyses(id, Number.isFinite(round) ? round : undefined));
+    res.json(
+      await listReadingLensAnalyses(
+        id,
+        Number.isFinite(round) ? round : undefined,
+      ),
+    );
   } catch (e: any) {
     res
       .status(503)
@@ -1070,34 +1217,142 @@ booksRouter.post(
   },
 );
 
-booksRouter.get("/:id/reading-progress", async (req: Request, res: Response) => {
-  try {
-    const book = (await query<any>("SELECT current_reading_round FROM books WHERE id=$1", [req.params.id])).rows[0];
-    if (!book) return res.status(404).json({ error: "book not found" });
-    const requestedRound = req.query.round;
-    const hasExplicitRound = requestedRound !== undefined;
-    const requested = Number(requestedRound);
-    if (hasExplicitRound && (!Number.isInteger(requested) || requested < 1)) {
-      return res.status(400).json({ error: "round must be a positive integer" });
+booksRouter.get(
+  "/:id/reading-progress",
+  async (req: Request, res: Response) => {
+    try {
+      const book = (
+        await query<any>(
+          "SELECT current_reading_round FROM books WHERE id=$1",
+          [req.params.id],
+        )
+      ).rows[0];
+      if (!book) return res.status(404).json({ error: "book not found" });
+      const requestedRound = req.query.round;
+      const hasExplicitRound = requestedRound !== undefined;
+      const requested = Number(requestedRound);
+      if (hasExplicitRound && (!Number.isInteger(requested) || requested < 1)) {
+        return res
+          .status(400)
+          .json({ error: "round must be a positive integer" });
+      }
+      const round = hasExplicitRound ? requested : book.current_reading_round;
+      const exists = (
+        await query(
+          "SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2",
+          [req.params.id, round],
+        )
+      ).rows[0];
+      // A newly added book has its current round before its first saved session.
+      // That is an empty companion state, not an error. Explicit unavailable
+      // historical/future round requests remain a real 404.
+      if (!exists) {
+        if (!hasExplicitRound && round === book.current_reading_round)
+          return res.json(null);
+        return res.status(404).json({ error: "reading round not found" });
+      }
+      res.json(await getReadingProgressCompanion(req.params.id, round));
+    } catch (e: any) {
+      res
+        .status(503)
+        .json({ error: "reading progress unavailable", detail: e.message });
     }
-    const round = hasExplicitRound ? requested : book.current_reading_round;
-    const exists = (await query("SELECT 1 FROM book_reading_rounds WHERE book_id=$1 AND reading_round=$2", [req.params.id, round])).rows[0];
-    // A newly added book has its current round before its first saved session.
-    // That is an empty companion state, not an error. Explicit unavailable
-    // historical/future round requests remain a real 404.
-    if (!exists) {
-      if (!hasExplicitRound && round === book.current_reading_round) return res.json(null);
-      return res.status(404).json({ error: "reading round not found" });
+  },
+);
+booksRouter.post(
+  "/:id/reading-progress",
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    if (!(await ownerCanMutate(req, res, id))) return;
+    try {
+      const book = (
+        await query<any>(
+          "SELECT current_reading_round,status,summary_lang FROM books WHERE id=$1",
+          [id],
+        )
+      ).rows[0];
+      if (!book) return res.status(404).json({ error: "book not found" });
+      if (book.status !== "active")
+        return res
+          .status(409)
+          .json({
+            error:
+              "reading progress cannot be refreshed while this book is not active",
+          });
+      const round = book.current_reading_round;
+      const { rows } = await query<any>(
+        `SELECT id,date,session,page_start,page_end,raw_text FROM reading_log WHERE book_id=$1 AND reading_round=$2 AND raw_text IS NOT NULL AND btrim(raw_text) <> '' ORDER BY date ASC,session ASC,id ASC`,
+        [id, round],
+      );
+      if (!rows.length)
+        return res
+          .status(409)
+          .json({
+            error: "at least one saved session with source text is required",
+          });
+      const prior = await getReadingProgressCompanion(id, round);
+      const last = rows.at(-1);
+      if (
+        prior &&
+        !prior.stale &&
+        prior.last_log_id === last.id &&
+        prior.last_log_date === last.date &&
+        prior.last_log_session === last.session
+      )
+        return res.json(prior);
+      const sources: ProgressSource[] = rows.map((r: any) => ({
+        logId: r.id,
+        session: r.session,
+        pageStart: r.page_start,
+        pageEnd: r.page_end,
+        text: r.raw_text,
+      }));
+      const language = resolveReadingProgressLanguage(
+        book.summary_lang,
+        sources,
+      );
+      const prompt = buildReadingProgressPrompt({ sources, language });
+      let raw = await callJsonLLM(
+        "You create only grounded, cited reading-progress JSON.",
+        prompt,
+        0.2,
+      );
+      let validation = validateReadingProgressLanguage(raw, language);
+      if (!validation.valid) {
+        raw = await callJsonLLM(
+          "You create only grounded, cited reading-progress JSON.",
+          `${prompt}
+
+Your prior JSON used the wrong prose language. Regenerate the entire JSON in the required language; keep exact refs and do not explain the correction.`,
+          0.1,
+        );
+        validation = validateReadingProgressLanguage(raw, language);
+        if (!validation.valid)
+          throw Error(
+            `reading progress output did not satisfy required ${language} language (${validation.mismatch})`,
+          );
+      }
+      const data = parseReadingProgressCompanion(raw, sources, language);
+      res.json(
+        await upsertReadingProgressCompanion(
+          id,
+          round,
+          data,
+          rows.length,
+          { logId: last.id, date: last.date, session: last.session },
+          (prior?.source_revision || 0) + 1,
+        ),
+      );
+    } catch (e: any) {
+      res
+        .status(500)
+        .json({
+          error: "reading progress generation failed",
+          detail: e.message,
+        });
     }
-    res.json(await getReadingProgressCompanion(req.params.id, round));
-  } catch (e: any) {
-    res.status(503).json({ error: "reading progress unavailable", detail: e.message });
-  }
-});
-booksRouter.post("/:id/reading-progress", async (req: Request, res: Response) => {
- const {id}=req.params; if (!(await ownerCanMutate(req,res,id))) return;
- try { const book=(await query<any>("SELECT current_reading_round,status,summary_lang FROM books WHERE id=$1",[id])).rows[0]; if (!book) return res.status(404).json({error:"book not found"}); if(book.status!=="active") return res.status(409).json({error:"reading progress cannot be refreshed while this book is not active"}); const round=book.current_reading_round; const {rows}=await query<any>(`SELECT id,date,session,page_start,page_end,raw_text FROM reading_log WHERE book_id=$1 AND reading_round=$2 AND raw_text IS NOT NULL AND btrim(raw_text) <> '' ORDER BY date ASC,session ASC,id ASC`,[id,round]); if(!rows.length) return res.status(409).json({error:"at least one saved session with source text is required"}); const prior=await getReadingProgressCompanion(id,round);const last=rows.at(-1);if(prior&&!prior.stale&&prior.last_log_id===last.id&&prior.last_log_date===last.date&&prior.last_log_session===last.session)return res.json(prior);const sources:ProgressSource[]=rows.map((r:any)=>({logId:r.id,session:r.session,pageStart:r.page_start,pageEnd:r.page_end,text:r.raw_text}));const language=book.summary_lang==="vi"?"vi":"en";const raw=await callJsonLLM("You create only grounded, cited reading-progress JSON.",buildReadingProgressPrompt({sources,language}),0.2);const data=parseReadingProgressCompanion(raw,sources,language);res.json(await upsertReadingProgressCompanion(id,round,data,rows.length,{logId:last.id,date:last.date,session:last.session},(prior?.source_revision||0)+1)); } catch(e:any) {res.status(500).json({error:"reading progress generation failed",detail:e.message});}
-});
+  },
+);
 
 // ── B6: Advance all active (define BEFORE /:id/advance to avoid route clash) ──
 // POST /api/books/all/advance
@@ -1373,10 +1628,21 @@ async function advanceBookNow(
     text = units.map((unit: any) => unit.raw_text).join("\n\n");
     chapterTitle = null;
   } else {
-    const extracted = await extractRange(book.file_path, book.file_type, start, end);
+    const extracted = await extractRange(
+      book.file_path,
+      book.file_type,
+      start,
+      end,
+    );
     text = extracted.text;
     totalPages = book.total_pages || extracted.totalUnits;
-    chapterTitle = await getChapterTitle(book.file_path, book.file_type, start, end, text);
+    chapterTitle = await getChapterTitle(
+      book.file_path,
+      book.file_type,
+      start,
+      end,
+      text,
+    );
   }
   const parsed =
     book.reading_experience === "story"
@@ -1450,7 +1716,10 @@ async function advanceBookNow(
     };
   });
   if (result?.log?.raw_text) {
-    await markReadingProgressCompanionStaleIfCovered(result.bookId, result.log.id);
+    await markReadingProgressCompanionStaleIfCovered(
+      result.bookId,
+      result.log.id,
+    );
     // Enrichment starts only after the reading transaction commits.
     if (result.readingExperience === "story") {
       void generateStoryThreadForLog(result.log, {
@@ -1527,9 +1796,10 @@ async function generateReadingLensForLog(
   // guessed or language-mismatched analysis.
   let correctionReason: "json" | "language" | undefined;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const user = correctionReason === "language"
-      ? `${prompt.user}\n\nYour previous JSON used the wrong language. Regenerate the entire JSON in the required language; do not explain the correction.`
-      : prompt.user;
+    const user =
+      correctionReason === "language"
+        ? `${prompt.user}\n\nYour previous JSON used the wrong language. Regenerate the entire JSON in the required language; do not explain the correction.`
+        : prompt.user;
     const raw = process.env.NINE_ROUTER_URL
       ? await callLLM(prompt.system, user, 0.2, true, true, undefined, {
           priority: "background",
@@ -1538,9 +1808,14 @@ async function generateReadingLensForLog(
       : fallback;
     try {
       const analysis = parseReadingLensAnalysis(raw, log.raw_text);
-      const language = readingLensLanguageValidation(analysis, prompt.effectiveLang);
+      const language = readingLensLanguageValidation(
+        analysis,
+        prompt.effectiveLang,
+      );
       if (!language.valid) {
-        const error = new Error(`Reading Lens output did not satisfy required ${prompt.effectiveLang} language (${language.mismatch})`);
+        const error = new Error(
+          `Reading Lens output did not satisfy required ${prompt.effectiveLang} language (${language.mismatch})`,
+        );
         error.name = "ReadingLensLanguageError";
         throw error;
       }
@@ -1553,8 +1828,13 @@ async function generateReadingLensForLog(
       await markReadingProgressCompanionStaleIfCovered(log.book_id, log.id);
       return;
     } catch (error) {
-      const languageMismatch = error instanceof Error && error.name === "ReadingLensLanguageError";
-      if ((!(error instanceof SyntaxError) && !languageMismatch) || attempt === 2) throw error;
+      const languageMismatch =
+        error instanceof Error && error.name === "ReadingLensLanguageError";
+      if (
+        (!(error instanceof SyntaxError) && !languageMismatch) ||
+        attempt === 2
+      )
+        throw error;
       correctionReason = languageMismatch ? "language" : "json";
       console.warn(
         `[reading-lens] ${languageMismatch ? "language mismatch" : "malformed JSON"} for p.${log.page_start}-${log.page_end}; retrying once with a fresh provider response`,

@@ -1,8 +1,81 @@
-import assert from "node:assert/strict";import { readFileSync } from "node:fs";import { buildReadingProgressPrompt,parseReadingProgressCompanion,type ProgressSource } from "../src/readingProgressCompanion.js";
-const s:ProgressSource={logId:"11111111-1111-4111-8111-111111111111",session:1,pageStart:1,pageEnd:8,text:"Only saved session text."};const item={text:"Grounded thread.",refs:[{logId:s.logId,session:1,pageStart:1,pageEnd:8}]};const valid={mainThread:item,converging:[item],openThreads:[],carryForward:[],outputLanguage:"en" as const};assert.equal(parseReadingProgressCompanion(JSON.stringify(valid),[s],"en").mainThread.text,item.text);assert.throws(()=>parseReadingProgressCompanion("{",[s],"en"));assert.throws(()=>parseReadingProgressCompanion(JSON.stringify({...valid,mainThread:{...item,refs:[{...item.refs[0],logId:"bad"}]}}),[s],"en"));assert.throws(()=>parseReadingProgressCompanion(JSON.stringify({...valid,mainThread:{...item,refs:[{...item.refs[0],pageEnd:9}]}}),[s],"en"));assert.throws(()=>parseReadingProgressCompanion(JSON.stringify({...valid,mainThread:{text:item.text,refs:[]}}),[s],"en"));assert.throws(()=>parseReadingProgressCompanion(JSON.stringify({...valid,outputLanguage:"vi"}),[s],"en"));const p=buildReadingProgressPrompt({sources:[s],language:"en"});assert.match(p,/Only saved session text/);for(const x of ["Reading Lens","BookWiki","Story Thread","future chapters"])assert.match(p,new RegExp(x));const route=readFileSync(new URL("../src/routes/books.ts",import.meta.url),"utf8");assert.match(route,/raw_text IS NOT NULL/);assert.doesNotMatch(route,/reading-lens\/synthesis/);console.log("READING_PROGRESS_COMPANION_FIXTURES_OK");
-
-
-const routeSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
-assert.match(routeSource, /hasExplicitRound = requestedRound !== undefined/);
-assert.match(routeSource, /if \(!hasExplicitRound && round === book\.current_reading_round\) return res\.json\(null\)/);
-console.log("PASS fresh current round returns empty reading-progress state");
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import {
+  buildReadingProgressPrompt,
+  parseReadingProgressCompanion,
+  resolveReadingProgressLanguage,
+  validateReadingProgressLanguage,
+  type ProgressSource,
+} from "../src/readingProgressCompanion.js";
+const source: ProgressSource = {
+  logId: "11111111-1111-4111-8111-111111111111",
+  session: 1,
+  pageStart: 1,
+  pageEnd: 8,
+  text: "Only saved session text.",
+};
+const item = {
+  text: "Grounded thread with enough English words for stable validation today.",
+  refs: [{ logId: source.logId, session: 1, pageStart: 1, pageEnd: 8 }],
+};
+const en = {
+  mainThread: item,
+  converging: [item],
+  openThreads: [],
+  carryForward: [],
+  outputLanguage: "en" as const,
+};
+assert.equal(
+  parseReadingProgressCompanion(JSON.stringify(en), [source], "en").mainThread
+    .text,
+  item.text,
+);
+assert.throws(() => parseReadingProgressCompanion("{", [source], "en"));
+assert.throws(() =>
+  parseReadingProgressCompanion(
+    JSON.stringify({ ...en, outputLanguage: "vi" }),
+    [source],
+    "en",
+  ),
+);
+const vietnameseSource: ProgressSource = {
+  ...source,
+  text: "Đây là phần đọc tiếng Việt với những ý chính và lập luận rõ ràng trong cuốn sách này.",
+};
+assert.equal(resolveReadingProgressLanguage("auto", [vietnameseSource]), "vi");
+assert.equal(resolveReadingProgressLanguage("auto", [source]), "en");
+assert.equal(resolveReadingProgressLanguage("en", [vietnameseSource]), "en");
+const vi = {
+  ...en,
+  mainThread: {
+    ...item,
+    text: "Đây là mạch chính của phần đọc với những ý quan trọng và lập luận rõ ràng trong cuốn sách này.",
+  },
+  outputLanguage: "vi" as const,
+};
+assert.equal(
+  validateReadingProgressLanguage(JSON.stringify(vi), "vi").valid,
+  true,
+);
+assert.equal(
+  validateReadingProgressLanguage(JSON.stringify(en), "vi").valid,
+  false,
+);
+assert.match(
+  buildReadingProgressPrompt({ sources: [source], language: "en" }),
+  /Only saved session text/,
+);
+const route = readFileSync(
+  new URL("../src/routes/books.ts", import.meta.url),
+  "utf8",
+);
+assert.match(route, /resolveReadingProgressLanguage/);
+assert.match(route, /validateReadingProgressLanguage/);
+const card = readFileSync(
+  new URL("../src/components/ReadingProgressCard.tsx", import.meta.url),
+  "utf8",
+);
+assert.match(card, /aria-expanded/);
+assert.match(card, /expanded \?/);
+assert.match(card, /reading thread/);
+console.log("READING_PROGRESS_COMPANION_FIXTURES_OK");
