@@ -52,6 +52,7 @@ export type AnalyticsEvent =
   | "reading_session_completed"
   | "reading_session_failed"
   | "reading_session_started"
+  | "quiet_streak_milestone_seen"
   | "review_completed"
   | "sign_up_completed"
   | "weekly_goal_set";

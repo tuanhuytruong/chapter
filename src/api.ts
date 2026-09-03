@@ -388,6 +388,23 @@ export interface RhythmBookItem {
   episodes_listened: number;
 }
 
+export interface QuietStreakTier {
+  id: "first-thread" | "steady-reader" | "quiet-practice" | "deep-current" | "reading-life";
+  title: string;
+  days: number;
+  ringClass: string;
+  description: string;
+}
+
+export interface QuietStreakSummary {
+  active_days: string[];
+  current_streak: number;
+  longest_streak: number;
+  highest_tier: QuietStreakTier | null;
+  next_tier: QuietStreakTier | null;
+  active_today: boolean;
+}
+
 export interface RhythmResponse {
   reading_days: string[];
   listening_days: string[];
@@ -395,6 +412,7 @@ export interface RhythmResponse {
   total_listen_seconds: number;
   listen_by_day: { day: string; episodes: number; seconds: number }[];
   books: RhythmBookItem[];
+  quiet_streak: QuietStreakSummary;
 }
 
 const BASE = "/api/books";

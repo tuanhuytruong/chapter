@@ -8,6 +8,7 @@ import assert from "node:assert";
 import { setPool } from "../src/db.ts";
 import { podcastsRouter } from "../src/routes/podcasts.ts";
 import { buildListenRhythm, getListenRhythm, listenDateKey } from "../src/listenRhythm.ts";
+import { quietStreakSummary } from "../src/quietStreak.ts";
 
 const db = newDb();
 db.public.registerFunction({ name: "gen_random_uuid", implementation: () => crypto.randomUUID(), impure: true });
@@ -104,6 +105,10 @@ assert.equal(rhythm.books.length, 1, "only the book with podcasts is listed");
 assert.equal(rhythm.books[0].episodes_total, 2, "2 ready episodes");
 assert.equal(rhythm.books[0].episodes_listened, 2, "both episodes heard");
 assert.ok(rhythm.total_listen_seconds >= 100, "total seconds = 90 + 10");
+const quiet = quietStreakSummary(rhythm.reading_days, rhythm.listening_days, new Date("2026-08-11T05:00:00.000Z"));
+assert.equal(quiet.active_days.length, 3, "quiet streak union must de-duplicate a shared day");
+assert.equal(quiet.current_streak, 0, "quiet streak summary exposes safe aggregate fields");
+assert.deepEqual(Object.keys(quiet).sort(), ["active_days", "active_today", "current_streak", "highest_tier", "longest_streak", "next_tier"], "quiet streak must not expose private content");
 
 // 6. pure builder: ready episodes with nothing listened stay listed at 0;
 //    no podcasts at all → empty books array.

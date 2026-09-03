@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, BookOpen, Calendar, Flame, Hash, Headphones, Loader2, TrendingUp, BookMarked, Zap } from 'lucide-react';
 import { api, computeStreak, type MonthlyReviewResponse, type CrossBookConnectionsResponse, type PodcastRecapResponse, type RhythmResponse } from '../api';
+import QuietStreakStrip from '../components/QuietStreakStrip';
 import MonthlyReviewCard from '../components/MonthlyReviewCard';
 import AskMyReadingCard from '../components/AskMyReadingCard';
 import CrossBookConnectionsCard from '../components/CrossBookConnectionsCard';
@@ -76,33 +77,7 @@ function RhythmSection({ rhythm }: { rhythm: RhythmResponse | null }) {
   const listenDays = rhythm.listening_days || [];
   const readStreak = computeStreak(readDays);
   const listenStreak = computeStreak(listenDays);
-  const activeStreak = computeStreak([...new Set([...readDays, ...listenDays])]);
-
-  const readSet = new Set(readDays);
-  const listenSet = new Set(listenDays);
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: APP_TZ });
-  const dayStates: { date: string; state: 'none' | 'read' | 'listen' | 'both' }[] = [];
-  for (let i = 13; i >= 0; i--) {
-    const date = shiftDateStr(today, -i);
-    const isRead = readSet.has(date);
-    const isListen = listenSet.has(date);
-    dayStates.push({
-      date,
-      state: isRead && isListen ? 'both' : isRead ? 'read' : isListen ? 'listen' : 'none',
-    });
-  }
-  const stateClass: Record<string, string> = {
-    none: 'bg-natural-border/50',
-    read: 'bg-natural-sage',
-    listen: 'bg-amber-300',
-    both: 'bg-natural-dark',
-  };
-  const stateLabel: Record<string, string> = {
-    none: 'Nothing',
-    read: 'Read',
-    listen: 'Listened',
-    both: 'Read & listened',
-  };
+  const activeStreak = rhythm.quiet_streak.current_streak;
 
   const topBook = [...(rhythm.books || [])].sort((a, b) => b.episodes_listened - a.episodes_listened)[0];
   const hasListen = listenDays.length > 0 || (rhythm.books || []).some((b) => b.episodes_listened > 0);
@@ -130,22 +105,7 @@ function RhythmSection({ rhythm }: { rhythm: RhythmResponse | null }) {
           </div>
         </div>
 
-        {/* 14-day map */}
-        <div className="mt-4">
-          <div className="flex justify-between text-[10px] text-natural-stone mb-1.5">
-            <span>Last 14 days</span>
-            <span className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-natural-sage" /> Read</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-amber-300" /> Listen</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-[3px] bg-natural-dark" /> Both</span>
-            </span>
-          </div>
-          <div className="flex gap-1.5">
-            {dayStates.map((day) => (
-              <div key={day.date} title={`${day.date} — ${stateLabel[day.state]}`} className={`h-7 flex-1 rounded-[6px] ${stateClass[day.state]}`} />
-            ))}
-          </div>
-        </div>
+        <QuietStreakStrip readingDays={readDays} listeningDays={listenDays} />
       </div>
 
       {/* Nghe này — listening summary */}

@@ -5,7 +5,8 @@ import AnimalAvatar from './AnimalAvatar';
 import JourneyDrawer from './JourneyDrawer';
 import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X } from 'lucide-react';
 import { useAuth } from '../AuthContext';
-import { api, type MembershipTier } from '../api';
+import { api, type MembershipTier, type QuietStreakTier } from '../api';
+import QuietStreakBadge from './QuietStreakBadge';
 import MembershipTierBadge from './MembershipTierBadge';
 import useSwipeNav from '../hooks/useSwipeNav';
 import { REVIEWS_CHANGED_EVENT } from '../reviewEvents';
@@ -15,9 +16,9 @@ const primaryLink = (active: boolean) => active
   ? 'flex min-h-10 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark md:min-h-0 no-underline'
   : 'flex min-h-10 items-center justify-center gap-1.5 text-natural-stone hover:text-natural-dark md:min-h-0 no-underline';
 
-function Avatar({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
+function Avatar({ user, tier }: { user: ReturnType<typeof useAuth>["user"]; tier: QuietStreakTier | null }) {
   const preset = presetFromAvatarValue(user?.avatarUrl);
-  return <div className={`flex h-8 w-8 overflow-hidden rounded-full ${preset?.tone || 'bg-natural-sage/20'}`}>{preset ? <AnimalAvatar id={preset.id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span>}</div>;
+  return <QuietStreakBadge tier={tier}><div className={`flex h-8 w-8 overflow-hidden rounded-full ${preset?.tone || 'bg-natural-sage/20'}`}>{preset ? <AnimalAvatar id={preset.id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span>}</div></QuietStreakBadge>;
 }
 
 export default function AppShell() {
@@ -28,6 +29,7 @@ export default function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(null);
   const [dueReviewCount, setDueReviewCount] = useState<number | null>(null);
+  const [quietTier, setQuietTier] = useState<QuietStreakTier | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
 
@@ -47,6 +49,12 @@ export default function AppShell() {
     }).catch(() => {
       if (active) setMembershipTier(null);
     });
+    return () => { active = false; };
+  }, [user?.id]);
+  useEffect(() => {
+    let active = true;
+    if (!user) { setQuietTier(null); return; }
+    void api.getRhythm().then(({ quiet_streak }) => { if (active) setQuietTier(quiet_streak.highest_tier); }).catch(() => { if (active) setQuietTier(null); });
     return () => { active = false; };
   }, [user?.id]);
   useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
@@ -83,7 +91,7 @@ export default function AppShell() {
               <button onClick={() => setJourneyOpen(true)} aria-label="Open reading journey" title="Your Journey" aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Map className="h-3.5 w-3.5" /></button>
               <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50">{isDark ? <Sun className="h-3.5 w-3.5 text-natural-clay" /> : <Moon className="h-3.5 w-3.5 text-natural-stone" />}</button>
               {membershipTier && <MembershipTierBadge tier={membershipTier} />}
-              <NavLink to="/profile" aria-label="Your profile" title="Your profile" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Avatar user={user} /><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span></NavLink>
+              <NavLink to="/profile" aria-label="Your profile" title="Your profile" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Avatar user={user} tier={quietTier} /><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span></NavLink>
               <NavLink to="/account" aria-label="Telegram settings" title="Telegram settings" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Settings2 className="h-3.5 w-3.5" /></NavLink>
               <button onClick={() => void logout()} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50" title="Sign out" aria-label="Sign out"><LogOut className="h-3.5 w-3.5" /></button>
             </div>
@@ -96,7 +104,7 @@ export default function AppShell() {
             <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} aria-label={dueReviewCount === null ? "Review" : `Review, ${dueReviewCount} due`} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Review{dueReviewCount !== null && dueReviewCount > 0 && <span aria-hidden="true" className="inline-flex min-w-4 items-center justify-center rounded-full bg-natural-clay px-1 text-[9px] leading-4 text-white">{dueReviewCount > 9 ? "9+" : dueReviewCount}</span>}</NavLink>
           </nav>
           {mobileMenuOpen && <div className="border-t border-natural-border py-2 md:hidden">
-            <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} /><span>Profile</span></NavLink>
+            <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} tier={quietTier} /><span>Profile</span></NavLink>
             {membershipTier && <MembershipTierBadge tier={membershipTier} mobile onNavigate={() => setMobileMenuOpen(false)} />}
             <button onClick={() => { setMobileMenuOpen(false); setJourneyOpen(true); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Map className="h-4 w-4 text-natural-stone" />Your Journey</button>
             <NavLink to="/account" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>

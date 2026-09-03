@@ -10,7 +10,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { api, progressPct, type TodayDashboard, type TodayInsights } from "../api";
+import { api, progressPct, type TodayDashboard, type TodayInsights, type RhythmResponse } from "../api";
+import QuietStreakStrip from "../components/QuietStreakStrip";
+import QuietStreakUnlock from "../components/QuietStreakUnlock";
+import { captureAnalyticsEvent } from "../analytics";
 import type { BookRow } from "../types";
 
 function stripInsightOrdinal(text: string) {
@@ -44,6 +47,7 @@ export default function Today() {
   const [insights, setInsights] = useState<TodayInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+  const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -51,7 +55,9 @@ export default function Today() {
     setLoading(true);
     setError(null);
     try {
-      setDashboard(await api.getTodayDashboard());
+      const [todayData, rhythmData] = await Promise.all([api.getTodayDashboard(), api.getRhythm().catch(() => null)]);
+      setDashboard(todayData);
+      setRhythm(rhythmData);
     } catch (e: any) {
       setError(e.message || "Could not load your reading plan.");
     } finally {
@@ -117,6 +123,7 @@ export default function Today() {
       <Link to="/calendar" className="flex min-h-11 items-center gap-2 rounded-xl border border-natural-border bg-natural-cream px-4 text-sm font-bold text-natural-dark hover:bg-white"><CircleGauge className="h-4 w-4" /> See calendar</Link>
     </header>
     {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+    {rhythm && <section aria-label="Quiet Streak" className="rounded-2xl border border-natural-border bg-natural-cream p-4 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Quiet Streak</p><p className="mt-1 text-lg font-bold text-natural-dark">{rhythm.quiet_streak.current_streak} active day{rhythm.quiet_streak.current_streak === 1 ? "" : "s"}</p><p className="mt-1 text-sm text-natural-stone">{rhythm.quiet_streak.active_today ? "Today is part of your rhythm." : "A page or a minute of listening is enough to keep today’s rhythm."}</p>{rhythm.quiet_streak.next_tier && <p className="mt-1 text-xs text-natural-stone">Next: {rhythm.quiet_streak.next_tier.title} · {rhythm.quiet_streak.next_tier.days} days</p>}</div>{!rhythm.quiet_streak.active_today && (active ? <Link to={`/books/${active.id}`} className="inline-flex min-h-11 items-center rounded-xl bg-natural-sage px-4 text-sm font-bold text-white">Open current book</Link> : <Link to="/" className="inline-flex min-h-11 items-center rounded-xl bg-natural-sage px-4 text-sm font-bold text-white">Open Library</Link>)}</div><QuietStreakStrip readingDays={rhythm.reading_days} listeningDays={rhythm.listening_days} /><div className="mt-3"><QuietStreakUnlock tier={rhythm.quiet_streak.highest_tier} onVisible={(tier) => captureAnalyticsEvent("quiet_streak_milestone_seen", { tier_id: tier.id, tier_days: tier.days })} /></div></section>}
 
     <section aria-label="Review" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-natural-border bg-white px-4 py-3">
       <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 shrink-0 text-natural-clay" /><div><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Review</p><p className="text-sm font-semibold text-natural-dark">{dashboard.due_reviews > 0 ? `${dashboard.due_reviews} idea${dashboard.due_reviews === 1 ? "" : "s"} ready to revisit` : "Reviews are clear"}</p></div></div>

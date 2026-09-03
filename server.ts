@@ -34,6 +34,7 @@ import {
 } from "./src/weekly-goal.js";
 import { achievementResponse } from "./src/achievements.js";
 import { getListenRhythm } from "./src/listenRhythm.js";
+import { quietStreakSummary } from "./src/quietStreak.js";
 import { config } from "./src/config.js";
 import {
   createLinkToken,
@@ -736,7 +737,7 @@ app.get("/api/rhythm", async (req: Request, res: Response) => {
       roundRaw && Number.isInteger(roundRaw) && roundRaw > 0 ? roundRaw : undefined;
     const rhythm = await getListenRhythm(userFrom(req).id, { bookId, round });
     if (!rhythm) return res.status(404).json({ error: "book not found" });
-    res.json(rhythm);
+    res.json({ ...rhythm, quiet_streak: quietStreakSummary(rhythm.reading_days, rhythm.listening_days) });
   } catch (e: any) {
     res.status(503).json({ error: "rhythm unavailable", detail: e.message });
   }
