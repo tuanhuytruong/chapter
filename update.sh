@@ -94,7 +94,7 @@ if [ -n "$MISSING_RELATIONS" ]; then
   echo "Missing core relation(s): $MISSING_RELATIONS" >&2
   exit 1
 fi
-echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots, chapter.podcasts, chapter.subscriptions, chapter.usage_events, chapter.membership_prompt_state, chapter.monthly_reviews, chapter.ask_reading_answers, chapter.cross_book_connections, chapter.podcast_recaps, chapter.reading_lens_synthesis"
+echo "Core relations present: chapter.review_cards, chapter.weekly_reading_goals, chapter.reading_lens_analyses, chapter.story_thread_analyses, chapter.story_state_snapshots, chapter.podcasts, chapter.subscriptions, chapter.usage_events, chapter.membership_prompt_state, chapter.monthly_reviews, chapter.ask_reading_answers, chapter.cross_book_connections, chapter.podcast_recaps, chapter.reading_lens_synthesis, chapter.reading_progress_companion_facts"
 echo ""
 echo "Health check:"
 # PORT is release-folder local and loaded from .env.local above, so the health
