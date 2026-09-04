@@ -1,17 +1,81 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { aggregateCharacterStorylines, boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
+import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
 
-const raw = JSON.stringify({ storyRecap: "Mara accepts the sealed letter and leaves before dawn.", changedEvents: ["Mara accepts the sealed letter."], threads: [{ id: "sealed-letter", label: "The sealed letter", status: "escalating", detail: "Mara now carries it." }], characterPulse: [{ name: "Mara", pulse: "She acts despite uncertainty." }], characterArcs: [{ name: "Mara", development: "She chooses to carry the sealed letter." }], characterRelationships: [{ people: ["Mara", "Tomas"], detail: "Tomas entrusts Mara with the letter." }], readerMemory: ["Mara is carrying a sealed letter."], confidenceNotes: [] });
+const raw = JSON.stringify({
+  storyRecap: "Mara accepts the sealed letter and leaves before dawn.",
+  changedEvents: ["Mara accepts the sealed letter."],
+  threads: [{ id: "sealed-letter", label: "The sealed letter", status: "escalating", detail: "Mara now carries it." }],
+  characterPulse: [{ name: "Mara", pulse: "She acts despite uncertainty." }],
+  readerMemory: ["Mara is carrying a sealed letter."],
+  confidenceNotes: [],
+});
 const analysis = parseStoryThreadAnalysis(`\`\`\`json\n${raw}\n\`\`\``);
-assert.equal(analysis.threads[0].status, "escalating"); assert.equal(analysis.characterArcs[0].name, "Mara"); assert.equal(storyCompatSummary(analysis).quote, null); assert.throws(() => parseStoryThreadAnalysis('{"storyRecap":"missing required fields"}'));
-const legacy = parseStoryThreadAnalysis(JSON.stringify({ ...JSON.parse(raw), characterArcs: undefined, characterRelationships: undefined })); assert.deepEqual(legacy.characterArcs, []); assert.deepEqual(legacy.characterRelationships, []);
-const firstState = mergeStoryState({ threads: [{ id: "sealed-letter", label: "Old", status: "open", detail: "Old detail" }], characterPulse: [], readerMemory: [] }, analysis); assert.equal(firstState.threads[0].status, "escalating");
-const followUp = parseStoryThreadAnalysis(JSON.stringify({ ...JSON.parse(raw), storyRecap: "Mara hides the letter.", characterPulse: [{ name: "MARA", pulse: "She becomes more guarded." }], characterArcs: [{ name: "Mara", development: "She becomes more guarded while hiding the letter." }], characterRelationships: [{ people: ["Mara", "Tomas"], detail: "Their trust is strained by the concealment." }], readerMemory: ["The watchman has noticed Mara."] }));
-const secondState = mergeStoryState(firstState, followUp); assert.equal(secondState.characterPulse.find((character) => character.name.toLowerCase() === "mara")?.pulse, "She becomes more guarded.");
-const aggregate = aggregateCharacterStorylines([{ log_id: "one", session: 1, page_start: 1, page_end: 4, analysis }, { log_id: "two", session: 2, page_start: 5, page_end: 9, analysis: followUp }]); assert.equal(aggregate.characters[0].developments.length, 2); assert.equal(aggregate.relationships[0].moments.length, 2); assert.equal(aggregate.lastCitation?.pageEnd, 9);
-const prompt = buildStoryThreadPrompt({ title: "Test", author: "Author", start: 1, end: 2, total: 10, lang: "en", sourceText: "Mara accepts the sealed letter.", priorState: secondState }); assert.match(prompt.system, /characterRelationships/); assert.match(prompt.system, /CURRENT READING TEXT/); assert.match(prompt.user, /Current reading text/);
-const boundedSource = boundStoryThreadSource("A".repeat(STORY_THREAD_MAX_SOURCE_CHARS + 5000)); assert.ok(boundedSource.includes("Middle of this reading range omitted"));
-const routeSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8"); const serverSource = readFileSync(new URL("../server.ts", import.meta.url), "utf8"); const storyThreadSource = readFileSync(new URL("../src/storyThread.ts", import.meta.url), "utf8"); const storyViewSource = readFileSync(new URL("../src/components/story/StoryThreadView.tsx", import.meta.url), "utf8"); const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
-assert.match(routeSource, /listStoryThreadAnalyses\(id, readingRound\)/); assert.match(routeSource, /reading_experience='analytical'/); assert.match(routeSource, /Story Thread books do not use Reading Lens/); assert.match(serverSource, /Story Thread books do not use Knowledge Maps/); assert.match(storyThreadSource, /aggregateCharacterStorylines/); assert.match(storyThreadSource, /characterRelationships/); assert.match(storyViewSource, /Character Storylines/); assert.match(storyViewSource, /Relationship timeline/); assert.match(storyViewSource, /Nothing beyond this reading round is shown/); assert.match(storyViewSource, /min-h-11/); assert.match(storyViewSource, /aggregateCharacterStorylines\(analyses\)/); assert.match(detailSource, /<StoryThreadView[\s\S]*?summaryLang=\{book\.summary_lang\}/);
+assert.equal(analysis.threads[0].status, "escalating");
+assert.equal(storyCompatSummary(analysis).quote, null);
+assert.throws(() => parseStoryThreadAnalysis('{"storyRecap":"missing required fields"}'));
+const firstState = mergeStoryState({ threads: [{ id: "sealed-letter", label: "Old", status: "open", detail: "Old detail" }], characterPulse: [], readerMemory: [] }, analysis);
+assert.equal(firstState.threads[0].status, "escalating");
+
+// A later session must carry the existing thread and merge new continuity data.
+const followUp = parseStoryThreadAnalysis(JSON.stringify({
+  storyRecap: "Mara hides the letter while a new watchman begins following her.",
+  changedEvents: ["A watchman begins following Mara."],
+  threads: [
+    { id: "sealed-letter", label: "The sealed letter", status: "escalating", detail: "Mara hides it from the watchman." },
+    { id: "watchman", label: "The watchman", status: "open", detail: "His purpose is not yet clear." },
+  ],
+  characterPulse: [{ name: "MARA", pulse: "She becomes more guarded." }],
+  readerMemory: ["The watchman has noticed Mara."],
+  confidenceNotes: ["The watchman’s motive is not established."],
+}));
+const secondState = mergeStoryState(firstState, followUp);
+assert.equal(secondState.threads.length, 2);
+assert.equal(secondState.threads.find((thread) => thread.id === "sealed-letter")?.detail, "Mara hides it from the watchman.");
+assert.equal(secondState.characterPulse.find((character) => character.name.toLowerCase() === "mara")?.pulse, "She becomes more guarded.");
+assert.deepEqual(secondState.readerMemory, ["Mara is carrying a sealed letter.", "The watchman has noticed Mara."]);
+const prompt = buildStoryThreadPrompt({ title: "Test", author: "Author", start: 1, end: 2, total: 10, lang: "en", sourceText: "Mara accepts the sealed letter.", priorState: secondState });
+assert.match(prompt.system, /JSON only/);
+assert.match(prompt.system, /warm reading-companion recap/);
+assert.match(prompt.system, /2–3 connected paragraphs/);
+assert.match(prompt.system, /Đoạn này/);
+assert.match(prompt.user, /Current reading text/);
+const overlongSource = "A".repeat(STORY_THREAD_MAX_SOURCE_CHARS + 5000);
+const boundedSource = boundStoryThreadSource(overlongSource);
+assert.ok(boundedSource.length < overlongSource.length && boundedSource.includes("Middle of this reading range omitted"));
+
+// Boundary fixtures: Story must remain isolated from analytical enrichment.
+const routeSource = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
+const serverSource = readFileSync(new URL("../server.ts", import.meta.url), "utf8");
+assert.match(routeSource, /if \(book\.reading_experience !== "story"\)[\s\S]*INSERT INTO review_cards/);
+assert.match(routeSource, /result\.readingExperience === "story"\)[\s\S]*generateStoryThreadForLog[\s\S]*else[\s\S]*generateReadingLensForLog/);
+assert.match(routeSource, /boundStoryThreadSource\(log\.raw_text\)/);
+assert.match(routeSource, /NINE_ROUTER_STORY_THREAD_TIMEOUT_MS \|\| 180_000/);
+const storyThreadSource = readFileSync(new URL("../src/storyThread.ts", import.meta.url), "utf8");
+assert.match(storyThreadSource, /rl\.reading_round=\$2/);
+assert.match(routeSource, /reading_round=\$4/);
+assert.match(routeSource, /listStoryThreadAnalyses\(id, readingRound\)/);
+assert.match(routeSource, /reading_experience='analytical'/);
+assert.match(routeSource, /Story Thread books do not use Reading Lens/);
+assert.match(serverSource, /Story Thread books do not use Knowledge Maps/);
+const storyViewSource = readFileSync(new URL("../src/components/story/StoryThreadView.tsx", import.meta.url), "utf8");
+assert.match(storyViewSource, /fileType === "epub" \? "Chunks" : "Pages"/);
+assert.match(storyViewSource, /aria-label=\{`Retry Story recap for session \$\{log\.session\}`\}/);
+assert.match(storyViewSource, /RefreshCw/);
+const glossarySource = readFileSync(new URL("../src/components/ContextualGlossary.tsx", import.meta.url), "utf8");
+assert.match(glossarySource, /onPointerEnter=\{\(\) => setHoverOpen\(true\)\}/);
+assert.match(glossarySource, /onPointerLeave=\{\(\) => setHoverOpen\(false\)\}/);
+assert.match(glossarySource, /<button[\s\S]*?<Info aria-hidden="true"/);
+assert.match(glossarySource, /onClick=\{\(\) => setPinnedOpen\(\(value\) => !value\)\}/);
+assert.match(glossarySource, /role="tooltip"/);
+assert.match(glossarySource, /normal-case[\s\S]*?tracking-normal/);
+assert.match(glossarySource, /w-56[\s\S]*?text-\[10px\]/);
+assert.match(glossarySource, /export function resolveGlossaryLanguage/);
+assert.match(glossarySource, /event\.key === "Escape"/);
+assert.match(storyViewSource, /summaryLang: GlossaryLanguageSetting/);
+assert.match(storyViewSource, /resolveGlossaryLanguage\(summaryLang, latest\?\.analysis\.storyRecap \|\| ""\)/);
+assert.match(storyViewSource, /<GlossaryLabel term=\{glossaryStatus\[thread\.status\]\} language=\{glossaryLanguage\} \/>/);
+const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(detailSource, /<StoryThreadView[\s\S]*?summaryLang=\{book\.summary_lang\}/);
+
 console.log("STORY_THREAD_FIXTURES_OK");
