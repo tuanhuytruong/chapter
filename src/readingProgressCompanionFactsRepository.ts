@@ -14,9 +14,9 @@ export async function listReadingProgressFacts(bookId: string, round: number) {
   return (
     await query<FactRow>(
       `SELECT book_id,reading_round,log_id,source_hash,facts,output_language
-       FROM reading_progress_companion_facts
-       WHERE book_id=$1 AND reading_round=$2
-       ORDER BY created_at ASC,log_id ASC`,
+       FROM reading_progress_companion_facts f JOIN reading_log l ON l.id=f.log_id
+       WHERE f.book_id=$1 AND f.reading_round=$2
+       ORDER BY l.date ASC,l.session ASC,l.id ASC`,
       [bookId, round],
     )
   ).rows;

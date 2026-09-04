@@ -49,7 +49,8 @@ const synthesisPrompt = buildReadingProgressPrompt({
   facts: [item], language: "en", progressPct: 86, sessionCount: 45,
 });
 assert.match(synthesisPrompt, /FACT LEDGER/);
-assert.match(synthesisPrompt, /well into the book/);
+assert.match(synthesisPrompt, /NARRATIVE MAP/);
+assert.match(synthesisPrompt, /EARLY, MIDDLE, and LATEST/);
 assert.doesNotMatch(synthesisPrompt, /Only saved session text/);
 
 const vietnameseSource: ProgressSource = {
@@ -79,6 +80,10 @@ const card = readFileSync(new URL("../src/components/ReadingProgressCard.tsx", i
 assert.match(card, /ChevronRight/);
 assert.match(card, /ChevronDown/);
 assert.match(card, /Your reading so far/);
+assert.match(card, /Story so far/);
+assert.match(card, /Narrative arcs/);
+assert.match(card, /Threads at this point/);
+assert.match(card, /Turning points/);
 assert.match(card, /aria-expanded/);
 assert.doesNotMatch(card, /Expand" : "Collapse"\} reading thread/);
 const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");

@@ -12,7 +12,7 @@ export type ProgressSource = {
   text: string;
 };
 export type ProgressRef = Omit<ProgressSource, "text">;
-export type ProgressItem = { text: string; refs: ProgressRef[] };
+export type ProgressItem = { text: string; refs: ProgressRef[]; status?: "open" | "evolving" | "resolved" };
 export type ReadingProgressCompanion = {
   mainThread: ProgressItem;
   converging: ProgressItem[];
@@ -54,7 +54,8 @@ function itemParser(sources: ProgressSource[], textMax: number) {
       if (required) throw Error("missing cited required item");
       return null;
     }
-    return { text, refs };
+    const status = value?.status;
+    return status === "open" || status === "evolving" || status === "resolved" ? { text, refs, status } : { text, refs };
   };
 }
 
@@ -71,7 +72,7 @@ export function buildReadingProgressFactsPrompt({
   source: ProgressSource;
   language: "vi" | "en";
 }) {
-  return `Return ONLY strict JSON in ${language}. You extract compact evidence for a private spoiler-safe reading-progress companion. Use ONLY this single SAVED READING TEXT. Never use outside knowledge, the book title/author, Reading Lens, BookWiki, Story Thread, prior artifacts, future chapters, predictions, unseen events, or unsupported author intent. Return 1-4 durable facts that could help a later cumulative recap: events, changes, themes, questions, or resolutions actually present in this source. Every fact MUST have the exact supplied reference. Shape: {"facts":[{"text":"","refs":[{"logId":"${source.logId}","session":${source.session},"pageStart":${source.pageStart},"pageEnd":${source.pageEnd}}]}],"outputLanguage":"${language}"}. SOURCE: ${JSON.stringify(source)}`;
+  return `Return ONLY strict JSON in ${language}. You extract compact evidence for a private spoiler-safe reading-progress companion. Use ONLY this single SAVED READING TEXT. Never use outside knowledge, the book title/author, Reading Lens, BookWiki, Story Thread, prior artifacts, future chapters, predictions, unseen events, or unsupported author intent. Return 1-4 durable facts for a cumulative narrative map: developments, causal changes, relationships, stakes, themes, questions, or resolutions actually present in this source. Prefer what changed and why it matters, not isolated events. Every fact MUST have the exact supplied reference. Shape: {"facts":[{"text":"","refs":[{"logId":"${source.logId}","session":${source.session},"pageStart":${source.pageStart},"pageEnd":${source.pageEnd}}]}],"outputLanguage":"${language}"}. SOURCE: ${JSON.stringify(source)}`;
 }
 
 export function parseReadingProgressFacts(
@@ -87,21 +88,11 @@ export function parseReadingProgressFacts(
   return { facts, outputLanguage: language };
 }
 
-export function buildReadingProgressPrompt({
-  facts,
-  language,
-  progressPct,
-  sessionCount,
-}: {
-  facts: ProgressItem[];
-  language: "vi" | "en";
-  progressPct: number;
-  sessionCount: number;
-}) {
+export function buildReadingProgressPrompt({ facts, language, progressPct, sessionCount }: { facts: ProgressItem[]; language: "vi" | "en"; progressPct: number; sessionCount: number }) {
   const late = progressPct >= 75;
-  return `Return ONLY strict JSON in ${language}. You are a private spoiler-safe cumulative reading-progress companion. Use ONLY the supplied cited FACT LEDGER, which was extracted exclusively from reading sessions the reader has completed. Never use outside knowledge, Reading Lens, BookWiki, Story Thread, title/author knowledge, prior prose, future chapters, predictions, unseen events, or unsupported author intent. Every item MUST have 1-3 exact refs copied from the FACT LEDGER. Shape: {"mainThread":{"text":"","refs":[]},"converging":[],"openThreads":[],"carryForward":[],"outputLanguage":"${language}"}. mainThread required. ${late ? "The reader is well into the book: produce a concise but substantive accumulated recap with 3-5 converging items (turning points, themes, or resolved developments when evidence supports them), 1-4 open threads, and up to 3 carry-forward items. Do not invent an ending." : "Keep the recap concise: converging max 3; openThreads max 3; carryForward max 2."} The reader has completed ${sessionCount} sessions (${progressPct}% progress). FACT LEDGER: ${JSON.stringify(facts)}`;
+  const nearEnd = progressPct >= 90;
+  return `Return ONLY strict JSON in ${language}. You are a private spoiler-safe cumulative reading NARRATIVE MAP. Use ONLY the cited FACT LEDGER from completed sessions. Never use outside knowledge, Reading Lens, BookWiki, Story Thread, title/author knowledge, prior prose, future chapters, predictions, unseen events, or unsupported author intent. Every item MUST have 1-3 exact refs copied from the FACT LEDGER. Shape: {"mainThread":{"text":"","refs":[]},"converging":[],"openThreads":[],"carryForward":[],"outputLanguage":"${language}"}. mainThread is required: state opening premise, important changes, and WHERE THINGS STAND in completed pages. converging contains 3-6 narrative arcs: each explains context, development or turning point, and current status—not isolated events. openThreads contains 1-5 status-aware threads. Set status exactly "open", "evolving", or "resolved"; never call a resolved situation open. carryForward contains 2-5 turning points: causal changes, stakes, or consequences. ${late ? "The reader is well into the book: be substantive. Select evidence spanning EARLY, MIDDLE, and LATEST completed portions whenever supplied. Do not concentrate citations only in opening sessions. " : ""}${nearEnd ? "The reader is near the end but has NOT finished: give useful current state without inventing or implying the ending. " : ""}The reader has completed ${sessionCount} sessions (${progressPct}% progress). FACT LEDGER IN READING ORDER: ${JSON.stringify(facts)}`;
 }
-
 export function parseReadingProgressCompanion(
   raw: string,
   sources: ProgressSource[],

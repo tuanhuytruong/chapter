@@ -78,7 +78,7 @@ export interface ReadingRoundRow {
   final_page: number;
 }
 
-export interface ReadingProgressItem { text: string; refs: Array<{ logId: string; session: number; pageStart: number; pageEnd: number }>; }
+export interface ReadingProgressItem { text: string; refs: Array<{ logId: string; session: number; pageStart: number; pageEnd: number }>; status?: "open" | "evolving" | "resolved"; }
 export interface ReadingProgressCompanionRow { book_id: string; reading_round: number; schema_version: number; main_thread: ReadingProgressItem; converging: ReadingProgressItem[]; open_threads: ReadingProgressItem[]; carry_forward: ReadingProgressItem[]; output_language: "vi" | "en"; sessions_covered: number; last_log_id: string | null; last_log_date: string | null; last_log_session: number | null; source_revision: number; stale: boolean; generated_at: string; }
 
 export interface ReadingLensRow {

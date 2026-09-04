@@ -5,6 +5,7 @@ import {
   Loader2,
   RefreshCw,
   Route,
+  Info,
 } from "lucide-react";
 import type {
   ReadingProgressCompanionRow,
@@ -33,33 +34,10 @@ function Refs({
     </div>
   );
 }
-function Section({
-  title,
-  items,
-  onOpen,
-}: {
-  title: string;
-  items: ReadingProgressItem[];
-  onOpen: (id: string) => void;
-}) {
-  if (!items.length) return null;
-  return (
-    <div>
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">
-        {title}
-      </h3>
-      <div className="mt-2 space-y-3">
-        {items.map((item, index) => (
-          <div key={index}>
-            <p className="text-sm leading-relaxed text-natural-dark">
-              {item.text}
-            </p>
-            <Refs item={item} onOpen={onOpen} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+const GLOSSARY: Record<string, string> = { "Story so far": "The main story and where it stands in the pages you have read.", "Narrative arcs": "How a character, relationship, place, or theme has developed so far.", "Threads at this point": "Questions or tensions that are open, changing, or resolved in the pages you have read.", "Turning points": "Events that changed the stakes, direction, or relationships." };
+function Section({ title, items, onOpen }: { title: string; items: ReadingProgressItem[]; onOpen: (id: string) => void }) {
+  const [helpOpen, setHelpOpen] = useState(false); if (!items.length) return null;
+  return <div><div className="flex items-center gap-1.5"><h3 className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">{title}</h3>{GLOSSARY[title] && <button type="button" aria-label={`About ${title}`} aria-expanded={helpOpen} onClick={() => setHelpOpen(v => !v)} className="rounded p-1 text-natural-stone hover:text-natural-sage"><Info className="h-3.5 w-3.5" /></button>}</div>{helpOpen && <p className="mt-1 rounded-lg bg-white/70 px-2 py-1.5 text-xs leading-relaxed text-natural-stone">{GLOSSARY[title]}</p>}<div className="mt-2 space-y-3">{items.map((item, index) => <div key={index}><div className="flex items-start gap-2"><p className="flex-1 text-sm leading-relaxed text-natural-dark">{item.text}</p>{item.status && <span className="mt-0.5 rounded-full border border-natural-border bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-natural-sage">{item.status}</span>}</div><Refs item={item} onOpen={onOpen} /></div>)}</div></div>;
 }
 export default function ReadingProgressCard({
   companion,
@@ -121,11 +99,7 @@ export default function ReadingProgressCard({
               </button>
             ) : "Your reading so far"}
           </h2>
-          {companion?.stale && (
-            <p className="mt-1 text-xs leading-relaxed text-natural-clay">
-              A new reading session is ready. Refresh to continue the thread.
-            </p>
-          )}
+          {companion && <p className="mt-1 text-xs leading-relaxed text-natural-stone">{companion.stale ? `Updated through Session ${companion.last_log_session ?? "?"}; new saved sessions are not yet included.` : `Updated through Session ${companion.last_log_session ?? "?"} · ${companion.sessions_covered} saved sessions included.`}</p>}
           {!companion && canEdit && (
             <p className="mt-1 text-xs leading-relaxed text-natural-stone">
               Create a grounded thread from your saved reading text.
@@ -169,10 +143,10 @@ export default function ReadingProgressCard({
           id="reading-progress-content"
           className="mt-2 space-y-4 rounded-2xl border border-natural-border bg-natural-cream/70 p-4"
         >
-          <Section title="Main thread" items={[companion.main_thread]} onOpen={onOpenReadingSession} />
-          <Section title="Converging" items={companion.converging} onOpen={onOpenReadingSession} />
-          <Section title="Open threads" items={companion.open_threads} onOpen={onOpenReadingSession} />
-          <Section title="Carry forward" items={companion.carry_forward} onOpen={onOpenReadingSession} />
+          <Section title="Story so far" items={[companion.main_thread]} onOpen={onOpenReadingSession} />
+          <Section title="Narrative arcs" items={companion.converging} onOpen={onOpenReadingSession} />
+          <Section title="Threads at this point" items={companion.open_threads} onOpen={onOpenReadingSession} />
+          <Section title="Turning points" items={companion.carry_forward} onOpen={onOpenReadingSession} />
         </div>
       )}
     </section>
