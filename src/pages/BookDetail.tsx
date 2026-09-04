@@ -699,7 +699,7 @@ export default function BookDetail() {
       setToast({ type: "err", msg: e.message });
       throw e;
     } finally {
-      setStoryRetryingLogId(null);
+      setStoryRetryingLogId((current) => current === logId ? null : current);
     }
   };
 

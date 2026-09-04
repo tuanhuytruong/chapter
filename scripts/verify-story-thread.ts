@@ -39,6 +39,9 @@ assert.match(prompt.system, /JSON only/);
 assert.match(prompt.system, /warm reading-companion recap/);
 assert.match(prompt.system, /2–3 connected paragraphs/);
 assert.match(prompt.system, /Đoạn này/);
+const vietnameseAutoPrompt = buildStoryThreadPrompt({ title: "Kiểm thử", author: "Tác giả", start: 1, end: 2, total: 10, lang: "auto", sourceText: "Ove đứng trước cửa và nhớ về công việc cũ.", priorState: null });
+assert.match(vietnameseAutoPrompt.system, /respond entirely in Vietnamese/);
+assert.match(prompt.system, /never output generic boilerplate/);
 assert.match(prompt.user, /Current reading text/);
 const overlongSource = "A".repeat(STORY_THREAD_MAX_SOURCE_CHARS + 5000);
 const boundedSource = boundStoryThreadSource(overlongSource);
@@ -83,5 +86,7 @@ assert.doesNotMatch(characterSource, /from "\.\/db/);
 assert.match(characterSource, /characterRelationships/);
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
 assert.match(detailSource, /<StoryThreadView[\s\S]*?summaryLang=\{book\.summary_lang\}/);
+assert.match(detailSource, /setStoryRetryingLogId\(\(current\) => current === logId \? null : current\)/);
+assert.match(storyViewSource, /Grounded strictly in current text/);
 
 console.log("STORY_THREAD_FIXTURES_OK");
