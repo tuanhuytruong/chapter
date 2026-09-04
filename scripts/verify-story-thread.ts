@@ -74,7 +74,13 @@ assert.match(glossarySource, /export function resolveGlossaryLanguage/);
 assert.match(glossarySource, /event\.key === "Escape"/);
 assert.match(storyViewSource, /summaryLang: GlossaryLanguageSetting/);
 assert.match(storyViewSource, /resolveGlossaryLanguage\(summaryLang, latest\?\.analysis\.storyRecap \|\| ""\)/);
-assert.match(storyViewSource, /<GlossaryLabel term=\{glossaryStatus\[thread\.status\]\} language=\{glossaryLanguage\} \/>/);
+assert.match(storyViewSource, /<GlossaryLabel term=\{glossaryStatus\[thread\.status\]\} language=\{glossaryLanguage\}\s*\/>/);
+assert.match(storyViewSource, /Character Storylines/);
+assert.match(storyViewSource, /aggregateCharacterStorylines/);
+assert.match(storyViewSource, /Relationship timeline/);
+const characterSource = readFileSync(new URL("../src/storyCharacterStorylines.ts", import.meta.url), "utf8");
+assert.doesNotMatch(characterSource, /from "\.\/db/);
+assert.match(characterSource, /characterRelationships/);
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
 assert.match(detailSource, /<StoryThreadView[\s\S]*?summaryLang=\{book\.summary_lang\}/);
 

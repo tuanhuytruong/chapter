@@ -103,6 +103,8 @@ export interface StoryThreadAnalysis {
     detail: string;
   }>;
   characterPulse: Array<{ name: string; pulse: string }>;
+  characterArcs?: Array<{ name: string; development: string }>;
+  characterRelationships?: Array<{ people: string[]; detail: string }>;
   readerMemory: string[];
   confidenceNotes: string[];
 }

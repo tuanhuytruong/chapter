@@ -2,11 +2,16 @@ import { query } from "./db.js";
 
 export type StoryThread = { id: string; label: string; status: "open" | "escalating" | "resolved" | "uncertain"; detail: string };
 export type StoryCharacter = { name: string; pulse: string };
+export type StoryCharacterArc = { name: string; development: string };
+export type StoryRelationship = { people: string[]; detail: string };
 export type StoryAnalysis = {
   storyRecap: string;
   changedEvents: string[];
   threads: StoryThread[];
   characterPulse: StoryCharacter[];
+  // Optional so analyses created before Character Storylines remain readable.
+  characterArcs?: StoryCharacterArc[];
+  characterRelationships?: StoryRelationship[];
   readerMemory: string[];
   confidenceNotes: string[];
 };
@@ -26,6 +31,7 @@ export function boundStoryThreadSource(sourceText: string): string {
   return `${text.slice(0, first)}\n\n[Middle of this reading range omitted for provider length; do not infer events from it.]\n\n${text.slice(-last)}`;
 }
 const strings = (value: unknown, max: number): string[] => Array.isArray(value) ? value.map((item) => clean(item)).filter(Boolean).slice(0, max) : [];
+const objects = (value: unknown, max: number): Record<string, unknown>[] => Array.isArray(value) ? value.slice(0, max).map((item) => item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {}) : [];
 const status = (value: unknown): StoryThread["status"] => ["open", "escalating", "resolved", "uncertain"].includes(String(value)) ? value as StoryThread["status"] : "uncertain";
 
 function objectJson(raw: string): Record<string, unknown> {
@@ -49,13 +55,15 @@ export function parseStoryThreadAnalysis(raw: string): StoryAnalysis {
     const row = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {};
     return { name: clean(row.name, "Unnamed character"), pulse: clean(row.pulse, "Not established in this reading.") };
   }) : [];
-  return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), changedEvents: strings(data.changedEvents, 8), threads, characterPulse, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6) };
+  const characterArcs = objects(data.characterArcs, 8).map((row) => ({ name: clean(row.name), development: clean(row.development) })).filter((row) => row.name && row.development);
+  const characterRelationships = objects(data.characterRelationships, 8).map((row) => ({ people: strings(row.people, 4), detail: clean(row.detail) })).filter((row) => row.people.length >= 2 && row.detail);
+  return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), changedEvents: strings(data.changedEvents, 8), threads, characterPulse, characterArcs, characterRelationships, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6) };
 }
 
 export function buildStoryThreadPrompt(input: { title: string; author: string; start: number; end: number; total: number; lang: "auto" | "vi" | "en"; sourceText: string; priorState: StoryState | null }): { system: string; user: string } {
   const language = input.lang === "vi" ? "Respond entirely in Vietnamese." : input.lang === "en" ? "Respond entirely in English." : "Match the predominant language of the current reading.";
   return {
-    system: `You are Story Thread, a continuity companion for fiction. Ground every current event, character change, and quote-like detail in CURRENT READING TEXT. Prior state is only reader memory: preserve it only when compatible, never treat it as new evidence. Do not invent names, motives, events, chronology, or spoilers. Mark uncertainty in confidenceNotes. For storyRecap, write a warm reading-companion recap, not an event ledger: normally use 2–3 connected paragraphs when the source has enough material; enter through a concrete scene, movement, tension, gesture, or grounded emotional shift from the current reading; then carry cause → response → consequence with natural transitions. Never begin with meta labels such as “This section”, “This passage”, “In this part”, “Đoạn này”, “Phần này”, or “Tóm lại”. Do not pad a genuinely short source, invent interiority, or repeat the whole book. ${language} Return JSON only with exactly these keys: {"storyRecap":"","changedEvents":[""],"threads":[{"id":"stable-short-id","label":"","status":"open|escalating|resolved|uncertain","detail":""}],"characterPulse":[{"name":"","pulse":""}],"readerMemory":[""],"confidenceNotes":[""]}. Lists must be concise; threads/characters max 8, events max 8, memory max 6.`,
+    system: `You are Story Thread, a continuity companion for fiction. Ground every current event, character change, and quote-like detail in CURRENT READING TEXT. Prior state is only reader memory: preserve it only when compatible, never treat it as new evidence. Do not invent names, motives, events, chronology, or spoilers. Mark uncertainty in confidenceNotes. For storyRecap, write a warm reading-companion recap, not an event ledger: normally use 2–3 connected paragraphs when the source has enough material; enter through a concrete scene, movement, tension, gesture, or grounded emotional shift from the current reading; then carry cause → response → consequence with natural transitions. Never begin with meta labels such as “This section”, “This passage”, “In this part”, “Đoạn này”, “Phần này”, or “Tóm lại”. Do not pad a genuinely short source, invent interiority, or repeat the whole book. characterArcs records only an observed development for a named character in this reading. characterRelationships records only an observed state or change between 2–4 named characters. ${language} Return JSON only with exactly these keys: {"storyRecap":"","changedEvents":[""],"threads":[{"id":"stable-short-id","label":"","status":"open|escalating|resolved|uncertain","detail":""}],"characterPulse":[{"name":"","pulse":""}],"characterArcs":[{"name":"","development":""}],"characterRelationships":[{"people":["",""],"detail":""}],"readerMemory":[""],"confidenceNotes":[""]}. Lists must be concise; threads/characters/arcs/relationships max 8, events max 8, memory max 6.`,
     user: `Book: ${input.title} by ${input.author}\nReading range: ${input.start}–${input.end} of ${input.total}\n\nPrior persisted story state (may be empty):\n${JSON.stringify(input.priorState || { threads: [], characterPulse: [], readerMemory: [] })}\n\nCurrent reading text:\n${input.sourceText}`,
   };
 }
