@@ -34,10 +34,43 @@ function Refs({
     </div>
   );
 }
-const GLOSSARY: Record<string, string> = { "Story so far": "The main story and where it stands in the pages you have read.", "Narrative arcs": "How a character, relationship, place, or theme has developed so far.", "Threads at this point": "Questions or tensions that are open, changing, or resolved in the pages you have read.", "Turning points": "Events that changed the stakes, direction, or relationships." };
+const GLOSSARY: Record<string, string> = {
+  "Story so far": "The main story and where it stands in the pages you have read.",
+  "Narrative arcs": "How a character, relationship, place, or theme has developed so far.",
+  "Threads at this point": "Questions or tensions that are open, changing, or resolved in the pages you have read.",
+  "Turning points": "Events that changed the stakes, direction, or relationships.",
+};
 function Section({ title, items, onOpen }: { title: string; items: ReadingProgressItem[]; onOpen: (id: string) => void }) {
-  const [helpOpen, setHelpOpen] = useState(false); if (!items.length) return null;
-  return <div><div className="flex items-center gap-1.5"><h3 className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">{title}</h3>{GLOSSARY[title] && <button type="button" aria-label={`About ${title}`} aria-expanded={helpOpen} onClick={() => setHelpOpen(v => !v)} className="rounded p-1 text-natural-stone hover:text-natural-sage"><Info className="h-3.5 w-3.5" /></button>}</div>{helpOpen && <p className="mt-1 rounded-lg bg-white/70 px-2 py-1.5 text-xs leading-relaxed text-natural-stone">{GLOSSARY[title]}</p>}<div className="mt-2 space-y-3">{items.map((item, index) => <div key={index}><div className="flex items-start gap-2"><p className="flex-1 text-sm leading-relaxed text-natural-dark">{item.text}</p>{item.status && <span className="mt-0.5 rounded-full border border-natural-border bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-natural-sage">{item.status}</span>}</div><Refs item={item} onOpen={onOpen} /></div>)}</div></div>;
+  if (!items.length) return null;
+  const tooltipId = `companion-help-${title.replace(/\s/g, "-")}`;
+  return (
+    <div>
+      <div className="flex items-center gap-1.5">
+        <h3 className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">{title}</h3>
+        {GLOSSARY[title] && (
+          <span className="group relative inline-flex">
+            <button type="button" aria-label={`About ${title}`} aria-describedby={tooltipId} className="rounded p-1 text-natural-stone hover:text-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45">
+              <Info className="h-3.5 w-3.5" />
+            </button>
+            <span id={tooltipId} role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg border border-natural-border bg-white px-3 py-2 text-left text-xs font-normal normal-case leading-relaxed text-natural-stone opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              {GLOSSARY[title]}
+            </span>
+          </span>
+        )}
+      </div>
+      <div className="mt-2 space-y-3">
+        {items.map((item, index) => (
+          <div key={index}>
+            <div className="flex items-start gap-2">
+              <p className="flex-1 text-sm leading-relaxed text-natural-dark">{item.text}</p>
+              {item.status && <span className="mt-0.5 rounded-full border border-natural-border bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-natural-sage">{item.status}</span>}
+            </div>
+            <Refs item={item} onOpen={onOpen} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 export default function ReadingProgressCard({
   companion,

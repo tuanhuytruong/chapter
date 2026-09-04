@@ -84,6 +84,8 @@ assert.match(card, /Story so far/);
 assert.match(card, /Narrative arcs/);
 assert.match(card, /Threads at this point/);
 assert.match(card, /Turning points/);
+assert.match(card, /group-hover:opacity-100/);
+assert.match(card, /role="tooltip"/);
 assert.match(card, /aria-expanded/);
 assert.doesNotMatch(card, /Expand" : "Collapse"\} reading thread/);
 const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
