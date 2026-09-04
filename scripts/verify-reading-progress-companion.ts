@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  buildReadingProgressFactsPrompt,
   buildReadingProgressPrompt,
   parseReadingProgressCompanion,
+  parseReadingProgressFacts,
   resolveReadingProgressLanguage,
   validateReadingProgressLanguage,
   type ProgressSource,
 } from "../src/readingProgressCompanion.js";
+
 const source: ProgressSource = {
   logId: "11111111-1111-4111-8111-111111111111",
   session: 1,
@@ -26,18 +29,29 @@ const en = {
   outputLanguage: "en" as const,
 };
 assert.equal(
-  parseReadingProgressCompanion(JSON.stringify(en), [source], "en").mainThread
-    .text,
+  parseReadingProgressCompanion(JSON.stringify(en), [source], "en").mainThread.text,
   item.text,
 );
 assert.throws(() => parseReadingProgressCompanion("{", [source], "en"));
-assert.throws(() =>
-  parseReadingProgressCompanion(
-    JSON.stringify({ ...en, outputLanguage: "vi" }),
-    [source],
-    "en",
-  ),
-);
+assert.throws(() => parseReadingProgressCompanion(
+  JSON.stringify({ ...en, outputLanguage: "vi" }), [source], "en",
+));
+assert.throws(() => parseReadingProgressCompanion(
+  JSON.stringify({ ...en, mainThread: { ...item, refs: [{ ...item.refs[0], pageEnd: 9 }] } }),
+  [source], "en",
+));
+
+const facts = { facts: [item], outputLanguage: "en" as const };
+assert.equal(parseReadingProgressFacts(JSON.stringify(facts), source, "en").facts.length, 1);
+assert.throws(() => parseReadingProgressFacts(JSON.stringify({ ...facts, facts: [{ ...item, refs: [] }] }), source, "en"));
+assert.match(buildReadingProgressFactsPrompt({ source, language: "en" }), /single SAVED READING TEXT/);
+const synthesisPrompt = buildReadingProgressPrompt({
+  facts: [item], language: "en", progressPct: 86, sessionCount: 45,
+});
+assert.match(synthesisPrompt, /FACT LEDGER/);
+assert.match(synthesisPrompt, /well into the book/);
+assert.doesNotMatch(synthesisPrompt, /Only saved session text/);
+
 const vietnameseSource: ProgressSource = {
   ...source,
   text: "Đây là phần đọc tiếng Việt với những ý chính và lập luận rõ ràng trong cuốn sách này.",
@@ -53,29 +67,22 @@ const vi = {
   },
   outputLanguage: "vi" as const,
 };
-assert.equal(
-  validateReadingProgressLanguage(JSON.stringify(vi), "vi").valid,
-  true,
-);
-assert.equal(
-  validateReadingProgressLanguage(JSON.stringify(en), "vi").valid,
-  false,
-);
-assert.match(
-  buildReadingProgressPrompt({ sources: [source], language: "en" }),
-  /Only saved session text/,
-);
-const route = readFileSync(
-  new URL("../src/routes/books.ts", import.meta.url),
-  "utf8",
-);
-assert.match(route, /resolveReadingProgressLanguage/);
-assert.match(route, /validateReadingProgressLanguage/);
-const card = readFileSync(
-  new URL("../src/components/ReadingProgressCard.tsx", import.meta.url),
-  "utf8",
-);
+assert.equal(validateReadingProgressLanguage(JSON.stringify(vi), "vi").valid, true);
+assert.equal(validateReadingProgressLanguage(JSON.stringify(en), "vi").valid, false);
+
+const route = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
+assert.match(route, /readingProgressCompanionFactsRepository/);
+assert.match(route, /buildReadingProgressFactsPrompt/);
+assert.match(route, /pendingSources/);
+assert.match(route, /prior\?\.output_language/);
+const card = readFileSync(new URL("../src/components/ReadingProgressCard.tsx", import.meta.url), "utf8");
+assert.match(card, /ChevronRight/);
+assert.match(card, /ChevronDown/);
+assert.match(card, /Your reading so far/);
 assert.match(card, /aria-expanded/);
-assert.match(card, /expanded \?/);
-assert.match(card, /reading thread/);
+assert.doesNotMatch(card, /Expand" : "Collapse"\} reading thread/);
+const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(detail, /pct >= 95/);
+assert.match(detail, /book\.can_edit && pct >= 95/);
+assert.doesNotMatch(detail, /pct >= 85/);
 console.log("READING_PROGRESS_COMPANION_FIXTURES_OK");

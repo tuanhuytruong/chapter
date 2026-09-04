@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import crypto from "node:crypto";
 import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { query, withClient, withTransaction } from "../db.js";
 import {
@@ -37,12 +38,19 @@ import {
   upsertReadingProgressCompanion,
 } from "../readingProgressCompanionRepository.js";
 import {
+  buildReadingProgressFactsPrompt,
   buildReadingProgressPrompt,
+  parseReadingProgressFacts,
   parseReadingProgressCompanion,
   resolveReadingProgressLanguage,
   validateReadingProgressLanguage,
+  type ProgressItem,
   type ProgressSource,
 } from "../readingProgressCompanion.js";
+import {
+  listReadingProgressFacts,
+  upsertReadingProgressFacts,
+} from "../readingProgressCompanionFactsRepository.js";
 import {
   getTelegramConfig,
   sendTelegramMessage,
@@ -1267,89 +1275,114 @@ booksRouter.post(
     try {
       const book = (
         await query<any>(
-          "SELECT current_reading_round,status,summary_lang FROM books WHERE id=$1",
+          "SELECT current_reading_round,status,summary_lang,current_page,total_pages FROM books WHERE id=$1",
           [id],
         )
       ).rows[0];
       if (!book) return res.status(404).json({ error: "book not found" });
       if (book.status !== "active")
-        return res
-          .status(409)
-          .json({
-            error:
-              "reading progress cannot be refreshed while this book is not active",
-          });
+        return res.status(409).json({
+          error: "reading progress cannot be refreshed while this book is not active",
+        });
       const round = book.current_reading_round;
       const { rows } = await query<any>(
-        `SELECT id,date,session,page_start,page_end,raw_text FROM reading_log WHERE book_id=$1 AND reading_round=$2 AND raw_text IS NOT NULL AND btrim(raw_text) <> '' ORDER BY date ASC,session ASC,id ASC`,
+        `SELECT id,date,session,page_start,page_end,raw_text FROM reading_log
+         WHERE book_id=$1 AND reading_round=$2 AND raw_text IS NOT NULL AND btrim(raw_text) <> ''
+         ORDER BY date ASC,session ASC,id ASC`,
         [id, round],
       );
       if (!rows.length)
-        return res
-          .status(409)
-          .json({
-            error: "at least one saved session with source text is required",
-          });
-      const prior = await getReadingProgressCompanion(id, round);
-      const last = rows.at(-1);
-      if (
-        prior &&
-        !prior.stale &&
-        prior.last_log_id === last.id &&
-        prior.last_log_date === last.date &&
-        prior.last_log_session === last.session
-      )
-        return res.json(prior);
-      const sources: ProgressSource[] = rows.map((r: any) => ({
-        logId: r.id,
-        session: r.session,
-        pageStart: r.page_start,
-        pageEnd: r.page_end,
-        text: r.raw_text,
+        return res.status(409).json({
+          error: "at least one saved session with source text is required",
+        });
+      const sources: ProgressSource[] = rows.map((row: any) => ({
+        logId: row.id,
+        session: row.session,
+        pageStart: row.page_start,
+        pageEnd: row.page_end,
+        text: row.raw_text,
       }));
-      const language = resolveReadingProgressLanguage(
-        book.summary_lang,
-        sources,
+      const prior = await getReadingProgressCompanion(id, round);
+      const savedFacts = await listReadingProgressFacts(id, round);
+      const factsByLogId = new Map(savedFacts.map((fact) => [fact.log_id, fact]));
+      const pendingSources = sources.filter((source) =>
+        factsByLogId.get(source.logId)?.source_hash !==
+        crypto.createHash("sha256").update(source.text).digest("hex"),
       );
-      const prompt = buildReadingProgressPrompt({ sources, language });
+      // Resolve auto language from raw text only while building an empty ledger.
+      // Later refreshes reuse persisted output language and never concatenate the
+      // entire reading history merely to detect language.
+      const language = book.summary_lang === "vi" || book.summary_lang === "en"
+        ? book.summary_lang
+        : prior?.output_language || savedFacts[0]?.output_language ||
+          resolveReadingProgressLanguage("auto", pendingSources);
+      const last = rows.at(-1)!;
+      // A fresh rendered artifact with matching source coverage is a true cache hit:
+      // no historical raw text is sent to the model again.
+      if (!pendingSources.length && prior && !prior.stale &&
+        prior.last_log_id === last.id && prior.last_log_date === last.date &&
+        prior.last_log_session === last.session)
+        return res.json(prior);
+
+      // Extract compact facts only for sessions that are new or whose saved text changed.
+      // The initial rollout is deliberately bounded to four concurrent provider calls.
+      for (let offset = 0; offset < pendingSources.length; offset += 4) {
+        await Promise.all(pendingSources.slice(offset, offset + 4).map(async (source) => {
+          const prompt = buildReadingProgressFactsPrompt({ source, language });
+          let raw = await callJsonLLM(
+            "You create only grounded, cited reading-progress fact JSON.", prompt, 0.2,
+          );
+          let validation = validateReadingProgressLanguage(raw, language);
+          if (!validation.valid) {
+            raw = await callJsonLLM(
+              "You create only grounded, cited reading-progress fact JSON.",
+              `${prompt}\n\nYour prior JSON used the wrong prose language. Regenerate the entire JSON in the required language; keep exact refs and do not explain the correction.`, 0.1,
+            );
+            validation = validateReadingProgressLanguage(raw, language);
+            if (!validation.valid)
+              throw Error(`reading progress facts did not satisfy required ${language} language (${validation.mismatch})`);
+          }
+          const data = parseReadingProgressFacts(raw, source, language);
+          await upsertReadingProgressFacts(
+            id, round, source.logId,
+            crypto.createHash("sha256").update(source.text).digest("hex"),
+            data.facts, data.outputLanguage,
+          );
+        }));
+      }
+      const factRows = pendingSources.length
+        ? await listReadingProgressFacts(id, round)
+        : savedFacts;
+      const factSources: ProgressSource[] = sources.map((source) => ({ ...source, text: "" }));
+      const facts: ProgressItem[] = factRows.flatMap((row) => Array.isArray(row.facts) ? row.facts : []);
+      if (!facts.length) throw Error("no grounded reading progress facts are available");
+      const progressPct = book.total_pages > 0
+        ? Math.min(100, Math.round((Number(book.current_page) / Number(book.total_pages)) * 100))
+        : 0;
+      const prompt = buildReadingProgressPrompt({
+        facts, language, progressPct, sessionCount: rows.length,
+      });
       let raw = await callJsonLLM(
-        "You create only grounded, cited reading-progress JSON.",
-        prompt,
-        0.2,
+        "You create only grounded, cited reading-progress JSON.", prompt, 0.2,
       );
       let validation = validateReadingProgressLanguage(raw, language);
       if (!validation.valid) {
         raw = await callJsonLLM(
           "You create only grounded, cited reading-progress JSON.",
-          `${prompt}
-
-Your prior JSON used the wrong prose language. Regenerate the entire JSON in the required language; keep exact refs and do not explain the correction.`,
-          0.1,
+          `${prompt}\n\nYour prior JSON used the wrong prose language. Regenerate the entire JSON in the required language; keep exact refs and do not explain the correction.`, 0.1,
         );
         validation = validateReadingProgressLanguage(raw, language);
         if (!validation.valid)
-          throw Error(
-            `reading progress output did not satisfy required ${language} language (${validation.mismatch})`,
-          );
+          throw Error(`reading progress output did not satisfy required ${language} language (${validation.mismatch})`);
       }
-      const data = parseReadingProgressCompanion(raw, sources, language);
-      res.json(
-        await upsertReadingProgressCompanion(
-          id,
-          round,
-          data,
-          rows.length,
-          { logId: last.id, date: last.date, session: last.session },
-          (prior?.source_revision || 0) + 1,
-        ),
-      );
+      const data = parseReadingProgressCompanion(raw, factSources, language);
+      res.json(await upsertReadingProgressCompanion(
+        id, round, data, rows.length,
+        { logId: last.id, date: last.date, session: last.session },
+        (prior?.source_revision || 0) + 1,
+      ));
     } catch (e: any) {
-      res
-        .status(500)
-        .json({
-          error: "reading progress generation failed",
-          detail: e.message,
-        });
+      res.status(500).json({ error: "reading progress generation failed", detail: e.message });
     }
   },
 );

@@ -697,7 +697,10 @@ export default function BookDetail() {
     if (!id) return;
     setReadingProgressLoading(true);
     try { setReadingProgress(await api.refreshReadingProgress(id)); }
-    catch (e: any) { setToast({ type: "err", msg: e.message }); }
+    catch (e: any) {
+      setToast({ type: "err", msg: e.message });
+      throw e;
+    }
     finally { setReadingProgressLoading(false); }
   };
 
@@ -874,12 +877,12 @@ export default function BookDetail() {
                     {advancing ? "Reading…" : "Read now"}
                   </button>
                 </div>
-                {pct >= 85 && book.status === "active" && (
+                {book.can_edit && pct >= 95 && book.status === "active" && (
                   <button
                     onClick={markFinished}
-                    className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-natural-sage-dark cursor-pointer"
+                    className="inline-flex min-h-11 self-end items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-natural-sage underline-offset-4 hover:bg-natural-sage/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 cursor-pointer"
                   >
-                    <CheckCircle className="w-3.5 h-3.5" /> Mark Finished
+                    <CheckCircle className="w-3.5 h-3.5" /> Mark finished
                   </button>
                 )}
               </>

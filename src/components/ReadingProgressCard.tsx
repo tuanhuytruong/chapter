@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Loader2,
   RefreshCw,
   Route,
@@ -83,22 +83,16 @@ export default function ReadingProgressCard({
   onOpenReadingSession: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [seenId, setSeenId] = useState<string | null>(null);
-  useEffect(() => {
-    const id = companion
-      ? `${companion.source_revision}:${companion.generated_at}`
-      : null;
-    if (id !== seenId) {
-      setSeenId(id);
-      setExpanded(false);
-    }
-  }, [companion?.source_revision, companion?.generated_at, seenId]);
   if (!logCount) return null;
   const paused = bookStatus !== "active";
   const action = companion ? "Refresh reading thread" : "Create reading thread";
   const refresh = async () => {
-    await onRefresh();
-    setExpanded(true);
+    try {
+      await onRefresh();
+      setExpanded(true);
+    } catch {
+      // The page owns the toast. Keep the prior disclosure state/content intact.
+    }
   };
   return (
     <section
@@ -113,7 +107,19 @@ export default function ReadingProgressCard({
             {readingRound}
           </p>
           <h2 className="mt-1 text-base font-bold text-natural-dark">
-            Your reading so far
+            {companion ? (
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-controls="reading-progress-content"
+                aria-label={`${expanded ? "Collapse" : "Expand"} your reading so far`}
+                onClick={() => setExpanded((value) => !value)}
+                className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-left hover:text-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45"
+              >
+                {expanded ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                <span>Your reading so far</span>
+              </button>
+            ) : "Your reading so far"}
           </h2>
           {companion?.stale && (
             <p className="mt-1 text-xs leading-relaxed text-natural-clay">
@@ -158,50 +164,16 @@ export default function ReadingProgressCard({
           A reading thread will appear once the book owner creates it.
         </p>
       )}
-      {companion && (
-        <>
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls="reading-progress-content"
-            onClick={() => setExpanded((value) => !value)}
-            className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-natural-sage hover:text-natural-dark"
-          >
-            {expanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-            {expanded ? "Collapse" : "Expand"} reading thread
-          </button>
-          {expanded && (
-            <div
-              id="reading-progress-content"
-              className="mt-2 space-y-4 rounded-2xl border border-natural-border bg-natural-cream/70 p-4"
-            >
-              <Section
-                title="Main thread"
-                items={[companion.main_thread]}
-                onOpen={onOpenReadingSession}
-              />
-              <Section
-                title="Converging"
-                items={companion.converging}
-                onOpen={onOpenReadingSession}
-              />
-              <Section
-                title="Open threads"
-                items={companion.open_threads}
-                onOpen={onOpenReadingSession}
-              />
-              <Section
-                title="Carry forward"
-                items={companion.carry_forward}
-                onOpen={onOpenReadingSession}
-              />
-            </div>
-          )}
-        </>
+      {companion && expanded && (
+        <div
+          id="reading-progress-content"
+          className="mt-2 space-y-4 rounded-2xl border border-natural-border bg-natural-cream/70 p-4"
+        >
+          <Section title="Main thread" items={[companion.main_thread]} onOpen={onOpenReadingSession} />
+          <Section title="Converging" items={companion.converging} onOpen={onOpenReadingSession} />
+          <Section title="Open threads" items={companion.open_threads} onOpen={onOpenReadingSession} />
+          <Section title="Carry forward" items={companion.carry_forward} onOpen={onOpenReadingSession} />
+        </div>
       )}
     </section>
   );
