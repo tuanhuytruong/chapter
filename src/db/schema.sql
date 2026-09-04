@@ -426,6 +426,10 @@ CREATE TABLE IF NOT EXISTS chapter.story_thread_analyses (
 CREATE INDEX IF NOT EXISTS idx_story_thread_analyses_book_generated
   ON chapter.story_thread_analyses (book_id, generated_at ASC);
 
+CREATE TABLE IF NOT EXISTS chapter.story_thread_jobs (
+ log_id UUID PRIMARY KEY REFERENCES chapter.reading_log(id) ON DELETE CASCADE, book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE, reading_round INTEGER NOT NULL, status TEXT NOT NULL CHECK (status IN ('generating','ready','failed')), attempt_count INTEGER NOT NULL DEFAULT 0, error_message TEXT, started_at TIMESTAMPTZ NOT NULL DEFAULT now(), completed_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS idx_story_thread_jobs_book_round ON chapter.story_thread_jobs (book_id, reading_round, status);
+
 CREATE TABLE IF NOT EXISTS chapter.story_state_snapshots (
   book_id UUID PRIMARY KEY REFERENCES chapter.books(id) ON DELETE CASCADE,
   reading_round INT NOT NULL DEFAULT 1,

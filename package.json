@@ -23,7 +23,7 @@
     "verify:membership-cache": "tsx scripts/verify-membership-cache.ts",
     "verify:loading-states": "tsx scripts/verify-loading-states.ts",
     "verify:upgrade-prompts": "tsx scripts/verify-upgrade-prompts.ts",
-    "verify:story-thread": "tsx scripts/verify-story-thread.ts",
+    "verify:story-thread": "tsx scripts/verify-story-thread.ts && tsx scripts/verify-library-navigation.ts",
     "verify:onboarding": "tsx scripts/verify-onboarding.ts",
     "verify:ai-reader": "tsx scripts/verify-ai-reader.ts",
     "verify:ai-reader-typography": "tsx scripts/verify-ai-reader-typography.ts",

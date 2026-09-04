@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const card = readFileSync(new URL("../src/components/BookCard.tsx", import.meta.url), "utf8");
+const library = readFileSync(new URL("../src/pages/Library.tsx", import.meta.url), "utf8");
+const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(card, /useLocation/);
+assert.match(card, /returnTo: `\$\{location.pathname\}\$\{location.search\}`/);
+assert.match(library, /useSearchParams/);
+assert.match(library, /params.set\('scope', state.scope\)/);
+assert.match(library, /params.set\('filter', state.filter\)/);
+assert.match(library, /params.set\('sort', state.sort\)/);
+assert.match(library, /params.set\('q', state.q\)/);
+assert.match(detail, /useLocation/);
+assert.match(detail, /location.state\?\.returnTo/);
+assert.match(detail, /startsWith\("\/\?"\)/);
+assert.match(detail, /\/?scope=mine&filter=active&sort=recent/);
+assert.doesNotMatch(detail, /navigate\(-1\)/);
+console.log("LIBRARY_NAVIGATION_FIXTURES_OK");

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Flame,
   BookOpen,
@@ -145,6 +145,8 @@ function ReadingLensSynthesis({ text }: { text: string }) {
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = typeof location.state?.returnTo === "string" && location.state.returnTo.startsWith("/?") ? location.state.returnTo : "/?scope=mine&filter=active&sort=recent";
   const [book, setBook] = useState<BookRow | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [markers, setMarkers] = useState<ReadingMarkerRow[]>([]);
@@ -303,6 +305,12 @@ export default function BookDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!id || !book || book.reading_experience !== "story" || !storyThread.some((item) => item.storyStatus === "generating")) return;
+    const timer = window.setInterval(() => { void api.getStoryThread(id, selectedRound || undefined).then(setStoryThread).catch(() => undefined); }, 2500);
+    return () => window.clearInterval(timer);
+  }, [id, book, selectedRound, storyThread]);
 
   // Return once to the exact Book Detail position that opened Pricing.
   useEffect(() => {
@@ -578,7 +586,7 @@ export default function BookDetail() {
       <div className="text-center p-16 text-natural-stone font-sans">
         {missing ? "Book not found." : "This book could not be loaded."}{" "}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(returnTo)}
           className="text-natural-sage underline"
         >
           Back to library
@@ -748,7 +756,7 @@ export default function BookDetail() {
     <div className="space-y-6 font-sans">
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(returnTo)}
           className="flex items-center gap-1 text-xs text-natural-stone hover:text-natural-dark"
         >
           <ArrowLeft className="w-4 h-4" /> Library

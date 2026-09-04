@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, BookOpen, Search, ChevronDown, ChevronUp, ListOrdered, Play, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow } from '../types';
@@ -28,13 +29,18 @@ const SORTS: { id: Sort; label: string }[] = [
 ];
 
 export default function Library() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [books, setBooks] = useState<BookRow[]>([]);
-  const [scope, setScope] = useState<'mine' | 'all'>('mine');
+  const scope = searchParams.get('scope') === 'all' ? 'all' : 'mine';
   const [streaks, setStreaks] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<Filter>('active');
-  const [sort, setSort] = useState<Sort>('recent');
-  const [search, setSearch] = useState('');
+  const filter = (FILTERS.some((item) => item.id === searchParams.get('filter')) ? searchParams.get('filter') : 'active') as Filter;
+  const sort = (SORTS.some((item) => item.id === searchParams.get('sort')) ? searchParams.get('sort') : 'recent') as Sort;
+  const search = searchParams.get('q') || '';
+  const setBrowse = (next: Partial<{ scope: 'mine' | 'all'; filter: Filter; sort: Sort; q: string }>) => { const params = new URLSearchParams(searchParams); const state = { scope, filter, sort, q: search, ...next }; params.set('scope', state.scope); params.set('filter', state.filter); params.set('sort', state.sort); state.q ? params.set('q', state.q) : params.delete('q'); setSearchParams(params); };
+  const setFilter = (value: Filter) => setBrowse({ filter: value });
+  const setSort = (value: Sort) => setBrowse({ sort: value });
+  const setSearch = (value: string) => setBrowse({ q: value });
   const [showAdd, setShowAdd] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const { dismiss } = useOnboarding();
@@ -86,9 +92,7 @@ export default function Library() {
   }, [visible]);
 
   const changeScope = (nextScope: 'mine' | 'all') => {
-    setScope(nextScope);
-    setFilter('active');
-    setSearch('');
+    setBrowse({ scope: nextScope, filter: 'active', q: '' });
   };
 
   const startQueuedBook = async (book: BookRow) => {

@@ -4,6 +4,7 @@ import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, parseS
 
 const raw = JSON.stringify({
   storyRecap: "Mara accepts the sealed letter and leaves before dawn.",
+  storySoFar: "Mara has taken responsibility for a sealed letter and now leaves before dawn.",
   changedEvents: ["Mara accepts the sealed letter."],
   threads: [{ id: "sealed-letter", label: "The sealed letter", status: "escalating", detail: "Mara now carries it." }],
   characterPulse: [{ name: "Mara", pulse: "She acts despite uncertainty." }],
@@ -20,6 +21,7 @@ assert.equal(firstState.threads[0].status, "escalating");
 // A later session must carry the existing thread and merge new continuity data.
 const followUp = parseStoryThreadAnalysis(JSON.stringify({
   storyRecap: "Mara hides the letter while a new watchman begins following her.",
+  storySoFar: "After taking the letter, Mara hides it as a watchman begins following her.",
   changedEvents: ["A watchman begins following Mara."],
   threads: [
     { id: "sealed-letter", label: "The sealed letter", status: "escalating", detail: "Mara hides it from the watchman." },
@@ -41,7 +43,9 @@ assert.match(prompt.system, /2–3 connected paragraphs/);
 assert.match(prompt.system, /Đoạn này/);
 const vietnameseAutoPrompt = buildStoryThreadPrompt({ title: "Kiểm thử", author: "Tác giả", start: 1, end: 2, total: 10, lang: "auto", sourceText: "Ove đứng trước cửa và nhớ về công việc cũ.", priorState: null });
 assert.match(vietnameseAutoPrompt.system, /respond entirely in Vietnamese/);
-assert.match(prompt.system, /never output generic boilerplate/);
+assert.match(prompt.system, /storySoFar is a concise cumulative narrative/);
+assert.match(prompt.system, /use \[\] when there is none/);
+assert.equal(secondState.storySoFar, followUp.storySoFar);
 assert.match(prompt.user, /Current reading text/);
 const overlongSource = "A".repeat(STORY_THREAD_MAX_SOURCE_CHARS + 5000);
 const boundedSource = boundStoryThreadSource(overlongSource);
@@ -87,6 +91,16 @@ assert.match(characterSource, /characterRelationships/);
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
 assert.match(detailSource, /<StoryThreadView[\s\S]*?summaryLang=\{book\.summary_lang\}/);
 assert.match(detailSource, /setStoryRetryingLogId\(\(current\) => current === logId \? null : current\)/);
-assert.match(storyViewSource, /Grounded strictly in current text/);
+assert.match(storyThreadSource, /markStoryThreadGenerating/);
+assert.match(storyThreadSource, /markStoryThreadReady/);
+assert.match(storyThreadSource, /markStoryThreadFailed/);
+assert.match(routeSource, /await markStoryThreadGenerating\(result.log\)/);
+assert.match(routeSource, /markStoryThreadFailed\(result.log.id/);
+assert.match(storyViewSource, /Generating Story Thread…/);
+assert.match(storyViewSource, /Story Thread needs retry/);
+assert.match(storyViewSource, /storyStatus === "generating"/);
+assert.match(storyViewSource, /storySoFar \|\| "Cumulative story continuity/);
+const boilerplate = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["Không có", "No uncertainty", "Grounded strictly in current text", "A page is truncated."] }));
+assert.deepEqual(boilerplate.confidenceNotes, ["A page is truncated."]);
 
 console.log("STORY_THREAD_FIXTURES_OK");

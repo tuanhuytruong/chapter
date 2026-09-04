@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Flame, BookOpen } from 'lucide-react';
 import type { BookRow } from '../types';
 import { progressPct, daysToFinish } from '../api';
@@ -18,11 +18,12 @@ const STATUS_COLOR: Record<string, string> = {
 
 const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean }> = ({ book, streak, readOnly = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const pct = progressPct(book);
 
   return (
     <button
-      onClick={() => navigate(`/books/${book.id}`)}
+      onClick={() => navigate(`/books/${book.id}`, { state: { returnTo: `${location.pathname}${location.search}` } })}
       className="group bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm hover:shadow-md transition text-left flex flex-col gap-3 cursor-pointer"
     >
       <div className="flex gap-4">

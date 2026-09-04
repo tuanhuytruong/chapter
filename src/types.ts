@@ -95,6 +95,7 @@ export type StoryThreadStatus =
   "open" | "escalating" | "resolved" | "uncertain";
 export interface StoryThreadAnalysis {
   storyRecap: string;
+  storySoFar?: string;
   changedEvents: string[];
   threads: Array<{
     id: string;
@@ -113,9 +114,14 @@ export interface StoryThreadRow {
   book_id: string;
   log_id: string;
   schema_version: number;
-  analysis: StoryThreadAnalysis;
-  story_recap: string;
-  generated_at: string;
+  analysis: StoryThreadAnalysis | null;
+  story_recap?: string;
+  generated_at?: string;
+  storyStatus: "generating" | "ready" | "failed";
+  attemptCount: number;
+  errorMessage: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
   reading_round: number;
   session: number;
   page_start: number;

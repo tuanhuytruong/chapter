@@ -18,6 +18,8 @@ import {
   storyCompatSummary,
   storyFallback,
   upsertStoryThreadAnalysis,
+  markStoryThreadGenerating,
+  markStoryThreadFailed,
 } from "../storyThread.js";
 import {
   buildReadingLensPrompt,
@@ -1755,18 +1757,17 @@ async function advanceBookNow(
     );
     // Enrichment starts only after the reading transaction commits.
     if (result.readingExperience === "story") {
+      await markStoryThreadGenerating(result.log);
       void generateStoryThreadForLog(result.log, {
         title: result.title,
         author: result.author,
         total: result.totalUnits,
         lang: result.summaryLang || "auto",
         session: result.session,
-      }).catch((error) =>
-        console.warn(
-          "[story-thread] background analysis unavailable:",
-          error.message,
-        ),
-      );
+      }).catch(async (error) => {
+        await markStoryThreadFailed(result.log.id, error).catch(() => undefined);
+        console.warn("[story-thread] background analysis unavailable:", error.message);
+      });
     } else {
       // Keep the reading transaction responsive. The session is already saved;
       // enrich it in order so the wiki only synthesizes persisted analyses.
@@ -1951,13 +1952,14 @@ async function repairStoryThreadFromLog(
   if (!logs.length)
     throw new Error("no saved Story sessions are available to repair");
   for (const log of logs) {
-    await generateStoryThreadForLog(log, {
+    await markStoryThreadGenerating(log);
+    try { await generateStoryThreadForLog(log, {
       title: book.title,
       author: book.author,
       total: book.total_pages,
       lang: book.summary_lang || "auto",
       session: log.session,
-    });
+    }); } catch (error) { await markStoryThreadFailed(log.id, error); throw error; }
   }
   return listStoryThreadAnalyses(book.id, firstLog.reading_round);
 }
