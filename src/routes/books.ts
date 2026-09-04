@@ -1909,21 +1909,24 @@ async function generateStoryThreadForLog(
   // Story Thread is detached from Read Today but must still finish within a
   // bounded, feature-specific provider window. It uses the same global
   // scheduler as every other LLM workload, so it cannot starve reader actions.
-  const raw = process.env.NINE_ROUTER_URL
-    ? await callLLM(
-        prompt.system,
-        prompt.user,
-        0.2,
-        true,
-        true,
-        Number(process.env.NINE_ROUTER_STORY_THREAD_TIMEOUT_MS || 180_000),
-        {
-          priority: "background",
-          traceLabel: `story-thread:p.${log.page_start}-${log.page_end}:s.${log.session}`,
-        },
-      )
-    : JSON.stringify(storyFallback());
-  const analysis = parseStoryThreadAnalysis(raw);
+  const timeout = Number(process.env.NINE_ROUTER_STORY_THREAD_TIMEOUT_MS || 180_000);
+  const request = (user: string, attempt: number) => process.env.NINE_ROUTER_URL
+    ? callLLM(prompt.system, user, 0.2, true, true, timeout, {
+        priority: "background",
+        traceLabel: `story-thread:p.${log.page_start}-${log.page_end}:s.${log.session}:json=${attempt}`,
+      })
+    : Promise.resolve(JSON.stringify(storyFallback()));
+  let raw = await request(prompt.user, 1);
+  let analysis;
+  try {
+    analysis = parseStoryThreadAnalysis(raw);
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    // A 200 response can still contain malformed model JSON. Correct it once
+    // before surfacing a retryable pending card; never silently skip the log.
+    raw = await request(`${prompt.user}\n\nYour previous response was malformed JSON. Return the complete object again as valid JSON only, with double-quoted keys and strings.`, 2);
+    analysis = parseStoryThreadAnalysis(raw);
+  }
   await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
   const compat = storyCompatSummary(analysis);
   await query(

@@ -379,31 +379,27 @@ export default function BookDetail() {
             `${b.date}-${b.session}`.localeCompare(`${a.date}-${a.session}`),
           );
         });
-        const analyses =
-          updatedBook.can_edit &&
-          updatedBook.reading_experience === "analytical"
-            ? await api.getReadingLens(id, selectedRound ?? undefined)
-            : [];
+        const analyses = updatedBook.can_edit && updatedBook.reading_experience === "analytical"
+          ? await api.getReadingLens(id, selectedRound ?? undefined) : [];
+        const storyAnalyses = updatedBook.can_edit && updatedBook.reading_experience === "story"
+          ? await api.getStoryThread(id, selectedRound ?? updatedBook.current_reading_round) : [];
         if (updatedBook.can_edit) {
-          if (updatedBook.reading_experience === "story")
-            setStoryThread(await api.getStoryThread(id, selectedRound ?? updatedBook.current_reading_round));
+          if (updatedBook.reading_experience === "story") setStoryThread(storyAnalyses);
           else setLenses(analyses);
         }
-        const pendingLog = updatedLogs.find(
-          (log) => log.id === pendingEnrichmentLogId,
-        );
-        const lensReady =
-          updatedBook.reading_experience === "story"
-            ? true
-            : analyses.some((item) => item.log_id === pendingEnrichmentLogId);
-        const wiki = await api.getWikiStatus(id);
-        if (
-          lensReady &&
-          wiki.wikiExists &&
-          wiki.pagesCovered >= (pendingLog?.page_end || 0)
-        ) {
-          setEnrichmentPending(false);
-          setPendingEnrichmentLogId(null);
+        const pendingLog = updatedLogs.find((log) => log.id === pendingEnrichmentLogId);
+        if (updatedBook.reading_experience === "story") {
+          if (storyAnalyses.some((item) => item.log_id === pendingEnrichmentLogId)) {
+            setEnrichmentPending(false);
+            setPendingEnrichmentLogId(null);
+          }
+        } else {
+          const lensReady = analyses.some((item) => item.log_id === pendingEnrichmentLogId);
+          const wiki = await api.getWikiStatus(id);
+          if (lensReady && wiki.wikiExists && wiki.pagesCovered >= (pendingLog?.page_end || 0)) {
+            setEnrichmentPending(false);
+            setPendingEnrichmentLogId(null);
+          }
         }
       } catch {
         /* keep the saved reading session usable; retry until timeout */
@@ -870,7 +866,7 @@ export default function BookDetail() {
                   <button
                     onClick={readToday}
                     disabled={
-                      !book.can_edit || advancing || book.status === "finished"
+                      !book.can_edit || advancing || enrichmentPending || book.status === "finished"
                     }
                     title={
                       !book.can_edit
@@ -884,7 +880,7 @@ export default function BookDetail() {
                     ) : (
                       <Zap className="w-3.5 h-3.5" />
                     )}{" "}
-                    {advancing ? "Reading…" : "Read now"}
+                    {advancing ? "Reading…" : enrichmentPending ? "Preparing…" : "Read now"}
                   </button>
                 </div>
                 {book.can_edit && pct >= 95 && book.status === "active" && (
