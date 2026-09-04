@@ -103,4 +103,13 @@ assert.match(storyViewSource, /storySoFar \|\| "Cumulative story continuity/);
 const boilerplate = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["Không có", "No uncertainty", "Grounded strictly in current text", "A page is truncated."] }));
 assert.deepEqual(boilerplate.confidenceNotes, ["A page is truncated."]);
 
+const detailSourceX = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(detailSourceX, /repairStoryThread/);
+assert.match(detailSourceX, /onRepair=\{repairStoryThread\}/);
+assert.match(routeSource, /story-thread\/repair/);
+assert.match(routeSource, /LIMIT 5/);
+const storyThreadSourceX = readFileSync(new URL("../src/storyThread.ts", import.meta.url), "utf8");
+assert.match(storyThreadSourceX, /story_thread_repair_jobs/);
+assert.match(storyThreadSourceX, /createStoryThreadRepairJob/);
+
 console.log("STORY_THREAD_FIXTURES_OK");

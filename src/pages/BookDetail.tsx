@@ -707,6 +707,14 @@ export default function BookDetail() {
     }
   };
 
+  const repairStoryThread = async (logId: string) => {
+    if (!id || !window.confirm("Repair continuity from this session? Chapter will rebuild this session and up to the next 4 sessions.")) return;
+    setStoryRetryingLogId(logId);
+    try { const result = await api.repairStoryThread(id, logId); setStoryThread(result.analyses); setToast({ type: "ok", msg: `Continuity aligned through session ${result.job?.targetSession ?? "the next saved session"}` }); }
+    catch (e: any) { setToast({ type: "err", msg: e.message }); throw e; }
+    finally { setStoryRetryingLogId((current) => current === logId ? null : current); }
+  };
+
   const refreshReadingProgress = async () => {
     if (!id) return;
     setReadingProgressLoading(true);
@@ -1209,6 +1217,7 @@ export default function BookDetail() {
             fileType={book.file_type}
             summaryLang={book.summary_lang}
             onRetry={retryStoryThread}
+            onRepair={repairStoryThread}
             retryingLogId={storyRetryingLogId}
             canEdit={Boolean(book.can_edit)}
           />

@@ -128,6 +128,10 @@ export interface StoryThreadRow {
   page_end: number;
 }
 
+export type StoryRepairMode = "single_session" | "continuity";
+export type StoryRepairStatus = "running" | "completed" | "failed" | "awaiting_confirmation";
+export interface StoryThreadRepairJob { id: string; bookId: string; readingRound: number; firstLogId: string; mode: StoryRepairMode; status: StoryRepairStatus; firstSession: number; currentSession: number | null; targetSession: number; rebuiltSessions: number; maxSessions: number; errorMessage: string | null; }
+
 export type ReadingMarkerKind = "idea" | "question" | "quote" | "return_to";
 
 export interface ReadingMarkerRow {

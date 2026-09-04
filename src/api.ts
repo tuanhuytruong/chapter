@@ -6,6 +6,7 @@ import type {
   ReadingMarkerKind,
   ReadingMarkerRow,
   StoryThreadRow,
+  StoryThreadRepairJob,
   SummaryMode,
 } from "./types";
 import type { ReviewCardRow } from "./review";
@@ -490,9 +491,9 @@ export const api = {
   getStoryThreadForLog: (bookId: string, logId: string) =>
     req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),
   retryStoryThread: (bookId: string, logId: string) =>
-    req<StoryThreadRow[]>(`${BASE}/${bookId}/logs/${logId}/retry`, {
-      method: "POST",
-    }),
+    req<StoryThreadRow[]>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
+  repairStoryThread: (bookId: string, logId: string) =>
+    req<{ analyses: StoryThreadRow[]; job: StoryThreadRepairJob | null }>(`${BASE}/${bookId}/logs/${logId}/story-thread/repair`, { method: "POST" }),
   updateLogNotes: (bookId: string, logId: string, notes: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}`, {
       method: "PATCH",

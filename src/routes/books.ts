@@ -20,6 +20,9 @@ import {
   upsertStoryThreadAnalysis,
   markStoryThreadGenerating,
   markStoryThreadFailed,
+  createStoryThreadRepairJob,
+  updateStoryThreadRepairJob,
+  getStoryThreadRepairJob,
 } from "../storyThread.js";
 import {
   buildReadingLensPrompt,
@@ -1936,31 +1939,13 @@ async function generateStoryThreadForLog(
   );
 }
 
-/** Rebuild the selected Story session and every later persisted session in reading order.
- * This repairs a gap without letting newer analyses retain continuity from before it. */
-async function repairStoryThreadFromLog(
-  book: any,
-  firstLog: any,
-): Promise<any[]> {
-  const { rows: logs } = await query(
-    `SELECT * FROM reading_log
-     WHERE book_id=$1 AND raw_text IS NOT NULL AND reading_round=$4
-       AND (date > $2::date OR (date = $2::date AND session >= $3))
-     ORDER BY date ASC, session ASC`,
-    [book.id, firstLog.date, firstLog.session, firstLog.reading_round],
-  );
-  if (!logs.length)
-    throw new Error("no saved Story sessions are available to repair");
-  for (const log of logs) {
-    await markStoryThreadGenerating(log);
-    try { await generateStoryThreadForLog(log, {
-      title: book.title,
-      author: book.author,
-      total: book.total_pages,
-      lang: book.summary_lang || "auto",
-      session: log.session,
-    }); } catch (error) { await markStoryThreadFailed(log.id, error); throw error; }
-  }
+/** Bounded, chronological repair. The caller chooses it explicitly; no hidden tail rebuild. */
+async function repairStoryThreadFromLog(book: any, firstLog: any): Promise<any[]> {
+  const { rows: logs } = await query(`SELECT * FROM reading_log WHERE book_id=$1 AND raw_text IS NOT NULL AND reading_round=$4 AND (date > $2::date OR (date=$2::date AND session >= $3)) ORDER BY date ASC, session ASC LIMIT 5`, [book.id, firstLog.date, firstLog.session, firstLog.reading_round]);
+  if (!logs.length) throw new Error("no saved Story sessions are available to repair");
+  const job = await createStoryThreadRepairJob({ bookId: book.id, readingRound: firstLog.reading_round, firstLogId: firstLog.id, mode: "continuity", firstSession: firstLog.session, targetSession: logs.at(-1).session });
+  for (let index=0; index<logs.length; index++) { const log=logs[index]; await updateStoryThreadRepairJob(job.id,{currentSession:log.session,rebuiltSessions:index}); await markStoryThreadGenerating(log); try { await generateStoryThreadForLog(log,{title:book.title,author:book.author,total:book.total_pages,lang:book.summary_lang||"auto",session:log.session}); await updateStoryThreadRepairJob(job.id,{rebuiltSessions:index+1}); } catch(error) { await markStoryThreadFailed(log.id,error); await updateStoryThreadRepairJob(job.id,{status:"failed",errorMessage:"Story Thread could not be generated. Please retry."}); throw error; } }
+  await updateStoryThreadRepairJob(job.id,{status:"completed",rebuiltSessions:logs.length,currentSession:logs.at(-1).session});
   return listStoryThreadAnalyses(book.id, firstLog.reading_round);
 }
 
@@ -2008,8 +1993,9 @@ booksRouter.post(
       if (!book) return res.status(404).json({ error: "book not found" });
 
       if (book.reading_experience === "story") {
-        const analyses = await repairStoryThreadFromLog(book, entry);
-        return res.json(analyses);
+        await markStoryThreadGenerating(entry);
+        try { await generateStoryThreadForLog(entry, { title: book.title, author: book.author, total: book.total_pages, lang: book.summary_lang || "auto", session: entry.session }); } catch (error) { await markStoryThreadFailed(entry.id, error); throw error; }
+        return res.json(await listStoryThreadAnalyses(book.id, entry.reading_round));
       }
       // A retry must never overwrite a visible fallback with another fallback.
       // Surface an upstream timeout so the owner can retry later with the original
@@ -2039,6 +2025,8 @@ booksRouter.post(
     }
   },
 );
+
+booksRouter.post("/:id/logs/:logId/story-thread/repair", async (req: Request, res: Response) => { const { id, logId } = req.params; if (!(await ownerCanMutate(req,res,id))) return; try { const { rows } = await query(`SELECT rl.*, b.title, b.author, b.total_pages, b.summary_lang, b.status, b.reading_experience FROM reading_log rl JOIN books b ON b.id=rl.book_id WHERE rl.id=$1 AND rl.book_id=$2 AND b.reading_experience='story'`,[logId,id]); const entry=rows[0]; if (!entry?.raw_text) return res.status(400).json({error:"session has no extracted text to repair"}); if (entry.status === "paused") return res.status(409).json({error:"paused books cannot repair Story Thread"}); const analyses=await repairStoryThreadFromLog(entry,entry); const job=await getStoryThreadRepairJob(id,entry.reading_round); res.json({ analyses, job }); } catch(e:any) { res.status(500).json({error:"continuity repair failed",detail:e.message}); } });
 
 // PATCH /api/books/:id/logs/:logId — update personal notes on a log entry
 booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
