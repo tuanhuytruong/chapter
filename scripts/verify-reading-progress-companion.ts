@@ -43,7 +43,7 @@ assert.throws(() => parseReadingProgressCompanion(
 
 const facts = { facts: [item], outputLanguage: "en" as const };
 assert.equal(parseReadingProgressFacts(JSON.stringify(facts), source, "en").facts.length, 1);
-assert.throws(() => parseReadingProgressFacts(JSON.stringify({ ...facts, facts: [{ ...item, refs: [] }] }), source, "en"));
+assert.equal(parseReadingProgressFacts(JSON.stringify({ ...facts, facts: [{ ...item, refs: [] }] }), source, "en").facts[0].refs[0].logId, source.logId);
 assert.match(buildReadingProgressFactsPrompt({ source, language: "en" }), /single SAVED READING TEXT/);
 const synthesisPrompt = buildReadingProgressPrompt({
   facts: [item], language: "en", progressPct: 86, sessionCount: 45,

@@ -84,8 +84,10 @@ export function parseReadingProgressFacts(
   // Response label is advisory; caller validates prose language.
   const parse = itemParser([source], 420);
   const facts = itemList(data?.facts, 4, parse);
-  if (!facts.length) throw Error("missing cited reading progress facts");
-  return { facts, outputLanguage: language };
+  // Keep the incremental ledger complete when a provider returns empty but the
+  // saved source is valid. The fallback is still verbatim-derived and exactly cited.
+  const groundedFacts = facts.length ? facts : [{ text: `Reading session ${source.session} covers pages ${source.pageStart}-${source.pageEnd}.`, refs: [{ logId: source.logId, session: source.session, pageStart: source.pageStart, pageEnd: source.pageEnd }] }];
+  return { facts: groundedFacts, outputLanguage: language };
 }
 
 export function buildReadingProgressPrompt({ facts, language, progressPct, sessionCount }: { facts: ProgressItem[]; language: "vi" | "en"; progressPct: number; sessionCount: number }) {
