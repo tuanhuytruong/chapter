@@ -85,4 +85,8 @@ const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.u
 assert.match(detail, /pct >= 95/);
 assert.match(detail, /book\.can_edit && pct >= 95/);
 assert.doesNotMatch(detail, /pct >= 85/);
+assert.match(detail, /const sortLogsNewestFirst/);
+assert.match(detail, /setLogs\(sortLogsNewestFirst\(l\)\)/);
+assert.match(detail, /Earlier session · same day/);
+assert.doesNotMatch(detail, /Session \{si \+ 1\} · same day/);
 console.log("READING_PROGRESS_COMPANION_FIXTURES_OK");

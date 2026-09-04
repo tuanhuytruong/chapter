@@ -78,6 +78,12 @@ function InlineMarkdown({ text }: { text: string }) {
   );
 }
 
+const sortLogsNewestFirst = (items: LogRow[]): LogRow[] =>
+  [...items].sort((a, b) => {
+    const dateOrder = String(b.date).localeCompare(String(a.date));
+    return dateOrder || b.session - a.session;
+  });
+
 function ReadingLensSynthesis({ text }: { text: string }) {
   const blocks: ReactNode[] = [];
   let bullets: string[] = [];
@@ -254,7 +260,7 @@ export default function BookDetail() {
       setCoverUrl(b.cover_url || "");
       setSummaryLang(b.summary_lang || "auto");
       setSummaryMode(b.summary_mode || "casual");
-      setLogs(l);
+      setLogs(sortLogsNewestFirst(l));
       if (b.can_edit) {
         try { setMarkers(await api.getMarkers(id, selected)); } catch { setMarkers([]); }
       } else setMarkers([]);
@@ -468,10 +474,12 @@ export default function BookDetail() {
       }
       // The API returns the persisted log and updated cursor. Merge those into
       // the live detail view instead of reloading the route and losing context.
-      setLogs((previous) => [
-        result.log,
-        ...previous.filter((log) => log.id !== result.log.id),
-      ]);
+      setLogs((previous) =>
+        sortLogsNewestFirst([
+          result.log,
+          ...previous.filter((log) => log.id !== result.log.id),
+        ]),
+      );
       setBook((previous) =>
         previous
           ? {
@@ -621,7 +629,9 @@ export default function BookDetail() {
         : raw.slice(0, 10);
       map.set(k, [...(map.get(k) || []), l]);
     }
-    return [...map.entries()].sort(([a], [b]) => b.localeCompare(a));
+    return [...map.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, dayLogs]) => [date, sortLogsNewestFirst(dayLogs)] as const);
   })();
 
   // Feature 2: Mark as Finished handler
@@ -1374,7 +1384,7 @@ export default function BookDetail() {
                                   <div className="flex items-center gap-2 px-4 py-0.5">
                                     <div className="flex-1 h-px bg-natural-border" />
                                     <span className="text-[9px] text-natural-stone font-sans shrink-0">
-                                      Session {si + 1} · same day
+                                      Earlier session · same day
                                     </span>
                                     <div className="flex-1 h-px bg-natural-border" />
                                   </div>
