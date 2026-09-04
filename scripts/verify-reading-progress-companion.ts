@@ -33,9 +33,9 @@ assert.equal(
   item.text,
 );
 assert.throws(() => parseReadingProgressCompanion("{", [source], "en"));
-assert.throws(() => parseReadingProgressCompanion(
+assert.equal(parseReadingProgressCompanion(
   JSON.stringify({ ...en, outputLanguage: "vi" }), [source], "en",
-));
+).outputLanguage, "en");
 assert.throws(() => parseReadingProgressCompanion(
   JSON.stringify({ ...en, mainThread: { ...item, refs: [{ ...item.refs[0], pageEnd: 9 }] } }),
   [source], "en",

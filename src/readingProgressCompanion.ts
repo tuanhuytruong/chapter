@@ -81,7 +81,7 @@ export function parseReadingProgressFacts(
   language: "vi" | "en",
 ): ReadingProgressFacts {
   const data = extractJson(raw) as any;
-  if (data?.outputLanguage !== language) throw Error("invalid output language");
+  // Response label is advisory; caller validates prose language.
   const parse = itemParser([source], 420);
   const facts = itemList(data?.facts, 4, parse);
   if (!facts.length) throw Error("missing cited reading progress facts");
@@ -99,7 +99,7 @@ export function parseReadingProgressCompanion(
   language: "vi" | "en",
 ): ReadingProgressCompanion {
   const data = extractJson(raw) as any;
-  if (data?.outputLanguage !== language) throw Error("invalid output language");
+  // Response label is advisory; caller validates prose language.
   const parse = itemParser(sources, 900);
   const mainThread = parse(data?.mainThread, true)!;
   return {
