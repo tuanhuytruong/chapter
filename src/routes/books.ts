@@ -1931,6 +1931,7 @@ async function generateStoryThreadForLog(
     raw = await request(`${prompt.user}\n\nYour previous response was malformed JSON. Return the complete object again as valid JSON only, with double-quoted keys and strings.`, 2);
     analysis = parseStoryThreadAnalysis(raw);
   }
+  if (analysis.continuityPath?.length) analysis.continuityPath = analysis.continuityPath.map((milestone) => ({ ...milestone, citation: { logId: log.id, session: log.session, pageStart: log.page_start, pageEnd: log.page_end } }));
   await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
   const compat = storyCompatSummary(analysis);
   await query(

@@ -96,6 +96,7 @@ export type StoryThreadStatus =
 export interface StoryThreadAnalysis {
   storyRecap: string;
   storySoFar?: string;
+  continuityPath?: Array<{ text: string; citation: { logId: string; session: number; pageStart: number; pageEnd: number } }>;
   changedEvents: string[];
   threads: Array<{
     id: string;

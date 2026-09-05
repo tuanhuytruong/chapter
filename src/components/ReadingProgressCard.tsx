@@ -34,13 +34,14 @@ function Refs({
     </div>
   );
 }
-const GLOSSARY: Record<string, string> = {
-  "Story so far": "The main story and where it stands in the pages you have read.",
-  "Narrative arcs": "How a character, relationship, place, or theme has developed so far.",
-  "Threads at this point": "Questions or tensions that are open, changing, or resolved in the pages you have read.",
-  "Turning points": "Events that changed the stakes, direction, or relationships.",
-};
-function Section({ title, items, onOpen }: { title: string; items: ReadingProgressItem[]; onOpen: (id: string) => void }) {
+const GLOSSARY = {
+  "Story so far": { en: "The main story and where it stands in the pages you have read.", vi: "Mạch chính và trạng thái của câu chuyện trong những trang bạn đã đọc." },
+  "Narrative arcs": { en: "How a character, relationship, place, or theme has developed so far.", vi: "Cách một nhân vật, mối quan hệ, bối cảnh hoặc chủ đề đã phát triển đến đây." },
+  "Threads at this point": { en: "Questions or tensions that are open, changing, or resolved in the pages you have read.", vi: "Những câu hỏi hoặc căng thẳng đang mở, thay đổi hay đã khép lại trong phần bạn đã đọc." },
+  "Turning points": { en: "Events that changed the stakes, direction, or relationships.", vi: "Những sự kiện đã thay đổi cục diện, hướng đi hoặc các mối quan hệ." },
+} as const;
+type GlossaryTitle = keyof typeof GLOSSARY;
+function Section({ title, items, onOpen, language }: { title: GlossaryTitle; items: ReadingProgressItem[]; onOpen: (id: string) => void; language: "vi" | "en" }) {
   if (!items.length) return null;
   const tooltipId = `companion-help-${title.replace(/\s/g, "-")}`;
   return (
@@ -49,11 +50,11 @@ function Section({ title, items, onOpen }: { title: string; items: ReadingProgre
         <h3 className="text-[10px] font-bold uppercase tracking-wider text-natural-sage">{title}</h3>
         {GLOSSARY[title] && (
           <span className="group relative inline-flex">
-            <button type="button" aria-label={`About ${title}`} aria-describedby={tooltipId} className="rounded p-1 text-natural-stone hover:text-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45">
+            <button type="button" aria-label={`${language === "vi" ? "Thông tin về" : "About"} ${title}`} aria-describedby={tooltipId} className="rounded p-1 text-natural-stone hover:text-natural-sage focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45">
               <Info className="h-3.5 w-3.5" />
             </button>
             <span id={tooltipId} role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg border border-natural-border bg-white px-3 py-2 text-left text-xs font-normal normal-case leading-relaxed text-natural-stone opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-              {GLOSSARY[title]}
+              {GLOSSARY[title][language]}
             </span>
           </span>
         )}
@@ -176,10 +177,10 @@ export default function ReadingProgressCard({
           id="reading-progress-content"
           className="mt-2 space-y-4 rounded-2xl border border-natural-border bg-natural-cream/70 p-4"
         >
-          <Section title="Story so far" items={[companion.main_thread]} onOpen={onOpenReadingSession} />
-          <Section title="Narrative arcs" items={companion.converging} onOpen={onOpenReadingSession} />
-          <Section title="Threads at this point" items={companion.open_threads} onOpen={onOpenReadingSession} />
-          <Section title="Turning points" items={companion.carry_forward} onOpen={onOpenReadingSession} />
+          <Section title="Story so far" items={[companion.main_thread]} onOpen={onOpenReadingSession} language={companion.output_language} />
+          <Section title="Narrative arcs" items={companion.converging} onOpen={onOpenReadingSession} language={companion.output_language} />
+          <Section title="Threads at this point" items={companion.open_threads} onOpen={onOpenReadingSession} language={companion.output_language} />
+          <Section title="Turning points" items={companion.carry_forward} onOpen={onOpenReadingSession} language={companion.output_language} />
         </div>
       )}
     </section>

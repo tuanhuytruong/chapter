@@ -4,9 +4,12 @@ export type StoryThread = { id: string; label: string; status: "open" | "escalat
 export type StoryCharacter = { name: string; pulse: string };
 export type StoryCharacterArc = { name: string; development: string };
 export type StoryRelationship = { people: string[]; detail: string };
+export type StoryCitation = { logId: string; session: number; pageStart: number; pageEnd: number };
+export type StoryMilestone = { text: string; citation: StoryCitation };
 export type StoryAnalysis = {
   storyRecap: string;
   storySoFar?: string;
+  continuityPath?: StoryMilestone[];
   changedEvents: string[];
   threads: StoryThread[];
   characterPulse: StoryCharacter[];
@@ -16,7 +19,7 @@ export type StoryAnalysis = {
   readerMemory: string[];
   confidenceNotes: string[];
 };
-export type StoryState = Pick<StoryAnalysis, "storySoFar" | "threads" | "characterPulse" | "readerMemory">;
+export type StoryState = Pick<StoryAnalysis, "storySoFar" | "threads" | "characterPulse" | "readerMemory" | "continuityPath">;
 export type StoryJobStatus = "generating" | "ready" | "failed";
 export type StoryThreadSession = { log_id: string; session: number; reading_round: number; page_start: number; page_end: number; date: string; analysis: StoryAnalysis | null; storyStatus: StoryJobStatus; attemptCount: number; errorMessage: string | null; startedAt: string | null; completedAt: string | null; };
 
@@ -36,7 +39,7 @@ export function boundStoryThreadSource(sourceText: string): string {
 const strings = (value: unknown, max: number): string[] => Array.isArray(value) ? value.map((item) => clean(item)).filter(Boolean).slice(0, max) : [];
 const objects = (value: unknown, max: number): Record<string, unknown>[] => Array.isArray(value) ? value.slice(0, max).map((item) => item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {}) : [];
 const status = (value: unknown): StoryThread["status"] => ["open", "escalating", "resolved", "uncertain"].includes(String(value)) ? value as StoryThread["status"] : "uncertain";
-const noConfidenceNote = (value: string) => /^(không có|không có sự không chắc chắn nào trong văn bản hiện tại|no uncertainty(?: is present in the current text)?|grounded strictly in current text)\.?$/iu.test(value.trim());
+const noConfidenceNote = (value: string) => /^(không có|không có sự không chắc chắn nào trong (?:văn bản hiện tại|đoạn văn này)|no uncertainty(?: is present in the current text)?|grounded strictly in current text)\.?$/iu.test(value.trim());
 const safeError = (error: unknown) => error instanceof Error && /timeout/i.test(error.message) ? "Story Thread timed out. Please retry." : "Story Thread could not be generated. Please retry.";
 export async function markStoryThreadGenerating(log: { id: string; book_id: string; reading_round: number }): Promise<void> { await query(`INSERT INTO story_thread_jobs (log_id,book_id,reading_round,status,attempt_count,error_message,started_at,completed_at,updated_at) VALUES ($1,$2,$3,'generating',1,NULL,now(),NULL,now()) ON CONFLICT (log_id) DO UPDATE SET status='generating',attempt_count=story_thread_jobs.attempt_count+1,error_message=NULL,started_at=now(),completed_at=NULL,updated_at=now()`, [log.id, log.book_id, log.reading_round]); }
 export async function markStoryThreadReady(logId: string): Promise<void> { await query("UPDATE story_thread_jobs SET status='ready', completed_at=now(), updated_at=now() WHERE log_id=$1", [logId]); }
@@ -65,13 +68,14 @@ export function parseStoryThreadAnalysis(raw: string): StoryAnalysis {
   }) : [];
   const characterArcs = objects(data.characterArcs, 8).map((row) => ({ name: clean(row.name), development: clean(row.development) })).filter((row) => row.name && row.development);
   const characterRelationships = objects(data.characterRelationships, 8).map((row) => ({ people: strings(row.people, 4), detail: clean(row.detail) })).filter((row) => row.people.length >= 2 && row.detail);
-  return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), storySoFar: clean(data.storySoFar), changedEvents: strings(data.changedEvents, 8), threads, characterPulse, characterArcs, characterRelationships, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6).filter((note) => !noConfidenceNote(note)) };
+  const continuityPath = strings(data.continuityPath, 4).map((text) => ({ text, citation: { logId: "", session: 0, pageStart: 0, pageEnd: 0 } }));
+  return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), storySoFar: clean(data.storySoFar), continuityPath, changedEvents: strings(data.changedEvents, 8), threads, characterPulse, characterArcs, characterRelationships, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6).filter((note) => !noConfidenceNote(note)) };
 }
 
 export function buildStoryThreadPrompt(input: { title: string; author: string; start: number; end: number; total: number; lang: "auto" | "vi" | "en"; sourceText: string; priorState: StoryState | null }): { system: string; user: string } {
   const language = input.lang === "vi" ? "Respond entirely in Vietnamese." : input.lang === "en" ? "Respond entirely in English." : /[ăâđêôơưĂÂĐÊÔƠƯ]/.test(input.sourceText) ? "The current reading is Vietnamese: respond entirely in Vietnamese." : "Match the predominant language of the current reading.";
   return {
-    system: `You are Story Thread, a continuity companion for fiction. Ground every current event, character change, and quote-like detail in CURRENT READING TEXT. Prior state is only reader memory: preserve it only when compatible, never treat it as new evidence. Do not invent names, motives, events, chronology, or spoilers. Mark uncertainty in confidenceNotes. For storyRecap, write a warm reading-companion recap, not an event ledger: normally use 2–3 connected paragraphs when the source has enough material; enter through a concrete scene, movement, tension, gesture, or grounded emotional shift from the current reading; then carry cause → response → consequence with natural transitions. Never begin with meta labels such as “This section”, “This passage”, “In this part”, “Đoạn này”, “Phần này”, or “Tóm lại”. Do not pad a genuinely short source, invent interiority, or repeat the whole book. characterArcs records only an observed development for a named character in this reading. characterRelationships records only an observed state or change between 2–4 named characters. confidenceNotes are only for a real uncertainty, omission, or source limitation; use [] when there is none. Never state that there is no uncertainty. storySoFar is a concise cumulative narrative through this session; it must not duplicate storyRecap. ${language} Return JSON only with exactly these keys: {"storyRecap":"","storySoFar":"","changedEvents":[""],"threads":[{"id":"stable-short-id","label":"","status":"open|escalating|resolved|uncertain","detail":""}],"characterPulse":[{"name":"","pulse":""}],"characterArcs":[{"name":"","development":""}],"characterRelationships":[{"people":["",""],"detail":""}],"readerMemory":[""],"confidenceNotes":[""]}. Lists must be concise; threads/characters/arcs/relationships max 8, events max 8, memory max 6.`,
+    system: `You are Story Thread, a continuity companion for fiction. Ground every current event, character change, and quote-like detail in CURRENT READING TEXT. Prior state is only reader memory: preserve it only when compatible, never treat it as new evidence. Do not invent names, motives, events, chronology, or spoilers. Mark uncertainty in confidenceNotes. For storyRecap, write a warm reading-companion recap, not an event ledger: normally use 2–3 connected paragraphs when the source has enough material; enter through a concrete scene, movement, tension, gesture, or grounded emotional shift from the current reading; then carry cause → response → consequence with natural transitions. Never begin with meta labels such as “This section”, “This passage”, “In this part”, “Đoạn này”, “Phần này”, or “Tóm lại”. Do not pad a genuinely short source, invent interiority, or repeat the whole book. characterArcs records only an observed development for a named character in this reading. characterRelationships records only an observed state or change between 2–4 named characters. confidenceNotes are optional exception data, never a status message. When there is no concrete limitation in supplied text, return exactly "confidenceNotes": []. Never write an absence statement in any language, including “no uncertainty”, “no limitations”, “không có sự không chắc chắn”, or equivalent. Example: normal supported reading => []; only use a note for a concrete truncated, omitted, or genuinely ambiguous source condition. storySoFar is a richer cumulative narrative through this session, not a duplicate of storyRecap: when evidence permits, connect the starting situation through the most important already-saved turning points to the current situation. Do not list every session or invent causal links. continuityPath is a max-4 chronological list of brief turning points from the reader memory/current reading only; return [] if no meaningful path can be grounded. ${language} Return JSON only with exactly these keys: {"storyRecap":"","storySoFar":"","continuityPath":[""],"changedEvents":[""],"threads":[{"id":"stable-short-id","label":"","status":"open|escalating|resolved|uncertain","detail":""}],"characterPulse":[{"name":"","pulse":""}],"characterArcs":[{"name":"","development":""}],"characterRelationships":[{"people":["",""],"detail":""}],"readerMemory":[""],"confidenceNotes":[""]}. Lists must be concise; threads/characters/arcs/relationships max 8, events max 8, memory max 6.`,
     user: `Book: ${input.title} by ${input.author}\nReading range: ${input.start}–${input.end} of ${input.total}\n\nPrior persisted story state (may be empty):\n${JSON.stringify(input.priorState || { storySoFar: "", threads: [], characterPulse: [], readerMemory: [] })}\n\nCurrent reading text:\n${input.sourceText}`,
   };
 }
@@ -83,7 +87,7 @@ export function mergeStoryState(previous: StoryState | null, analysis: StoryAnal
   const byName = new Map<string, StoryCharacter>();
   for (const character of previous?.characterPulse || []) byName.set(character.name.toLocaleLowerCase(), character);
   for (const character of analysis.characterPulse) byName.set(character.name.toLocaleLowerCase(), character);
-  return { storySoFar: analysis.storySoFar || previous?.storySoFar || "", threads: [...byId.values()].slice(-16), characterPulse: [...byName.values()].slice(-16), readerMemory: [...new Set([...(previous?.readerMemory || []), ...analysis.readerMemory])].slice(-16) };
+  return { storySoFar: analysis.storySoFar || previous?.storySoFar || "", continuityPath: [...(previous?.continuityPath || []), ...(analysis.continuityPath || [])].filter((item) => item.citation.logId).slice(-4), threads: [...byId.values()].slice(-16), characterPulse: [...byName.values()].slice(-16), readerMemory: [...new Set([...(previous?.readerMemory || []), ...analysis.readerMemory])].slice(-16) };
 }
 
 export async function getStoryStateBeforeLog(bookId: string, readingRound: number, date: string, session: number): Promise<StoryState | null> {
