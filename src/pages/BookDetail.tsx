@@ -178,7 +178,7 @@ export default function BookDetail() {
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
   const [search, setSearch] = useState("");
   const [logView, setLogView] = useState<
-    "list" | "journey" | "ai-reader" | "podcast"
+    "list" | "journey" | "ai-reader" | "story-thread" | "character-storylines" | "podcast"
   >("list");
   const [openingPodcast, setOpeningPodcast] = useState(false);
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
@@ -233,7 +233,7 @@ export default function BookDetail() {
     }
     setSearch("");
     setNavigationTargetLogId(logId);
-    setLogView("list");
+    setLogView(book?.reading_experience === "story" ? "story-thread" : "list");
   };
 
   const load = useCallback(async () => {
@@ -1211,11 +1211,20 @@ export default function BookDetail() {
               trustworthy.
             </p>
           </GuideCard>
+          <div className="mb-3 flex flex-col gap-3 border-y border-natural-border/70 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-1" role="tablist" aria-label="Reading views">
+              <button type="button" role="tab" id="story-thread-tab" aria-selected={logView === "story-thread"} aria-controls="story-thread-panel" onClick={() => setLogView("story-thread")} className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "story-thread" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}>Story Thread</button>
+              <button type="button" role="tab" id="character-storylines-tab" aria-selected={logView === "character-storylines"} aria-controls="character-storylines-panel" onClick={() => setLogView("character-storylines")} className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "character-storylines" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}>Character Storylines</button>
+            </div>
+            {rounds.length > 0 && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading</span><ChapterDropdown id="reading-round" className="w-full sm:w-64" value={String(selectedRound ?? book.current_reading_round)} onChange={(value) => { setStoryRetryingLogId(null); setSelectedRound(Number(value)); }} options={rounds.map((round) => ({ value: String(round.reading_round), label: round.reading_round === book.current_reading_round ? `Current reading · Round ${round.reading_round}` : `Previous reading · Round ${round.reading_round}${round.finished_at ? ` · Finished ${new Date(round.finished_at).toLocaleDateString()}` : ""}` }))}/>{selectedRound !== book.current_reading_round && <button type="button" onClick={() => { setStoryRetryingLogId(null); setSelectedRound(book.current_reading_round); }} className="shrink-0 text-xs font-bold text-natural-sage underline underline-offset-2">Current</button>}</div>}
+          </div>
           <StoryThreadView
             analyses={storyThread}
             logs={logs}
             fileType={book.file_type}
             summaryLang={book.summary_lang}
+            view={logView === "character-storylines" ? "characters" : "thread"}
+            readingRound={selectedRound ?? book.current_reading_round}
             onRetry={retryStoryThread}
             onRepair={repairStoryThread}
             retryingLogId={storyRetryingLogId}
