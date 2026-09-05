@@ -102,11 +102,13 @@ assert.match(storyViewSource, /storyStatus === "generating"/);
 assert.match(storyViewSource, /storySoFar \|\| "Cumulative story continuity/);
 const boilerplate = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["Không có", "No uncertainty", "Grounded strictly in current text", "A page is truncated."] }));
 assert.deepEqual(boilerplate.confidenceNotes, ["A page is truncated."]);
+const continuityCitation = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", continuityPath: [{ text: "A turning point", citation: { logId: "log-1", session: 2, pageStart: 5, pageEnd: 5 } }], changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: [] }));
+assert.deepEqual(continuityCitation.continuityPath, [{ text: "A turning point", citation: { logId: "log-1", session: 2, pageStart: 5, pageEnd: 5 } }]);
 const vietnameseBoilerplate = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["Không có sự không chắc chắn nào trong đoạn văn này.", "A page is truncated."] }));
 assert.deepEqual(vietnameseBoilerplate.confidenceNotes, ["A page is truncated."]);
 assert.match(prompt.system, /return exactly "confidenceNotes": \[\]/);
 assert.match(prompt.system, /không có sự không chắc chắn/);
-assert.match(prompt.system, /continuityPath is a max-4 chronological list/);
+assert.match(prompt.system, /reuse its exact citation from Prior persisted story state/);
 assert.match(storyViewSource, /state\.continuityPath/);
 
 const detailSourceX = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
