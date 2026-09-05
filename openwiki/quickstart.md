@@ -5,7 +5,7 @@ description: Core quickstart, repository navigation, local setup, and task-routi
 tags: [quickstart, documentation, overview, navigation, architecture, workflows]
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+    at: 2026-09-05T19:01:41.972Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
