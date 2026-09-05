@@ -20,6 +20,7 @@ import {
   upsertStoryThreadAnalysis,
   markStoryThreadGenerating,
   markStoryThreadFailed,
+  normalizeContinuityCitations,
   createStoryThreadRepairJob,
   updateStoryThreadRepairJob,
   getStoryThreadRepairJob,
@@ -1931,7 +1932,13 @@ async function generateStoryThreadForLog(
     raw = await request(`${prompt.user}\n\nYour previous response was malformed JSON. Return the complete object again as valid JSON only, with double-quoted keys and strings.`, 2);
     analysis = parseStoryThreadAnalysis(raw);
   }
-  if (analysis.continuityPath?.length) analysis.continuityPath = analysis.continuityPath.map((milestone) => milestone.citation.logId ? milestone : ({ ...milestone, citation: { logId: log.id, session: log.session, pageStart: log.page_start, pageEnd: log.page_end } }));
+  const { rows: priorCitationRows } = await query<{ log_id: string; session: number; page_start: number; page_end: number }>(
+    `SELECT rl.id AS log_id, rl.session, rl.page_start, rl.page_end FROM reading_log rl JOIN story_thread_analyses sta ON sta.log_id=rl.id AND sta.schema_version=1 WHERE rl.book_id=$1 AND rl.reading_round=$2 AND (rl.date < $3::date OR (rl.date=$3::date AND rl.session<$4))`,
+    [log.book_id, log.reading_round, log.date, log.session],
+  );
+  const currentCitation = { logId: log.id, session: log.session, pageStart: log.page_start, pageEnd: log.page_end };
+  const priorByLogId = new Map(priorCitationRows.map((row) => [row.log_id, { logId: row.log_id, session: row.session, pageStart: row.page_start, pageEnd: row.page_end }]));
+  analysis.continuityPath = normalizeContinuityCitations(analysis.continuityPath, currentCitation, priorByLogId);
   await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
   const compat = storyCompatSummary(analysis);
   await query(

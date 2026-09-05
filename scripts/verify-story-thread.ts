@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
+import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, normalizeContinuityCitations, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
 import { aggregateCharacterStorylines } from "../src/storyCharacterStorylines.js";
 
 const raw = JSON.stringify({
@@ -52,9 +52,12 @@ const characterRows = [
   { log_id: "a", session: 1, page_start: 1, page_end: 1, analysis: { characterArcs: [{ name: "One-off", development: "Appears once." }], characterRelationships: [], characterPulse: [] } },
   { log_id: "b", session: 2, page_start: 2, page_end: 2, analysis: { characterArcs: [{ name: "Mara", development: "Acts." }], characterRelationships: [], characterPulse: [] } },
   { log_id: "c", session: 3, page_start: 3, page_end: 3, analysis: { characterArcs: [{ name: "Mara", development: "Changes." }, { name: "Niko", development: "Has one arc." }], characterRelationships: [{ people: ["Niko", "Mara"], detail: "They meet." }], characterPulse: [{ name: "Pulse only", pulse: "Not a trajectory." }] } },
+  { log_id: "d", session: 4, page_start: 4, page_end: 4, analysis: { characterArcs: [], characterRelationships: [{ people: ["Iris", "Tomas"], detail: "They confront each other." }], characterPulse: [] } },
 ] as any;
 const projectedCharacters = aggregateCharacterStorylines(characterRows);
-assert.deepEqual(projectedCharacters.characters.map((character) => character.name), ["Mara", "Niko"]);
+assert.deepEqual(projectedCharacters.characters.map((character) => character.name), ["Mara", "Niko", "Iris", "Tomas"]);
+assert.deepEqual(projectedCharacters.relationships.find((relationship) => relationship.people.includes("Iris"))?.people, ["Iris", "Tomas"]);
+assert.equal(projectedCharacters.characters.find((character) => character.name === "Iris")?.developments.length, 0);
 assert.equal(projectedCharacters.characters.find((character) => character.name === "Mara")?.developments.length, 2);
 assert.equal(projectedCharacters.characters.some((character) => character.name === "One-off"), false);
 assert.equal(projectedCharacters.characters.some((character) => character.name === "Pulse only"), false);
@@ -119,11 +122,15 @@ const continuityCitation = parseStoryThreadAnalysis(JSON.stringify({ storyRecap:
 assert.deepEqual(continuityCitation.continuityPath, [{ text: "A turning point", citation: { logId: "fd059abf-c569-4366-ac88-789926f44978", session: 2, pageStart: 5, pageEnd: 5 } }]);
 const invalidCitation = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", continuityPath: [{ text: "Current point", citation: { logId: "0", session: 0, pageStart: 23, pageEnd: 23 } }], changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: [] }));
 assert.equal(invalidCitation.continuityPath?.[0]?.citation.logId, "");
+const currentCitation = { logId: "22222222-2222-4222-8222-222222222222", session: 4, pageStart: 23, pageEnd: 23 };
+const priorCitation = { logId: "11111111-1111-4111-8111-111111111111", session: 2, pageStart: 21, pageEnd: 21 };
+const normalizedMilestones = normalizeContinuityCitations([{ text: "Prior", citation: { ...priorCitation, session: 99, pageStart: 999, pageEnd: 999 } }, { text: "Forged", citation: { logId: "33333333-3333-4333-8333-333333333333", session: 88, pageStart: 888, pageEnd: 888 } }], currentCitation, new Map([[priorCitation.logId, priorCitation]]));
+assert.deepEqual(normalizedMilestones?.map((item) => item.citation), [priorCitation, currentCitation]);
 const vietnameseBoilerplate = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "x", storySoFar: "y", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: ["Không có sự không chắc chắn nào trong đoạn văn này.", "A page is truncated."] }));
 assert.deepEqual(vietnameseBoilerplate.confidenceNotes, ["A page is truncated."]);
 assert.match(prompt.system, /return exactly "confidenceNotes": \[\]/);
 assert.match(prompt.system, /không có sự không chắc chắn/);
-assert.match(prompt.system, /reuse its exact citation from Prior persisted story state/);
+assert.match(prompt.system, /use only an exact citation ID from Prior persisted story state/);
 assert.match(storyViewSource, /state\.continuityPath/);
 
 const detailSourceX = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");

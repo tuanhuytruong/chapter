@@ -13,24 +13,34 @@ export function aggregateCharacterStorylines(rows: StoryThreadRow[]): CharacterS
   const characters = new Map<string, CharacterTrajectory>();
   const relationships = new Map<string, CharacterRelationshipTimeline>();
   let lastCitation: StoryCitation | null = null;
+  const ensureCharacter = (rawName: string): CharacterTrajectory | null => {
+    const name = rawName.trim();
+    if (!name || name === "Unnamed character") return null;
+    const key = normalize(name);
+    const existing = characters.get(key);
+    if (existing) return existing;
+    const created = { name, developments: [] };
+    characters.set(key, created);
+    return created;
+  };
   for (const row of rows) {
     const citation = { logId: row.log_id, session: row.session, pageStart: row.page_start, pageEnd: row.page_end };
     lastCitation = citation;
     const arcs = row.analysis.characterArcs?.map(({ name, development }) => ({ name, text: development })) || [];
     for (const arc of arcs) {
-      const name = arc.name.trim(); const text = arc.text.trim();
-      if (!name || !text || name === "Unnamed character") continue;
-      const key = normalize(name);
-      const character = characters.get(key) || { name, developments: [] };
+      const text = arc.text.trim();
+      const character = ensureCharacter(arc.name);
+      if (!character || !text) continue;
       if (!character.developments.some((entry) => entry.text === text && entry.citation.logId === citation.logId)) character.developments.push({ text, citation });
-      characters.set(key, character);
     }
     for (const relation of row.analysis.characterRelationships || []) {
       const people = relation.people.map((name) => name.trim()).filter(Boolean);
       const text = relation.detail.trim();
       if (people.length < 2 || !text) continue;
-      const key = people.map(normalize).sort().join("|");
-      const relationship = relationships.get(key) || { people, moments: [] };
+      const groundedPeople = people.map(ensureCharacter).filter((person): person is CharacterTrajectory => person !== null);
+      if (groundedPeople.length < 2) continue;
+      const key = groundedPeople.map((person) => normalize(person.name)).sort().join("|");
+      const relationship = relationships.get(key) || { people: groundedPeople.map((person) => person.name), moments: [] };
       if (!relationship.moments.some((entry) => entry.text === text && entry.citation.logId === citation.logId)) relationship.moments.push({ text, citation });
       relationships.set(key, relationship);
     }
