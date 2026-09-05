@@ -39,6 +39,7 @@ export function boundStoryThreadSource(sourceText: string): string {
 const strings = (value: unknown, max: number): string[] => Array.isArray(value) ? value.map((item) => clean(item)).filter(Boolean).slice(0, max) : [];
 const objects = (value: unknown, max: number): Record<string, unknown>[] => Array.isArray(value) ? value.slice(0, max).map((item) => item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {}) : [];
 const status = (value: unknown): StoryThread["status"] => ["open", "escalating", "resolved", "uncertain"].includes(String(value)) ? value as StoryThread["status"] : "uncertain";
+const validLogId = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const noConfidenceNote = (value: string) => /^(không có|không có sự không chắc chắn nào trong (?:văn bản hiện tại|đoạn văn này)|no uncertainty(?: is present in the current text)?|grounded strictly in current text)\.?$/iu.test(value.trim());
 const safeError = (error: unknown) => error instanceof Error && /timeout/i.test(error.message) ? "Story Thread timed out. Please retry." : "Story Thread could not be generated. Please retry.";
 export async function markStoryThreadGenerating(log: { id: string; book_id: string; reading_round: number }): Promise<void> { await query(`INSERT INTO story_thread_jobs (log_id,book_id,reading_round,status,attempt_count,error_message,started_at,completed_at,updated_at) VALUES ($1,$2,$3,'generating',1,NULL,now(),NULL,now()) ON CONFLICT (log_id) DO UPDATE SET status='generating',attempt_count=story_thread_jobs.attempt_count+1,error_message=NULL,started_at=now(),completed_at=NULL,updated_at=now()`, [log.id, log.book_id, log.reading_round]); }
@@ -70,7 +71,7 @@ export function parseStoryThreadAnalysis(raw: string): StoryAnalysis {
   const characterRelationships = objects(data.characterRelationships, 8).map((row) => ({ people: strings(row.people, 4), detail: clean(row.detail) })).filter((row) => row.people.length >= 2 && row.detail);
   const continuityPath = objects(data.continuityPath, 4).map((row) => {
     const citation = row.citation && typeof row.citation === "object" && !Array.isArray(row.citation) ? row.citation as Record<string, unknown> : {};
-    return { text: clean(row.text), citation: { logId: clean(citation.logId), session: Number(citation.session) || 0, pageStart: Number(citation.pageStart) || 0, pageEnd: Number(citation.pageEnd) || 0 } };
+    return { text: clean(row.text), citation: { logId: validLogId(citation.logId) ? citation.logId : "", session: Number(citation.session) || 0, pageStart: Number(citation.pageStart) || 0, pageEnd: Number(citation.pageEnd) || 0 } };
   }).filter((milestone) => milestone.text);
   return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), storySoFar: clean(data.storySoFar), continuityPath, changedEvents: strings(data.changedEvents, 8), threads, characterPulse, characterArcs, characterRelationships, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6).filter((note) => !noConfidenceNote(note)) };
 }
