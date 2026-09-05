@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c49e04ca58774bd00d828b0d720834d76263accdd14cfab31a546457c00b2aea",
+  "pageVersion": "sha256:2f254d4ee482a8bd39b8767e0f7f5f04a661220ac0dc5a105d2434514b250905",
   "claims": [
     {
       "id": "claim_4912e1c90a0842fe8690750ffaa7cbcc",
-      "statement": "The Chapter application uses PostgreSQL with schema isolation under the chapter schema, managed centrally via connection pooling and schema verification helpers.",
+      "statement": "The Chapter application uses PostgreSQL with schema isolation under the chapter schema, managed centrally via connection pooling in src/db.ts and bootstrap SQL in src/db/schema.sql.",
       "evidence": [
         {
           "resource": "repo://src/db.ts",
@@ -12,13 +12,13 @@
         },
         {
           "resource": "repo://src/db/schema.sql",
-          "version": "repo-file-v1:sha256:c76967e2d2fd84ca2399d5c5442554c18c3ba469ac5004fd5d19abc0ffef2d9a"
+          "version": "repo-file-v1:sha256:6d1bafbfbd6010aaa26efaf7776e9c4d198c06c7caacad61fbd82fb1846ced2e"
         }
       ]
     },
     {
       "id": "claim_f97729a07da940edb209cbec928e9605",
-      "statement": "The reading_markers table provides session-scoped bookmarks and annotations (ideas, questions, quotes, return_to) linked to books, users, and reading logs with cascade deletion.",
+      "statement": "The reading_markers table provides session-scoped bookmarks and annotations (ideas, questions, quotes, return_to) linked to books, users, and reading logs with cascade deletion, as defined in the migration and initialized in the schema.",
       "evidence": [
         {
           "resource": "repo://migrations/20260828_add_reading_markers.sql",
@@ -26,13 +26,13 @@
         },
         {
           "resource": "repo://src/db/schema.sql",
-          "version": "repo-file-v1:sha256:c76967e2d2fd84ca2399d5c5442554c18c3ba469ac5004fd5d19abc0ffef2d9a"
+          "version": "repo-file-v1:sha256:6d1bafbfbd6010aaa26efaf7776e9c4d198c06c7caacad61fbd82fb1846ced2e"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T00:58:11.655Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

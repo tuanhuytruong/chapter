@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d60e1d3a1e18dfa11df40a4513d5967e7fe7164e6f2469064b144e9124d67bfd",
+  "pageVersion": "sha256:426ec29a1efc6181778ecea3bea5c844efa5f80dd1a1d17fcf17d0f3f15b5885",
   "claims": [
     {
       "id": "claim_6d53874a00c246788601ac4bd2549040",
@@ -14,11 +14,11 @@
     },
     {
       "id": "claim_ea86badac2824425899990f18c862e5f",
-      "statement": "The books router enforces authentication on all routes and tracks user activity for meaningful POST mutations.",
+      "statement": "The books router enforces authentication on all routes, and performs user activity tracking for specific mutation operations that indicate active engagement.",
       "evidence": [
         {
-          "resource": "repo://src/routes/books.ts#L47-L60",
-          "version": "repo-lines-v1:sha256:d661b07c245d3420c050869949d425cf84619205c3f87fb45fe5126c4558f19c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmOTM2M2I0M2I5MTNmNWU3NjBkYTc3YjE2NTMxZTU4OTIzN2ViYmUyNTJmNjczMGY3MTlhOGUwNDIwMjViZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1Y2UzZDlkMzdjZjE0ZWU2YTFiMjVmYmY0MzQzODc5MjMyYzQyMzllZmEzYTFhZTNhZjkzMTgyY2RkZDQwZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4Y2FhZDVkZDVjNTc2YWM4ZTk5ZGVmNTE5NTIwZDc4YzI0YmFhYjg4OGZmNTdhYTYwY2E1MjgyNmQ4OTExZTcifQ"
+          "resource": "repo://src/routes/books.ts#L72-L90",
+          "version": "repo-lines-v1:sha256:f2cf9b65980c89174a14d77b9b07b0407faea75e234806587b5783caa8ac22ad:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjNTQzNjljNjQ3NDQ2ZWM1M2IxYThiMzM2YmQ3NjdiMTg2MjI0NTViMjg1NDc0ODRmMTAyZTg1MDk3ZDQ2NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY2ZWUzNGI3MWEyN2U3MDA4ZDJhY2RlMjM0Mzg5NjQ2Mzc5Y2Q2MGJkMzg3MWE1MzE2YmJjZWNjM2I5NTg2ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4Y2FhZDVkZDVjNTc2YWM4ZTk5ZGVmNTE5NTIwZDc4YzI0YmFhYjg4OGZmNTdhYTYwY2E1MjgyNmQ4OTExZTcifQ"
         }
       ]
     },
@@ -34,21 +34,21 @@
     },
     {
       "id": "claim_1d0fdedb21824ec7aef58d79c67bf7dd",
-      "statement": "EPUB books are parsed into reading units in batches and persisted in transactions to serve as stable progress cursors.",
+      "statement": "EPUB books are parsed into chunks and persisted via batched PostgreSQL transactions, with these chunk indices serving as the stable progress cursor for the book's lifetime.",
       "evidence": [
         {
-          "resource": "repo://src/routes/books.ts#L116-L160",
-          "version": "repo-lines-v1:sha256:0705f80c0f97ca59e6da8ae703b98c9a090fe5313a5cb09987829ec8c68285b3:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNDNlYTFkNTM1NzgxYjU4MjJlOTFiNjBhZWU3ZTM5ZDU2YjljYmFlMGFlYmI0M2EzYWM1MDNmNmY4NTY4NmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3YmZkMjAzNmFiYzk0ZmRlZjBhNjgxODQwMzlkMzc2MTI3OTg4OWQwMTMyOGQyOGNhYzMyZjlkMjQ0ZGNhMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2MWE3MmE5ZWI3OGRjMDM3MWM1YTc3Yzc2MmU4MjJiYTQ5Y2VkYmMzYjhiOGZhNjQ4ZjU2YzUxOTUxYjhjYjAifQ"
+          "resource": "repo://src/routes/books.ts#L172-L219",
+          "version": "repo-lines-v1:sha256:2ce33d1892ed474a48f9d1bcda2604de49323838b793ce33056d4b81053ddbb3:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNDNlYTFkNTM1NzgxYjU4MjJlOTFiNjBhZWU3ZTM5ZDU2YjljYmFlMGFlYmI0M2EzYWM1MDNmNmY4NTY4NmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NzllNGJmNzk0Y2Y3YTdhNWM1YWFmM2I2NzliN2MwNWM1NTlmYjg4NTAwZDZhMjEzNmE0MDE4NzZlNDBkYmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3YmZkMjAzNmFiYzk0ZmRlZjBhNjgxODQwMzlkMzc2MTI3OTg4OWQwMTMyOGQyOGNhYzMyZjlkMjQ0ZGNhMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhNDA0OGQ5ZjgwMWJhMWZmOTM1OWRiOWExYmMxYTE1YjE4MDYyZGIwMDRhYzAyMWVhMGY4ZDZlOGZmYmI0NzUifQ"
         }
       ]
     },
     {
       "id": "claim_e169989a12444621a5c9618e1000f1f7",
-      "statement": "PDF reading unit caching utilizes PostgreSQL advisory locks derived from book UUIDs to prevent concurrent duplicate ingestion.",
+      "statement": "PDF page cache consistency is maintained using PostgreSQL advisory locks derived from the book's UUID to prevent race conditions during concurrent ingestion attempts.",
       "evidence": [
         {
-          "resource": "repo://src/routes/books.ts#L189-L200",
-          "version": "repo-lines-v1:sha256:4e6311590a3a0244de695a65517fafe91fbc8f6bc07c26e3142d2a4d5b7d6eb0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjZmViOWUxOTk3NmYxZTdmNzg5ODgyYzE2MDYyYzVlZGZjMWFhYzA3YzlkNGNkNGY2Y2Q2Njg1MmJlYTdlYTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhN2IwMjZhMTM1NzIzZjgyOTI1Zjc0ODdlNDMyOGZmZjBkOTU1ZDFmMzFjYzRhYThjNTExNDdiYTkzMWJjYTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjODE0MjViN2VkYTdmYTM2Njg4MTMwYjQ3ZGExZmRjODg0YzMxZmE4ZWEyM2I0Yjk3MjQ5OTQyMDMzOTMyYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwZDIzMmZkNjI0M2JiMTIyYTQxZjM0MDllODUzMDNjMWM1ZGFhMGJkNmRkZjg1YjU5YzYwODBhZGFkOTFmMDQifQ"
+          "resource": "repo://src/routes/books.ts#L263-L273",
+          "version": "repo-lines-v1:sha256:11ad2013fa93bb9789f607d4e2afc773be0edea459d249a8d6ad76548883394d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0MWQyMGVlNGE2NDlhMGE0ZGY3NjllZTM0NjcwN2I1NmMxNTAwODdkNTUyNTNmMTg1NzU4MTRjMDFlNTUyOTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTQyMDhjZDZmZmI4YzRhMzU0N2IyZjU0YWRhMTk5NzhjM2YzNjVlNzhmOTUwMmVmNTE0NWNkZDJhYTg1NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3OGZjYTc5NWY4N2Y2NmE4NDg5MDkwYTgwOGIzNDU0N2M5YjI0NWE1MTc2Y2YwNzQ5ZTgzZWU3N2NjOGUyZmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MDExYTRjMGEwYjI1M2UxNTMzNTRjNWFiZjAyZWMzY2ViMWRkODc2NWU1YTQzYTM5ZWNjYjlmYTUxMzNkMmEifQ"
         }
       ]
     },
@@ -84,7 +84,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-25T17:44:34.504Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

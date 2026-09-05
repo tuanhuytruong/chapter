@@ -3,9 +3,6 @@ type: database-schema
 title: Database Schema & Migrations
 description: Comprehensive overview of the Chapter PostgreSQL database schema, isolation under the chapter schema, connection pool management, and migration workflow including recent reading markers.
 tags: [database, postgresql, schema, migrations, sql, reading-markers]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T00:58:11.655Z
 sources:
   - id: openwiki-source-fa0ff70930b09c59a414a681
     resource: repo://migrations/20260828_add_reading_markers.sql
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Database Schema & Migrations

@@ -3,9 +3,6 @@ type: integration
 title: LLM & TTS Integrations
 description: Integration details for Chapter with OpenAI-compatible LLM endpoints and TTS speech providers.
 tags: [llm, tts, integrations, 9router, openai]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T19:44:06.027Z
 sources:
   - id: openwiki-source-2b68006c6421e01c95988dcc
     resource: repo://src/config.ts
@@ -16,6 +13,9 @@ sources:
   - id: openwiki-source-3a9f5ed6f801cb82536e8136
     resource: repo://src/podcast/tts.ts
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 Chapter integrates with OpenAI-compatible LLM endpoints (via `NINE_ROUTER` / `src/llm.ts`) and TTS speech providers (`src/podcast/tts.ts`) to power features such as conversational reading sessions, deep reading summaries, and automated podcast generation.

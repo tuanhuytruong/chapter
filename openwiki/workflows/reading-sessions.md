@@ -3,9 +3,6 @@ type: concept
 title: Reading Sessions Workflow
 description: End-to-end reading session lifecycle, text extraction, and reading modes including casual reading, deep reading, and story threads.
 tags: [reading-sessions, ai-reader, extraction, story-threads, reading-lens]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T19:44:06.027Z
 sources:
   - id: openwiki-source-2595616fbfe0d9510c40d225
     resource: repo://src/aiReader.ts
@@ -20,6 +17,9 @@ sources:
   - id: openwiki-source-778c364c9c8bbe2c782bb309
     resource: repo://src/storyThread.ts
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Reading Sessions Workflow

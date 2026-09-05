@@ -4,8 +4,8 @@ title: Quickstart & Navigation
 description: Core quickstart, repository navigation, local setup, and task-routing map for Chapter - an advanced book tracking and reading intelligence platform.
 tags: [quickstart, documentation, overview, navigation, architecture, workflows]
 verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T19:44:06.027Z
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -13,7 +13,9 @@ sources:
     resource: repo://README.md
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+  - id: openwiki-source-54631e6ebf1d3b815c4a5eed
+    resource: repo://src/App.tsx
+generated: { by: "openwiki/0.5.0", at: "2026-09-05T16:00:46.565Z" }
 ---
 
 # Quickstart & Navigation
@@ -41,14 +43,12 @@ Use the following routing map to navigate the OpenWiki documentation according t
 | Topic / Domain | Target Wiki Page | Description & Key Contents |
 | :--- | :--- | :--- |
 | **System Architecture** | [/openwiki/architecture/overview.md](/openwiki/architecture/overview.md) | Comprehensive system architecture, backend server layout, frontend components, and data storage. |
-| **Database Schema** | [/openwiki/architecture/database-schema.md](/openwiki/architecture/database-schema.md) | PostgreSQL database schema documentation, migrations, and table relationships. |
+| **Database Schema** | [/openwiki/database/schema.md](/openwiki/database/schema.md) | PostgreSQL database schema documentation, migrations, and table relationships. |
 | **Database Operations** | [/openwiki/operations/database.md](/openwiki/operations/database.md) | Runbook for database operations, migrations, and environment setup. |
 | **Testing & Verification** | [/openwiki/testing/testing-guide.md](/openwiki/testing/testing-guide.md) | Focused verification scripts, testing guidance, and platform health verification procedures. |
 | **Reading Workflows** | [/openwiki/workflows/reading-sessions.md](/openwiki/workflows/reading-sessions.md) | End-to-end reading session lifecycle and text extraction workflow. |
-| **Podcasts & Audio** | [/openwiki/workflows/podcasts.md](/openwiki/workflows/podcasts.md) | Chapter podcast generation, narration, and audio workflows. |
-| **AI Reader & Narratives** | [/openwiki/concepts/ai-reader-narratives.md](/openwiki/concepts/ai-reader-narratives.md) | Domain concepts for AI Reader, reading rounds, and narrative continuity. |
+| **Podcasts & Audio** | [/openwiki/integrations/llm-tts.md](/openwiki/integrations/llm-tts.md) | Chapter podcast generation, narration, and audio workflows. |
 | **LLM & TTS Integrations** | [/openwiki/integrations/llm-tts.md](/openwiki/integrations/llm-tts.md) | LLM and TTS provider integration details. |
-| **Telegram Integration** | [/openwiki/integrations/telegram.md](/openwiki/integrations/telegram.md) | Telegram bot integration and notification delivery. |
 
 ## Local Development, Installation & Production Build
 
@@ -75,30 +75,30 @@ Use the following routing map to navigate the OpenWiki documentation according t
    ```
    Populate required variables in `.env.local` such as:
    - `DATABASE_URL` (e.g., `postgresql://postgres:postgres@localhost:5432/chapter`)
-   - `NINE_ROUTER_URL`, `NINE_ROUTER_MODEL`, `NINE_ROUTER_API_KEY` (or OpenAI-compatible equivalents)
+   - `NINE_ROUTER_URL`, `NINE_ROUTER_MODEL`, `NINE_ROUTER_API_KEY`
    - `SESSION_SECRET`
-   - `CHAPTER_BOOKS_DIR`
 
 ### 3. Running Locally
-Start the development server (runs backend and frontend in development mode via Vite and Express):
+Start the development server:
 ```bash
 npm run dev
 ```
-The server starts via `tsx server.ts` on port 3000 (or configured `PORT`), automatically verifying and establishing database schemas on boot.
+The server starts via `tsx server.ts` on port 3000, automatically verifying and establishing database schemas on boot.
 
 ### 4. Building for Production
 To build the application for production deployment:
 ```bash
 npm run build
 ```
-This compiles the frontend assets and prepares the server bundle. Start the production server with:
+Start the production server with:
 ```bash
 npm start
 ```
 
 ### 5. Running Verification Scripts
-Verify platform health and specific feature subsystems using package scripts:
+Verify platform health using package scripts:
 ```bash
-npx tsx scripts/verify-platform-db.ts
-npx tsx scripts/verify-ai-reader.ts
+npm run verify:db
+npm run verify:ai
 ```
+These scripts call the internal files in `repo://scripts/`.

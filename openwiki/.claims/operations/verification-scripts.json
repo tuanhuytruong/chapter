@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:793a53921f19371349f7294c4570f30db13b939895b9130b298606267e8b028f",
+  "pageVersion": "sha256:337595eb5493f7fd4b0b2af72a7a84bd7ec7eca488962881a888ff9106649486",
   "claims": [
     {
       "id": "claim_600d88e4d92f4e33a71a83fe548e0d68",
@@ -24,11 +24,11 @@
     },
     {
       "id": "claim_73ff1377fe8441109312ffb932d2e5cc",
-      "statement": "verify-reading-progress-companion.ts verifies AI reading progress companion prompts, JSON parsing invariants, and session boundary checks.",
+      "statement": "verify-reading-progress-companion.ts verifies AI reading progress companion prompts, JSON parsing rules for conversation threads, reading session boundary conditions, multi-language support, and consistency between reading companion code and UI/route implementations.",
       "evidence": [
         {
           "resource": "repo://scripts/verify-reading-progress-companion.ts",
-          "version": "repo-file-v1:sha256:96174cf8a750f4845fd0803690d1c723cf54a3748b24d07039efc7bb6a3d1274"
+          "version": "repo-file-v1:sha256:7c259f468e749fa97449b6e5538641c9f7a6707a47d94bbfb634600c3b4df0ac"
         }
       ]
     },
@@ -54,7 +54,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-26T19:17:20.603Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

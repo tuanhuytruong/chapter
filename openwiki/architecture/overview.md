@@ -3,9 +3,6 @@ type: architecture-overview
 title: System Architecture Overview
 description: High-level system architecture of Chapter, detailing the React 19 and Vite frontend, Express TypeScript backend, PostgreSQL database, security, sessions, configuration, and API routing.
 tags: [architecture, backend, frontend, database, security, configuration]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T19:44:06.027Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
@@ -19,7 +16,10 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+generated: { by: "openwiki/0.5.0", at: "2026-09-05T16:00:46.565Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # System Architecture Overview
@@ -75,7 +75,7 @@ Database interactions are managed through `repo://src/db.ts`, which wraps the no
 The client-side application is built as a single-page React application (`repo://src/App.tsx`), styled with Tailwind CSS, and bundled with Vite.
 
 - **Client Entrypoint**: `repo://src/main.tsx` mounts the root React application into the DOM.
-- **API Client Layer**: `repo://src/api.ts` provides strongly typed HTTP helper methods and data models interfacing with the backend REST endpoints.
+- **API Client Layer**: `repo://src/api.ts` provides strongly typed HTTP helper methods, membership models, entitlement structures, and data models interfacing with the backend REST endpoints.
 - **Authentication Context**: `repo://src/AuthContext.tsx` manages active session state, loading gates, and redirects unauthenticated visitors to login/signup flows.
 - **App Shell & Views**: `repo://src/components/AppShell.tsx` wraps authenticated routes (`/`, `/today`, `/books/:id`, `/insights`, `/review`, `/calendar`, `/momentum`, `/achievements`, `/profile`, `/account`, `/pricing`, `/quotes`).
 - **Analytics & PostHog Identity**: `repo://src/analytics.ts` initializes PostHog analytics (`posthog-js`), associating user IDs and account handles upon successful authentication (`posthog.identify`) and resetting session tracking on logout (`posthog.reset`).

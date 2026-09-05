@@ -3,15 +3,15 @@ type: concept
 title: API Routes
 description: API surface, route handlers, and data flows for books, reading progress, and synthesis endpoints in Chapter.
 tags: [api, routes, backend, express, documentation]
-verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-25T17:44:34.504Z
 sources:
   - id: openwiki-source-9d47595c2a2ea0b2c9b2cc8d
     resource: repo://src/api.ts
   - id: openwiki-source-449cc5af19f441ac60ec275b
     resource: repo://src/routes/books.ts
 generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # API Routes

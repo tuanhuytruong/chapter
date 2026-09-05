@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b0c93e4a6223d7609e589c20ff9db10c5c096a1c49358ae20ed0415635501c12",
+  "pageVersion": "sha256:aa4b0f120ace05a823a5cff76795ee6f91e1b5d41abf1030c2615425e70816c6",
   "claims": [
     {
       "id": "claim_5aa26247a2fa4607b1c0cb3406835803",
-      "statement": "OpenWiki supports casual reading, deep reading, and story thread modes via aiReader.ts, readingLens.ts, and storyThread.ts.",
+      "statement": "OpenWiki supports casual reading, deep reading, and story thread modes via aiReader.ts, readingLens.ts, and storyThread.ts, each providing distinct narrative and analytical capabilities.",
       "evidence": [
         {
           "resource": "repo://src/aiReader.ts",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://src/storyThread.ts",
-          "version": "repo-file-v1:sha256:0f882e36a8afba7009651ac8ed845b4837076661f8a7651aa8cef2dd532e8988"
+          "version": "repo-file-v1:sha256:41f7cd636d278a1fcbb70829f829132ad9b38e139bf0e954d50c5b906c2386c1"
         }
       ]
     },
@@ -36,7 +36,7 @@
     },
     {
       "id": "claim_490fc0c4d8a74c579b0fc02582d0ce29",
-      "statement": "Reading sessions follow an end-to-end workflow of starting, conducting, and concluding via API routes and AI Reader synthesis.",
+      "statement": "Reading sessions follow an end-to-end workflow of starting, conducting, and concluding via API routes and AI Reader synthesis, integrating with SQLite for persistent state.",
       "evidence": [
         {
           "resource": "repo://src/aiReader.ts",
@@ -44,13 +44,13 @@
         },
         {
           "resource": "repo://src/api.ts",
-          "version": "repo-file-v1:sha256:38f6f1157754fe68a420becf95a72f611b423889dd9dcf53fff93e5bb0367d30"
+          "version": "repo-file-v1:sha256:ed2e1758e68547318f15da0aaa20560b402037ff13c94b799dc73246e232bcf2"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T19:44:06.027Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

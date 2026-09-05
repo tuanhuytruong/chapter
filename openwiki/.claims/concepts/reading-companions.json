@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fe91260e26bba781357851536196973dafc944aab4e9ad7ca5d42634f94d61d6",
+  "pageVersion": "sha256:60bd74ef82630effd96cb88fe578c9e96c34338ff0139c92e6e11c788f36664e",
   "claims": [
     {
       "id": "claim_e2ca9fc023544c9b95aef1f77afab06f",
-      "statement": "The reading progress companion uses helper functions like buildReadingProgressPrompt and parseReadingProgressCompanion to generate and parse structured JSON reading threads backed strictly by saved reading text.",
+      "statement": "The reading progress companion provides helper functions like buildReadingProgressPrompt and parseReadingProgressCompanion to generate and parse structured JSON reading companions, strictly grounded in provided saved reading fact ledgers.",
       "evidence": [
         {
-          "resource": "repo://src/readingProgressCompanion.ts#L1-L5",
-          "version": "repo-lines-v1:sha256:03e72df706335af03bd553f4d9560a2fbd98d96f3dcfd9c56997db2da3c1da2a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGQ0ZGI1NGM0YjIwYzhkYjczOTY0MTY5ZjY2OTg5ZTUzY2E4Y2FhMWFkODc4YmQ1NjQyZjE3NzFlZDJiZDc0NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTY5ZDEzYWIzZjMyNThlMGY4NDE5NjllMDc0M2VmYWIyOTY3MTAyZWZjNmFhNDQzZDNmYWZiODJmYjVhNDFkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+          "resource": "repo://src/readingProgressCompanion.ts#L68-L100",
+          "version": "repo-lines-v1:sha256:0e0cb1d46715baf744d08785dc4df0f39c42ca1620fae5051c8e5e891a3f5726:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxMjczY2IzYTg0YWQxZDM0OGRjNmVlMjYxNGIyYjIyYWM2YzM3OTFkYTNmMmE2NGM3MjJkZGYwNjg4MTNhNWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YmE1YTI0YjExMzNhZDJmMjc2MjhlYzlhMzZhZThmZmRiOGE4MmFmMDA4MDA1ZTE0NzQzMmY2NGUwNzBjYjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzZjYzZGFiMjBmZGUxYWY2YTI5ZTcwOTdmYWM4Y2RmMTYxN2ZmYzJkZWMzMjVjNjg1Y2JkMjJkODA0ZmU4ZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxZjg0NzFlMzUyMTdhMTU2OWM3OTZiZTViNzViZThmZjAxYzU0YTljODBhMmQ4NzA3MTA4NzYwN2Y0ZmE2MGIifQ"
         }
       ]
     },
@@ -24,11 +24,11 @@
     },
     {
       "id": "claim_a3a4f31129384740b39e88c01d6dba63",
-      "statement": "ReadingProgressCard renders the reading progress companion's main thread, converging ideas, open threads, and carry-forward points with interactive session citation badges.",
+      "statement": "ReadingProgressCard renders the reading progress companion's structured thread—main, converging, open, and carry-forward points—using interactive citation badges for session log navigation.",
       "evidence": [
         {
-          "resource": "repo://src/components/ReadingProgressCard.tsx#L1-L7",
-          "version": "repo-lines-v1:sha256:47e791775ecda4794b6426397cd50f7ebc6c6d0df4f85e186622fc7b2abdd6a2:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjlkNTkyOGRhYjdkOGE1YWM1ODBjYTRhNTFkZWI1N2M2ZTFkZWEwZTNiOWFkOTdhZjAwOGU0MzBkMmM2NmJjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVhOWZhMDc0OWNlYzc2ZWJmNzlhYzA2NGQwZmM1ZGM0ZDhkZGE4NjA4ZWJhMjg3YTc3Mzg2MDRmZjFlOTE1YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L1-L76",
+          "version": "repo-lines-v1:sha256:e4238233d9786b6ce340a5286b9b342ae8e2b77baed969f47c50053c4a92d47f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMGYyNTZmNDdhNTllYmM1MGNiZjg2OWQ1OGNiY2IzNGZlZGMyZjc4MzI5ZDdhODJmMmE1ZjkzNTVmZGM0NDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NjVlNWNlZGNmOWFiZDY0ZjgwYTQ0OWU4YWRlZjk0ZGE0ZWU3NjdjMzg1MjkwYzJiOWQ4Yzc2NzhiYmNmYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OWUwYjVlNWJiMDFkYTI2MmJjZTFhNDgzNDk1MmNlMGY2MzI0NzgxOGE3MGVkZWNlYmE5YTA2OGVlNjk5NzMifQ"
         }
       ]
     },
@@ -54,7 +54,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-26T19:17:20.603Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

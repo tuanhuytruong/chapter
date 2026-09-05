@@ -16,8 +16,8 @@ sources:
     resource: repo://src/readingProgressCompanionRepository.ts
 generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
 verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-26T19:17:20.603Z
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Reading Companions & Synthesis

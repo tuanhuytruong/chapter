@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c470473148bbb70234fa19b0af8f2f61f65efd4c5ca50a38544dbc08a6e634c6",
+  "pageVersion": "sha256:bb9f55e5836ab3f3570471a2ccc8fde6459d111d4fb1b7cc081cc137357b50b9",
   "claims": [
     {
       "id": "claim_459df64de5234fed83a1b299c5d35955",
@@ -32,21 +32,21 @@
     },
     {
       "id": "claim_1491fb2dcee044ed858758a0e61415e2",
-      "statement": "Reading progress companions synthesize reading logs into main threads, converging insights, open threads, and carry-forward points with a stale flag for updates.",
+      "statement": "Reading progress companions synthesize reading logs into main threads, converging insights, open threads, and carry-forward points, and track a stale flag that becomes true when new reading logs are added after the last generation.",
       "evidence": [
         {
-          "resource": "repo://src/components/ReadingProgressCard.tsx#L5-L7",
-          "version": "repo-lines-v1:sha256:bcc7fb616368b34ce8a10245bfe9093c7e5efcecdf9062f68ee64aeaaaa77df1:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDE2MDU2OGMyNzUyNzBjMWFmNDJiYWQzOWRkNzJhYzNhZWZjNTcyNTgyMWYwNjdjNTljYmY0ZDk5ODQyYTUyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVhOWZhMDc0OWNlYzc2ZWJmNzlhYzA2NGQwZmM1ZGM0ZDhkZGE4NjA4ZWJhMjg3YTc3Mzg2MDRmZjFlOTE1YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDc4OTkwYzVhOTg4MjZkMGExY2Y4ZWQxNzc4ZWMxMGZjZWY4OGE4Y2ZiZjAwMGI4OWVmYTZmOTE0Zjc5NTg2MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L99-L100",
+          "version": "repo-lines-v1:sha256:e86450623eb950cf3c0d5d9f731145bacece349d1e833e34cdcea3b93d1039fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGE5MjZjYzJhNjllNjkzOTA2ZDZlMjBiMWY1OTg2MmM0NjY3MjkyODU1NWE4MWM3OGJjM2MyY2NhYzcwM2VjZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmM4NjMwMDRmZmY5NDdiOGQ1YzMyYThlMjM3MjE2MWFkZTIxNzc5NTljNjc4YTlkYzgyNWUxZDE5MTFiZTJhMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWQ4N2Q5YTgyOWZlMmFjYmU2NDRmODg5MDIzYzI1NTk3YjE1MTE1NDBhYmRkMTJlOWQ1NTAzMWVhOGFiNTNkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGZiMzI5MDFhMjM2NjY2YjZmYzIyNDgwMDQ3YWE5MWVkNTlmNTAwZTczYzc5ODI3MWNmOGM3MmQxNGMzODM1ZSJ9"
         },
         {
-          "resource": "repo://src/types.ts#L81-L82",
-          "version": "repo-lines-v1:sha256:b98d8d325c29c6de2b957e286ea94dac34328baee1fe96efa732e2f47febeeab:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjdjYjUwNTFmZjNkNTVmOTU4YzQ5OTk2YzgzMzkxNjY1YzE0OTgwMDQ3MmJmNDE0MDc2ZmM2OGUwYjlhZDZmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NDNjYjBhNTRjZWY5NTNiOWQyNGQ0ZjE5NzMwYzNkNjM3ZDliMDdjMTVhOGZkZTU4ZmIwMWEwNTdkNjU3MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmE4ZTZlZTFmNzE4ZTBjMmExNGMyZDZlYzg5MmRiZWNjMTcxNTM1ZTM1OWMyMDVmOWQ2ZDRlYjg1ZTVhYTBmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTI4NWMyNTg0MmEyMzIxYzlhNjY4YmFmNTZkZWM2ODU1OTY4N2UzYzBlOWVjZmRkMjE0NDZhMzVlYjY3ZDIxNiJ9"
+          "resource": "repo://src/types.ts#L82-L82",
+          "version": "repo-lines-v1:sha256:ea643cb0a54cef953b9d24d4f19730c3d637d9b07c15a8fde58fb01a057d6571:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NDNjYjBhNTRjZWY5NTNiOWQyNGQ0ZjE5NzMwYzNkNjM3ZDliMDdjMTVhOGZkZTU4ZmIwMWEwNTdkNjU3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NDNjYjBhNTRjZWY5NTNiOWQyNGQ0ZjE5NzMwYzNkNjM3ZDliMDdjMTVhOGZkZTU4ZmIwMWEwNTdkNjU3MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmMxYjBiMzRiYjIxODNjNThiMGE3MGM3ZDExYzVkYWYwYjU4OWU1NjY2Y2YwMWJmMDgyMzg1NzUxZTQ1M2IyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTI4NWMyNTg0MmEyMzIxYzlhNjY4YmFmNTZkZWM2ODU1OTY4N2UzYzBlOWVjZmRkMjE0NDZhMzVlYjY3ZDIxNiJ9"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-26T19:17:20.603Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

@@ -3,9 +3,6 @@ type: concept
 title: Domain Model
 description: Core domain models and business logic concepts including reading companions, reading intentions, book uploads, and podcast status management.
 tags: [domain, models, business-logic, books, podcasts, companions]
-verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-26T19:17:20.603Z
 sources:
   - id: openwiki-source-a7bfcf9c7093732581286157
     resource: repo://migrations/20260826_add_book_reading_intention.sql
@@ -18,6 +15,9 @@ sources:
   - id: openwiki-source-c457d3d1a63d5dc86f0da7ef
     resource: repo://src/types.ts
 generated: {by: "openwiki/0.4.0", at: "2026-08-26T19:17:20.603Z"}
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Domain Model

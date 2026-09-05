@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:28dfbbf249df91e557e1848abc136b5ef9aa07efbbc87914970700c8ee00df0e",
+  "pageVersion": "sha256:d1e99a55ff81a712e03077b7490cad692783426499a33964a614612d32237538",
   "claims": [
     {
       "id": "claim_166348bf9d464489ade0687ce354a7ce",
@@ -27,8 +27,8 @@
       "statement": "POST /api/books/:id/markers validates that the book is active and that the marker position falls within the referenced session before upserting.",
       "evidence": [
         {
-          "resource": "repo://src/routes/books.ts#L890-L923",
-          "version": "repo-lines-v1:sha256:c627f9c28537c37c5f11f5e1c8a06bdbb100c39a3aeb34c2835d96bab81d1f64:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2ZjVjMjY3NzRhYjc1NTExMDM3MzkxMDdiZGYwMzcxZjQ2ZmYyN2MxNThmNGFkYjRiNDdlNTJiYzFlNjlhODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzYmE4YzZhYTI2NTJlZDgxOWFhOGIyMmE1MzZmMTM2YmE5NTc4MWE3NDAxZTFhMjI0YTEyZmVhZTVmMjA1OWYifQ"
+          "resource": "repo://src/routes/books.ts#L992-L1073",
+          "version": "repo-lines-v1:sha256:3b44f0168b0674b36c994543d9b172d4675ff1bacca94ae59c974312410d8f2c:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2ZjVjMjY3NzRhYjc1NTExMDM3MzkxMDdiZGYwMzcxZjQ2ZmYyN2MxNThmNGFkYjRiNDdlNTJiYzFlNjlhODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzOWQ4Mzk2OGE1YWUwYTUxZWU5NGVkOTU2ODVjOTc0MmFiMmQwNThmMmE4ZmI1MDliY2ZlYmYzMmMyYTI5M2MifQ"
         }
       ]
     },
@@ -37,8 +37,8 @@
       "statement": "DELETE /api/books/:id/markers/:markerId deletes a marker belonging to the authenticated owner.",
       "evidence": [
         {
-          "resource": "repo://src/routes/books.ts#L925-L938",
-          "version": "repo-lines-v1:sha256:178d4b24a15829cb96133d0a7ce745cfb33d03fd6ceb45a23387017b83bca707:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5YThkMzA1MmI3ZDVjNTQzZmE2Mjk4OWQxNzJhZjNhMDgwZDNlMjVmMzIzMmNjYTJhOTdjOWE3OTc0Zjg5ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM1ZWNkNmM3ZDQ3MjU4NWNmOTUwNmZhZGZmMzRjMWRmMDEzZjM0MTU2MWMwMTYwMTJlZDg3OTMyNDRjMzIyNGUifQ"
+          "resource": "repo://src/routes/books.ts#L1075-L1094",
+          "version": "repo-lines-v1:sha256:8214eac41ae23d814d1b1deaf6ca17b986d06a2ef64bf8d628b63e1d8eec7e17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkY2MxM2U3N2Y2ZjUyNDc3MDRjYTExNTAxMWVkMzE4NDc1YWQzYzBjNDY1YTBkYjMwNDVjZDI3ZmMxYTBhYjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM1ZWNkNmM3ZDQ3MjU4NWNmOTUwNmZhZGZmMzRjMWRmMDEzZjM0MTU2MWMwMTYwMTJlZDg3OTMyNDRjMzIyNGUifQ"
         }
       ]
     },
@@ -64,7 +64,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T00:58:11.655Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

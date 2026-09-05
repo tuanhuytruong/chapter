@@ -3,9 +3,6 @@ type: operations
 title: Verification Scripts & Operations
 description: Runbook notes on running verification scripts, testing suites, and database migrations in OpenWiki.
 tags: [operations, verification, testing, migrations, runbook]
-verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-26T19:17:20.603Z
 sources:
   - id: openwiki-source-6251e90fd58f3c041d6f5c9b
     resource: repo://scripts/verify-podcast.ts
@@ -18,6 +15,9 @@ sources:
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
 generated: {by: "openwiki/0.4.0", at: "2026-08-26T19:17:20.603Z"}
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Verification Scripts & Operations

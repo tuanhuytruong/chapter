@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e1cbe5b591e26de6d697a75387178ee2b1cf1187d4a215e1b152c5948dd6b220",
+  "pageVersion": "sha256:aa2d8eff1c3c266444fba28721f3eda86601ce1ef73cfdc9ff0a26362fa1669b",
   "claims": [
     {
       "id": "claim_473c7e89e6fb44d990aa149589279f45",
@@ -14,27 +14,31 @@
     },
     {
       "id": "claim_5e3242e12f8b4f749f4e64507c03a9a6",
-      "statement": "The primary entry points are repo://server.ts for the backend Express server and repo://src/App.tsx for the frontend application.",
+      "statement": "The primary entry points are repo://server.ts for the backend Express server and the combination of repo://src/main.tsx and repo://src/App.tsx for the frontend application.",
       "evidence": [
         {
           "resource": "repo://server.ts#L1-L50",
-          "version": "repo-lines-v1:sha256:ce9a6d6c5e5c03990ce7ef45c5613a7d3748a9d06f15c9b467c227cc2d51dcaf:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2MTQ4NjgzYjEzOGQ2MDcxNGUxNGJjMWMzNzJmZjJkZmU2MmEzZGZhYjExM2M5YWY2ZjU1M2UzNmI2MzVjNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiZDViMzU0MzMwMmQ0ZTk5Y2YwMDQ1OThiOTdkNmE1ZTExNGM5YjJjN2RjNDg2YTkwNjE1ZjI5MmQyYzAyOGUifQ"
+          "version": "repo-lines-v1:sha256:5f84f031436ae960f22cd37724d7d48c6d0f9776c3105eb914a5c7dd057e3a01:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjMGZlZjVhODI3ZGNmNWNlMDZkYzZjMjliYWI3ZmNhN2JhYzg0NTZiZGQzNmE0NTc5MjU0ZGRlZjQ0N2U4NzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyZDYwN2FiYmRjZTE0ZmZjOTc2Y2E2ZDhlNDQ0NjhmMTg1YmM2ZTY2MTMxZjc5M2IzN2RiODU5YjFkYzgwNDEifQ"
+        },
+        {
+          "resource": "repo://src/App.tsx#L1-L20",
+          "version": "repo-lines-v1:sha256:830879708872f3fc03718da2079af0aafa514dce5785818c8b96db6eb201f310:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxYjAxYWNkNzMxNTM1NzQxZTJlZmFlM2EwMzdhYjI2YjkxODJhMjFhMjNiZmI2ZmU3N2E5NjM5YjhlNDMxZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwMjNiNzQzYWRkM2UxZTQ3MjdjNTdlMWZmOWQxMjc3ZDg1NGY5NGQzYWZkMWE1M2M2MjUxOTE0NWZiMjlmMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1NTEyYWUyZGFkYjA1YmFkMGE1YWI5YWU4OWU0N2Y3ZTQzMTBlMWJhZjBkZTMwMjA1M2I2YjU4NjQ1Yzc1YjYifQ"
         }
       ]
     },
     {
       "id": "claim_5c2b92e6e8fe4a19a9f8baa2c0addacd",
-      "statement": "The repository uses focused verification scripts in repo://scripts/ (such as verify-platform-db.ts and verify-ai-reader.ts) for testing and verification.",
+      "statement": "The repository uses focused verification scripts in repo://scripts/ (such as verify-platform-db.ts and verify-ai-reader.ts), executable via npm scripts, for testing and platform health verification.",
       "evidence": [
         {
           "resource": "repo://package.json#L6-L54",
-          "version": "repo-lines-v1:sha256:247fd206b11b378e1c0ec505a7f51113185f93b04b61ecac9e742a1b2edad68e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
+          "version": "repo-lines-v1:sha256:eba71c9b26bbd05ce8bbc5c4ab9db92afeff059c8dfe14d8fa38170cba43e121:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T19:44:06.027Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

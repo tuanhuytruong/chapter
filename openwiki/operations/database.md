@@ -3,9 +3,6 @@ type: runbook
 title: Database Operations & Runbook
 description: Comprehensive guide for database migration procedures, environment setup, Telegram integration, scheduled jobs, backup/restore, and PM2 production deployment.
 tags: [database, postgresql, operations, migrations, telegram, pm2, backup]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T19:44:06.027Z
 sources:
   - id: openwiki-source-5f5b95b3d6a215fa02ceb945
     resource: repo://.env.example
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-cee005696eb3fd632ce1fbad
     resource: repo://update.sh
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Database Operations & Runbook

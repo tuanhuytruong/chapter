@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:824de848aa613dab2437c54e580bdce7cd10ce3a84a313bae83fc4dfa2778f08",
+  "pageVersion": "sha256:56b8d20fbbbf78bd4b8b9a23233e255a4f2a65a77d4b07067bfaf7a478797bd6",
   "claims": [
     {
       "id": "claim_c6fd54fe9d954aa38c70b2fbedab0845",
@@ -74,11 +74,11 @@
     },
     {
       "id": "claim_6c967b6e8f8e4162ac163e02063e85ce",
-      "statement": "The API client layer in repo://src/api.ts defines strongly typed request handlers and data structures corresponding to backend REST endpoints.",
+      "statement": "The API client layer in repo://src/api.ts defines strongly typed request handlers, membership models, and data structures corresponding to backend REST endpoints.",
       "evidence": [
         {
-          "resource": "repo://src/api.ts",
-          "version": "repo-file-v1:sha256:38f6f1157754fe68a420becf95a72f611b423889dd9dcf53fff93e5bb0367d30"
+          "resource": "repo://src/api.ts#L1-L100",
+          "version": "repo-lines-v1:sha256:cfc7169581fcd7a86c32a5d76f20b9147acdb2513be02b6a970492237d855d0a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZGE0ZmI0NzE1N2I3MzVlNmMyY2FiZjBhZTBlNDEwZmQ1YzQ0Mzc2MzdlNjA1MjAzZmM0NjE0NmY0NTUyM2I0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjQ2YjA2MDg0MjVlNGVlMDEzYzQ3NDY0NjVkMjE5MmJjMWQyNjM1ZjcyMmRmMTFlYjBjNzhkMGIyM2QxZDNlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzOWQ1NzA1MDE2YTVjZjE5ZDI4ZjU3YjVmZGE4ZWIxZjNmN2UxZDMzNGMyZDcyNTdlN2M1Nzc4OGI1NDE0MjM5In0"
         }
       ]
     },
@@ -94,7 +94,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T19:44:06.027Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

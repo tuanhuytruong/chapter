@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:71dd92c3b6e3feae9d929d828ca2b787347c1cca1bea0305bcb38bcf9536b9c8",
+  "pageVersion": "sha256:4d066b45953b9c302cb0f0b4845764b293155ce7edc6662ef2a9d574a7363f61",
   "claims": [
     {
       "id": "claim_c6a2036918dd46d4929e7d93833fd572",
@@ -24,17 +24,17 @@
     },
     {
       "id": "claim_cf7ffe5d5bfe42e1874abf8ab6796d06",
-      "statement": "The AppShell component provides persistent top navigation, mobile bottom navigation, review count badges, theme toggles, and user profile links.",
+      "statement": "The AppShell component provides persistent top navigation including branding, primary links (Today, Library, Review with due badges), journey drawer access, theme toggles, membership tier badges, profile and account links, and sign-out controls. Mobile navigation is handled via a bottom-style collapsible menu.",
       "evidence": [
         {
-          "resource": "repo://src/components/AppShell.tsx#L65-L89",
-          "version": "repo-lines-v1:sha256:c088a0fff4df70184fd9d710dee3b9796f6477535ccb82241be34ea945956d80:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzMGEwOWE2MjUyOTJhZjNlODYwMWY0OTk1NDIzMTYwMDg5MmQyNWM0ZWIwYTg2MTdkZDFmMjlhMjIxYjY1ODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTAwNTlmNDhjYTU2ZjZiNTBmZGM2OWExNWM3YjdlNjMzY2MxZTEzNjA4ZGFhNTBlZDkyM2JlYjBmNjM2ZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2Yjc4MWRhNDU5YzEwODA3ZTk3ZTAyODc3Mjg4ZmQ3M2YyNzcyMjdiYTcyZjI3YjJhMjJlZDJmMmE0MTYzMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiYjY1MzZlMjRkMjY2Y2ZmYmRhNDRlMWEzMGUzMWJiODA4NWNmZTBmMGI4YzM4YzFhYWQwNTZkOGI3Y2Q5NWEifQ"
+          "resource": "repo://src/components/AppShell.tsx#L76-L99",
+          "version": "repo-lines-v1:sha256:bfc6ada9a92a13d23f03c647c815f7e3e48f6640c24b5b8b1b5122f8962c1d14:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOGVmMDQ3M2U4MGQ1OWQ0NTY4ODY0NmJlZTMzMTJjMDI2ZmE2NzEyYjg3NzMxMjNmZjJhYjgwMmRmZjE2ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYjZlMjZmZDZlMTM0Yjk0NDg3NzdhOWM1ZjIwOGIxNmU2NTg2MGNkYjY2YzAyMWFlOWMxMjYyZjNjYTI3ZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwNDQwNGUxMTU3YjMxYjBkNDhlMzZkZjI2Yjg3OTE2YzlmZGY2N2M5ODRiOTI2MDAwMWM0M2VmZjNmNWIwYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5OGM4NThhMDk4ZjBjYzQ4YjU1M2Y4NjExZWQ0NDQwOGQzNTI2NGFjZDc2MTIyZTM2OWM4MjFmMmMzZjE0OGEifQ"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-28T01:29:33.698Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

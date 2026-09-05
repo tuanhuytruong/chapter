@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0b93af1c3a18d7aef0bce3c32c39f859887a1d7045ce3da13932144e26e6706c",
+  "pageVersion": "sha256:06687e0aa98fa3c6919d0a04c943c8f6e050c8d1317355b67d530345ab9ab167",
   "claims": [
     {
       "id": "claim_9eabb26db3a845079f9fd34cec6dce6e",
-      "statement": "The application uses .env.example as a template for environment configuration, requiring DATABASE_URL, Telegram bot tokens, and PM2 settings.",
+      "statement": "The application uses .env.example as a template for environment configuration, requiring DATABASE_URL, Telegram bot tokens, PM2 process names, and release metadata.",
       "evidence": [
         {
           "resource": "repo://.env.example",
-          "version": "repo-file-v1:sha256:9409be8616ea39476d17c8c841b6a0eb1d8664e2d167bcb1083d74c6e542ca8f"
+          "version": "repo-file-v1:sha256:762ccd443ee25ec368d0c0caa31a0a894f5da2b3056944cc1fa07407e79bb5a5"
         }
       ]
     },
@@ -34,11 +34,11 @@
     },
     {
       "id": "claim_163d8ef5196b479ca23c45b83815227d",
-      "statement": "Deployment scripts verify core database relations during updates using psql queries against the chapter schema.",
+      "statement": "Deployment scripts verify core database relations during updates using psql queries against the 'chapter' schema.",
       "evidence": [
         {
           "resource": "repo://update.sh#L87-L97",
-          "version": "repo-lines-v1:sha256:4973bd2c91183366b4dce36d2283ba48a7b46bab5c96729e8e44a3861984c4b6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxMTFjNmVhMjRhZmRlZmRmYWQ1YzE3MTE1ZjlkNTVkZWM2ZDU1YjYxNTkzNWZiNWFjM2I4NjcwYjA2NDE2ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZjhlZDI5MDgwMjIxYjBjNTMwM2IzODlkYjNkOTJiNmYzNTY4YTBjZDk4NmM2YmEzMTVlODE0ZTZiNTlkZDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjliMGQwYmE2Y2VkM2RhZmVjNjY5MjQ2YjRjM2FmMGM3MDc5NTgyMTQ2NzY4MTQ3NmQzNDQ5NWQwODdiODQ2ZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYTQ1MDkyY2YzYzAzMWViNzNkZjY2NDUzZjI3NDRhOWExM2RhMDM0MTRjNWQ1NWNiYzUxYjA0ZjM5OGZkMzAifQ"
+          "version": "repo-lines-v1:sha256:cacdac541c812bc1faf9298cc930625ff58d190993ef3669c8768866b0b6a8e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxMTFjNmVhMjRhZmRlZmRmYWQ1YzE3MTE1ZjlkNTVkZWM2ZDU1YjYxNTkzNWZiNWFjM2I4NjcwYjA2NDE2ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2YmU3MjIyYzI5N2I4YzZmZjcxYTFjNGNkODIxYzI5NDcwMGNkNWU3ZWRmYzQ1YjdkYjU5N2M1MmY1MGUwZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjliMGQwYmE2Y2VkM2RhZmVjNjY5MjQ2YjRjM2FmMGM3MDc5NTgyMTQ2NzY4MTQ3NmQzNDQ5NWQwODdiODQ2ZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYTQ1MDkyY2YzYzAzMWViNzNkZjY2NDUzZjI3NDRhOWExM2RhMDM0MTRjNWQ1NWNiYzUxYjA0ZjM5OGZkMzAifQ"
         }
       ]
     },
@@ -54,17 +54,17 @@
     },
     {
       "id": "claim_b3bdead78b634f3ba711cefa8a83db2f",
-      "statement": "Production deployments are orchestrated via PM2 and update.sh, performing git pulls, builds, schema validation, and health checks.",
+      "statement": "Production deployments are orchestrated via PM2 and update.sh, performing git pulls, builds, schema validation, and health checks to ensure service integrity.",
       "evidence": [
         {
           "resource": "repo://update.sh#L66-L122",
-          "version": "repo-lines-v1:sha256:ed5d587665e48d551a2e15d44fd88c629bb87e52f92fe4acb065c07e127fdedf:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYzUwOThkNzRhM2Y3OTQyOWM4YmQxNGExYmI2YWE3MmU5ZTgwNTkxNzBmZjI3MDI0NzE5NDdmZjVjMzVlMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyYjdjNDIyYjUzMzA3ZWZiYzIzYTQ2Mjg5MWY5NmI5OGQwZWY5NzNlNzhiNmMzNDVhOTNmMjlmMWEyMmMwZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-lines-v1:sha256:7326a7a1077b2f5a9a429deb8a0714a414e9ddd292d99acb04d3dcf0da958acc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYzUwOThkNzRhM2Y3OTQyOWM4YmQxNGExYmI2YWE3MmU5ZTgwNTkxNzBmZjI3MDI0NzE5NDdmZjVjMzVlMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyYjdjNDIyYjUzMzA3ZWZiYzIzYTQ2Mjg5MWY5NmI5OGQwZWY5NzNlNzhiNmMzNDVhOTNmMjlmMWEyMmMwZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T19:44:06.027Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-05T16:00:46.565Z"
   }
 }

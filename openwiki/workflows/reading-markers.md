@@ -3,9 +3,6 @@ type: workflow
 title: Reading Markers Workflow
 description: End-to-end user and system workflow for reading markers, day summaries, and book detail integration.
 tags: [reading-markers, workflow, database, api, frontend]
-verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T00:58:11.655Z
 sources:
   - id: openwiki-source-fa0ff70930b09c59a414a681
     resource: repo://migrations/20260828_add_reading_markers.sql
@@ -16,6 +13,9 @@ sources:
   - id: openwiki-source-449cc5af19f441ac60ec275b
     resource: repo://src/routes/books.ts
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-05T16:00:46.565Z
 ---
 
 # Reading Markers Workflow
