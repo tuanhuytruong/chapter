@@ -626,7 +626,7 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
     }
   }
   const existing = (
-    await query("SELECT reading_experience FROM books WHERE id=$1", [id])
+    await query("SELECT reading_experience, status, current_reading_round FROM books WHERE id=$1", [id])
   ).rows[0];
   if (!existing) return res.status(404).json({ error: "book not found" });
   if (
@@ -649,14 +649,37 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   if (!sets.length) return res.status(400).json({ error: "no valid fields" });
   vals.push(id);
   try {
-    const { rows } = await query(
-      `UPDATE books SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
-      vals,
-    );
+    const rows = await withTransaction(async (client) => {
+      const finishingNow = req.body.status === "finished" && existing.status !== "finished";
+      if (finishingNow) {
+        const saved = await client.query(
+          "SELECT 1 FROM reading_log WHERE book_id=$1 AND reading_round=$2 LIMIT 1",
+          [id, existing.current_reading_round],
+        );
+        if (!saved.rows.length) {
+          const error: any = new Error("cannot finish a reading round without a saved session");
+          error.statusCode = 409;
+          throw error;
+        }
+      }
+      const updated = await client.query(
+        `UPDATE books SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
+        vals,
+      );
+      if (finishingNow && updated.rows[0]) {
+        await client.query(
+          `UPDATE book_reading_rounds SET status='finished', final_page=$1,
+             finished_at=COALESCE(finished_at, now()), updated_at=now()
+           WHERE book_id=$2 AND reading_round=$3`,
+          [updated.rows[0].current_page, id, existing.current_reading_round],
+        );
+      }
+      return updated.rows;
+    });
     if (!rows.length) return res.status(404).json({ error: "book not found" });
     res.json(rows[0]);
   } catch (e: any) {
-    res.status(503).json({ error: "DB unavailable", detail: e.message });
+    res.status(e.statusCode || 503).json({ error: "DB unavailable", detail: e.message });
   }
 });
 
@@ -953,7 +976,15 @@ booksRouter.get("/:id/rounds", async (req: Request, res: Response) => {
     if (!book.rows.length)
       return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
-      "SELECT reading_round, status, started_at, finished_at, final_page FROM book_reading_rounds WHERE book_id=$1 ORDER BY reading_round DESC",
+      `SELECT r.reading_round, r.status, r.started_at, r.finished_at, r.final_page
+       FROM book_reading_rounds r
+       JOIN books b ON b.id=r.book_id
+       WHERE r.book_id=$1
+         AND (r.reading_round=b.current_reading_round OR EXISTS (
+           SELECT 1 FROM reading_log l
+           WHERE l.book_id=r.book_id AND l.reading_round=r.reading_round
+         ))
+       ORDER BY r.reading_round DESC`,
       [id],
     );
     res.json(rows);

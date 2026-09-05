@@ -1272,7 +1272,7 @@ export default function BookDetail() {
                 aria-selected={logView === "list"}
                 aria-controls="reader-panel"
                 onClick={() => setLogView("list")}
-                className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "list" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
+                className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "list" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 List
               </button>
@@ -1283,7 +1283,7 @@ export default function BookDetail() {
                 aria-selected={logView === "journey"}
                 aria-controls="reader-panel"
                 onClick={() => setLogView("journey")}
-                className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "journey" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
+                className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "journey" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 Journey
               </button>
@@ -1304,7 +1304,7 @@ export default function BookDetail() {
                 }}
                 aria-selected={logView === "ai-reader"}
                 aria-controls="ai-reader-panel"
-                className={`px-3 py-1 text-xs font-bold rounded-full transition ${logView === "ai-reader" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
+                className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "ai-reader" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 AI Reader
               </button>

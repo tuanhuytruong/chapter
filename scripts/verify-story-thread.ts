@@ -163,5 +163,8 @@ assert.match(detailSourceX, /id="character-storylines-tab"/);
 assert.match(detailSourceX, /view=\{logView === "character-storylines" \? "characters" : "thread"\}/);
 assert.match(detailSourceX, /readingRound=\{selectedRound \?\? book\.current_reading_round\}/);
 assert.match(detailSourceX, /id="reading-round"/);
+assert.match(detailSourceX, /min-h-11 px-3 py-1 text-xs font-bold rounded-full transition/);
+assert.match(routeSource, /cannot finish a reading round without a saved session/);
+assert.match(routeSource, /EXISTS \(\s*SELECT 1 FROM reading_log l/);
 
 console.log("STORY_THREAD_FIXTURES_OK");
