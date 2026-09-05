@@ -112,10 +112,18 @@ const storyThreadSourceX = readFileSync(new URL("../src/storyThread.ts", import.
 assert.match(storyThreadSourceX, /story_thread_repair_jobs/);
 assert.match(storyThreadSourceX, /createStoryThreadRepairJob/);
 assert.match(storyViewSource, /Retry this session/);
-assert.match(storyViewSource, /Repair later continuity/);
+assert.doesNotMatch(storyViewSource, />Repair later continuity</);
 assert.match(storyViewSource, /failed\.map\(\(item\) => <PendingCard[\s\S]*?onRepair=\{onRepair\}/);
 assert.match(storyViewSource, /ready\.slice\(\)\.reverse\(\)\.map\(\(item\) => <SessionStory[\s\S]*?onRepair=\{onRepair\}/);
 assert.match(routeSource, /b\.status AS book_status/);
 assert.match(routeSource, /entry\.book_status === "paused"/);
+assert.match(storyViewSource, /Wrench/);
+assert.match(storyViewSource, /Repair Story Thread continuity from session/);
+assert.match(storyViewSource, /Repair continuity: rebuild this session and up to the next 4 sessions/);
+assert.doesNotMatch(storyViewSource, />Repair later continuity</);
+assert.match(storyViewSource, /character\.developments\.length/);
+assert.match(storyViewSource, /sticky top-0/);
+assert.match(storyViewSource, /aria-controls="story-thread-panel"/);
+assert.match(storyViewSource, /aria-controls="character-storylines-panel"/);
 
 console.log("STORY_THREAD_FIXTURES_OK");
