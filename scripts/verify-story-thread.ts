@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
+import { aggregateCharacterStorylines } from "../src/storyCharacterStorylines.js";
 
 const raw = JSON.stringify({
   storyRecap: "Mara accepts the sealed letter and leaves before dawn.",
@@ -45,6 +46,18 @@ const vietnameseAutoPrompt = buildStoryThreadPrompt({ title: "Kiểm thử", aut
 assert.match(vietnameseAutoPrompt.system, /respond entirely in Vietnamese/);
 assert.match(prompt.system, /storySoFar is a richer cumulative narrative/);
 assert.match(prompt.system, /return exactly "confidenceNotes": \[\]/);
+assert.match(prompt.system, /Reuse the exact established name from Prior persisted story state/);
+assert.match(prompt.system, /omit the arc rather than guessing an identity/);
+const characterRows = [
+  { log_id: "a", session: 1, page_start: 1, page_end: 1, analysis: { characterArcs: [{ name: "One-off", development: "Appears once." }], characterRelationships: [], characterPulse: [] } },
+  { log_id: "b", session: 2, page_start: 2, page_end: 2, analysis: { characterArcs: [{ name: "Mara", development: "Acts." }], characterRelationships: [], characterPulse: [] } },
+  { log_id: "c", session: 3, page_start: 3, page_end: 3, analysis: { characterArcs: [{ name: "Mara", development: "Changes." }, { name: "Niko", development: "Has one arc." }], characterRelationships: [{ people: ["Niko", "Mara"], detail: "They meet." }], characterPulse: [{ name: "Pulse only", pulse: "Not a trajectory." }] } },
+] as any;
+const projectedCharacters = aggregateCharacterStorylines(characterRows);
+assert.deepEqual(projectedCharacters.characters.map((character) => character.name), ["Mara", "Niko"]);
+assert.equal(projectedCharacters.characters.find((character) => character.name === "Mara")?.developments.length, 2);
+assert.equal(projectedCharacters.characters.some((character) => character.name === "One-off"), false);
+assert.equal(projectedCharacters.characters.some((character) => character.name === "Pulse only"), false);
 assert.equal(secondState.storySoFar, followUp.storySoFar);
 assert.match(prompt.user, /Current reading text/);
 const overlongSource = "A".repeat(STORY_THREAD_MAX_SOURCE_CHARS + 5000);
@@ -133,7 +146,7 @@ assert.match(storyViewSource, /Repair continuity: rebuild this session and up to
 assert.doesNotMatch(storyViewSource, />Repair later continuity</);
 assert.match(storyViewSource, /character\.developments\.length/);
 assert.doesNotMatch(storyViewSource, /sticky top-0/);
-assert.match(storyViewSource, /Back to Story Thread/);
+assert.doesNotMatch(storyViewSource, /Back to Story Thread/);
 assert.match(storyViewSource, /className="space-y-4"/);
 assert.match(storyViewSource, /aria-controls="story-thread-panel"/);
 assert.match(storyViewSource, /aria-controls="character-storylines-panel"/);

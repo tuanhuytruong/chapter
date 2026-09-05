@@ -6,6 +6,7 @@ export type CharacterRelationshipTimeline = { people: string[]; moments: Array<{
 export type CharacterStorylines = { characters: CharacterTrajectory[]; relationships: CharacterRelationshipTimeline[]; sessionsCovered: number; lastCitation: StoryCitation | null };
 
 const normalize = (value: string) => value.toLocaleLowerCase().replace(/\s+/g, " ").trim();
+const MIN_TRAJECTORIES_FOR_CHARACTER = 2;
 
 /** Client-safe projection of persisted, spoiler-scoped Story Thread analyses. */
 export function aggregateCharacterStorylines(rows: StoryThreadRow[]): CharacterStorylines {
@@ -15,9 +16,7 @@ export function aggregateCharacterStorylines(rows: StoryThreadRow[]): CharacterS
   for (const row of rows) {
     const citation = { logId: row.log_id, session: row.session, pageStart: row.page_start, pageEnd: row.page_end };
     lastCitation = citation;
-    const arcs = row.analysis.characterArcs?.length
-      ? row.analysis.characterArcs.map(({ name, development }) => ({ name, text: development }))
-      : row.analysis.characterPulse.map(({ name, pulse }) => ({ name, text: pulse }));
+    const arcs = row.analysis.characterArcs?.map(({ name, development }) => ({ name, text: development })) || [];
     for (const arc of arcs) {
       const name = arc.name.trim(); const text = arc.text.trim();
       if (!name || !text || name === "Unnamed character") continue;
@@ -36,5 +35,11 @@ export function aggregateCharacterStorylines(rows: StoryThreadRow[]): CharacterS
       relationships.set(key, relationship);
     }
   }
-  return { characters: [...characters.values()].sort((a, b) => a.name.localeCompare(b.name)), relationships: [...relationships.values()], sessionsCovered: rows.length, lastCitation };
+  const relationshipParticipants = new Set([...relationships.values()].flatMap((relationship) => relationship.people.map(normalize)));
+  const visibleCharacters = [...characters.values()]
+    .filter((character) => character.developments.length >= MIN_TRAJECTORIES_FOR_CHARACTER || relationshipParticipants.has(normalize(character.name)))
+    .sort((a, b) => b.developments.length - a.developments.length || a.name.localeCompare(b.name));
+  const visibleNames = new Set(visibleCharacters.map((character) => normalize(character.name)));
+  const visibleRelationships = [...relationships.values()].filter((relationship) => relationship.people.every((person) => visibleNames.has(normalize(person))));
+  return { characters: visibleCharacters, relationships: visibleRelationships, sessionsCovered: rows.length, lastCitation };
 }
