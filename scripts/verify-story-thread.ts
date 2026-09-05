@@ -111,5 +111,11 @@ assert.match(routeSource, /LIMIT 5/);
 const storyThreadSourceX = readFileSync(new URL("../src/storyThread.ts", import.meta.url), "utf8");
 assert.match(storyThreadSourceX, /story_thread_repair_jobs/);
 assert.match(storyThreadSourceX, /createStoryThreadRepairJob/);
+assert.match(storyViewSource, /Retry this session/);
+assert.match(storyViewSource, /Repair later continuity/);
+assert.match(storyViewSource, /failed\.map\(\(item\) => <PendingCard[\s\S]*?onRepair=\{onRepair\}/);
+assert.match(storyViewSource, /ready\.slice\(\)\.reverse\(\)\.map\(\(item\) => <SessionStory[\s\S]*?onRepair=\{onRepair\}/);
+assert.match(routeSource, /b\.status AS book_status/);
+assert.match(routeSource, /entry\.book_status === "paused"/);
 
 console.log("STORY_THREAD_FIXTURES_OK");
