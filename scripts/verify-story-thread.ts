@@ -165,6 +165,9 @@ assert.match(detailSourceX, /readingRound=\{selectedRound \?\? book\.current_rea
 assert.match(detailSourceX, /id="reading-round"/);
 assert.match(detailSourceX, /min-h-11 px-3 py-1 text-xs font-bold rounded-full transition/);
 assert.match(routeSource, /cannot finish a reading round without a saved session/);
+assert.match(routeSource, /cannot complete a reading round before reaching the end of the book/);
+assert.match(routeSource, /r\.status='finished' AND r\.final_page < b\.total_pages THEN 'archived'/);
+assert.match(detailSourceX, /round\.status === "archived" \? "Archived" : "Finished"/);
 assert.match(routeSource, /EXISTS \(\s*SELECT 1 FROM reading_log l/);
 
 console.log("STORY_THREAD_FIXTURES_OK");

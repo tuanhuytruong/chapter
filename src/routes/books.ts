@@ -661,6 +661,15 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
           error.statusCode = 409;
           throw error;
         }
+        const progress = await client.query(
+          "SELECT current_page, total_pages FROM books WHERE id=$1 FOR UPDATE",
+          [id],
+        );
+        if (Number(progress.rows[0]?.current_page) < Number(progress.rows[0]?.total_pages)) {
+          const error: any = new Error("cannot complete a reading round before reaching the end of the book");
+          error.statusCode = 409;
+          throw error;
+        }
       }
       const updated = await client.query(
         `UPDATE books SET ${sets.join(", ")} WHERE id = $${i} RETURNING *`,
@@ -976,7 +985,9 @@ booksRouter.get("/:id/rounds", async (req: Request, res: Response) => {
     if (!book.rows.length)
       return res.status(404).json({ error: "book not found" });
     const { rows } = await query(
-      `SELECT r.reading_round, r.status, r.started_at, r.finished_at, r.final_page
+      `SELECT r.reading_round,
+              CASE WHEN r.status='finished' AND r.final_page < b.total_pages THEN 'archived' ELSE r.status END AS status,
+              r.started_at, r.finished_at, r.final_page
        FROM book_reading_rounds r
        JOIN books b ON b.id=r.book_id
        WHERE r.book_id=$1

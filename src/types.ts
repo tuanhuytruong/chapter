@@ -72,7 +72,7 @@ export type ReadingLensAnalysis = {
 
 export interface ReadingRoundRow {
   reading_round: number;
-  status: "active" | "paused" | "finished" | "queued";
+  status: "active" | "paused" | "finished" | "archived" | "queued";
   started_at: string;
   finished_at: string | null;
   final_page: number;
