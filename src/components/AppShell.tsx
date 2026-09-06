@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import usePresence from '../hooks/usePresence';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { presetFromAvatarValue } from '../avatar-presets';
 import AnimalAvatar from './AnimalAvatar';
@@ -30,6 +31,9 @@ export default function AppShell() {
   const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(null);
   const [dueReviewCount, setDueReviewCount] = useState<number | null>(null);
   const [quietTier, setQuietTier] = useState<QuietStreakTier | null>(null);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuPresence = usePresence(mobileMenuOpen);
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
 
@@ -40,7 +44,22 @@ export default function AppShell() {
     setIsDark(next);
   };
 
+  const closeMobileMenu = (restoreFocus = false) => {
+    setMobileMenuOpen(false);
+    if (restoreFocus && mobileMenuRef.current?.contains(document.activeElement)) {
+      window.setTimeout(() => mobileMenuTriggerRef.current?.focus(), 0);
+    }
+  };
+
   useEffect(() => { swipeNav.attach(); return swipeNav.detach; }, [swipeNav]);
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMobileMenu(true);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [mobileMenuOpen]);
   useEffect(() => {
     let active = true;
     if (!user) return;
@@ -96,20 +115,20 @@ export default function AppShell() {
               <button onClick={() => void logout()} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50" title="Sign out" aria-label="Sign out"><LogOut className="h-3.5 w-3.5" /></button>
             </div>
 
-            <button onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileMenuOpen} className="flex h-10 w-10 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50 md:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}</button>
+            <button ref={mobileMenuTriggerRef} onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileMenuOpen} aria-controls="mobile-account-menu" className="flex h-10 w-10 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50 md:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}</button>
           </div>
           <nav className="flex h-11 items-stretch justify-around border-t border-natural-border font-sans text-[10px] font-bold uppercase tracking-[0.12em] md:hidden" aria-label="Primary navigation">
             <NavLink to="/today" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Sparkles className="h-3.5 w-3.5" />Today</NavLink>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><BookMarked className="h-3.5 w-3.5" />Library</NavLink>
             <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} aria-label={dueReviewCount === null ? "Review" : `Review, ${dueReviewCount} due`} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Review{dueReviewCount !== null && dueReviewCount > 0 && <span aria-hidden="true" className="inline-flex min-w-4 items-center justify-center rounded-full bg-natural-clay px-1 text-[9px] leading-4 text-white">{dueReviewCount > 9 ? "9+" : dueReviewCount}</span>}</NavLink>
           </nav>
-          {mobileMenuOpen && <div className="border-t border-natural-border py-2 md:hidden">
-            <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} tier={quietTier} /><span>Profile</span></NavLink>
-            {membershipTier && <MembershipTierBadge tier={membershipTier} mobile onNavigate={() => setMobileMenuOpen(false)} />}
-            <button onClick={() => { setMobileMenuOpen(false); setJourneyOpen(true); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Map className="h-4 w-4 text-natural-stone" />Your Journey</button>
-            <NavLink to="/account" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>
-            <button onClick={toggleDark} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark">{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}{isDark ? 'Use light theme' : 'Use dark theme'}</button>
-            <button onClick={() => void logout()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-clay"><LogOut className="h-4 w-4" />Sign out</button>
+          {mobileMenuPresence.mounted && <div ref={mobileMenuRef} id="mobile-account-menu" data-state={mobileMenuPresence.phase} aria-hidden={!mobileMenuOpen} className="motion-menu border-t border-natural-border py-2 md:hidden">
+            <NavLink to="/profile" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} tier={quietTier} /><span>Profile</span></NavLink>
+            {membershipTier && <MembershipTierBadge tier={membershipTier} mobile onNavigate={() => closeMobileMenu()} />}
+            <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => { closeMobileMenu(); setJourneyOpen(true); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Map className="h-4 w-4 text-natural-stone" />Your Journey</button>
+            <NavLink to="/account" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>
+            <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={toggleDark} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark">{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}{isDark ? 'Use light theme' : 'Use dark theme'}</button>
+            <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => void logout()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-clay"><LogOut className="h-4 w-4" />Sign out</button>
           </div>}
         </div>
       </header>

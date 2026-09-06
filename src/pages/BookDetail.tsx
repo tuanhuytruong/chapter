@@ -1218,18 +1218,20 @@ export default function BookDetail() {
             </div>
             {rounds.length > 0 && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading</span><ChapterDropdown id="reading-round" className="w-full sm:w-64" value={String(selectedRound ?? book.current_reading_round)} onChange={(value) => { setStoryRetryingLogId(null); setSelectedRound(Number(value)); }} options={rounds.map((round) => ({ value: String(round.reading_round), label: round.reading_round === book.current_reading_round ? `Current reading · Round ${round.reading_round}` : `Previous reading · Round ${round.reading_round}${round.finished_at ? ` · ${round.status === "archived" ? "Archived" : "Finished"} ${new Date(round.finished_at).toLocaleDateString()}` : ""}` }))}/>{selectedRound !== book.current_reading_round && <button type="button" onClick={() => { setStoryRetryingLogId(null); setSelectedRound(book.current_reading_round); }} className="shrink-0 text-xs font-bold text-natural-sage underline underline-offset-2">Current</button>}</div>}
           </div>
-          <StoryThreadView
-            analyses={storyThread}
-            logs={logs}
-            fileType={book.file_type}
-            summaryLang={book.summary_lang}
-            view={logView === "character-storylines" ? "characters" : "thread"}
-            readingRound={selectedRound ?? book.current_reading_round}
-            onRetry={retryStoryThread}
-            onRepair={repairStoryThread}
-            retryingLogId={storyRetryingLogId}
-            canEdit={Boolean(book.can_edit)}
-          />
+          <div key={logView} className="motion-tab-panel">
+            <StoryThreadView
+              analyses={storyThread}
+              logs={logs}
+              fileType={book.file_type}
+              summaryLang={book.summary_lang}
+              view={logView === "character-storylines" ? "characters" : "thread"}
+              readingRound={selectedRound ?? book.current_reading_round}
+              onRetry={retryStoryThread}
+              onRepair={repairStoryThread}
+              retryingLogId={storyRetryingLogId}
+              canEdit={Boolean(book.can_edit)}
+            />
+          </div>
         </>
       ) : (
         <>
@@ -1346,7 +1348,7 @@ export default function BookDetail() {
                 role="tabpanel"
                 aria-hidden={logView !== "ai-reader"}
                 hidden={logView !== "ai-reader"}
-                className="rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5"
+                className="motion-tab-panel rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5"
               >
                 <BookWiki
                   bookId={id}
@@ -1364,7 +1366,7 @@ export default function BookDetail() {
               </div>
             )}
             {logView !== "ai-reader" && (
-              <div id="reader-panel" role="tabpanel" aria-labelledby={logView === "journey" ? "journey-tab" : "list-tab"}>
+              <div key={logView} id="reader-panel" role="tabpanel" aria-labelledby={logView === "journey" ? "journey-tab" : "list-tab"} className="motion-tab-panel">
                 <ReadingProgressCard companion={readingProgress} readingRound={selectedRound ?? book.current_reading_round} logCount={logs.length} hasRawText={logs.some((log) => Boolean(log.raw_text?.trim()))} canEdit={Boolean(book.can_edit)} bookStatus={book.status} loading={readingProgressLoading} onRefresh={refreshReadingProgress} onOpenReadingSession={openSavedReadingSession} />
                 {logs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
