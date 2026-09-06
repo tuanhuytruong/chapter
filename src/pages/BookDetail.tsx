@@ -1188,7 +1188,7 @@ export default function BookDetail() {
       )}
 
       {logView === "podcast" ? (
-        <div id="podcast-panel" role="tabpanel" aria-labelledby="podcast-tab" className="mt-1">
+        <div key={logView} id="podcast-panel" role="tabpanel" aria-labelledby="podcast-tab" className="motion-tab-panel mt-1">
         <PodcastPanel
           bookId={book.id}
           canEdit={Boolean(book.can_edit)}
