@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { captureRoutePerformance } from './analytics';
 import Library from './pages/Library';
 import BookDetail from './pages/BookDetail';
 import Insights from './pages/Insights';
@@ -19,11 +21,21 @@ import ResetPassword from './components/ResetPassword';
 import { AuthProvider, useAuth } from './AuthContext';
 import { OnboardingProvider } from './onboarding';
 
+function RoutePerformanceObserver() {
+  const location = useLocation();
+  useEffect(() => {
+    const startedAt = performance.now();
+    const frame = window.requestAnimationFrame(() => captureRoutePerformance(location.pathname, startedAt));
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.pathname]);
+  return null;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <BrowserRouter><Routes><Route path="/login" element={<Login />} /><Route path="/signup" element={<Signup />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="*" element={<Login />} /></Routes></BrowserRouter>;
-  return <OnboardingProvider><BrowserRouter><Routes><Route element={<AppShell />}>
+  if (!user) return <BrowserRouter><RoutePerformanceObserver /><Routes><Route path="/login" element={<Login />} /><Route path="/signup" element={<Signup />} /><Route path="/forgot-password" element={<ForgotPassword />} /><Route path="/reset-password" element={<ResetPassword />} /><Route path="*" element={<Login />} /></Routes></BrowserRouter>;
+  return <OnboardingProvider><BrowserRouter><RoutePerformanceObserver /><Routes><Route element={<AppShell />}>
     <Route path="/" element={<Library />} /><Route path="/today" element={<Today />} /><Route path="/books/:id" element={<BookDetail />} /><Route path="/insights" element={<Insights />} /><Route path="/review" element={<Review />} /><Route path="/calendar" element={<ReadingCalendar />} /><Route path="/momentum" element={<Momentum />} /><Route path="/achievements" element={<Achievements />} /><Route path="/profile" element={<Profile />} /><Route path="/account" element={<Account />} /><Route path="/pricing" element={<Pricing />} /><Route path="/quotes" element={<Quotes />} /><Route path="*" element={<Library />} />
   </Route></Routes></BrowserRouter></OnboardingProvider>;
 }

@@ -54,10 +54,33 @@ export type AnalyticsEvent =
   | "reading_session_started"
   | "quiet_streak_milestone_seen"
   | "review_completed"
+  | "route_perf_sample"
   | "sign_up_completed"
   | "weekly_goal_set";
 
 type AnalyticsProperties = Record<string, boolean | number | string | null | undefined>;
+
+export function routeAnalyticsId(pathname: string): string {
+  if (/^\/books\/[^/]+$/.test(pathname)) return "/books/:id";
+  return pathname || "/";
+}
+
+function durationBucket(durationMs: number): string {
+  if (durationMs < 250) return "under_250ms";
+  if (durationMs < 750) return "250_749ms";
+  if (durationMs < 1500) return "750_1499ms";
+  if (durationMs < 3000) return "1500_2999ms";
+  return "3000ms_plus";
+}
+
+/** Records route responsiveness without URLs, IDs, titles, or reader content. */
+export function captureRoutePerformance(pathname: string, startedAt: number): void {
+  captureAnalyticsEvent("route_perf_sample", {
+    route: routeAnalyticsId(pathname),
+    render_duration_bucket: durationBucket(Math.max(0, performance.now() - startedAt)),
+    device_class: window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop",
+  });
+}
 
 /**
  * Product analytics must stay metadata-only: never send book titles, authors,
