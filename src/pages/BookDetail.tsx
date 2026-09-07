@@ -788,6 +788,7 @@ export default function BookDetail() {
               src={book.cover_url}
               alt={book.title}
               referrerPolicy="no-referrer"
+              fetchPriority="high"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}

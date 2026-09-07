@@ -49,6 +49,33 @@ export function BookDetailSkeleton() {
   );
 }
 
+export function RouteContentSkeleton() {
+  return (
+    <div className="space-y-6 font-sans" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading page content</span>
+      <header className="space-y-2">
+        <ContentSkeleton className="h-4 w-24" />
+        <ContentSkeleton className="h-8 w-3/5 max-w-sm" />
+        <ContentSkeleton className="h-4 w-4/5 max-w-xl" />
+      </header>
+      <section className="rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5" aria-hidden="true">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+          <div className="space-y-4">
+            <ContentSkeleton className="h-5 w-32" />
+            <ContentSkeleton className="h-28 w-full" />
+            <ContentSkeleton className="h-4 w-full" />
+            <ContentSkeleton className="h-4 w-4/5" />
+          </div>
+          <ContentSkeleton className="min-h-40 w-full" />
+        </div>
+      </section>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
+        {[0, 1, 2].map((index) => <ContentSkeleton key={index} className="h-32" />)}
+      </section>
+    </div>
+  );
+}
+
 export function PricingSkeleton() {
   return (
     <main className="mx-auto max-w-6xl space-y-8 pb-8 sm:space-y-12" aria-busy="true" aria-live="polite">
