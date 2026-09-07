@@ -72,6 +72,11 @@ assert.match(llmSource, /retryAfterMs\(resp\.headers\.get\("retry-after"\)\)/);
 assert.match(llmSource, /NINE_ROUTER_RETRY_BASE_MS \* 2 \*\* \(attempt - 1\)/);
 assert.match(llmSource, /Math\.random\(\) \* \(exponential \+ 1\)/);
 assert.match(llmSource, /if \(priority !== "background"\) return;/);
+assert.ok(
+  llmSource.indexOf("await acquireNineRouterSlot(priority)") < llmSource.lastIndexOf("assertBackgroundCircuitAvailable(priority)"),
+  "background circuit is rechecked after scheduler admission",
+);
+assert.match(llmSource, /releaseNineRouterSlot\(priority\);\s*throw error;/);
 const routes = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
 const regenerate = routes.slice(
   routes.indexOf('"/:id/wiki/regenerate"'),

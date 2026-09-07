@@ -305,7 +305,6 @@ export async function callLLM(
   }
 
   try {
-    assertBackgroundCircuitAvailable(priority);
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -314,6 +313,16 @@ export async function callLLM(
     const controller = new AbortController();
     const queuedAt = Date.now();
     await acquireNineRouterSlot(priority);
+    // The circuit can open while this call waits behind another background job.
+    // Check at dispatch admission, not only before it joins the scheduler.
+    // This is before the request's regular finally exists, so release explicitly
+    // when the breaker rejects this just-acquired scheduler slot.
+    try {
+      assertBackgroundCircuitAvailable(priority);
+    } catch (error) {
+      releaseNineRouterSlot(priority);
+      throw error;
+    }
     const queueWaitMs = Date.now() - queuedAt;
     const boundedTimeoutMs = Number.isFinite(timeoutMs)
       ? Math.min(600_000, Math.max(5_000, timeoutMs))
