@@ -53,7 +53,8 @@
     "verify:upload-content": "tsx scripts/verify-upload-content.ts",
     "perf:audit:assets": "tsx scripts/perf/audit-assets.ts",
     "verify:performance-baseline": "tsx scripts/verify-performance-baseline.ts",
-    "verify:route-image-performance": "tsx scripts/verify-route-image-performance.ts"
+    "verify:route-image-performance": "tsx scripts/verify-route-image-performance.ts",
+    "verify:phase2-generation": "tsx scripts/verify-phase2-generation.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

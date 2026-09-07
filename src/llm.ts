@@ -33,7 +33,26 @@ export const NINE_ROUTER_DISPATCH_INTERVAL_MS = Math.ceil(
   1_000 / NINE_ROUTER_MAX_RPS,
 );
 export const NINE_ROUTER_MAX_ATTEMPTS = 3;
-const NINE_ROUTER_RETRY_DELAYS_MS = [300, 700] as const;
+const NINE_ROUTER_RETRY_BASE_MS = positiveEnv(
+  "NINE_ROUTER_RETRY_BASE_MS",
+  500,
+  10_000,
+);
+const NINE_ROUTER_RETRY_MAX_MS = positiveEnv(
+  "NINE_ROUTER_RETRY_MAX_MS",
+  10_000,
+  60_000,
+);
+const NINE_ROUTER_BACKGROUND_CIRCUIT_FAILURES = positiveEnv(
+  "NINE_ROUTER_BACKGROUND_CIRCUIT_FAILURES",
+  3,
+  20,
+);
+const NINE_ROUTER_BACKGROUND_CIRCUIT_COOLDOWN_MS = positiveEnv(
+  "NINE_ROUTER_BACKGROUND_CIRCUIT_COOLDOWN_MS",
+  15_000,
+  300_000,
+);
 export type LlmPriority = "interactive" | "background";
 type Waiter = { resolve: () => void; priority: LlmPriority };
 
@@ -104,11 +123,66 @@ function releaseNineRouterSlot(priority: LlmPriority): void {
 class NineRouterHttpError extends Error {
   constructor(
     readonly status: number,
+    readonly retryAfterMs: number | undefined,
     message: string,
   ) {
     super(message);
     this.name = "NineRouterHttpError";
   }
+}
+
+export class NineRouterBackgroundCircuitOpenError extends Error {
+  constructor(readonly retryAfterMs: number) {
+    super("9router background circuit is temporarily open");
+    this.name = "NineRouterBackgroundCircuitOpenError";
+  }
+}
+
+let backgroundCircuitFailures = 0;
+let backgroundCircuitOpenUntil = 0;
+
+function assertBackgroundCircuitAvailable(priority: LlmPriority): void {
+  // Interactive reader actions deliberately bypass this background-only breaker.
+  if (priority !== "background") return;
+  const remainingMs = backgroundCircuitOpenUntil - Date.now();
+  if (remainingMs > 0) throw new NineRouterBackgroundCircuitOpenError(remainingMs);
+}
+
+function recordNineRouterOutcome(priority: LlmPriority, error?: unknown): void {
+  if (priority !== "background") return;
+  if (!error) {
+    backgroundCircuitFailures = 0;
+    backgroundCircuitOpenUntil = 0;
+    return;
+  }
+  if (!retryableNineRouterError(error)) return;
+  backgroundCircuitFailures++;
+  if (backgroundCircuitFailures >= NINE_ROUTER_BACKGROUND_CIRCUIT_FAILURES) {
+    backgroundCircuitOpenUntil = Date.now() + NINE_ROUTER_BACKGROUND_CIRCUIT_COOLDOWN_MS;
+    backgroundCircuitFailures = 0;
+    console.warn(
+      `[llm] background circuit opened for ${NINE_ROUTER_BACKGROUND_CIRCUIT_COOLDOWN_MS}ms after retryable upstream failures`,
+    );
+  }
+}
+
+function retryAfterMs(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds * 1_000);
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : undefined;
+}
+
+function retryDelayMs(error: unknown, attempt: number): number {
+  const retryAfter = error instanceof NineRouterHttpError ? error.retryAfterMs : undefined;
+  if (retryAfter !== undefined) return Math.min(NINE_ROUTER_RETRY_MAX_MS, retryAfter);
+  const exponential = Math.min(
+    NINE_ROUTER_RETRY_MAX_MS,
+    NINE_ROUTER_RETRY_BASE_MS * 2 ** (attempt - 1),
+  );
+  // Full jitter avoids synchronized retry bursts from concurrently queued jobs.
+  return Math.floor(Math.random() * (exponential + 1));
 }
 
 export class LlmOutputLanguageError extends Error {
@@ -231,6 +305,7 @@ export async function callLLM(
   }
 
   try {
+    assertBackgroundCircuitAvailable(priority);
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -284,7 +359,12 @@ export async function callLLM(
       console.info(
         `[llm]${trace} response body received ${body.length} bytes after ${totalMs}ms`,
       );
-      if (!resp.ok) throw new Error(`9router HTTP ${resp.status}`);
+      if (!resp.ok)
+        throw new NineRouterHttpError(
+          resp.status,
+          retryAfterMs(resp.headers.get("retry-after")),
+          `9router HTTP ${resp.status}`,
+        );
       let data: any;
       try {
         data = JSON.parse(body);
@@ -299,6 +379,7 @@ export async function callLLM(
       console.info(
         `[llm]${trace} assistant content extracted (${text.length} chars) after ${totalMs}ms`,
       );
+      recordNineRouterOutcome(priority);
       return text.trim();
     } catch (err: any) {
       const elapsedMs = Date.now() - startedAt;
@@ -316,9 +397,7 @@ export async function callLLM(
   } catch (err: any) {
     const attempt = options.attempt || 1;
     if (retryableNineRouterError(err) && attempt < NINE_ROUTER_MAX_ATTEMPTS) {
-      const delayMs =
-        NINE_ROUTER_RETRY_DELAYS_MS[attempt - 1] ||
-        NINE_ROUTER_RETRY_DELAYS_MS.at(-1)!;
+      const delayMs = retryDelayMs(err, attempt);
       console.warn(
         `[llm]${trace} attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} failed (${err.message}); retrying in ${delayMs}ms`,
       );
@@ -328,6 +407,7 @@ export async function callLLM(
         attempt: attempt + 1,
       });
     }
+    recordNineRouterOutcome(priority, err);
     console.error(
       "[llm] generic call failed:",
       err.message,
@@ -565,7 +645,12 @@ export async function callNineRouter(
         signal: controller.signal,
       });
       const body = await resp.text();
-      if (!resp.ok) throw new Error(`9router HTTP ${resp.status}`);
+      if (!resp.ok)
+        throw new NineRouterHttpError(
+          resp.status,
+          retryAfterMs(resp.headers.get("retry-after")),
+          `9router HTTP ${resp.status}`,
+        );
       let data: any;
       try {
         data = JSON.parse(body);
@@ -606,9 +691,7 @@ export async function callNineRouter(
       throw err;
     }
     if (retryableNineRouterError(err) && attempt < NINE_ROUTER_MAX_ATTEMPTS) {
-      const delayMs =
-        NINE_ROUTER_RETRY_DELAYS_MS[attempt - 1] ||
-        NINE_ROUTER_RETRY_DELAYS_MS.at(-1)!;
+      const delayMs = retryDelayMs(err, attempt);
       console.warn(
         `[llm] interactive summary attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} failed (${err.message}); retrying in ${delayMs}ms`,
       );

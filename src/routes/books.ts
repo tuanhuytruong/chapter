@@ -924,17 +924,49 @@ booksRouter.post(
     const { id } = req.params;
     if (!(await ownerCanMutate(req, res, id))) return;
     try {
+      // Keep the established owner and paused-book rules ahead of any claim or
+      // entitlement observation. A running job remains observable but is never
+      // restarted by a duplicate request.
+      const claim = await withTransaction(async (client) => {
+        // Lock the lifecycle row while deciding eligibility and claiming the job.
+        // A pause concurrent with this request therefore happens wholly before or
+        // after the claim; it can never start a new generation after pausing.
+        const book = await client.query(
+          "SELECT status FROM books WHERE id=$1 FOR UPDATE",
+          [id],
+        );
+        if (!book.rows.length) return { kind: "missing" as const };
+        if (book.rows[0].status !== "active") return { kind: "inactive" as const };
+        const claimed = await client.query(
+          `INSERT INTO ai_reader_jobs (book_id, status, started_at, completed_at, error_message)
+           VALUES ($1, 'running', now(), NULL, NULL)
+           ON CONFLICT (book_id) DO UPDATE SET status='running', started_at=now(), completed_at=NULL, error_message=NULL
+           WHERE ai_reader_jobs.status != 'running'
+           RETURNING status, started_at`,
+          [id],
+        );
+        if (claimed.rows.length) return { kind: "claimed" as const };
+        const existing = await client.query(
+          "SELECT status, started_at FROM ai_reader_jobs WHERE book_id=$1",
+          [id],
+        );
+        return { kind: "duplicate" as const, existing: existing.rows[0] };
+      });
+      if (claim.kind === "missing") return res.status(404).json({ error: "book not found" });
+      if (claim.kind === "inactive") return res.status(409).json({
+        error: "AI Reader cannot be regenerated while this book is not active",
+      });
+      if (claim.kind === "duplicate") {
+        return res.status(202).json({
+          ok: true,
+          status: claim.existing?.status || "running",
+          startedAt: claim.existing?.started_at || null,
+          duplicate: true,
+        });
+      }
+      // This is explicitly best-effort telemetry (it catches its own failure),
+      // so no claimed job can be stranded before its worker starts.
       await observeEntitledGeneration(userFrom(req).id, "ai_reader_generation");
-      const claim = await query(
-        `INSERT INTO ai_reader_jobs (book_id, status, started_at, completed_at, error_message)
-       VALUES ($1, 'running', now(), NULL, NULL)
-       ON CONFLICT (book_id) DO UPDATE SET status='running', started_at=now(), completed_at=NULL, error_message=NULL
-       WHERE ai_reader_jobs.status != 'running'
-       RETURNING status`,
-        [id],
-      );
-      if (!claim.rows.length)
-        return res.status(409).json({ error: "AI Reader is already running" });
       void processBookForWiki(id, true)
         .then(async (updated) => {
           await query(
