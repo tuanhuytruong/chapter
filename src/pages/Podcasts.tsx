@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, ChevronDown, Headphones, Loader2, Play, RefreshCw } from "lucide-react";
 import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode } from "../api";
 import PodcastPlaylistPlayer from "../components/PodcastPlaylistPlayer";
 import { captureAnalyticsEvent } from "../analytics";
+import { useJobPolling } from "../hooks/useJobPolling";
 
 const pending = new Set(["queued", "scripting", "synthesizing", "archiving"]);
 const duration = (seconds: number | null) => seconds ? `${Math.max(1, Math.round(seconds / 60))} min` : "";
@@ -23,10 +24,22 @@ export default function Podcasts() {
   // `null` is an intentional user collapse and must stay collapsed.
   const [expandedBookId, setExpandedBookId] = useState<string | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
-  const refresh = async () => { setLoading(true); try { setBooks(await api.getPodcastCatalog()); setError(null); } catch (e: any) { setError(e.message); } finally { setLoading(false); } };
+  const refreshGeneration = useRef(0);
+  const refresh = async (rethrow = false) => {
+    const generation = ++refreshGeneration.current;
+    setLoading(true);
+    try {
+      const nextBooks = await api.getPodcastCatalog();
+      if (generation === refreshGeneration.current) { setBooks(nextBooks); setError(null); }
+    } catch (e: any) {
+      if (generation === refreshGeneration.current) setError(e.message);
+      if (rethrow) throw e;
+    } finally { if (generation === refreshGeneration.current) setLoading(false); }
+  };
   useEffect(() => { void refresh(); }, []);
   useEffect(() => { if (!books.length || expandedBookId !== undefined) return; const preferred = books.find((book) => book.chapters.some((chapter) => ["failed", "archive_pending"].includes(chapter.episode?.status || ""))) || books[0]; setExpandedBookId(preferred.id); }, [books, expandedBookId]);
-  useEffect(() => { if (!books.some((book) => book.chapters.some((chapter) => chapter.episode && pending.has(chapter.episode.status)))) return; const timer = window.setInterval(() => void refresh(), 5000); return () => window.clearInterval(timer); }, [books]);
+  const hasPendingEpisode = books.some((book) => book.chapters.some((chapter) => chapter.episode && pending.has(chapter.episode.status)));
+  useJobPolling({ enabled: hasPendingEpisode, intervalMs: 5000, poll: () => refresh(true), onSuccess: () => undefined });
   const creatingKey = useMemo(() => creating, [creating]);  const create = async (bookId: string, chapterKey: string, gender?: "female" | "male") => {
     setCreating(`${bookId}:${chapterKey}`);
     try {

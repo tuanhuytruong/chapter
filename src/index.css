@@ -45,7 +45,7 @@ body {
 .journey-drawer[data-state="open"] .journey-entry { animation: journeyEntryIn var(--motion-standard) var(--motion-enter) both; }
 .journey-drawer[data-state="closed"] .journey-backdrop { opacity: 0; transition: opacity var(--motion-fast) var(--motion-exit); }
 .journey-drawer[data-state="closed"] .journey-panel { opacity: 0; transform: translateX(-12px); transition: opacity var(--motion-fast) var(--motion-exit), transform var(--motion-standard) var(--motion-exit); }
-.journey-drawer[data-state="closed"] .journey-entry { opacity: 0; transition: opacity 100ms var(--motion-exit); }
+.journey-drawer[data-state="closed"] .journey-entry { opacity: 0; transition: opacity var(--motion-fast) var(--motion-exit); }
 .route-content { animation: routeContentIn var(--motion-standard) var(--motion-enter) both; }
 .motion-menu[data-state="entering"], .motion-menu[data-state="exiting"] { opacity: 0; transform: translateY(-4px); }
 .motion-menu { transition: opacity var(--motion-fast) var(--motion-exit), transform var(--motion-standard) var(--motion-exit); }

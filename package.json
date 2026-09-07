@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "verify:phase1": "tsx scripts/verify-phase1.mjs",
+    "verify:phase2-generation": "tsx scripts/verify-phase2-generation.ts",
     "verify:ui-foundation": "tsx scripts/verify-ui-foundation.ts",
     "verify:9router": "tsx scripts/verify-9router.mjs",
     "verify:reading-lens": "tsx scripts/verify-reading-lens.ts",
@@ -53,8 +54,9 @@
     "verify:upload-content": "tsx scripts/verify-upload-content.ts",
     "perf:audit:assets": "tsx scripts/perf/audit-assets.ts",
     "verify:performance-baseline": "tsx scripts/verify-performance-baseline.ts",
+    "verify:job-polling": "tsx scripts/verify-job-polling.ts",
     "verify:route-image-performance": "tsx scripts/verify-route-image-performance.ts",
-    "verify:phase2-generation": "tsx scripts/verify-phase2-generation.ts"
+    "verify:layout-performance": "tsx scripts/verify-layout-performance.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

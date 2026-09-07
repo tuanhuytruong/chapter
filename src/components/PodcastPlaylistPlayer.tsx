@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Clock3, ListMusic, Loader2, Play, RotateCcw, Sparkles } from "lucide-react";
 import { api, type PodcastEpisode, type PodcastPlaylist } from "../api";
 import { captureAnalyticsEvent } from "../analytics";
+import { useJobPolling } from "../hooks/useJobPolling";
 
 function episodeName(episode: PodcastEpisode) {
   return episode.chapter_title || "Untitled chapter";
@@ -32,6 +33,7 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generationTarget, setGenerationTarget] = useState<{ chapterKey: string; auto: boolean } | null>(null);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [preparedNote, setPreparedNote] = useState<string | null>(null);
   const [sessionMinutes, setSessionMinutes] = useState<ListeningMinutes>(DEFAULT_LISTENING_MINUTES);
@@ -71,14 +73,10 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
   // Parent signals (e.g. a fresh episode created from the voice picker) trigger a
   // silent playlist refresh so the queue and next-chapter CTA stay in sync.
   useEffect(() => { if (refreshKey > 0) void refresh(); }, [refreshKey, refresh]);
-  // While the next chapter is being generated, poll so the queue and CTA flip to
-  // ready without requiring a manual refresh or a per-episode play click.
+  // While another client is generating the next chapter, refresh the queue until
+  // the server reports a terminal episode state.
   const pendingNext = playlist?.next_chapter?.episode_status != null && pendingStatuses.has(playlist.next_chapter.episode_status);
-  useEffect(() => {
-    if (!pendingNext) return;
-    const timer = window.setInterval(() => void refresh(), 5000);
-    return () => window.clearInterval(timer);
-  }, [pendingNext, refresh]);
+  useJobPolling({ enabled: pendingNext && !generating, intervalMs: 5000, poll: refresh, onSuccess: () => undefined });
   const episodes = playlist?.episodes || [];
   const active = activeIndex === null ? null : episodes[activeIndex] || null;
   const resumeAt = active && playlist?.progress?.podcast_id === active.id && !playlist.progress.completed_at ? playlist.progress.current_time_seconds : 0;
@@ -93,6 +91,38 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
       if (completed) onListened?.();
     }
   }, [active, persist, onListened]);
+
+  useJobPolling({
+    enabled: generationTarget !== null,
+    intervalMs: 5000,
+    poll: () => api.getPodcastPlaylist(bookId),
+    onSuccess: (nextList) => {
+      setPlaylist(nextList);
+      const target = generationTarget?.chapterKey;
+      if (!target) return;
+      const index = nextList.episodes.findIndex((episode) => episode.chapter_key === target);
+      if (index < 0) {
+        const targetStatus = nextList.next_chapter?.chapter_key === target ? nextList.next_chapter.episode_status : null;
+        if (targetStatus === "failed") {
+          setGenerationTarget(null); setGenerating(false); setAutoGenerating(false);
+        }
+        return;
+      }
+      const fresh = nextList.episodes[index];
+      const auto = generationTarget.auto;
+      setGenerationTarget(null); setGenerating(false); setAutoGenerating(false);
+      if (auto) return;
+      const atLatest = activeIndex === null || activeIndex === episodes.length - 1;
+      if (atLatest) {
+        playbackIntent.current = { episodeId: fresh.id, reset: true };
+        setActiveIndex(index);
+        void persist(fresh, 0, false);
+      } else {
+        setPreparedNote(`${episodeName(fresh)} đã sẵn sàng — sẽ tự phát khi đến lượt nghe của bạn.`);
+        window.setTimeout(() => setPreparedNote(null), 6000);
+      }
+    },
+  });
 
   const handleAudioReady = useCallback((audio: HTMLAudioElement) => {
     if (!active) return;
@@ -164,48 +194,7 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
       if (auto) setAutoGenerating(false);
       return;
     }
-    let ticks = 0;
-    const poll = async () => {
-      try {
-        const nextList = await api.getPodcastPlaylist(bookId);
-        setPlaylist(nextList);
-        const index = nextList.episodes.findIndex((episode) => episode.chapter_key === target);
-        if (index >= 0) {
-          window.clearInterval(timer);
-          setGenerating(false);
-          if (auto) { setAutoGenerating(false); return; }
-          const fresh = nextList.episodes[index];
-          const atLatest = activeIndex === null || activeIndex === episodes.length - 1;
-          if (atLatest) {
-            // The new keyed audio element consumes this intent from its native
-            // readiness event, avoiding Android's post-render listener race.
-            playbackIntent.current = { episodeId: fresh.id, reset: true };
-            setActiveIndex(index);
-            void persist(fresh, 0, false);
-          } else {
-            // Still listening to an earlier chapter: prepare quietly and let
-            // playback advance to the new episode naturally.
-            const label = episodeName(fresh);
-            setPreparedNote(`${label} đã sẵn sàng — sẽ tự phát khi đến lượt nghe của bạn.`);
-            window.setTimeout(() => setPreparedNote(null), 6000);
-          }
-          return;
-        }
-        // Generation can fail mid-flight (e.g. TTS 502). Stop polling and hand
-        // the manual "Generate & play next" CTA back so the user can retry.
-        const targetStatus = nextList.next_chapter?.chapter_key === target ? nextList.next_chapter.episode_status : null;
-        if (targetStatus === "failed") {
-          window.clearInterval(timer);
-          setGenerating(false);
-          if (auto) setAutoGenerating(false);
-          return;
-        }
-      } catch { /* transient; keep polling */ }
-      ticks += 1;
-      if (ticks >= 180) { window.clearInterval(timer); setGenerating(false); if (auto) setAutoGenerating(false); }
-    };
-    const timer = window.setInterval(() => void poll(), 5000);
-    void poll();
+    setGenerationTarget({ chapterKey: target, auto });
   }, [bookId, playlist, generating, activeIndex, canGenerate, onNeedVoice, persist, onEpisodeCreated, refresh, stopAfterCurrentEpisode]);
 
   // Put the current row at the top of the queue whenever playback changes, so

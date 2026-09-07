@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Check, Headphones, Loader2, Play, RefreshCw, RotateCcw, X } from "lucide-react";
 import { api, type PodcastCatalogBook, type PodcastChapter, type PodcastEpisode, type RhythmResponse } from "../api";
 import PodcastPlaylistPlayer from "./PodcastPlaylistPlayer";
+import { useJobPolling } from "../hooks/useJobPolling";
 
 type PodcastApi = typeof api & {
   getBookPodcast: (bookId: string) => Promise<PodcastCatalogBook>;
@@ -43,14 +44,15 @@ export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onC
   const [podcastRefreshKey, setPodcastRefreshKey] = useState(0);
   const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (rethrow = false) => {
     // The playlist catalog is the critical payload; the rhythm feed (used for
     // the "Đã nghe X/Y" counters) is auxiliary. Fetch independently so a rhythm
     // failure cannot blank the whole panel.
     try {
       setBook(await podcastApi.getBookPodcast(bookId));
-    } catch {
+    } catch (error) {
       setBook(null);
+      if (rethrow) throw error;
     } finally {
       setLoading(false);
     }
@@ -66,11 +68,8 @@ export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onC
     void refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    if (!book?.chapters.some(({ episode }) => episode && pendingStatuses.has(episode.status))) return;
-    const timer = window.setInterval(() => void refresh(), 5000);
-    return () => window.clearInterval(timer);
-  }, [book, refresh]);
+  const hasPendingEpisode = !!book?.chapters.some(({ episode }) => episode && pendingStatuses.has(episode.status));
+  useJobPolling({ enabled: hasPendingEpisode, intervalMs: 5000, poll: () => refresh(true), onSuccess: () => undefined });
 
   const create = async (chapter: PodcastChapter, gender?: "female" | "male") => {
     setWorkingKey(chapter.chapter_key);

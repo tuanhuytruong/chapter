@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Brain, ChevronDown, ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage } from "./ContextualGlossary";
+import { useJobPolling } from "../hooks/useJobPolling";
 
 type Language = "auto" | "vi" | "en";
 interface WikiConcept { name: string; definition: string; }
@@ -94,30 +95,38 @@ export default function BookWiki({ bookId, totalPages, canEdit, onOpenReadingSes
   const pointerScrollY = useRef<number | null>(null);
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const requestGeneration = useRef(0);
   // Each local disclosure owns its own offset. A shared mutable ref lets an
   // earlier queued interaction clear a later interaction's saved position,
   // which can leave the browser's post-layout focus scroll uncorrected.
 
-  const fetchReader = useCallback(async () => {
+  const fetchReader = useCallback(async (rethrow = false) => {
+    const generation = ++requestGeneration.current;
     try {
       const [nextStatus, wikiResult, nextSessions] = await Promise.all([
         req<WikiStatus>(`/api/books/${bookId}/wiki/status`),
         req<BookWikiData>(`/api/books/${bookId}/wiki`).catch((error: Error) => { if (error.message.startsWith("404:")) return null; throw error; }),
         req<ReaderSession[] | { sessions?: ReaderSession[] }>(`/api/books/${bookId}/wiki/sessions`).catch(() => null),
       ]);
+      if (generation !== requestGeneration.current) return;
       setRequestError(null); setWiki(wikiResult); setStatus(nextStatus);
       const rawSessions = Array.isArray(nextSessions) ? nextSessions : nextSessions?.sessions ?? null;
       setSessions(rawSessions?.map((row: any) => {
         const analysis = row?.chunk_analysis && typeof row.chunk_analysis === "object" ? row.chunk_analysis : row;
         return { ...analysis, id: row?.log_id || analysis?.id, page_start: row?.page_start ?? analysis?.page_start, page_end: row?.page_end ?? analysis?.page_end, page_label_start: row?.page_label_start ?? null, page_label_end: row?.page_label_end ?? null, title: analysis?.session_title || analysis?.title, summary: analysis?.close_reading || analysis?.session_summary || analysis?.chunk_summary || analysis?.summary } as ReaderSession;
       }) ?? null);
-    } catch (error: any) { setRequestError(error.message || "AI Reader could not be loaded."); }
-    finally { setLoading(false); }
+    } catch (error: any) {
+      if (generation === requestGeneration.current) setRequestError(error.message || "AI Reader could not be loaded.");
+      if (rethrow) throw error;
+    } finally { if (generation === requestGeneration.current) setLoading(false); }
   }, [bookId]);
   useEffect(() => { void fetchReader(); }, [fetchReader]);
   const running = status?.jobStatus === "running";
   const catchingUp = !!status && status.chunksProcessed < status.totalSessions;
-  useEffect(() => { if (!running && !catchingUp) return; const timer = window.setInterval(() => void fetchReader(), 7000); return () => clearInterval(timer); }, [fetchReader, running, catchingUp]);
+  // Failed/finished are terminal job states even if historical chunk counters
+  // differ; polling a terminal failure would otherwise run forever.
+  const pollingActive = running || (status?.jobStatus === "idle" && catchingUp);
+  useJobPolling({ enabled: pollingActive, intervalMs: 7000, poll: () => fetchReader(true), onSuccess: () => undefined });
   const refresh = async () => { if (!canEdit || running) return; setRegenerating(true); try { await req(`/api/books/${bookId}/wiki/regenerate`, { method: "POST" }); await fetchReader(); } finally { setRegenerating(false); } };
 
   const v1Sessions = useMemo<ReaderSession[]>(() => wiki?.narrative_arc?.map((arc, index) => ({ id: `arc-${index}`, title: arc.label, summary: arc.detail })) ?? [], [wiki]);
