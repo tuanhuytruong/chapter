@@ -9,7 +9,7 @@ import type {
   StoryThreadRepairJob,
   SummaryMode,
 } from "./types";
-import type { ReviewCardRow } from "./review";
+import type { ReturnOutcome, ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
 import type {
   WeeklyGoalMetric,
@@ -292,6 +292,36 @@ export interface ReadingRoundRow {
   final_page: number;
 }
 
+export interface ReturnCard {
+  id: string;
+  book_id: string;
+  log_id: string;
+  insight_index: number;
+  insight: string;
+  title: string;
+  author: string;
+  cover_url: string | null;
+  source_date: string | null;
+  source_page_start: number | null;
+  source_page_end: number | null;
+  latest_response_id: string | null;
+  latest_outcome: ReturnOutcome | null;
+  latest_reflection: string | null;
+  latest_responded_at: string | null;
+}
+
+export interface ReturnResponse {
+  id: string;
+  outcome: ReturnOutcome;
+  reflection: string | null;
+  responded_at: string;
+}
+
+export interface ReturnSubmission {
+  card: ReviewCardRow;
+  response: ReturnResponse;
+}
+
 export interface AdvanceResult {
   bookId: string;
   title: string;
@@ -507,6 +537,13 @@ export const api = {
   getDueReviewCount: () => req<{ count: number }>("/api/reviews/due/count"),
   getDueReviewBooks: () => req<Array<{ id: string; title: string; author: string; cover_url: string | null; due_count: number }>>("/api/reviews/due/books"),
   getDueReviews: (bookId?: string) => req<ReviewCardRow[]>(`/api/reviews/due${bookId ? `?bookId=${encodeURIComponent(bookId)}` : ""}`),
+  getReturns: (surface: "today" | "page") =>
+    req<ReturnCard[]>(`/api/reviews/returns?surface=${surface}`),
+  respondToReturn: (id: string, payload: { outcome: ReturnOutcome; reflection?: string }) =>
+    req<ReturnSubmission>(`/api/reviews/${id}/return`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   submitReview: (id: string, remembered: boolean) =>
     req<ReviewCardRow>(`/api/reviews/${id}`, {
       method: "POST",

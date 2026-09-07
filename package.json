@@ -43,6 +43,7 @@
     "verify:platform": "tsx scripts/verify-platform-headers.ts",
     "verify:today-review": "tsx scripts/verify-today-review.ts",
     "verify:review-api": "tsx scripts/verify-review-api.ts",
+    "verify:returns": "tsx scripts/verify-returns.ts",
     "verify:add-book-upload": "tsx scripts/verify-add-book-upload.ts",
     "verify:book-detail-session-typography": "tsx scripts/verify-add-book-upload.ts",
     "verify:reading-lens-typography": "tsx scripts/verify-reading-lens-typography.ts",

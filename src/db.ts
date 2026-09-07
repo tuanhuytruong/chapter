@@ -187,7 +187,7 @@ export async function ensureSchema(): Promise<void> {
 /** Core feature tables that must exist before the app serves authenticated APIs. */
 export async function verifyCoreSchema(): Promise<void> {
   const required = [
-    "books", "reading_log", "uploaded_files", "review_cards",
+    "books", "reading_log", "uploaded_files", "review_cards", "return_responses",
     "weekly_reading_goals", "story_thread_analyses", "story_state_snapshots",
     "onboarding_progress", "podcasts", "subscriptions", "usage_events",
     "membership_prompt_state", "monthly_reviews", "ask_reading_answers",

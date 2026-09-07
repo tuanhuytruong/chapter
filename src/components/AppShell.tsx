@@ -10,7 +10,6 @@ import { api, type MembershipTier, type QuietStreakTier } from '../api';
 import QuietStreakBadge from './QuietStreakBadge';
 import MembershipTierBadge from './MembershipTierBadge';
 import useSwipeNav from '../hooks/useSwipeNav';
-import { REVIEWS_CHANGED_EVENT } from '../reviewEvents';
 import { getCachedEntitlements } from '../membershipCache';
 
 const primaryLink = (active: boolean) => active
@@ -29,7 +28,6 @@ export default function AppShell() {
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(null);
-  const [dueReviewCount, setDueReviewCount] = useState<number | null>(null);
   const [quietTier, setQuietTier] = useState<QuietStreakTier | null>(null);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -77,15 +75,6 @@ export default function AppShell() {
     return () => { active = false; };
   }, [user?.id]);
   useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
-  useEffect(() => {
-    let active = true;
-    const loadReviewCount = () => {
-      void api.getDueReviewCount().then(({ count }) => { if (active) setDueReviewCount(count); }).catch(() => {});
-    };
-    loadReviewCount();
-    window.addEventListener(REVIEWS_CHANGED_EVENT, loadReviewCount);
-    return () => { active = false; window.removeEventListener(REVIEWS_CHANGED_EVENT, loadReviewCount); };
-  }, [location.pathname]);
 
   return (
     <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-sans">
@@ -103,7 +92,7 @@ export default function AppShell() {
             <nav className="hidden shrink-0 items-center gap-6 font-sans text-xs font-semibold uppercase tracking-widest md:flex" aria-label="Primary navigation">
               <NavLink to="/today" aria-label="Today" className={({ isActive }) => primaryLink(isActive)}><Sparkles className="h-3.5 w-3.5" /><span>Today</span></NavLink>
               <NavLink to="/" end aria-label="Library" className={({ isActive }) => primaryLink(isActive)}><BookMarked className="h-3.5 w-3.5" /><span>Library</span></NavLink>
-              <NavLink to="/review" aria-label={dueReviewCount === null ? "Review" : `Review, ${dueReviewCount} due`} className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Review</span>{dueReviewCount !== null && dueReviewCount > 0 && <span aria-hidden="true" className="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-natural-clay px-1 text-[9px] leading-4 text-white">{dueReviewCount > 9 ? "9+" : dueReviewCount}</span>}</NavLink>
+              <NavLink to="/review" aria-label="Returns" className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Returns</span></NavLink>
             </nav>
 
             <div className="hidden shrink-0 items-center gap-2 md:flex">
@@ -120,7 +109,7 @@ export default function AppShell() {
           <nav className="flex h-11 items-stretch justify-around border-t border-natural-border font-sans text-[10px] font-bold uppercase tracking-[0.12em] md:hidden" aria-label="Primary navigation">
             <NavLink to="/today" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Sparkles className="h-3.5 w-3.5" />Today</NavLink>
             <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><BookMarked className="h-3.5 w-3.5" />Library</NavLink>
-            <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} aria-label={dueReviewCount === null ? "Review" : `Review, ${dueReviewCount} due`} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Review{dueReviewCount !== null && dueReviewCount > 0 && <span aria-hidden="true" className="inline-flex min-w-4 items-center justify-center rounded-full bg-natural-clay px-1 text-[9px] leading-4 text-white">{dueReviewCount > 9 ? "9+" : dueReviewCount}</span>}</NavLink>
+            <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} aria-label="Returns" className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Returns</NavLink>
           </nav>
           {mobileMenuPresence.mounted && <div ref={mobileMenuRef} id="mobile-account-menu" data-state={mobileMenuPresence.phase} aria-hidden={!mobileMenuOpen} className="motion-menu border-t border-natural-border py-2 md:hidden">
             <NavLink to="/profile" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} tier={quietTier} /><span>Profile</span></NavLink>

@@ -4,16 +4,18 @@ import {
   BookOpen,
   CheckCircle2,
   CircleGauge,
-  ClipboardCheck,
   Loader2,
   Play,
   Sparkles,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { api, progressPct, type TodayDashboard, type TodayInsights, type RhythmResponse } from "../api";
+import { api, progressPct, type ReturnCard as ReturnCardData, type TodayDashboard, type TodayInsights, type RhythmResponse } from "../api";
+import ReturnCard from "../components/review/ReturnCard";
 import QuietStreakStrip from "../components/QuietStreakStrip";
 import QuietStreakUnlock from "../components/QuietStreakUnlock";
 import { captureAnalyticsEvent } from "../analytics";
+import type { ReturnOutcome } from "../review";
+import { notifyReviewsChanged } from "../reviewEvents";
 import type { BookRow } from "../types";
 
 function stripInsightOrdinal(text: string) {
@@ -48,6 +50,9 @@ export default function Today() {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
+  const [returnCard, setReturnCard] = useState<ReturnCardData | null>(null);
+  const [returnSaving, setReturnSaving] = useState(false);
+  const [returnError, setReturnError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -65,6 +70,39 @@ export default function Today() {
     }
   }, []);
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    let mounted = true;
+    void api.getReturns("today")
+      .then((cards) => {
+        if (!mounted) return;
+        const card = cards[0] || null;
+        setReturnCard(card);
+        if (card) captureAnalyticsEvent("return_shown", { surface: "today" });
+      })
+      .catch(() => {
+        if (mounted) setReturnError("Could not load a return right now.");
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const respondToTodayReturn = async (outcome: ReturnOutcome, reflection?: string) => {
+    if (!returnCard || returnSaving) return;
+    setReturnSaving(true);
+    setReturnError(null);
+    try {
+      await api.respondToReturn(returnCard.id, { outcome, ...(reflection?.trim() ? { reflection } : {}) });
+      captureAnalyticsEvent("return_responded", { surface: "today", outcome });
+      notifyReviewsChanged();
+      const bookId = returnCard.book_id;
+      setReturnCard(null);
+      if (outcome === "revisit") navigate(`/books/${bookId}`);
+    } catch (cause: any) {
+      setReturnError(cause.message || "Could not save this return. Please try again.");
+    } finally {
+      setReturnSaving(false);
+    }
+  };
 
   const active = useMemo<BookRow | null>(() => {
     if (!dashboard) return null;
@@ -125,11 +163,6 @@ export default function Today() {
     {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {rhythm && <section aria-label="Quiet Streak" className="rounded-2xl border border-natural-border bg-natural-cream p-4 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Quiet Streak</p><p className="mt-1 text-lg font-bold text-natural-dark">{rhythm.quiet_streak.current_streak} active day{rhythm.quiet_streak.current_streak === 1 ? "" : "s"}</p><p className="mt-1 text-sm text-natural-stone">{rhythm.quiet_streak.active_today ? "Today is part of your rhythm." : "A page or a minute of listening is enough to keep today’s rhythm."}</p>{rhythm.quiet_streak.next_tier && <p className="mt-1 text-xs text-natural-stone">Next: {rhythm.quiet_streak.next_tier.title} · {rhythm.quiet_streak.next_tier.days} days</p>}</div>{!rhythm.quiet_streak.active_today && (active ? <Link to={`/books/${active.id}`} className="inline-flex min-h-11 items-center rounded-xl bg-natural-sage px-4 text-sm font-bold text-white">Open current book</Link> : <Link to="/" className="inline-flex min-h-11 items-center rounded-xl bg-natural-sage px-4 text-sm font-bold text-white">Open Library</Link>)}</div><QuietStreakStrip readingDays={rhythm.reading_days} listeningDays={rhythm.listening_days} /><div className="mt-3"><QuietStreakUnlock tier={rhythm.quiet_streak.highest_tier} onVisible={(tier) => captureAnalyticsEvent("quiet_streak_milestone_seen", { tier_id: tier.id, tier_days: tier.days })} /></div></section>}
 
-    <section aria-label="Review" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-natural-border bg-white px-4 py-3">
-      <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 shrink-0 text-natural-clay" /><div><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Review</p><p className="text-sm font-semibold text-natural-dark">{dashboard.due_reviews > 0 ? `${dashboard.due_reviews} idea${dashboard.due_reviews === 1 ? "" : "s"} ready to revisit` : "Reviews are clear"}</p></div></div>
-      <Link to="/review" className="inline-flex min-h-10 items-center gap-1 text-sm font-bold text-natural-sage">Open review <ArrowRight className="h-4 w-4" /></Link>
-    </section>
-
     {active ? <section aria-labelledby="current-reads-heading" className="rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Current reads</p><h2 id="current-reads-heading" className="mt-1 text-lg font-bold text-natural-dark">Continue, then keep what matters</h2></div>{activeBooks.length > 1 && <p className="text-xs text-natural-stone">Choose a book to keep this view in context.</p>}</div>
       {activeBooks.length > 1 && <div role="list" aria-label="Active books" className="mb-4 flex flex-wrap gap-2">{activeBooks.map((book) => <button key={book.id} type="button" onClick={() => chooseActiveBook(book.id)} aria-pressed={book.id === active.id} className={`flex min-h-11 max-w-full items-center gap-2 rounded-xl border px-2 py-1 text-left text-xs font-bold focus:outline-none focus:ring-2 focus:ring-natural-sage ${book.id === active.id ? "border-natural-sage bg-white text-natural-dark" : "border-natural-border bg-natural-cream/60 text-natural-stone hover:bg-white"}`}><span className="flex h-8 w-6 shrink-0 items-center justify-center overflow-hidden rounded bg-natural-sage/15 text-natural-sage">{book.cover_url ? <img src={book.cover_url} alt="" className="h-full w-full object-cover" /> : <BookOpen className="h-3.5 w-3.5" />}</span><span className="max-w-40 truncate">{book.title}</span><span className="shrink-0 font-normal">{progressPct(book)}%</span></button>)}</div>}
@@ -138,6 +171,8 @@ export default function Today() {
         <article aria-labelledby="today-insights-heading" className="rounded-2xl border border-natural-border bg-white p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Key insights so far</p><h3 id="today-insights-heading" className="mt-1 truncate font-bold text-natural-dark">{active.title}</h3><p className="mt-1 text-xs text-natural-stone">From your current read</p></div><div className="flex shrink-0 flex-col items-end text-sm font-bold text-natural-sage"><Link to="/insights" className="inline-flex min-h-8 items-center gap-1">More insights <ArrowRight className="h-4 w-4" /></Link><Link to={`/books/${active.id}`} className="inline-flex min-h-8 items-center gap-1">Open book <ArrowRight className="h-4 w-4" /></Link></div></div>{insightsLoading ? <p className="mt-5 flex items-center gap-2 text-sm text-natural-stone"><Loader2 className="h-4 w-4 animate-spin" /> Gathering your ideas…</p> : insightsError ? <p role="alert" className="mt-5 text-sm text-natural-stone">{insightsError}</p> : insights?.insights.length ? <ul className="mt-4 space-y-2">{insights.insights.slice(0, 3).map((insight, index) => <li key={insight.text} className="flex items-start gap-2 rounded-xl bg-natural-cream px-3 py-2 text-sm text-natural-dark"><span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-natural-border text-[9px] font-bold text-natural-stone">{index + 1}</span><p className="min-w-0 flex-1 leading-relaxed"><InlineMarkdown text={stripInsightOrdinal(insight.text)} />{insight.occurrences > 1 && <span className="ml-1 whitespace-nowrap text-xs text-natural-stone">{insight.occurrences} times</span>}</p></li>)}</ul> : <p className="mt-5 text-sm text-natural-stone">Your insights will gather here after a reading session.</p>}</article>
       </div>
     </section> : next ? <section className="rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6"><p className="text-xs font-bold uppercase tracking-wider text-natural-sage">Your next chapter</p><h2 className="mt-2 text-lg font-bold text-natural-dark">{next.title}</h2><p className="text-sm text-natural-stone">{next.author} · first in your queue</p><button onClick={startNext} disabled={starting} className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-natural-sage px-4 text-sm font-bold text-white disabled:opacity-60"><Play className="h-4 w-4" />{starting ? "Starting…" : "Start this book"}</button></section> : <section className="rounded-[28px] border border-dashed border-natural-border bg-natural-cream p-6 text-center"><BookOpen className="mx-auto h-7 w-7 text-natural-sage" /><h2 className="mt-3 font-bold text-natural-dark">Your shelf is ready for a new story</h2><p className="mt-1 text-sm text-natural-stone">Add a book, or place one in your queue for later.</p><Link to="/" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-natural-sage px-4 text-sm font-bold text-white"><ArrowRight className="h-4 w-4" /> Open Library</Link></section>}
+
+    {returnCard && <section aria-label="Return" className="mx-auto max-w-2xl"><ReturnCard card={returnCard} saving={returnSaving} onRespond={(outcome, reflection) => void respondToTodayReturn(outcome, reflection)} onSourceOpen={() => captureAnalyticsEvent("return_source_opened", { surface: "today" })} />{returnError && <p role="alert" className="mt-3 text-center text-xs text-red-700">{returnError}</p>}</section>}
 
     <section className="grid gap-3 sm:grid-cols-2"><Link to="/momentum" className="rounded-2xl border border-natural-border bg-natural-cream p-4 hover:bg-white"><div className="flex items-center justify-between"><CircleGauge className="h-5 w-5 text-natural-sage" /><ArrowRight className="h-4 w-4 text-natural-stone" /></div><p className="mt-3 font-bold text-natural-dark">{weekly.goal ? `${weekly.completed} / ${weekly.goal.target} this week` : "Set a weekly goal"}</p><div className="mt-2 h-2 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-natural-sage" style={{ width: `${goalPct}%` }} /></div><p className="mt-2 text-sm text-natural-stone">{weekly.goal ? weekly.status === "met" ? "Goal met — lovely work." : `${weekly.remaining} remaining · ${weekly.recommended_per_day} / day` : "A small target makes momentum visible."}</p></Link></section>
     <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-natural-border bg-white p-4 text-sm"><CheckCircle2 className="h-5 w-5 text-natural-sage" /><p className="text-natural-dark"><span className="font-bold">Today:</span> {today.sessions} reading session{today.sessions === 1 ? "" : "s"} · {today.units} pages / chunks</p></section>
