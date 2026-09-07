@@ -13,6 +13,8 @@ const docs = source("docs/performance-baseline.md");
 expect(packageJson.scripts["perf:audit:assets"] === "tsx scripts/perf/audit-assets.ts", "asset audit script missing");
 expect(analytics.includes('"route_perf_sample"'), "privacy-safe route performance event missing");
 expect(analytics.includes("routeAnalyticsId") && analytics.includes('"/books/:id"'), "dynamic book routes must be anonymised");
+expect(analytics.includes('pathname.replace(/\\/+$/, "")'), "trailing slash book routes must be normalised before analytics");
+expect(analytics.includes("capture_pageview: false") && analytics.includes("capture_pageleave: false"), "managed page URL capture must remain disabled");
 expect(analytics.includes("render_duration_bucket") && analytics.includes("device_class"), "route event must use bucketed metadata");
 expect(!analytics.includes("bookTitle") && !analytics.includes("rawText"), "analytics must not add reading content fields");
 expect(app.includes("RoutePerformanceObserver") && app.includes("captureRoutePerformance"), "route observer missing");
