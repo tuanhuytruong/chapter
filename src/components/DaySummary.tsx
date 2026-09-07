@@ -162,12 +162,12 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
   return (
     <div ref={cardRef} tabIndex={-1} className={`bg-natural-cream border rounded-2xl p-4 shadow-sm space-y-2 outline-none transition ${navigationHighlight ? "border-natural-sage ring-2 ring-natural-sage/30" : "border-natural-border"}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-natural-dark font-sans">{date}</span>
-          <span className="text-xs text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Session {log.session}</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="shrink-0 text-xs font-bold text-natural-dark font-sans">{date}</span>
+          <span className="shrink-0 text-xs text-natural-stone font-sans bg-natural-cream px-2 py-0.5 rounded-full">Session {log.session}</span>
           {log.chapter_title ? (
-            <span className="inline-flex max-w-[480px] items-center gap-1 truncate rounded-full bg-natural-cream px-2 py-0.5 text-xs text-natural-sage" title={log.chapter_title}>
+            <span className="inline-flex min-w-0 max-w-full items-center gap-1 truncate rounded-full bg-natural-cream px-2 py-0.5 text-xs text-natural-sage sm:max-w-[480px]" title={log.chapter_title}>
               <FileText aria-hidden="true" className="h-3 w-3 shrink-0" />
               {log.chapter_title}
             </span>

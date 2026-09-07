@@ -3,10 +3,14 @@ import { readFile } from "node:fs/promises";
 
 const shell = await readFile(new URL("../src/components/AppShell.tsx", import.meta.url), "utf8");
 const detail = await readFile(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+const daySummary = await readFile(new URL("../src/components/DaySummary.tsx", import.meta.url), "utf8");
 assert.match(shell, /hidden shrink-0 items-center gap-6[^\n]*md:flex/, "desktop navigation starts at md");
 assert.match(shell, /md:hidden/, "compact header controls remain through the 640–767px range");
 assert.doesNotMatch(shell, /gap-6[^\n]*sm:flex/, "desktop navigation must not start at sm");
 assert.match(shell, /no-underline/, "header links explicitly suppress browser link decoration");
 assert.match(detail, /md:grid-cols-\[104px_minmax\(0,1fr\)\]/, "Book Detail tablet grid starts at md");
 assert.doesNotMatch(detail, /sm:grid-cols-\[104px_minmax\(0,1fr\)\]/, "Book Detail is single column at a 677px viewport");
+assert.match(daySummary, /flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between/, "session header stacks its metadata and controls on phone widths");
+assert.match(daySummary, /flex min-w-0 flex-wrap items-center gap-2/, "session metadata must be allowed to wrap rather than create horizontal overflow");
+assert.match(daySummary, /min-w-0 max-w-full[\s\S]*?sm:max-w-\[480px\]/, "long chapter labels must fit the mobile card before using the desktop width");
 console.log("firefox responsive layout contract passed");
