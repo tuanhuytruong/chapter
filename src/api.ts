@@ -304,6 +304,7 @@ export interface ReturnCard {
   source_date: string | null;
   source_page_start: number | null;
   source_page_end: number | null;
+  source_reading_round: number | null;
   latest_response_id: string | null;
   latest_outcome: ReturnOutcome | null;
   latest_reflection: string | null;
@@ -537,8 +538,8 @@ export const api = {
   getDueReviewCount: () => req<{ count: number }>("/api/reviews/due/count"),
   getDueReviewBooks: () => req<Array<{ id: string; title: string; author: string; cover_url: string | null; due_count: number }>>("/api/reviews/due/books"),
   getDueReviews: (bookId?: string) => req<ReviewCardRow[]>(`/api/reviews/due${bookId ? `?bookId=${encodeURIComponent(bookId)}` : ""}`),
-  getReturns: (surface: "today" | "page") =>
-    req<ReturnCard[]>(`/api/reviews/returns?surface=${surface}`),
+  getReturns: (surface: "today" | "page", bookId?: string) =>
+    req<ReturnCard[]>(`/api/reviews/returns?surface=${surface}${bookId ? `&bookId=${encodeURIComponent(bookId)}` : ""}`),
   respondToReturn: (id: string, payload: { outcome: ReturnOutcome; reflection?: string }) =>
     req<ReturnSubmission>(`/api/reviews/${id}/return`, {
       method: "POST",

@@ -21,18 +21,26 @@ type ReturnSurface = keyof typeof returnSurfaceLimits;
 const uuid = (value: unknown) =>
   typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value) ? value : null;
 
-// GET /api/reviews/returns?surface=today|page — small, owner-scoped active-book Returns queue.
+// GET /api/reviews/returns?surface=today|page&bookId=… — a small, owner-scoped
+// active-book Returns queue. Today is deliberately contextual: it only shows a
+// return from the book the reader selected as their current read.
 reviewsRouter.get("/returns", async (req: Request, res: Response) => {
   const surface = req.query.surface;
   if (surface !== "today" && surface !== "page") {
     return res.status(400).json({ error: "surface must be today or page" });
   }
+  const bookId = req.query.bookId === undefined ? null : uuid(req.query.bookId);
+  if (req.query.bookId !== undefined && !bookId) return res.status(400).json({ error: "bookId must be a UUID" });
+  if (surface === "today" && !bookId) return res.status(400).json({ error: "bookId is required for today" });
   const limit = returnSurfaceLimits[surface as ReturnSurface];
+  const bookFilter = bookId ? " AND rc.book_id=$3" : "";
+  const params = bookId ? [userFrom(req).id, today(), bookId] : [userFrom(req).id, today()];
   try {
     const { rows } = await query(
       `SELECT rc.id, rc.book_id, rc.log_id, rc.insight_index, rc.insight,
               b.title, b.author, b.cover_url,
-              rl.date AS source_date, rl.page_start AS source_page_start, rl.page_end AS source_page_end,
+              rl.reading_round AS source_reading_round, rl.date AS source_date,
+              rl.page_start AS source_page_start, rl.page_end AS source_page_end,
               latest.id AS latest_response_id, latest.outcome AS latest_outcome,
               latest.reflection AS latest_reflection, latest.responded_at AS latest_responded_at
        FROM review_cards rc
@@ -45,10 +53,10 @@ reviewsRouter.get("/returns", async (req: Request, res: Response) => {
          ORDER BY rr.responded_at DESC, rr.id DESC
          LIMIT 1
        ) latest ON true
-       WHERE b.owner_id=$1 AND b.status='active' AND rc.due_date <= $2
+       WHERE b.owner_id=$1 AND b.status='active' AND rc.due_date <= $2${bookFilter}
        ORDER BY rc.due_date ASC, rc.last_reviewed_at NULLS FIRST, rc.created_at ASC
        LIMIT ${limit}`,
-      [userFrom(req).id, today()],
+      params,
     );
     res.json(rows);
   } catch (e: any) {
@@ -121,6 +129,7 @@ reviewsRouter.get("/due", async (req: Request, res: Response) => {
 
 // POST /api/reviews/:id/return — atomically record an append-only Return response and reschedule its source card.
 reviewsRouter.post("/:id/return", async (req: Request, res: Response) => {
+  if (!uuid(req.params.id)) return res.status(400).json({ error: "review card id must be a UUID" });
   const outcome = req.body?.outcome;
   if (!isReturnOutcome(outcome)) return res.status(400).json({ error: "outcome must be still_true, changed, revisit, or dismissed" });
 

@@ -76,13 +76,21 @@ assert.match(readBlock, /surface must be today or page/);
 assert.match(readBlock, /returnSurfaceLimits\[surface as ReturnSurface\]/);
 assert.match(readBlock, /JOIN books b ON b\.id=rc\.book_id/);
 assert.match(readBlock, /JOIN reading_log rl ON rl\.id=rc\.log_id/);
-assert.match(readBlock, /b\.owner_id=\$1 AND b\.status='active' AND rc\.due_date <= \$2/);
+assert.match(readBlock, /const bookId = req\.query\.bookId === undefined \? null : uuid\(req\.query\.bookId\)/);
+assert.match(readBlock, /bookId must be a UUID/);
+assert.match(readBlock, /surface === "today" && !bookId/);
+assert.match(readBlock, /bookId is required for today/);
+assert.match(readBlock, /rl\.reading_round AS source_reading_round/);
+assert.match(readBlock, /const bookFilter = bookId \? " AND rc\.book_id=\$3" : ""/);
+assert.match(readBlock, /b\.owner_id=\$1 AND b\.status='active' AND rc\.due_date <= \$2\$\{bookFilter\}/);
+assert.match(readBlock, /const params = bookId \? \[userFrom\(req\)\.id, today\(\), bookId\] : \[userFrom\(req\)\.id, today\(\)\]/);
 assert.match(readBlock, /WHERE rr\.review_card_id=rc\.id AND rr\.owner_id=\$1/);
 assert.match(readBlock, /ORDER BY rr\.responded_at DESC, rr\.id DESC/);
 assert.match(readBlock, /ORDER BY rc\.due_date ASC, rc\.last_reviewed_at NULLS FIRST, rc\.created_at ASC/);
 assert.match(readBlock, /LIMIT \$\{limit\}/);
 assert.doesNotMatch(readBlock, /req\.query\.limit/);
 const writeBlock = route.slice(returnPostRoute, oldPostRoute);
+assert.match(writeBlock, /if \(!uuid\(req\.params\.id\)\) return res\.status\(400\)/);
 assert.match(writeBlock, /withTransaction/);
 assert.match(writeBlock, /WHERE rc\.id=\$1 AND b\.owner_id=\$2 AND rc\.due_date <= \$3\s+FOR UPDATE OF rc, b/);
 assert.match(writeBlock, /\[req\.params\.id, userFrom\(req\)\.id, today\(\)\]/);
@@ -94,7 +102,8 @@ assert.match(writeBlock, /interval_days=\$1, repetitions=\$2, due_date=\$3, last
 assert.match(writeBlock, /return res\.status\(404\)/);
 assert.match(api, /export interface ReturnCard/);
 assert.match(api, /export interface ReturnResponse/);
-assert.match(api, /getReturns: \(surface: "today" \| "page"\)/);
+assert.match(api, /getReturns: \(surface: "today" \| "page", bookId\?: string\)/);
+assert.match(api, /source_reading_round: number \| null/);
 assert.match(api, /respondToReturn: \(id: string, payload: \{ outcome: ReturnOutcome; reflection\?: string \}\)/);
 
 // Returns UI fixture: keep /review as the compatible route while presenting a calm reflection flow.
@@ -106,14 +115,18 @@ assert.match(reviewHeader, />Returns</);
 assert.match(reviewHeader, /You do not need to remember everything\. Just return to what is worth keeping\./);
 assert.match(reviewPage, /api\.getReturns\("page"\)/);
 assert.match(reviewPage, /api\.respondToReturn\(card\.id/);
-assert.match(reviewPage, /navigate\(`\/books\/\$\{card\.book_id\}`\)/);
+assert.match(reviewPage, /new URLSearchParams\(\{ returnLog: card\.log_id \}\)/);
+assert.match(reviewPage, /returnRound.*card\.source_reading_round/);
+assert.match(reviewPage, /navigate\(`\/books\/\$\{card\.book_id\}\?\$\{params\.toString\(\)\}`\)/);
 assert.doesNotMatch(reviewPage, /getDueReviews|getDueReviewBooks|submitReview|revealed|onKeyDown|focused|flow|GuideCard/);
 assert.match(reviewPage, /captureAnalyticsEvent\("return_shown", \{ surface: "page" \}\)/);
 assert.match(reviewPage, /captureAnalyticsEvent\("return_responded", \{ surface: "page", outcome \}\)/);
 assert.match(reviewPage, /captureAnalyticsEvent\("return_source_opened", \{ surface: "page" \}\)/);
 assert.match(returnCard, /A source insight/);
 assert.match(returnCard, /Source session/);
-assert.match(returnCard, /Open source book/);
+assert.match(returnCard, /new URLSearchParams\(\{ returnLog: card\.log_id \}\)/);
+assert.match(returnCard, /returnRound.*card\.source_reading_round/);
+assert.match(returnCard, /Open source session/);
 assert.match(returnCard, /Still true/);
 assert.match(returnCard, />Changed</);
 assert.match(returnCard, />Revisit</);
@@ -126,15 +139,24 @@ assert.match(emptyState, /When an idea has had time to settle, it may return her
 assert.doesNotMatch(emptyState, /due|revisited today|View all/);
 
 // Today is a single, quiet continuation-adjacent surface: it has no review summary or empty placeholder.
-assert.match(todayPage, /api\.getReturns\("today"\)/);
+assert.match(todayPage, /api\.getReturns\("today", active\.id\)/);
 assert.match(todayPage, /const card = cards\[0\] \|\| null/);
 assert.match(todayPage, /setReturnCard\(null\)/);
 assert.match(todayPage, /api\.respondToReturn\(returnCard\.id/);
-assert.match(todayPage, /if \(outcome === "revisit"\) navigate\(`\/books\/\$\{bookId\}`\)/);
-assert.doesNotMatch(todayPage, /aria-label="Review"|Open review|Reviews are clear|due_reviews/);
+assert.match(todayPage, /new URLSearchParams\(\{ returnLog: revisit\.log_id \}\)/);
+assert.match(todayPage, /returnRound.*revisit\.source_reading_round/);
+assert.doesNotMatch(todayPage, /aria-label="Review"|Open review|Reviews are clear|due_reviews|Set a weekly goal|weekly_goal|Weekly goal/);
 const primaryTodayCta = todayPage.indexOf("Read next session");
-const todayReturnSurface = todayPage.indexOf("{returnCard && <section aria-label=\"Return\"");
+const todayReturnSurface = todayPage.indexOf("{returnCard && <section aria-label=\"Today return\"");
 assert.ok(primaryTodayCta >= 0 && todayReturnSurface > primaryTodayCta, "Today Return is rendered after the primary Continue reading CTA");
+assert.match(todayPage, /Today’s return/);
+assert.match(todayPage, /From the book you are reading now\./);
+assert.match(todayPage, /All returns/);
+const bookDetail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+assert.match(bookDetail, /const returnLogId = returnParams\.get\("returnLog"\)/);
+assert.match(bookDetail, /const \[selectedRound, setSelectedRound\] = useState<number \| null>\(returnRound\)/);
+assert.match(bookDetail, /if \(returnLogId && sortedLogs\.some\(\(log\) => log\.id === returnLogId\)\)/);
+assert.match(bookDetail, /setNavigationTargetLogId\(returnLogId\)/);
 
 // Returns events use only an anonymous surface/outcome vocabulary; never send reader or source data.
 for (const event of ["return_shown", "return_responded", "return_source_opened"]) assert.match(analytics, new RegExp(`\\| "${event}"`));

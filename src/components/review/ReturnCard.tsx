@@ -38,6 +38,9 @@ export default function ReturnCard({ card, saving, onRespond, onSourceOpen }: {
   const [changing, setChanging] = useState(false);
   const [reflection, setReflection] = useState("");
   const source = sourceLabel(card);
+  const sourceParams = new URLSearchParams({ returnLog: card.log_id });
+  if (card.source_reading_round != null) sourceParams.set("returnRound", String(card.source_reading_round));
+  const sourceHref = `/books/${card.book_id}?${sourceParams.toString()}`;
 
   return <section aria-label={`Return from ${card.title}`} className="rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-7">
     <div className="border-b border-natural-border pb-4">
@@ -51,7 +54,7 @@ export default function ReturnCard({ card, saving, onRespond, onSourceOpen }: {
       <p className="mt-3 text-base leading-relaxed text-natural-dark sm:text-lg"><InsightText text={card.insight} /></p>
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-natural-border pt-4 text-xs text-natural-stone">
         <span>{source ? `From ${source}` : "From your reading"}</span>
-        <Link to={`/books/${card.book_id}`} onClick={onSourceOpen} className="min-h-11 inline-flex items-center font-semibold text-natural-sage hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage">Open source book →</Link>
+        <Link to={sourceHref} onClick={onSourceOpen} className="min-h-11 inline-flex items-center font-semibold text-natural-sage hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage">Open source session →</Link>
       </div>
 
       <h2 className="mt-7 text-base font-bold text-natural-dark">Does this still feel true for you?</h2>

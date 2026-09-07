@@ -47,7 +47,9 @@ export default function Review() {
       notifyReviewsChanged();
       setResponded(true);
       if (outcome === "revisit") {
-        navigate(`/books/${card.book_id}`);
+        const params = new URLSearchParams({ returnLog: card.log_id });
+        if (card.source_reading_round != null) params.set("returnRound", String(card.source_reading_round));
+        navigate(`/books/${card.book_id}?${params.toString()}`);
         return;
       }
       setCards((current) => current.slice(1));

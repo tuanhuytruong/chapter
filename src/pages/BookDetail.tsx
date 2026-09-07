@@ -147,12 +147,19 @@ export default function BookDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = typeof location.state?.returnTo === "string" && location.state.returnTo.startsWith("/?") ? location.state.returnTo : "/?scope=mine&filter=active&sort=recent";
+  // Returns carries only an internal saved-session anchor. Resolve the source
+  // reading round before loading so Revisit lands at the exact evidence, not
+  // merely the enclosing book.
+  const returnParams = new URLSearchParams(location.search);
+  const returnLogId = returnParams.get("returnLog");
+  const returnRoundRaw = Number(returnParams.get("returnRound"));
+  const returnRound = Number.isInteger(returnRoundRaw) && returnRoundRaw > 0 ? returnRoundRaw : null;
   const [book, setBook] = useState<BookRow | null>(null);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [markers, setMarkers] = useState<ReadingMarkerRow[]>([]);
   const [rhythm, setRhythm] = useState<RhythmResponse | null>(null);
   const [rounds, setRounds] = useState<ReadingRoundRow[]>([]);
-  const [selectedRound, setSelectedRound] = useState<number | null>(null);
+  const [selectedRound, setSelectedRound] = useState<number | null>(returnRound);
   const [loading, setLoading] = useState(true);
   const hasLoadedInitialDetail = useRef(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -262,7 +269,15 @@ export default function BookDetail() {
       setCoverUrl(b.cover_url || "");
       setSummaryLang(b.summary_lang || "auto");
       setSummaryMode(b.summary_mode || "casual");
-      setLogs(sortLogsNewestFirst(l));
+      const sortedLogs = sortLogsNewestFirst(l);
+      setLogs(sortedLogs);
+      if (returnLogId && sortedLogs.some((log) => log.id === returnLogId)) {
+        setSearch("");
+        setNavigationTargetLogId(returnLogId);
+        // Revisit is evidence-first: every reading experience uses the session
+        // list because it is the view that can focus the exact saved chunk.
+        setLogView("list");
+      }
       if (b.can_edit) {
         try { setMarkers(await api.getMarkers(id, selected)); } catch { setMarkers([]); }
       } else setMarkers([]);
@@ -300,7 +315,7 @@ export default function BookDetail() {
       hasLoadedInitialDetail.current = true;
       setLoading(false);
     }
-  }, [id, selectedRound]);
+  }, [id, selectedRound, returnLogId]);
 
   useEffect(() => {
     load();
