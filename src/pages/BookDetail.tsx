@@ -410,16 +410,18 @@ export default function BookDetail() {
           if (updatedBook.reading_experience === "story") setStoryThread(storyAnalyses);
           else setLenses(analyses);
         }
-        const pendingLog = updatedLogs.find((log) => log.id === pendingEnrichmentLogId);
         if (updatedBook.reading_experience === "story") {
           if (storyAnalyses.some((item) => item.log_id === pendingEnrichmentLogId)) {
             setEnrichmentPending(false);
             setPendingEnrichmentLogId(null);
           }
         } else {
+          // A saved session is ready to continue as soon as its own Reading Lens
+          // arrives. BookWiki is a separate book-level catch-up process; making
+          // the primary reading action wait for it left List-mode readers stuck
+          // on “Preparing…” after their session was already visible.
           const lensReady = analyses.some((item) => item.log_id === pendingEnrichmentLogId);
-          const wiki = await api.getWikiStatus(id);
-          if (lensReady && wiki.wikiExists && wiki.pagesCovered >= (pendingLog?.page_end || 0)) {
+          if (lensReady) {
             setEnrichmentPending(false);
             setPendingEnrichmentLogId(null);
           }
