@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, normalizeContinuityCitations, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary } from "../src/storyThread.js";
+import { boundStoryThreadSource, buildStoryThreadPrompt, mergeStoryState, normalizeContinuityCitations, parseStoryThreadAnalysis, STORY_THREAD_MAX_SOURCE_CHARS, storyCompatSummary, assertStoryThreadCompletion, StoryThreadIncompleteOutputError } from "../src/storyThread.js";
 import { aggregateCharacterStorylines } from "../src/storyCharacterStorylines.js";
 
 const raw = JSON.stringify({
@@ -16,6 +16,8 @@ const analysis = parseStoryThreadAnalysis(`\`\`\`json\n${raw}\n\`\`\``);
 assert.equal(analysis.threads[0].status, "escalating");
 assert.equal(storyCompatSummary(analysis).quote, null);
 assert.throws(() => parseStoryThreadAnalysis('{"storyRecap":"missing required fields"}'));
+assert.throws(() => assertStoryThreadCompletion({ text: "partial", finishReason: "length" }), StoryThreadIncompleteOutputError);
+assert.equal(assertStoryThreadCompletion({ text: "complete", finishReason: "stop" }), "complete");
 const firstState = mergeStoryState({ threads: [{ id: "sealed-letter", label: "Old", status: "open", detail: "Old detail" }], characterPulse: [], readerMemory: [] }, analysis);
 assert.equal(firstState.threads[0].status, "escalating");
 

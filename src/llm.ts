@@ -283,8 +283,13 @@ function pause(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Generic 9router call with arbitrary system + user prompts. Returns text. */
-export async function callLLM(
+/** Completion metadata is needed by structured callers that must reject a
+ * provider response stopped at its output limit. Text-only callers retain the
+ * existing `callLLM()` interface below. */
+export type LlmCompletion = { text: string; finishReason: string | null };
+
+/** Generic 9router call with arbitrary system + user prompts. */
+export async function callLLMCompletion(
   system: string,
   user: string,
   temperature = 0.7,
@@ -292,7 +297,7 @@ export async function callLLM(
   jsonMode = false,
   timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000),
   options: LlmCallOptions = {},
-): Promise<string> {
+): Promise<LlmCompletion> {
   const priority = options.priority || "background";
   const trace = options.traceLabel ? ` [${options.traceLabel}]` : "";
   const url = process.env.NINE_ROUTER_URL;
@@ -301,22 +306,16 @@ export async function callLLM(
   if (!url) {
     if (strict) throw new Error("NineRouter is not configured");
     console.warn("[llm] NINE_ROUTER_URL not set — using fallback");
-    return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
+    return { text: "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!", finishReason: null };
   }
 
   try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
     const apiKey = process.env.NINE_ROUTER_API_KEY;
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
     const controller = new AbortController();
     const queuedAt = Date.now();
     await acquireNineRouterSlot(priority);
-    // The circuit can open while this call waits behind another background job.
-    // Check at dispatch admission, not only before it joins the scheduler.
-    // This is before the request's regular finally exists, so release explicitly
-    // when the breaker rejects this just-acquired scheduler slot.
     try {
       assertBackgroundCircuitAvailable(priority);
     } catch (error) {
@@ -324,80 +323,42 @@ export async function callLLM(
       throw error;
     }
     const queueWaitMs = Date.now() - queuedAt;
-    const boundedTimeoutMs = Number.isFinite(timeoutMs)
-      ? Math.min(600_000, Math.max(5_000, timeoutMs))
-      : 60_000;
+    const boundedTimeoutMs = Number.isFinite(timeoutMs) ? Math.min(600_000, Math.max(5_000, timeoutMs)) : 60_000;
     const startedAt = Date.now();
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      console.warn(
-        `[llm]${trace} timeout after ${boundedTimeoutMs}ms (queue=${queueWaitMs}ms, priority=${priority})`,
-      );
+      console.warn(`[llm]${trace} timeout after ${boundedTimeoutMs}ms (queue=${queueWaitMs}ms, priority=${priority})`);
       controller.abort();
     }, boundedTimeoutMs);
-    if (queueWaitMs > 250)
-      console.info(
-        `[llm]${trace} ${priority} slot acquired after ${queueWaitMs}ms`,
-      );
-    console.info(
-      `[llm]${trace} dispatch model=${model} json=${jsonMode} timeout=${boundedTimeoutMs}ms`,
-    );
+    if (queueWaitMs > 250) console.info(`[llm]${trace} ${priority} slot acquired after ${queueWaitMs}ms`);
+    console.info(`[llm]${trace} dispatch model=${model} json=${jsonMode} timeout=${boundedTimeoutMs}ms`);
     try {
       const resp = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          temperature,
-          ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-          stream: false,
-        }),
+        method: "POST", headers,
+        body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], temperature, ...(jsonMode ? { response_format: { type: "json_object" } } : {}), stream: false }),
         signal: controller.signal,
       });
       const headersMs = Date.now() - startedAt;
-      console.info(
-        `[llm]${trace} response headers HTTP ${resp.status} after ${headersMs}ms`,
-      );
+      console.info(`[llm]${trace} response headers HTTP ${resp.status} after ${headersMs}ms`);
       const body = await resp.text();
       const totalMs = Date.now() - startedAt;
-      console.info(
-        `[llm]${trace} response body received ${body.length} bytes after ${totalMs}ms`,
-      );
-      if (!resp.ok)
-        throw new NineRouterHttpError(
-          resp.status,
-          retryAfterMs(resp.headers.get("retry-after")),
-          `9router HTTP ${resp.status}`,
-        );
+      console.info(`[llm]${trace} response body received ${body.length} bytes after ${totalMs}ms`);
+      if (!resp.ok) throw new NineRouterHttpError(resp.status, retryAfterMs(resp.headers.get("retry-after")), `9router HTTP ${resp.status}`);
       let data: any;
-      try {
-        data = JSON.parse(body);
-      } catch (parseError: any) {
-        throw new Error(
-          `9router response JSON parse failed after ${totalMs}ms: ${parseError.message}`,
-        );
-      }
-      const text: string | undefined = data?.choices?.[0]?.message?.content;
+      try { data = JSON.parse(body); } catch (parseError: any) { throw new Error(`9router response JSON parse failed after ${totalMs}ms: ${parseError.message}`); }
+      const choice = data?.choices?.[0];
+      const text: string | undefined = choice?.message?.content;
       if (!text) throw new Error("9router returned empty content");
       if (!text.trim()) throw new Error("9router returned blank content");
-      console.info(
-        `[llm]${trace} assistant content extracted (${text.length} chars) after ${totalMs}ms`,
-      );
+      const finishReason = typeof choice?.finish_reason === "string" ? choice.finish_reason : null;
+      console.info(`[llm]${trace} assistant content extracted (${text.length} chars, finish=${finishReason || "unknown"}) after ${totalMs}ms`);
       recordNineRouterOutcome(priority);
-      return text.trim();
+      return { text: text.trim(), finishReason };
     } catch (err: any) {
       const elapsedMs = Date.now() - startedAt;
-      const reason = timedOut
-        ? `timeout=${boundedTimeoutMs}ms`
-        : "upstream/error";
-      console.error(
-        `[llm]${trace} failed at ${reason} after ${elapsedMs}ms: ${err.message}`,
-      );
+      const reason = timedOut ? `timeout=${boundedTimeoutMs}ms` : "upstream/error";
+      console.error(`[llm]${trace} failed at ${reason} after ${elapsedMs}ms: ${err.message}`);
       throw err;
     } finally {
       clearTimeout(timer);
@@ -407,32 +368,27 @@ export async function callLLM(
     const attempt = options.attempt || 1;
     if (retryableNineRouterError(err) && attempt < NINE_ROUTER_MAX_ATTEMPTS) {
       const delayMs = retryDelayMs(err, attempt);
-      console.warn(
-        `[llm]${trace} attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} failed (${err.message}); retrying in ${delayMs}ms`,
-      );
+      console.warn(`[llm]${trace} attempt=${attempt}/${NINE_ROUTER_MAX_ATTEMPTS} failed (${err.message}); retrying in ${delayMs}ms`);
       await pause(delayMs);
-      return callLLM(system, user, temperature, strict, jsonMode, timeoutMs, {
-        ...options,
-        attempt: attempt + 1,
-      });
+      return callLLMCompletion(system, user, temperature, strict, jsonMode, timeoutMs, { ...options, attempt: attempt + 1 });
     }
     recordNineRouterOutcome(priority, err);
-    console.error(
-      "[llm] generic call failed:",
-      err.message,
-      strict ? "— surfacing error" : "— using fallback",
-    );
+    console.error("[llm] generic call failed:", err.message, strict ? "— surfacing error" : "— using fallback");
     if (strict) throw err;
-    return "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!";
+    return { text: "I appreciate your reflection! This is a fascinating perspective on the book. Thanks for sharing your reading journey with us!", finishReason: null };
   }
 }
 
-/** Strict JSON call used by persisted structured enrichments. */
-export async function callJsonLLM(
-  system: string,
-  user: string,
-  temperature = 0.2,
+/** Generic compatibility API for callers that only require assistant text. */
+export async function callLLM(
+  system: string, user: string, temperature = 0.7, strict = false, jsonMode = false,
+  timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000), options: LlmCallOptions = {},
 ): Promise<string> {
+  return (await callLLMCompletion(system, user, temperature, strict, jsonMode, timeoutMs, options)).text;
+}
+
+/** Strict JSON call used by persisted structured enrichments. */
+export async function callJsonLLM(system: string, user: string, temperature = 0.2): Promise<string> {
   return callLLM(system, user, temperature, true, true);
 }
 

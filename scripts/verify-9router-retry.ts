@@ -4,10 +4,10 @@ process.env.NINE_ROUTER_URL = "http://nine-router.test/v1/chat/completions";
 process.env.NINE_ROUTER_MAX_RPS = "100";
 process.env.NINE_ROUTER_INTERACTIVE_TIMEOUT_MS = "5000";
 
-const { callLLM, callNineRouter, NINE_ROUTER_MAX_ATTEMPTS } = await import("../src/llm.js");
+const { callLLM, callLLMCompletion, callNineRouter, NINE_ROUTER_MAX_ATTEMPTS } = await import("../src/llm.js");
 
-function response(status: number, content?: string): Response {
-  return new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status, headers: { "Content-Type": "application/json" } });
+function response(status: number, content?: string, finish_reason: string | null = "stop"): Response {
+  return new Response(JSON.stringify({ choices: [{ message: { content }, finish_reason }] }), { status, headers: { "Content-Type": "application/json" } });
 }
 
 const originalFetch = globalThis.fetch;
@@ -54,6 +54,10 @@ try {
   const fallback = await callNineRouter({ title: "Test", author: "Author", start: 1, end: 1, total: 1, extractedText: "Example text." });
   assert.match(fallback, /mock summary — 9router offline/);
   assert.equal(calls, 3, "interactive summary retries through attempt 3 before fallback");
+  globalThis.fetch = async () => response(200, "Partial but valid text", "length");
+  assert.deepEqual(await callLLMCompletion("system", "user", 0.2, true), { text: "Partial but valid text", finishReason: "length" });
+  assert.equal(await callLLM("system", "user", 0.2, true), "Partial but valid text", "text-only callers retain compatibility");
+
 } finally {
   globalThis.fetch = originalFetch;
 }

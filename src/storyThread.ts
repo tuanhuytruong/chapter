@@ -24,6 +24,17 @@ export type StoryAnalysis = {
 };
 export type StoryState = Pick<StoryAnalysis, "storySoFar" | "threads" | "characterPulse" | "readerMemory" | "continuityPath">;
 export type StoryJobStatus = "generating" | "ready" | "failed";
+export class StoryThreadIncompleteOutputError extends Error {
+  constructor(reason: "length" | "invalid_json") {
+    super(reason === "length" ? "Story Thread response stopped before completion." : "Story Thread response was incomplete JSON.");
+    this.name = "StoryThreadIncompleteOutputError";
+  }
+}
+
+export function assertStoryThreadCompletion(value: { text: string; finishReason: string | null }): string {
+  if (value.finishReason === "length") throw new StoryThreadIncompleteOutputError("length");
+  return value.text;
+}
 export type StoryThreadSession = { log_id: string; session: number; reading_round: number; page_start: number; page_end: number; date: string; analysis: StoryAnalysis | null; storyStatus: StoryJobStatus; attemptCount: number; errorMessage: string | null; startedAt: string | null; completedAt: string | null; };
 
 const MAX_TEXT = 900;
