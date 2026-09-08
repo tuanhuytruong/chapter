@@ -16,10 +16,10 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.0", at: "2026-09-05T16:00:46.565Z" }
+generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+    at: 2026-09-08T19:54:21.058Z
 ---
 
 # System Architecture Overview
@@ -74,10 +74,8 @@ Database interactions are managed through `repo://src/db.ts`, which wraps the no
 
 The client-side application is built as a single-page React application (`repo://src/App.tsx`), styled with Tailwind CSS, and bundled with Vite.
 
-- **Client Entrypoint**: `repo://src/main.tsx` mounts the root React application into the DOM.
-- **API Client Layer**: `repo://src/api.ts` provides strongly typed HTTP helper methods, membership models, entitlement structures, and data models interfacing with the backend REST endpoints.
-- **Authentication Context**: `repo://src/AuthContext.tsx` manages active session state, loading gates, and redirects unauthenticated visitors to login/signup flows.
-- **App Shell & Views**: `repo://src/components/AppShell.tsx` wraps authenticated routes (`/`, `/today`, `/books/:id`, `/insights`, `/review`, `/calendar`, `/momentum`, `/achievements`, `/profile`, `/account`, `/pricing`, `/quotes`).
+- **Frontend Root**: `repo://src/App.tsx` configures client-side routing via React Router and wraps authenticated views with auth, theme, and application providers.
+- **API Client Layer**: `repo://src/api.ts` provides strongly typed HTTP helper methods, membership models, and data structures interfacing with the backend REST endpoints.
 - **Analytics & PostHog Identity**: `repo://src/analytics.ts` initializes PostHog analytics (`posthog-js`), associating user IDs and account handles upon successful authentication (`posthog.identify`) and resetting session tracking on logout (`posthog.reset`).
 
 ---

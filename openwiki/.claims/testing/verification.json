@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f01efee13d078d6966941bff8cb24509c370c23f75f165f3e8a9ad23f150f162",
+  "pageVersion": "sha256:86a3ac90b640875ad7eac16b98140d84ff798886b528b905b088201d12a0d3f9",
   "claims": [
     {
       "id": "claim_d442e026af93411da97d93e6aad0dbee",
-      "statement": "The project defines numerous verify:* npm scripts in package.json to test isolated features, database schemas, and platform behavior.",
+      "statement": "The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior.",
       "evidence": [
         {
-          "resource": "repo://package.json#L6-L54",
-          "version": "repo-lines-v1:sha256:eba71c9b26bbd05ce8bbc5c4ab9db92afeff059c8dfe14d8fa38170cba43e121:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
+          "resource": "repo://package.json#L6-L61",
+          "version": "repo-lines-v1:sha256:c5c0887c4a879e7e460b76ab19fbc5bd2af915716214f65558787adf9fd4c071:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTllYzg3NmQ1OTJmMjI5NDU0ZGVjOTY4NjViMzg1YmYyMmIyOGE4MGYxNWUxNDYyMGE4NzQ5ZjFlMGYwODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
         }
       ]
     },
@@ -65,6 +65,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "at": "2026-09-08T19:54:21.058Z"
   }
 }

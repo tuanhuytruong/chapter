@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:56b8d20fbbbf78bd4b8b9a23233e255a4f2a65a77d4b07067bfaf7a478797bd6",
+  "pageVersion": "sha256:f95e70bf69b9038980f9b53bf86b7560d9a6f33f3c916f925f0a3fc0887a142f",
   "claims": [
     {
       "id": "claim_c6fd54fe9d954aa38c70b2fbedab0845",
@@ -64,11 +64,11 @@
     },
     {
       "id": "claim_1fa20c298b3c4e61b951cb977f47352e",
-      "statement": "The frontend root component repo://src/App.tsx configures client-side routing via React Router and wraps authenticated views with authentication and onboarding providers.",
+      "statement": "The frontend root component repo://src/App.tsx configures client-side routing via React Router and wraps authenticated views with authentication, theme, and application providers.",
       "evidence": [
         {
           "resource": "repo://src/App.tsx",
-          "version": "repo-file-v1:sha256:492631834cf400c4c642233b4a7b65ea3addbafbd2e0d561b22c4d37ef3fbbaa"
+          "version": "repo-file-v1:sha256:d02137ee6b156ad2a6cdbcf670e3c18a5a91b1d529d05c3e94d4543845de7742"
         }
       ]
     },
@@ -78,7 +78,7 @@
       "evidence": [
         {
           "resource": "repo://src/api.ts#L1-L100",
-          "version": "repo-lines-v1:sha256:cfc7169581fcd7a86c32a5d76f20b9147acdb2513be02b6a970492237d855d0a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZGE0ZmI0NzE1N2I3MzVlNmMyY2FiZjBhZTBlNDEwZmQ1YzQ0Mzc2MzdlNjA1MjAzZmM0NjE0NmY0NTUyM2I0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjQ2YjA2MDg0MjVlNGVlMDEzYzQ3NDY0NjVkMjE5MmJjMWQyNjM1ZjcyMmRmMTFlYjBjNzhkMGIyM2QxZDNlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzOWQ1NzA1MDE2YTVjZjE5ZDI4ZjU3YjVmZGE4ZWIxZjNmN2UxZDMzNGMyZDcyNTdlN2M1Nzc4OGI1NDE0MjM5In0"
+          "version": "repo-lines-v1:sha256:fa1e399753021b0e8b598eff4e2f7f55c5d800cfe4e81ac6ef0feadc1b3785e8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZGE0ZmI0NzE1N2I3MzVlNmMyY2FiZjBhZTBlNDEwZmQ1YzQ0Mzc2MzdlNjA1MjAzZmM0NjE0NmY0NTUyM2I0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjQ2YjA2MDg0MjVlNGVlMDEzYzQ3NDY0NjVkMjE5MmJjMWQyNjM1ZjcyMmRmMTFlYjBjNzhkMGIyM2QxZDNlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzOWQ1NzA1MDE2YTVjZjE5ZDI4ZjU3YjVmZGE4ZWIxZjNmN2UxZDMzNGMyZDcyNTdlN2M1Nzc4OGI1NDE0MjM5In0"
         }
       ]
     },
@@ -95,6 +95,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "at": "2026-09-08T19:54:21.058Z"
   }
 }

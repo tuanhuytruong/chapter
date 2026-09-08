@@ -8,10 +8,10 @@ sources:
     resource: repo://src/api.ts
   - id: openwiki-source-449cc5af19f441ac60ec275b
     resource: repo://src/routes/books.ts
-generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
+generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+    at: 2026-09-08T19:54:21.058Z
 ---
 
 # API Routes
@@ -61,8 +61,12 @@ sequenceDiagram
 - **AI Synthesis Endpoints (`/api/monthly-review`, `/api/cross-book-connections`, `/api/ask-reading`, `/api/podcast-recap`)**: Aggregate insights across multiple books and sessions to generate comprehensive reviews, answers, and audio recaps.
 
 ### 3. Reviews, Goals, & Dashboard
-- **`GET /api/reviews/due`**: Retrieves due spaced-repetition review cards.
+- **`GET /api/reviews/due`**: Retrieves due spaced-repetition review cards, allowing for fetching or checking pending reviews.
 - **`POST /api/reviews/:id`**: Submits a review outcome (`remembered: boolean`).
+- **`GET /api/reviews/due/count`**: Returns the count of due spaced-repetition review cards.
+- **`GET /api/reviews/due/books`**: Retrieves books that have due review cards.
+- **`GET /api/reviews/returns`**: Retrieves "returns" (spaced-repetition review cards associated with specific reading insights).
+- **`POST /api/reviews/:id/return`**: Submits a return outcome (`outcome: ReturnOutcome` and optional `reflection`).
 - **`GET /api/goals/weekly`**: Fetches weekly reading goal metrics and progress.
 - **`GET /api/today`**: Provides the active dashboard state, including active books, today's progress, and queue information.
 

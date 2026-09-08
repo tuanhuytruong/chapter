@@ -3,9 +3,6 @@ type: architecture
 title: Frontend Architecture
 description: Frontend React application, page components, state management, and routing structure.
 tags: [frontend, architecture, react, routing, components, state]
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
 sources:
   - id: openwiki-source-54631e6ebf1d3b815c4a5eed
     resource: repo://src/App.tsx
@@ -13,7 +10,10 @@ sources:
     resource: repo://src/components/AppShell.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: {by: "openwiki/0.4.0", at: "2026-08-26T19:17:20.603Z"}
+generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-08T19:54:21.058Z
 ---
 
 # Frontend Architecture
@@ -47,9 +47,9 @@ The application uses `react-router-dom` for client-side routing. Routes are divi
 ## Component Structure & Layout
 
 The UI layout is orchestrated by `/src/components/AppShell.tsx`, which includes:
-- **Header**: Responsive top navigation bar containing branding, primary navigation links (Today, Library, Review with due badge), journey drawer toggle, theme switcher, membership tier badge, profile link, account/settings, and sign-out controls (`repo://src/components/AppShell.tsx#L65-L89`).
-- **Mobile Navigation**: Bottom tab bar and collapsible menu for smaller viewports (`repo://src/components/AppShell.tsx#L93-L100`).
-- **Content Area**: Renders nested route elements via `Outlet` (`repo://src/components/AppShell.tsx`).
+- **Header**: Responsive top navigation bar containing branding, primary navigation links (Today, Library, Returns), journey drawer toggle, theme switcher, membership tier badge, profile link, account/settings, and sign-out controls (`repo://src/components/AppShell.tsx#L83-L105`).
+- **Mobile Navigation**: Bottom tab bar and collapsible menu for smaller viewports (`repo://src/components/AppShell.tsx#L109-L121`).
+- **Content Area**: Renders nested route elements via `Outlet` (`repo://src/components/AppShell.tsx#L126`).
 - **Swipe Navigation**: Integrated mobile gesture navigation via `/src/hooks/useSwipeNav.ts`.
 
 ## State Management & Authentication

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:426ec29a1efc6181778ecea3bea5c844efa5f80dd1a1d17fcf17d0f3f15b5885",
+  "pageVersion": "sha256:0938a35a62b44cafb5b93fd4326066cc10ca8f9d90d9a00a34eb564c7d0df13f",
   "claims": [
     {
       "id": "claim_6d53874a00c246788601ac4bd2549040",
@@ -54,11 +54,11 @@
     },
     {
       "id": "claim_4f6042c782614b0a9a4614f818a22e86",
-      "statement": "Spaced-repetition review endpoints allow fetching due reviews and submitting review outcomes.",
+      "statement": "Review endpoints allow fetching due review counts, books with due reviews, fetching due cards, retrieving returns, responding to returns, and submitting standard review outcomes.",
       "evidence": [
         {
-          "resource": "repo://src/api.ts#L476-L481",
-          "version": "repo-lines-v1:sha256:a8360117cbd8241f12652c190928027af4c7d14bdd982a9653e19d94eff962bc:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQ1ZWI4ZGEwMWMzZmFhODAyNTc2ZjY0NTJkM2U4MDNkODIyODhjYzIzZDc3MGM1ZmFiMGIwYTA5YzcxNzdjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDk5MGViNmNjZGIwZmVmY2MzYzlhODgzYzg3OWM5ODY2YmUzMzkzMWNhYWFiZjM2NjJkN2FjNGM0MTNlYzhiMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTVmNzZhNTViNGU5ZTM1ZGQzMjcyY2E5MDdlMGM4YzlmNWI0YTg4YmY1Y2FjNDU4MmMyYTk3MjEzOTk0YjY4OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGYwNjQ1MjNjMTEyNGViZDc1ODY5NWYxYjBhOTkwZTNlYjQ5OWYzZjgyZGEyYzRkNDc5YzUwOTM3YzZkOTE5YyJ9"
+          "resource": "repo://src/api.ts#L549-L563",
+          "version": "repo-lines-v1:sha256:7d760ee6432f59e9a84b290d6bcfec1b2856e0868bf849840d6c275993e604fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlOTcwYmRhNjUyOGJkZDFjZDEzMjQwYjkzYmM5OGZjMTQ2ZDA4NzJlNDU3YjY0NDRkMTc4MDMxNzc0OTE2ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTBlYjZjY2RiMGZlZmNjM2M5YTg4M2M4NzljOTg2NmJlMzM5MzFjYWFhYmYzNjYyZDdhYzRjNDEzZWM4YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzZGE4NmI3YjYzYmY0OGYyOGRjYzc3ZWJhZTI2Y2M4Mzc5ODkwZmI5ZTljMDY3OWJkNmViMWI1ODM2ODNmMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmMDY0NTIzYzExMjRlYmQ3NTg2OTVmMWIwYTk5MGUzZWI0OTlmM2Y4MmRhMmM0ZDQ3OWM1MDkzN2M2ZDkxOWMifQ"
         }
       ]
     },
@@ -85,6 +85,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "at": "2026-09-08T19:54:21.058Z"
   }
 }
