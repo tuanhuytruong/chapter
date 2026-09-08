@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const route = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
+assert.match(route, /GET \/api\/books\/:id\/story-memory/);
+assert.match(route, /story-memory\/reconcile/);
+assert.match(route, /ownerCanMutate/);
+assert.match(route, /paused books cannot reconcile Story Memory/);
+assert.match(route, /memory: snapshot?.state || null/);
+assert.match(route, /void rebuildStoryMemorySnapshot/);
+assert.doesNotMatch(route.match(/GET \/api\/books\/:id\/story-memory[\s\S]*?booksRouter\.get\(/)?.[0] || "", /raw_text/);
+console.log("STORY_MEMORY_API_FIXTURES_OK");

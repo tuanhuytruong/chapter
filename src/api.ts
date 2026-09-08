@@ -7,6 +7,7 @@ import type {
   ReadingMarkerRow,
   StoryThreadRow,
   StoryThreadRepairJob,
+  StoryMemoryResponse,
   SummaryMode,
 } from "./types";
 import type { ReturnOutcome, ReviewCardRow } from "./review";
@@ -526,6 +527,11 @@ export const api = {
     req<StoryThreadRow[]>(`${BASE}/${bookId}/story-thread${readingRound ? `?round=${encodeURIComponent(readingRound)}` : ""}`),
   getStoryThreadForLog: (bookId: string, logId: string) =>
     req<StoryThreadRow>(`${BASE}/${bookId}/logs/${logId}/story-thread`),
+  getStoryMemory: (bookId: string, readingRound?: number) =>
+    req<StoryMemoryResponse>(`${BASE}/${bookId}/story-memory${readingRound ? `?round=${encodeURIComponent(readingRound)}` : ""}`),
+  reconcileStoryMemory: (bookId: string, readingRound?: number) =>
+    req<{ status: string; readingRound: number; coveredSession: number }>(`${BASE}/${bookId}/story-memory/reconcile`, { method: "POST", body: JSON.stringify(readingRound ? { round: readingRound } : {}) }),
+
   retryStoryThread: (bookId: string, logId: string) =>
     req<StoryThreadRow[]>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   repairStoryThread: (bookId: string, logId: string) =>

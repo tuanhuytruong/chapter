@@ -7,7 +7,7 @@ import {
   extractRange,
   getChapterTitle,
 } from "../extractor.js";
-import { callLLM, callJsonLLM, callNineRouter, parseSummary } from "../llm.js";
+import { callLLM, callLLMCompletion, callJsonLLM, callNineRouter, parseSummary } from "../llm.js";
 import {
   boundStoryThreadSource,
   buildStoryThreadPrompt,
@@ -24,6 +24,11 @@ import {
   createStoryThreadRepairJob,
   updateStoryThreadRepairJob,
   getStoryThreadRepairJob,
+  assertStoryThreadCompletion,
+  StoryThreadIncompleteOutputError,
+  getStoryMemorySnapshot,
+  listStoryMemoryEvents,
+  rebuildStoryMemorySnapshot,
 } from "../storyThread.js";
 import {
   buildReadingLensPrompt,
@@ -786,6 +791,40 @@ booksRouter.get("/:id/story-thread", async (req: Request, res: Response) => {
       .json({ error: "story thread unavailable", detail: e.message });
   }
 });
+// GET /api/books/:id/story-memory — a safe current snapshot, never raw text.
+booksRouter.get("/:id/story-memory", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const requestedRound = req.query.round === undefined ? null : Number(req.query.round);
+  if (requestedRound !== null && (!Number.isInteger(requestedRound) || requestedRound < 1)) return res.status(400).json({ error: "round must be a positive integer" });
+  try {
+    const { rows } = await query<{ current_reading_round: number; can_edit: boolean }>("SELECT current_reading_round, owner_id=$2 AS can_edit FROM books WHERE id=$1 AND reading_experience='story'", [id, userFrom(req).id]);
+    const book = rows[0];
+    if (!book) return res.status(404).json({ error: "story book not found" });
+    const readingRound = requestedRound ?? book.current_reading_round;
+    const snapshot = await getStoryMemorySnapshot(id, readingRound);
+    const events = snapshot ? await listStoryMemoryEvents(id, readingRound) : [];
+    res.json({ readingRound, status: snapshot?.status || "unavailable", memory: snapshot?.state || null, events, updatedAt: snapshot?.updated_at || null, retryAllowed: Boolean(book.can_edit) });
+  } catch (error: any) { res.status(503).json({ error: "story memory unavailable", detail: error.message }); }
+});
+
+// Reconciliation is owner-only and deterministic for V2 observations. It never
+// rewrites historical session analyses and remains blocked for paused books.
+booksRouter.post("/:id/story-memory/reconcile", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!(await ownerCanMutate(req, res, id))) return;
+  const requestedRound = req.body?.round === undefined ? null : Number(req.body.round);
+  if (requestedRound !== null && (!Number.isInteger(requestedRound) || requestedRound < 1)) return res.status(400).json({ error: "round must be a positive integer" });
+  try {
+    const { rows } = await query<{ current_reading_round: number; status: string }>("SELECT current_reading_round,status FROM books WHERE id=$1 AND reading_experience='story'", [id]);
+    const book = rows[0];
+    if (!book) return res.status(404).json({ error: "story book not found" });
+    if (book.status === "paused") return res.status(409).json({ error: "paused books cannot reconcile Story Memory" });
+    const readingRound = requestedRound ?? book.current_reading_round;
+    const state = await rebuildStoryMemorySnapshot(id, readingRound);
+    res.status(202).json({ status: "ready", readingRound, coveredSession: state.coveredThrough?.session || 0 });
+  } catch (error: any) { res.status(503).json({ error: "story memory reconciliation failed", detail: error.message }); }
+});
+
 booksRouter.get(
   "/:id/logs/:logId/story-thread",
   async (req: Request, res: Response) => {
@@ -2039,22 +2078,27 @@ async function generateStoryThreadForLog(
   // scheduler as every other LLM workload, so it cannot starve reader actions.
   const timeout = Number(process.env.NINE_ROUTER_STORY_THREAD_TIMEOUT_MS || 180_000);
   const request = (user: string, attempt: number) => process.env.NINE_ROUTER_URL
-    ? callLLM(prompt.system, user, 0.2, true, true, timeout, {
+    ? callLLMCompletion(prompt.system, user, 0.2, true, true, timeout, {
         priority: "background",
         traceLabel: `story-thread:p.${log.page_start}-${log.page_end}:s.${log.session}:json=${attempt}`,
       })
-    : Promise.resolve(JSON.stringify(storyFallback()));
-  let raw = await request(prompt.user, 1);
+    : Promise.resolve({ text: JSON.stringify(storyFallback()), finishReason: "stop" });
   let analysis;
-  try {
-    analysis = parseStoryThreadAnalysis(raw);
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error;
-    // A 200 response can still contain malformed model JSON. Correct it once
-    // before surfacing a retryable pending card; never silently skip the log.
-    raw = await request(`${prompt.user}\n\nYour previous response was malformed JSON. Return the complete object again as valid JSON only, with double-quoted keys and strings.`, 2);
-    analysis = parseStoryThreadAnalysis(raw);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const completion = await request(
+        attempt === 1 ? prompt.user : `${prompt.user}\n\nThe previous response was incomplete or invalid. Return the complete JSON object only, with double-quoted keys and strings. Do not shorten fields or explain.`,
+        attempt,
+      );
+      analysis = parseStoryThreadAnalysis(assertStoryThreadCompletion(completion));
+      break;
+    } catch (error) {
+      const retryableOutput = error instanceof StoryThreadIncompleteOutputError || error instanceof SyntaxError;
+      if (!retryableOutput || attempt === 2) throw error;
+      console.warn(`[story-thread] incomplete provider output for session ${log.session}; regenerating once`);
+    }
   }
+  if (!analysis) throw new Error("Story Thread did not return a valid analysis");
   const { rows: priorCitationRows } = await query<{ log_id: string; session: number; page_start: number; page_end: number }>(
     `SELECT rl.id AS log_id, rl.session, rl.page_start, rl.page_end FROM reading_log rl JOIN story_thread_analyses sta ON sta.log_id=rl.id AND sta.schema_version=1 WHERE rl.book_id=$1 AND rl.reading_round=$2 AND (rl.date < $3::date OR (rl.date=$3::date AND rl.session<$4))`,
     [log.book_id, log.reading_round, log.date, log.session],
@@ -2063,6 +2107,11 @@ async function generateStoryThreadForLog(
   const priorByLogId = new Map(priorCitationRows.map((row) => [row.log_id, { logId: row.log_id, session: row.session, pageStart: row.page_start, pageEnd: row.page_end }]));
   analysis.continuityPath = normalizeContinuityCitations(analysis.continuityPath, currentCitation, priorByLogId);
   await upsertStoryThreadAnalysis(log.book_id, log.id, analysis);
+  // The durable memory is a separate, non-blocking projection. A failure never
+  // changes the saved reading session or its Story Thread card.
+  void rebuildStoryMemorySnapshot(log.book_id, log.reading_round).catch((error) =>
+    console.warn(`[story-memory] snapshot unavailable after session ${log.session}: ${error instanceof Error ? error.message : "unknown error"}`),
+  );
   const compat = storyCompatSummary(analysis);
   await query(
     "UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5",

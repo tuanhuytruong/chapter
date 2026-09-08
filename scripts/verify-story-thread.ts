@@ -18,6 +18,10 @@ assert.equal(storyCompatSummary(analysis).quote, null);
 assert.throws(() => parseStoryThreadAnalysis('{"storyRecap":"missing required fields"}'));
 assert.throws(() => assertStoryThreadCompletion({ text: "partial", finishReason: "length" }), StoryThreadIncompleteOutputError);
 assert.equal(assertStoryThreadCompletion({ text: "complete", finishReason: "stop" }), "complete");
+const memorySignals = parseStoryThreadAnalysis(JSON.stringify({ storyRecap: "A new name complicates the earlier account.", storySoFar: "A new name complicates the earlier account.", changedEvents: [], threads: [], characterPulse: [], readerMemory: [], confidenceNotes: [], innerMovements: [{ characterName: "Cô Sương", emotionalShift: "She becomes guarded.", innerConflict: "Her past remains unspoken.", desireVsAction: "She wants distance but stays.", subtext: "The connection is only suggested.", unresolved: "Her identity is not confirmed." }], characterObservations: [{ localId: "woman", name: "người đàn bà", aliases: [], role: "figure", evidence: "current" }, { localId: "suong", name: "Cô Sương", aliases: [], role: "visitor", evidence: "current" }], identitySignals: [{ leftLocalId: "woman", rightLocalId: "suong", claim: "They may be the same person.", status: "hypothesis", evidence: "current" }] }));
+assert.equal(memorySignals.innerMovements?.[0]?.characterName, "Cô Sương");
+assert.equal(memorySignals.identitySignals?.[0]?.status, "hypothesis");
+assert.equal(memorySignals.characterObservations?.length, 2, "hypothesis keeps two observed identities separate");
 const firstState = mergeStoryState({ threads: [{ id: "sealed-letter", label: "Old", status: "open", detail: "Old detail" }], characterPulse: [], readerMemory: [] }, analysis);
 assert.equal(firstState.threads[0].status, "escalating");
 
@@ -50,6 +54,7 @@ assert.match(prompt.system, /storySoFar is a richer cumulative narrative/);
 assert.match(prompt.system, /return exactly "confidenceNotes": \[\]/);
 assert.match(prompt.system, /Reuse the exact established name from Prior persisted story state/);
 assert.match(prompt.system, /omit the arc rather than guessing an identity/);
+assert.match(prompt.system, /identitySignals with status "hypothesis"/);
 const characterRows = [
   { log_id: "a", session: 1, page_start: 1, page_end: 1, analysis: { characterArcs: [{ name: "One-off", development: "Appears once." }], characterRelationships: [], characterPulse: [] } },
   { log_id: "b", session: 2, page_start: 2, page_end: 2, analysis: { characterArcs: [{ name: "Mara", development: "Acts." }], characterRelationships: [], characterPulse: [] } },

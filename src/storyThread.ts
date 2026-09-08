@@ -4,6 +4,10 @@ export type StoryThread = { id: string; label: string; status: "open" | "escalat
 export type StoryCharacter = { name: string; pulse: string };
 export type StoryCharacterArc = { name: string; development: string };
 export type StoryRelationship = { people: string[]; detail: string };
+export type StoryIdentityStatus = "hypothesis" | "confirmed" | "rejected";
+export type StoryInnerMovement = { characterName: string; emotionalShift: string; innerConflict: string; desireVsAction: string; subtext: string; unresolved: string };
+export type StoryCharacterObservation = { localId: string; name: string; aliases: string[]; role: string; evidence: "current" };
+export type StoryIdentitySignal = { leftLocalId: string; rightLocalId: string; claim: string; status: StoryIdentityStatus; evidence: "current" };
 export type StoryCitation = { logId: string; session: number; pageStart: number; pageEnd: number };
 export type StoryMilestone = { text: string; citation: StoryCitation };
 export function normalizeContinuityCitations(milestones: StoryMilestone[] | undefined, current: StoryCitation, priorByLogId: Map<string, StoryCitation>): StoryMilestone[] | undefined {
@@ -19,6 +23,9 @@ export type StoryAnalysis = {
   // Optional so analyses created before Character Storylines remain readable.
   characterArcs?: StoryCharacterArc[];
   characterRelationships?: StoryRelationship[];
+  innerMovements?: StoryInnerMovement[];
+  characterObservations?: StoryCharacterObservation[];
+  identitySignals?: StoryIdentitySignal[];
   readerMemory: string[];
   confidenceNotes: string[];
 };
@@ -36,6 +43,79 @@ export function assertStoryThreadCompletion(value: { text: string; finishReason:
   return value.text;
 }
 export type StoryThreadSession = { log_id: string; session: number; reading_round: number; page_start: number; page_end: number; date: string; analysis: StoryAnalysis | null; storyStatus: StoryJobStatus; attemptCount: number; errorMessage: string | null; startedAt: string | null; completedAt: string | null; };
+export type StoryEvidence = { logId: string; session: number; pageStart: number; pageEnd: number };
+export type StoryMemoryCharacter = { id: string; displayName: string; aliases: Array<{ name: string; status: StoryIdentityStatus; evidence: StoryEvidence }>; roles: string[]; interior: Array<{ shift: string; conflict: string; desireVsAction: string; subtext: string; unresolved: string; evidence: StoryEvidence }>; unresolved: string[] };
+export type StoryMemoryEvent = { eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: StoryIdentityStatus; evidence: StoryEvidence };
+export type StoryMemoryCandidate = { storySoFar: string; characters: StoryMemoryCharacter[]; identityHypotheses: Array<{ id: string; leftCharacterId: string; rightCharacterId: string; claim: string; status: StoryIdentityStatus; evidence: StoryEvidence[] }>; revealEvents: StoryMemoryEvent[]; openQuestions: string[]; coveredThrough: StoryEvidence | null };
+
+const normalizedEntityKey = (value: string) => value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/(^-|-$)/g, "");
+
+/** Deterministic, no-LLM boundary from immutable session observations to a
+ * reconciliation candidate. Identities stay separate until a cited confirmed
+ * signal explicitly joins them. */
+export function buildStoryMemoryCandidate(rows: StoryThreadSession[]): StoryMemoryCandidate {
+  const ordered = rows.filter((row) => row.analysis && row.storyStatus === "ready").slice().sort((a, b) => a.date.localeCompare(b.date) || a.session - b.session);
+  const parent = new Map<string, string>();
+  const find = (id: string): string => { const root = parent.get(id) || id; if (root !== id) parent.set(id, find(root)); return parent.get(id) || id; };
+  const join = (a: string, b: string) => { const left = find(a), right = find(b); if (left !== right) parent.set(right, left); };
+  // Same exact observed name is the same candidate across sessions; distinct
+  // names remain separate until a current cited confirmation joins them.
+  const localToGlobal = new Map<string, string>();
+  const nameToGlobal = new Map<string, string>();
+  for (const row of ordered) for (const item of row.analysis!.characterObservations || []) {
+    const key = normalizedEntityKey(item.name) || `${row.log_id}:${item.localId}`;
+    const global = nameToGlobal.get(key) || `${row.log_id}:${item.localId}`;
+    nameToGlobal.set(key, global);
+    localToGlobal.set(`${row.log_id}:${item.localId}`, global);
+  }
+  for (const row of ordered) for (const signal of row.analysis!.identitySignals || []) if (signal.status === "confirmed") join(localToGlobal.get(`${row.log_id}:${signal.leftLocalId}`) || `${row.log_id}:${signal.leftLocalId}`, localToGlobal.get(`${row.log_id}:${signal.rightLocalId}`) || `${row.log_id}:${signal.rightLocalId}`);
+  const characters = new Map<string, StoryMemoryCharacter>();
+  const identityHypotheses: StoryMemoryCandidate["identityHypotheses"] = [];
+  const revealEvents: StoryMemoryEvent[] = [];
+  const openQuestions = new Set<string>();
+  let storySoFar = "";
+  let coveredThrough: StoryEvidence | null = null;
+  for (const row of ordered) {
+    const analysis = row.analysis!;
+    storySoFar = analysis.storySoFar || storySoFar;
+    const evidence = { logId: row.log_id, session: row.session, pageStart: row.page_start, pageEnd: row.page_end };
+    coveredThrough = evidence;
+    const observations = new Map((analysis.characterObservations || []).map((item) => [item.localId, item]));
+    for (const item of observations.values()) {
+      const id = find(localToGlobal.get(`${row.log_id}:${item.localId}`) || `${row.log_id}:${item.localId}`);
+      const current = characters.get(id) || { id, displayName: item.name, aliases: [], roles: [], interior: [], unresolved: [] };
+      if (item.role && !current.roles.includes(item.role)) current.roles.push(item.role);
+      for (const alias of item.aliases) if (alias && alias !== current.displayName && !current.aliases.some((entry) => entry.name === alias)) current.aliases.push({ name: alias, status: "hypothesis", evidence });
+      characters.set(id, current);
+    }
+    for (const movement of analysis.innerMovements || []) {
+      const target = [...observations.values()].find((item) => normalizedEntityKey(item.name) === normalizedEntityKey(movement.characterName));
+      if (!target) continue;
+      const id = find(localToGlobal.get(`${row.log_id}:${target.localId}`) || `${row.log_id}:${target.localId}`), current = characters.get(id);
+      if (!current) continue;
+      current.interior.push({ shift: movement.emotionalShift, conflict: movement.innerConflict, desireVsAction: movement.desireVsAction, subtext: movement.subtext, unresolved: movement.unresolved, evidence });
+      if (movement.unresolved) openQuestions.add(movement.unresolved);
+    }
+    for (const signal of analysis.identitySignals || []) {
+      const left = find(localToGlobal.get(`${row.log_id}:${signal.leftLocalId}`) || `${row.log_id}:${signal.leftLocalId}`), right = find(localToGlobal.get(`${row.log_id}:${signal.rightLocalId}`) || `${row.log_id}:${signal.rightLocalId}`);
+      const subjectKey = [left, right].sort().join("::");
+      identityHypotheses.push({ id: `${row.log_id}:${signal.leftLocalId}:${signal.rightLocalId}`, leftCharacterId: left, rightCharacterId: right, claim: signal.claim, status: signal.status, evidence: [evidence] });
+      if (signal.status !== "hypothesis") revealEvents.push({ eventType: signal.status === "confirmed" ? "identity_confirmed" : "identity_rejected", subjectKey, currentClaim: signal.claim, confidence: signal.status, evidence });
+      else revealEvents.push({ eventType: "identity_hypothesis", subjectKey, currentClaim: signal.claim, confidence: signal.status, evidence });
+    }
+  }
+  // The union-find pass may have joined an earlier entity after it was stored.
+  const canonical = new Map<string, StoryMemoryCharacter>();
+  for (const character of characters.values()) {
+    const id = find(character.id), target = canonical.get(id) || { ...character, id, aliases: [...character.aliases], roles: [...character.roles], interior: [...character.interior], unresolved: [...character.unresolved] };
+    if (!canonical.has(id)) canonical.set(id, target); else {
+      for (const alias of [character.displayName, ...character.aliases.map((item) => item.name)]) if (alias !== target.displayName && !target.aliases.some((item) => item.name === alias)) target.aliases.push({ name: alias, status: "confirmed", evidence: character.aliases[0]?.evidence || coveredThrough! });
+      target.roles.push(...character.roles.filter((role) => !target.roles.includes(role)));
+      target.interior.push(...character.interior);
+    }
+  }
+  return { storySoFar, characters: [...canonical.values()].slice(0, 20), identityHypotheses: identityHypotheses.slice(-24), revealEvents: revealEvents.slice(-24), openQuestions: [...openQuestions].slice(-16), coveredThrough };
+}
 
 const MAX_TEXT = 900;
 /** A single reading range can contain enough PDF text to overwhelm the provider.
@@ -87,13 +167,18 @@ export function parseStoryThreadAnalysis(raw: string): StoryAnalysis {
     const citation = row.citation && typeof row.citation === "object" && !Array.isArray(row.citation) ? row.citation as Record<string, unknown> : {};
     return { text: clean(row.text), citation: { logId: validLogId(citation.logId) ? citation.logId : "", session: Number(citation.session) || 0, pageStart: Number(citation.pageStart) || 0, pageEnd: Number(citation.pageEnd) || 0 } };
   }).filter((milestone) => milestone.text);
-  return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), storySoFar: clean(data.storySoFar), continuityPath, changedEvents: strings(data.changedEvents, 8), threads, characterPulse, characterArcs, characterRelationships, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6).filter((note) => !noConfidenceNote(note)) };
+  const innerMovements = objects(data.innerMovements, 6).map((row) => ({ characterName: clean(row.characterName), emotionalShift: clean(row.emotionalShift), innerConflict: clean(row.innerConflict), desireVsAction: clean(row.desireVsAction), subtext: clean(row.subtext), unresolved: clean(row.unresolved) })).filter((row) => row.characterName && (row.emotionalShift || row.innerConflict || row.desireVsAction || row.subtext || row.unresolved));
+  const characterObservations = objects(data.characterObservations, 8).map((row) => ({ localId: clean(row.localId).toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/(^-|-$)/g, ""), name: clean(row.name), aliases: [...new Set(strings(row.aliases, 6).map((alias) => alias.toLocaleLowerCase() === clean(row.name).toLocaleLowerCase() ? "" : alias).filter(Boolean))], role: clean(row.role), evidence: row.evidence === "current" ? "current" as const : null })).filter((row): row is StoryCharacterObservation => Boolean(row.localId && row.name && row.evidence));
+  const observationIds = new Set(characterObservations.map((row) => row.localId));
+  const localId = (value: unknown) => clean(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/(^-|-$)/g, "");
+  const identitySignals = objects(data.identitySignals, 4).map((row) => ({ leftLocalId: localId(row.leftLocalId), rightLocalId: localId(row.rightLocalId), claim: clean(row.claim), status: ["hypothesis", "confirmed", "rejected"].includes(String(row.status)) ? row.status as StoryIdentityStatus : null, evidence: row.evidence === "current" ? "current" as const : null })).filter((row): row is StoryIdentitySignal => Boolean(row.leftLocalId && row.rightLocalId && row.leftLocalId !== row.rightLocalId && row.claim && row.status && row.evidence && observationIds.has(row.leftLocalId) && observationIds.has(row.rightLocalId)));
+  return { storyRecap: clean(data.storyRecap, "No grounded recap was established."), storySoFar: clean(data.storySoFar), continuityPath, changedEvents: strings(data.changedEvents, 8), threads, characterPulse, characterArcs, characterRelationships, innerMovements, characterObservations, identitySignals, readerMemory: strings(data.readerMemory, 6), confidenceNotes: strings(data.confidenceNotes, 6).filter((note) => !noConfidenceNote(note)) };
 }
 
 export function buildStoryThreadPrompt(input: { title: string; author: string; start: number; end: number; total: number; lang: "auto" | "vi" | "en"; sourceText: string; priorState: StoryState | null }): { system: string; user: string } {
   const language = input.lang === "vi" ? "Respond entirely in Vietnamese." : input.lang === "en" ? "Respond entirely in English." : /[ăâđêôơưĂÂĐÊÔƠƯ]/.test(input.sourceText) ? "The current reading is Vietnamese: respond entirely in Vietnamese." : "Match the predominant language of the current reading.";
   return {
-    system: `You are Story Thread, a continuity companion for fiction. Ground every current event, character change, and quote-like detail in CURRENT READING TEXT. Prior state is only reader memory: preserve it only when compatible, never treat it as new evidence. Do not invent names, motives, events, chronology, or spoilers. Mark uncertainty in confidenceNotes. For storyRecap, write a warm reading-companion recap, not an event ledger: normally use 2–3 connected paragraphs when the source has enough material; enter through a concrete scene, movement, tension, gesture, or grounded emotional shift from the current reading; then carry cause → response → consequence with natural transitions. Never begin with meta labels such as “This section”, “This passage”, “In this part”, “Đoạn này”, “Phần này”, or “Tóm lại”. Do not pad a genuinely short source, invent interiority, or repeat the whole book. characterArcs records only an observed development for a named character in this reading. Reuse the exact established name from Prior persisted story state for the same person. Add an age/role qualifier only for a genuinely distinct representation established by the reading. Do not emit generic unnamed roles as character arcs; omit the arc rather than guessing an identity. characterRelationships records only an observed state or change between 2–4 named characters. confidenceNotes are optional exception data, never a status message. When there is no concrete limitation in supplied text, return exactly "confidenceNotes": []. Never write an absence statement in any language, including “no uncertainty”, “no limitations”, “không có sự không chắc chắn”, or equivalent. Example: normal supported reading => []; only use a note for a concrete truncated, omitted, or genuinely ambiguous source condition. storySoFar is a richer cumulative narrative through this session, not a duplicate of storyRecap: when evidence permits, connect the starting situation through the most important already-saved turning points to the current situation. Do not list every session or invent causal links. continuityPath is a max-4 chronological list of brief turning points from the reader memory/current reading only. Each item is {"text":"", "citation":{"logId":"","session":0,"pageStart":0,"pageEnd":0}}. For an earlier turning point, use only an exact citation ID from Prior persisted story state; never invent a citation. Citation IDs are selection tokens only: the server verifies all session/chunk/page metadata. For the current reading, leave citation values empty/0 and the server will attach its verified session range. Return [] if no meaningful path can be grounded. ${language} Return JSON only with exactly these keys: {"storyRecap":"","storySoFar":"","continuityPath":[{"text":"","citation":{"logId":"","session":0,"pageStart":0,"pageEnd":0}}],"changedEvents":[""],"threads":[{"id":"stable-short-id","label":"","status":"open|escalating|resolved|uncertain","detail":""}],"characterPulse":[{"name":"","pulse":""}],"characterArcs":[{"name":"","development":""}],"characterRelationships":[{"people":["",""],"detail":""}],"readerMemory":[""],"confidenceNotes":[""]}. Lists must be concise; threads/characters/arcs/relationships max 8, events max 8, memory max 6.`,
+    system: `You are Story Thread, a continuity companion for fiction. Ground every current event, character change, and quote-like detail in CURRENT READING TEXT. Prior state is only reader memory: preserve it only when compatible, never treat it as new evidence. Do not invent names, motives, events, chronology, or spoilers. Mark uncertainty in confidenceNotes. For storyRecap, write a warm reading-companion recap, not an event ledger: normally use 2–3 connected paragraphs when the source has enough material; enter through a concrete scene, movement, tension, gesture, or grounded emotional shift from the current reading; then carry cause → response → consequence with natural transitions. Never begin with meta labels such as “This section”, “This passage”, “In this part”, “Đoạn này”, “Phần này”, or “Tóm lại”. Do not pad a genuinely short source, invent interiority, or repeat the whole book. characterArcs records only an observed development for a named character in this reading. Reuse the exact established name from Prior persisted story state for the same person. Add an age/role qualifier only for a genuinely distinct representation established by the reading. Do not emit generic unnamed roles as character arcs; omit the arc rather than guessing an identity. characterRelationships records only an observed state or change between 2–4 named characters. innerMovements records only a named character’s observed emotional shift, conflict, desire versus action, subtext, or unresolved tension shown by the current text; use uncertain language for subtext and never diagnose. characterObservations uses stable localId values and exact current names; aliases are names/labels seen in current text. If two identities may be connected, include identitySignals with status "hypothesis" and keep records separate. Use "confirmed" only when CURRENT READING explicitly confirms it; use "rejected" only when CURRENT READING explicitly rules it out. Every optional V2 entry must set evidence:"current". Never merge aliases merely because they seem plausible. confidenceNotes are optional exception data, never a status message. When there is no concrete limitation in supplied text, return exactly "confidenceNotes": []. Never write an absence statement in any language, including “no uncertainty”, “no limitations”, “không có sự không chắc chắn”, or equivalent. Example: normal supported reading => []; only use a note for a concrete truncated, omitted, or genuinely ambiguous source condition. storySoFar is a richer cumulative narrative through this session, not a duplicate of storyRecap: when evidence permits, connect the starting situation through the most important already-saved turning points to the current situation. Do not list every session or invent causal links. continuityPath is a max-4 chronological list of brief turning points from the reader memory/current reading only. Each item is {"text":"", "citation":{"logId":"","session":0,"pageStart":0,"pageEnd":0}}. For an earlier turning point, use only an exact citation ID from Prior persisted story state; never invent a citation. Citation IDs are selection tokens only: the server verifies all session/chunk/page metadata. For the current reading, leave citation values empty/0 and the server will attach its verified session range. Return [] if no meaningful path can be grounded. ${language} Return JSON only with exactly these keys: {"storyRecap":"","storySoFar":"","continuityPath":[{"text":"","citation":{"logId":"","session":0,"pageStart":0,"pageEnd":0}}],"changedEvents":[""],"threads":[{"id":"stable-short-id","label":"","status":"open|escalating|resolved|uncertain","detail":""}],"characterPulse":[{"name":"","pulse":""}],"characterArcs":[{"name":"","development":""}],"characterRelationships":[{"people":["",""],"detail":""}],"innerMovements":[{"characterName":"","emotionalShift":"","innerConflict":"","desireVsAction":"","subtext":"","unresolved":""}],"characterObservations":[{"localId":"","name":"","aliases":[""],"role":"","evidence":"current"}],"identitySignals":[{"leftLocalId":"","rightLocalId":"","claim":"","status":"hypothesis|confirmed|rejected","evidence":"current"}],"readerMemory":[""],"confidenceNotes":[""]}. Lists must be concise; threads/characters/arcs/relationships max 8, events max 8, memory max 6.`,
     user: `Book: ${input.title} by ${input.author}\nReading range: ${input.start}–${input.end} of ${input.total}\n\nPrior persisted story state (may be empty):\n${JSON.stringify(input.priorState || { storySoFar: "", threads: [], characterPulse: [], readerMemory: [] })}\n\nCurrent reading text:\n${input.sourceText}`,
   };
 }
@@ -137,6 +222,32 @@ export async function upsertStoryThreadAnalysis(bookId: string, logId: string, a
   const latest = analyses.at(-1);
   await query(`INSERT INTO story_state_snapshots (book_id, reading_round, last_log_id, state) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT (book_id) DO UPDATE SET reading_round=EXCLUDED.reading_round, last_log_id=EXCLUDED.last_log_id, state=EXCLUDED.state, updated_at=now()`, [bookId, readingRound, latest?.log_id || logId, JSON.stringify(state || { threads: [], characterPulse: [], readerMemory: [] })]);
 }
+export type StoryMemorySnapshotRow = { book_id: string; reading_round: number; state: StoryMemoryCandidate; covered_log_id: string | null; covered_session: number; status: "ready" | "generating" | "failed"; error_message: string | null; updated_at: string };
+
+export async function rebuildStoryMemorySnapshot(bookId: string, readingRound: number): Promise<StoryMemoryCandidate> {
+  const sessions = await listStoryThreadAnalyses(bookId, readingRound);
+  const state = buildStoryMemoryCandidate(sessions);
+  const covered = state.coveredThrough;
+  await query(`INSERT INTO story_memory_snapshots (book_id,reading_round,schema_version,state,covered_log_id,covered_session,status,error_message,generated_at,updated_at)
+    VALUES ($1,$2,2,$3::jsonb,$4,$5,'ready',NULL,now(),now())
+    ON CONFLICT (book_id,reading_round,schema_version) DO UPDATE SET state=EXCLUDED.state,covered_log_id=EXCLUDED.covered_log_id,covered_session=EXCLUDED.covered_session,status='ready',error_message=NULL,generated_at=now(),updated_at=now()`,
+    [bookId, readingRound, JSON.stringify(state), covered?.logId || null, covered?.session || 0]);
+  for (const event of state.revealEvents) await query(`INSERT INTO story_memory_events (book_id,reading_round,event_type,subject_key,prior_claim,current_claim,confidence,source_log_id,source_session,page_start,page_end)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    ON CONFLICT (book_id,reading_round,event_type,subject_key,source_log_id,current_claim) DO NOTHING`,
+    [bookId, readingRound, event.eventType, event.subjectKey, event.priorClaim || null, event.currentClaim, event.confidence, event.evidence.logId, event.evidence.session, event.evidence.pageStart, event.evidence.pageEnd]);
+  return state;
+}
+
+export async function getStoryMemorySnapshot(bookId: string, readingRound: number): Promise<StoryMemorySnapshotRow | null> {
+  const { rows } = await query<StoryMemorySnapshotRow>(`SELECT book_id,reading_round,state,covered_log_id,covered_session,status,error_message,updated_at FROM story_memory_snapshots WHERE book_id=$1 AND reading_round=$2 AND schema_version=2`, [bookId, readingRound]);
+  return rows[0] || null;
+}
+export async function listStoryMemoryEvents(bookId: string, readingRound: number): Promise<StoryMemoryEvent[]> {
+  const { rows } = await query<any>(`SELECT event_type,subject_key,prior_claim,current_claim,confidence,source_log_id,source_session,page_start,page_end FROM story_memory_events WHERE book_id=$1 AND reading_round=$2 ORDER BY source_session ASC, created_at ASC`, [bookId, readingRound]);
+  return rows.map((row) => ({ eventType: row.event_type, subjectKey: row.subject_key, priorClaim: row.prior_claim || undefined, currentClaim: row.current_claim, confidence: row.confidence, evidence: { logId: row.source_log_id, session: row.source_session, pageStart: row.page_start, pageEnd: row.page_end } }));
+}
+
 export async function getStoryThreadAnalysis(bookId: string, logId: string): Promise<any | null> { const { rows } = await query("SELECT * FROM story_thread_analyses WHERE book_id=$1 AND log_id=$2 AND schema_version=1", [bookId, logId]); return rows[0] || null; }
 export async function listStoryThreadAnalyses(bookId: string, readingRound?: number): Promise<StoryThreadSession[]> {
   const scoped = Number.isInteger(readingRound) && (readingRound as number) > 0;

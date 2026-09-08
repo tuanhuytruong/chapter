@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const sql = readFileSync(new URL("../migrations/20260908_add_story_memory_reveal_tracker.sql", import.meta.url), "utf8");
+for (const name of ["story_memory_snapshots", "story_memory_events"]) assert.match(sql, new RegExp(`CREATE TABLE IF NOT EXISTS chapter\\.${name}`));
+assert.match(sql, /PRIMARY KEY \(book_id, reading_round, schema_version\)/);
+assert.match(sql, /source_log_id UUID NOT NULL REFERENCES chapter\.reading_log/);
+assert.match(sql, /identity_hypothesis/);
+assert.match(sql, /identity_confirmed/);
+assert.doesNotMatch(sql, /global_character/);
+console.log("STORY_MEMORY_SCHEMA_FIXTURES_OK");

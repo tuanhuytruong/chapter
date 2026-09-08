@@ -33,6 +33,7 @@ import type {
   ReadingLensRow,
   ReadingRoundRow,
   StoryThreadRow,
+  StoryMemoryResponse,
   SummaryMode,
 } from "../types";
 import { dailyTargetLabel } from "../readingUnits";
@@ -213,6 +214,7 @@ export default function BookDetail() {
   const [reflectionLoading, setReflectionLoading] = useState(false);
   const [lenses, setLenses] = useState<ReadingLensRow[]>([]);
   const [storyThread, setStoryThread] = useState<StoryThreadRow[]>([]);
+  const [storyMemory, setStoryMemory] = useState<StoryMemoryResponse | null>(null);
   const [storyRetryingLogId, setStoryRetryingLogId] = useState<string | null>(
     null,
   );
@@ -302,6 +304,7 @@ export default function BookDetail() {
         b.reading_experience === "story"
           ? api.getStoryThread(id, selected)
           : api.getReadingLens(id, selected),
+        b.reading_experience === "story" ? api.getStoryMemory(id, selected) : Promise.resolve(null),
       ]);
       if (generation !== detailRequestGeneration.current) return;
       setMarkers(optional[0].status === "fulfilled" ? optional[0].value : []);
@@ -311,6 +314,7 @@ export default function BookDetail() {
         if (b.reading_experience === "story") setStoryThread(optional[3].value as StoryThreadRow[]);
         else setLenses(optional[3].value as ReadingLensRow[]);
       }
+      if (b.reading_experience === "story" && optional[4].status === "fulfilled") setStoryMemory(optional[4].value as StoryMemoryResponse | null);
       if (optional.some((result) => result.status === "rejected")) {
         setToast({ type: "err", msg: "Some companion notes are temporarily unavailable." });
       }
@@ -335,10 +339,10 @@ export default function BookDetail() {
   }, [load, selectedRound]);
 
   useJobPolling({
-    enabled: Boolean(id && book?.reading_experience === "story" && storyThread.some((item) => item.storyStatus === "generating")),
+    enabled: Boolean(id && book?.reading_experience === "story" && (storyThread.some((item) => item.storyStatus === "generating") || storyMemory?.status === "generating")),
     intervalMs: 2500,
     poll: () => api.getStoryThread(id!, selectedRound ?? undefined),
-    onSuccess: setStoryThread,
+    onSuccess: (value) => { setStoryThread(value); void api.getStoryMemory(id!, selectedRound ?? undefined).then(setStoryMemory).catch(() => undefined); },
     pollKey: `${id}:${selectedRound}:story-thread`,
   });
 
@@ -1246,6 +1250,7 @@ export default function BookDetail() {
               summaryLang={book.summary_lang}
               view={logView === "character-storylines" ? "characters" : "thread"}
               readingRound={selectedRound ?? book.current_reading_round}
+              storyMemory={storyMemory}
               onRetry={retryStoryThread}
               onRepair={repairStoryThread}
               retryingLogId={storyRetryingLogId}

@@ -107,6 +107,9 @@ export interface StoryThreadAnalysis {
   characterPulse: Array<{ name: string; pulse: string }>;
   characterArcs?: Array<{ name: string; development: string }>;
   characterRelationships?: Array<{ people: string[]; detail: string }>;
+  innerMovements?: Array<{ characterName: string; emotionalShift: string; innerConflict: string; desireVsAction: string; subtext: string; unresolved: string }>;
+  characterObservations?: Array<{ localId: string; name: string; aliases: string[]; role: string; evidence: "current" }>;
+  identitySignals?: Array<{ leftLocalId: string; rightLocalId: string; claim: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: "current" }>;
   readerMemory: string[];
   confidenceNotes: string[];
 }
@@ -128,6 +131,9 @@ export interface StoryThreadRow {
   page_start: number;
   page_end: number;
 }
+
+export type StoryMemoryEvidence = { logId: string; session: number; pageStart: number; pageEnd: number };
+export type StoryMemoryResponse = { readingRound: number; status: "ready" | "generating" | "failed" | "unavailable"; memory: { storySoFar: string; characters: Array<{ id: string; displayName: string; aliases: Array<{ name: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; roles: string[]; interior: Array<{ shift: string; conflict: string; desireVsAction: string; subtext: string; unresolved: string; evidence: StoryMemoryEvidence }>; unresolved: string[] }>; identityHypotheses: Array<{ id: string; leftCharacterId: string; rightCharacterId: string; claim: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence[] }>; revealEvents: Array<{ eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; openQuestions: string[]; coveredThrough: StoryMemoryEvidence | null } | null; events: Array<{ eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; updatedAt: string | null; retryAllowed: boolean };
 
 export type StoryRepairMode = "single_session" | "continuity";
 export type StoryRepairStatus = "running" | "completed" | "failed" | "awaiting_confirmation";
