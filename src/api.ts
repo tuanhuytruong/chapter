@@ -275,6 +275,7 @@ export interface LogRow {
   page_start: number;
   page_end: number;
   raw_text: string | null;
+  raw_text_available?: boolean;
   summary: string | null;
   key_insights: string[] | null;
   quote: string | null;
@@ -484,6 +485,10 @@ export const api = {
 
   getLog: (id: string, round?: number) =>
     req<LogRow[]>(`${BASE}/${id}/log${round ? `?round=${round}` : ""}`),
+  getLogOverview: (id: string, round?: number) =>
+    req<LogRow[]>(`${BASE}/${id}/log?view=overview${round ? `&round=${round}` : ""}`),
+  getLogEntry: (id: string, logId: string) =>
+    req<LogRow>(`${BASE}/${id}/logs/${logId}`),
   getMarkers: (id: string, round: number) =>
     req<ReadingMarkerRow[]>(`${BASE}/${id}/markers?round=${encodeURIComponent(round)}`),
   createMarker: (id: string, body: { log_id: string; page_position: number; kind: ReadingMarkerKind; note?: string }) =>

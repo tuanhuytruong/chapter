@@ -29,6 +29,7 @@ interface DaySummaryProps {
   isNavigationTarget?: boolean;
   onNavigationHandled?: () => void;
   onMarkerCreated?: () => void;
+  onRequestSource?: (logId: string) => Promise<LogRow>;
 }
 
 /** Highlight search matches in text */
@@ -69,10 +70,12 @@ function DeepReadingSummary({ text, highlight }: { text: string; highlight?: str
   return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled, onMarkerCreated }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled, onMarkerCreated, onRequestSource }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [navigationHighlight, setNavigationHighlight] = useState(false);
   const [open, setOpen] = useState(false);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [notesText, setNotesText] = useState(() => log.notes || '');
   const [saving, setSaving] = useState(false);
@@ -83,6 +86,8 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [markerNote, setMarkerNote] = useState("");
   const [savingMarker, setSavingMarker] = useState(false);
   const [markerError, setMarkerError] = useState<string | null>(null);
+  const sourceTextId = `session-${log.id}-source-text`;
+  const notesId = `session-${log.id}-notes`;
 
   // Capture pointer-down before the browser can focus/reflow the control.
   const captureScroll = (button: HTMLButtonElement) => {
@@ -136,6 +141,28 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
     finally { setSavingMarker(false); }
   }, [bookId, log.id, log.page_start, markerKind, markerNote, onMarkerCreated]);
 
+  const toggleSource = useCallback(async (button: HTMLButtonElement) => {
+    if (open) {
+      preserveScroll(button, () => setOpen(false));
+      return;
+    }
+    if (log.raw_text) {
+      preserveScroll(button, () => setOpen(true));
+      return;
+    }
+    if (!onRequestSource || !log.raw_text_available) return;
+    setSourceLoading(true);
+    setSourceError(null);
+    try {
+      await onRequestSource(log.id);
+      preserveScroll(button, () => setOpen(true));
+    } catch (error: any) {
+      setSourceError(error.message || "Source text unavailable");
+    } finally {
+      setSourceLoading(false);
+    }
+  }, [log.id, log.raw_text, log.raw_text_available, onRequestSource, open]);
+
   const retrySummary = useCallback(async () => {
     setRetrying(true);
     setRetryError(null);
@@ -176,7 +203,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           )}
         </div>
         <div className="flex items-center gap-1">
-          {canEdit && log.raw_text && (
+          {canEdit && (log.raw_text_available || log.raw_text) && (
             <button type="button" onClick={retrySummary} disabled={retrying} aria-label={`Retry summary for session ${log.session}`} title="Retry summary" className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark disabled:opacity-50">
               <RotateCcw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} />
             </button>
@@ -186,15 +213,16 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
               <Bookmark className="h-3.5 w-3.5" /> Mark
             </button>
           )}
-          {log.raw_text && (
-            <button type="button" onPointerDown={(event) => captureScroll(event.currentTarget)} onClick={(event) => preserveScroll(event.currentTarget, () => setOpen(o => !o))} aria-label={open ? 'Collapse source text' : 'Expand source text'} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark">
-              {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {(log.raw_text_available || log.raw_text) && (
+            <button type="button" onPointerDown={(event) => captureScroll(event.currentTarget)} onClick={(event) => void toggleSource(event.currentTarget)} disabled={sourceLoading} aria-label={open ? 'Collapse source text' : 'Expand source text'} aria-expanded={open} aria-controls={sourceTextId} className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark disabled:opacity-50">
+              {sourceLoading ? <RotateCcw className="h-3.5 w-3.5 animate-spin" /> : open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           )}
         </div>
       </div>
 
       {retryError && <p className="text-[10px] text-red-600">{retryError}</p>}
+      {sourceError && <p className="text-[10px] text-red-600">{sourceError}</p>}
       {markOpen && <div className="rounded-xl border border-natural-border bg-natural-bg/50 p-3">
         <p className="text-[11px] font-bold text-natural-dark">Private marker · {fileType === "epub" ? "Chunk" : "Page"} {log.page_start}</p>
         <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Marker type">
@@ -236,12 +264,15 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           type="button"
           onPointerDown={(event) => captureScroll(event.currentTarget)}
           onClick={(event) => preserveScroll(event.currentTarget, () => setShowNotes(s => !s))}
+          aria-expanded={showNotes}
+          aria-controls={notesId}
           className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone hover:text-natural-dark font-sans"
         >
           <StickyNote className="w-3 h-3" /> Notes{log.notes ? ' *' : ''}{saving ? ' …' : ''}
         </button>
         {showNotes && (
           <textarea
+            id={notesId}
             value={notesText}
             onChange={e => setNotesText(e.target.value)}
             onBlur={e => saveNotes(e.target.value)}
@@ -253,7 +284,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
       </div>}
 
       {open && log.raw_text && (
-        <div className="pt-2 border-t border-natural-border">
+        <div id={sourceTextId} className="pt-2 border-t border-natural-border">
           <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans mb-1"><FileText className="w-3 h-3" /> Raw extracted text</p>
           <pre className="text-[11px] leading-relaxed text-natural-muted font-sans whitespace-pre-wrap break-words max-h-56 overflow-y-auto bg-natural-cream rounded-xl p-3">{formatRawText(log.raw_text)}</pre>
         </div>

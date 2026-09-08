@@ -43,9 +43,11 @@ import ReadingProgressCard from "../components/ReadingProgressCard";
 import StreakHeatmap from "../components/StreakHeatmap";
 import MomentumScore from "../components/MomentumScore";
 import Toast from "../components/Toast";
+import type { MindMapData } from "../components/MindMap";
+import { useJobPolling } from "../hooks/useJobPolling";
+
 import JourneyView from "../components/JourneyView";
 import MindMap from "../components/MindMap";
-import type { MindMapData } from "../components/MindMap";
 import StoryThreadView from "../components/story/StoryThreadView";
 import BookWiki from "../components/BookWiki";
 import PodcastPanel from "../components/PodcastPanel";
@@ -162,6 +164,10 @@ export default function BookDetail() {
   const [selectedRound, setSelectedRound] = useState<number | null>(returnRound);
   const [loading, setLoading] = useState(true);
   const hasLoadedInitialDetail = useRef(false);
+  const detailRequestGeneration = useRef(0);
+  const loadedRound = useRef<number | null>(null);
+  const selectedRoundRef = useRef<number | null>(returnRound);
+  selectedRoundRef.current = selectedRound;
   const [loadError, setLoadError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
   const [rereading, setRereading] = useState(false);
@@ -187,6 +193,17 @@ export default function BookDetail() {
   const [logView, setLogView] = useState<
     "list" | "journey" | "ai-reader" | "story-thread" | "character-storylines" | "podcast"
   >("list");
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, views: Array<typeof logView>) => {
+    const index = views.indexOf(logView);
+    const next = event.key === "ArrowRight" ? (index + 1) % views.length
+      : event.key === "ArrowLeft" ? (index - 1 + views.length) % views.length
+      : event.key === "Home" ? 0 : event.key === "End" ? views.length - 1 : null;
+    if (next === null) return;
+    event.preventDefault();
+    setLogView(views[next]);
+    const tabs = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+    tabs?.[next]?.focus();
+  };
   const [openingPodcast, setOpeningPodcast] = useState(false);
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
@@ -243,24 +260,23 @@ export default function BookDetail() {
     setLogView(book?.reading_experience === "story" ? "story-thread" : "list");
   };
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (requestedRound?: number) => {
     if (!id) return;
-    // Keep already-rendered detail content stable while changing rounds. The
-    // full skeleton is only for the first visit to this route.
+    const generation = ++detailRequestGeneration.current;
     if (!hasLoadedInitialDetail.current) setLoading(true);
     setLoadError(null);
     try {
-      // The book record is the detail page's source of truth. Do not let an
-      // optional companion request make an existing, newly-created book look missing.
-      const [b, roundRows] = await Promise.all([
-        api.getBook(id),
-        api.getReadingRounds(id),
-      ]);
-      const selected = selectedRound ?? b.current_reading_round;
-      const l = await api.getLog(id, selected);
+      // Resolve the book and round list together, then release the core detail as
+      // soon as its compact log overview arrives. Optional companions never
+      // hold the route skeleton or turn a partial outage into "Book not found".
+      const [b, roundRows] = await Promise.all([api.getBook(id), api.getReadingRounds(id)]);
+      const selected = requestedRound ?? selectedRoundRef.current ?? b.current_reading_round;
+      const overview = await api.getLogOverview(id, selected);
+      if (generation !== detailRequestGeneration.current) return;
+      loadedRound.current = selected;
       setBook(b);
       setRounds(roundRows);
-      setSelectedRound(selected);
+      if (selectedRoundRef.current !== selected) setSelectedRound(selected);
       setDailyPages(b.daily_pages);
       setStatus(b.status);
       setTitle(b.title);
@@ -269,63 +285,62 @@ export default function BookDetail() {
       setCoverUrl(b.cover_url || "");
       setSummaryLang(b.summary_lang || "auto");
       setSummaryMode(b.summary_mode || "casual");
-      const sortedLogs = sortLogsNewestFirst(l);
+      const sortedLogs = sortLogsNewestFirst(overview);
       setLogs(sortedLogs);
       if (returnLogId && sortedLogs.some((log) => log.id === returnLogId)) {
         setSearch("");
         setNavigationTargetLogId(returnLogId);
-        // Revisit is evidence-first: every reading experience uses the session
-        // list because it is the view that can focus the exact saved chunk.
         setLogView("list");
       }
-      if (b.can_edit) {
-        try { setMarkers(await api.getMarkers(id, selected)); } catch { setMarkers([]); }
-      } else setMarkers([]);
+      hasLoadedInitialDetail.current = true;
+      setLoading(false);
 
-      try {
-        // Listening side of the twin-track rhythm, scoped to this book + round
-        // so the heatmap matches the logs shown. Non-critical: degrade to
-        // read-only heatmap when unavailable.
-        setRhythm(await api.getRhythm(id, selected));
-      } catch {
-        setRhythm(null);
+      const optional = await Promise.allSettled([
+        b.can_edit ? api.getMarkers(id, selected) : Promise.resolve([]),
+        api.getRhythm(id, selected),
+        api.getReadingProgress(id, selected),
+        b.reading_experience === "story"
+          ? api.getStoryThread(id, selected)
+          : api.getReadingLens(id, selected),
+      ]);
+      if (generation !== detailRequestGeneration.current) return;
+      setMarkers(optional[0].status === "fulfilled" ? optional[0].value : []);
+      setRhythm(optional[1].status === "fulfilled" ? optional[1].value : null);
+      if (optional[2].status === "fulfilled") setReadingProgress(optional[2].value);
+      if (optional[3].status === "fulfilled") {
+        if (b.reading_experience === "story") setStoryThread(optional[3].value as StoryThreadRow[]);
+        else setLenses(optional[3].value as ReadingLensRow[]);
       }
-
-      try {
-        // Persisted companion data is shared read-only. Generation/retry remains
-        // owner-only, but every signed-in reader can see completed analyses.
-        setReadingProgress(await api.getReadingProgress(id, selected));
-        if (b.reading_experience === "story")
-          setStoryThread(await api.getStoryThread(id, selected));
-        else
-          setLenses(await api.getReadingLens(id, selected));
-      } catch (e: any) {
-        // Companion analysis is non-critical, especially for a fresh book
-        // with no sessions yet. The detail page remains usable.
-        setToast({
-          type: "err",
-          msg: `Companion notes unavailable: ${e.message}`,
-        });
+      if (optional.some((result) => result.status === "rejected")) {
+        setToast({ type: "err", msg: "Some companion notes are temporarily unavailable." });
       }
     } catch (e: any) {
+      if (generation !== detailRequestGeneration.current) return;
       setBook(null);
       setLoadError(e.message);
       setToast({ type: "err", msg: e.message });
-    } finally {
       hasLoadedInitialDetail.current = true;
       setLoading(false);
     }
-  }, [id, selectedRound, returnLogId]);
+  }, [id, returnLogId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    void load(selectedRound ?? undefined);
+    return () => { detailRequestGeneration.current += 1; };
+  }, [id, load]);
 
   useEffect(() => {
-    if (!id || !book || book.reading_experience !== "story" || !storyThread.some((item) => item.storyStatus === "generating")) return;
-    const timer = window.setInterval(() => { void api.getStoryThread(id, selectedRound || undefined).then(setStoryThread).catch(() => undefined); }, 2500);
-    return () => window.clearInterval(timer);
-  }, [id, book, selectedRound, storyThread]);
+    if (!selectedRound || loadedRound.current === selectedRound) return;
+    void load(selectedRound);
+  }, [load, selectedRound]);
+
+  useJobPolling({
+    enabled: Boolean(id && book?.reading_experience === "story" && storyThread.some((item) => item.storyStatus === "generating")),
+    intervalMs: 2500,
+    poll: () => api.getStoryThread(id!, selectedRound ?? undefined),
+    onSuccess: setStoryThread,
+    pollKey: `${id}:${selectedRound}:story-thread`,
+  });
 
   // Return once to the exact Book Detail position that opened Pricing.
   useEffect(() => {
@@ -375,74 +390,61 @@ export default function BookDetail() {
   };
 
   // A reading session is saved immediately; its companion analysis finishes in
-  // the background. Revalidate quietly for a bounded window rather than making
-  // the reader refresh the full page.
-  useEffect(() => {
-    if (!enrichmentPending || !pendingEnrichmentLogId || !id) return;
-    let cancelled = false;
-    const startedAt = Date.now();
-    const tick = async () => {
-      try {
-        const [updatedBook, updatedLogs] = await Promise.all([
-          api.getBook(id),
-          api.getLog(id, selectedRound ?? undefined),
-        ]);
-        if (cancelled) return;
-        // Quietly reconcile only changed data. Keeping existing state in place
-        // avoids a route-level loading flash after the reader saves a session.
-        setBook((previous) =>
-          previous ? { ...previous, ...updatedBook } : updatedBook,
-        );
-        setLogs((previous) => {
-          const byId = new Map<string, LogRow>(
-            previous.map((log) => [log.id, log]),
-          );
-          updatedLogs.forEach((log) => byId.set(log.id, log));
-          return [...byId.values()].sort((a, b) =>
-            `${b.date}-${b.session}`.localeCompare(`${a.date}-${a.session}`),
-          );
-        });
-        const analyses = updatedBook.can_edit && updatedBook.reading_experience === "analytical"
-          ? await api.getReadingLens(id, selectedRound ?? undefined) : [];
-        const storyAnalyses = updatedBook.can_edit && updatedBook.reading_experience === "story"
-          ? await api.getStoryThread(id, selectedRound ?? updatedBook.current_reading_round) : [];
-        if (updatedBook.can_edit) {
-          if (updatedBook.reading_experience === "story") setStoryThread(storyAnalyses);
-          else setLenses(analyses);
-        }
-        if (updatedBook.reading_experience === "story") {
-          if (storyAnalyses.some((item) => item.log_id === pendingEnrichmentLogId)) {
-            setEnrichmentPending(false);
-            setPendingEnrichmentLogId(null);
-          }
-        } else {
-          // A saved session is ready to continue as soon as its own Reading Lens
-          // arrives. BookWiki is a separate book-level catch-up process; making
-          // the primary reading action wait for it left List-mode readers stuck
-          // on “Preparing…” after their session was already visible.
-          const lensReady = analyses.some((item) => item.log_id === pendingEnrichmentLogId);
-          if (lensReady) {
-            setEnrichmentPending(false);
-            setPendingEnrichmentLogId(null);
-          }
-        }
-      } catch {
-        /* keep the saved reading session usable; retry until timeout */
+  // the background. The shared poller pauses hidden tabs, prevents overlap and
+  // backs off failures while retaining the existing three-minute upper bound.
+  useJobPolling<{
+    updatedBook: BookRow;
+    updatedLogs: LogRow[];
+    analyses: ReadingLensRow[];
+    storyAnalyses: StoryThreadRow[];
+  }>({
+    enabled: Boolean(enrichmentPending && pendingEnrichmentLogId && id),
+    intervalMs: 7000,
+    immediate: true,
+    pollKey: `${id}:${selectedRound}:${pendingEnrichmentLogId}:enrichment`,
+    deadlineMs: 180000,
+    onDeadline: () => {
+      setEnrichmentPending(false);
+      setPendingEnrichmentLogId(null);
+    },
+    poll: async () => {
+      const [updatedBook, updatedLogs] = await Promise.all([
+        api.getBook(id!),
+        api.getLogOverview(id!, selectedRound ?? undefined),
+      ]);
+      const analyses = updatedBook.can_edit && updatedBook.reading_experience === "analytical"
+        ? await api.getReadingLens(id!, selectedRound ?? undefined) : [];
+      const storyAnalyses = updatedBook.can_edit && updatedBook.reading_experience === "story"
+        ? await api.getStoryThread(id!, selectedRound ?? updatedBook.current_reading_round) : [];
+      return { updatedBook, updatedLogs, analyses, storyAnalyses };
+    },
+    onSuccess: ({ updatedBook, updatedLogs, analyses, storyAnalyses }) => {
+      setBook((previous) => previous ? { ...previous, ...updatedBook } : updatedBook);
+      setLogs((previous) => {
+        const byId = new Map(previous.map((log) => [log.id, log]));
+        updatedLogs.forEach((log) => byId.set(log.id, { ...byId.get(log.id), ...log }));
+        return sortLogsNewestFirst([...byId.values()]);
+      });
+      if (updatedBook.can_edit) {
+        if (updatedBook.reading_experience === "story") setStoryThread(storyAnalyses);
+        else setLenses(analyses);
       }
-      if (!cancelled && Date.now() - startedAt >= 180000) {
+      const ready = updatedBook.reading_experience === "story"
+        ? storyAnalyses.some((item) => item.log_id === pendingEnrichmentLogId)
+        : analyses.some((item) => item.log_id === pendingEnrichmentLogId);
+      if (ready) {
         setEnrichmentPending(false);
         setPendingEnrichmentLogId(null);
       }
-    };
-    void tick();
-    const interval = window.setInterval(() => {
-      void tick();
-    }, 7000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [enrichmentPending, id, pendingEnrichmentLogId, selectedRound]);
+    },
+  });
+
+  const requestSourceText = useCallback(async (logId: string) => {
+    if (!id) throw new Error("Book is unavailable");
+    const entry = await api.getLogEntry(id, logId);
+    setLogs((previous) => previous.map((log) => log.id === logId ? { ...log, raw_text: entry.raw_text } : log));
+    return entry;
+  }, [id]);
 
   useEffect(() => {
     if (!id || logs.length === 0) return;
@@ -1206,7 +1208,7 @@ export default function BookDetail() {
       )}
 
       {logView === "podcast" ? (
-        <div key={logView} id="podcast-panel" role="tabpanel" aria-labelledby="podcast-tab" className="motion-tab-panel mt-1">
+        <div key={logView} id="podcast-panel" role="tabpanel" aria-label="Podcast" className="motion-tab-panel mt-1">
         <PodcastPanel
           bookId={book.id}
           canEdit={Boolean(book.can_edit)}
@@ -1231,8 +1233,8 @@ export default function BookDetail() {
           </GuideCard>
           <div className="mb-3 flex flex-col gap-3 border-y border-natural-border/70 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-1" role="tablist" aria-label="Reading views">
-              <button type="button" role="tab" id="story-thread-tab" aria-selected={logView === "story-thread"} aria-controls="story-thread-panel" onClick={() => setLogView("story-thread")} className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "story-thread" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}>Story Thread</button>
-              <button type="button" role="tab" id="character-storylines-tab" aria-selected={logView === "character-storylines"} aria-controls="character-storylines-panel" onClick={() => setLogView("character-storylines")} className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "character-storylines" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}>Character Storylines</button>
+              <button type="button" role="tab" id="story-thread-tab" aria-selected={logView === "story-thread"} aria-controls="story-thread-panel" onKeyDown={(event) => handleTabKeyDown(event, ["story-thread", "character-storylines"])} onClick={() => setLogView("story-thread")} className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "story-thread" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}>Story Thread</button>
+              <button type="button" role="tab" id="character-storylines-tab" aria-selected={logView === "character-storylines"} aria-controls="character-storylines-panel" onKeyDown={(event) => handleTabKeyDown(event, ["story-thread", "character-storylines"])} onClick={() => setLogView("character-storylines")} className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "character-storylines" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}>Character Storylines</button>
             </div>
             {rounds.length > 0 && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading</span><ChapterDropdown id="reading-round" className="w-full sm:w-64" value={String(selectedRound ?? book.current_reading_round)} onChange={(value) => { setStoryRetryingLogId(null); setSelectedRound(Number(value)); }} options={rounds.map((round) => ({ value: String(round.reading_round), label: round.reading_round === book.current_reading_round ? `Current reading · Round ${round.reading_round}` : `Previous reading · Round ${round.reading_round}${round.finished_at ? ` · ${round.status === "archived" ? "Archived" : "Finished"} ${new Date(round.finished_at).toLocaleDateString()}` : ""}` }))}/>{selectedRound !== book.current_reading_round && <button type="button" onClick={() => { setStoryRetryingLogId(null); setSelectedRound(book.current_reading_round); }} className="shrink-0 text-xs font-bold text-natural-sage underline underline-offset-2">Current</button>}</div>}
           </div>
@@ -1269,6 +1271,8 @@ export default function BookDetail() {
                 />
                 {search && (
                   <button
+                    type="button"
+                    aria-label="Clear search"
                     onClick={() => setSearch("")}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-natural-stone hover:text-natural-dark"
                   >
@@ -1291,7 +1295,7 @@ export default function BookDetail() {
                 id="list-tab"
                 aria-selected={logView === "list"}
                 aria-controls="reader-panel"
-                onClick={() => setLogView("list")}
+                onKeyDown={(event) => handleTabKeyDown(event, ["list", "journey", "ai-reader"])} onClick={() => setLogView("list")}
                 className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "list" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 List
@@ -1302,7 +1306,7 @@ export default function BookDetail() {
                 id="journey-tab"
                 aria-selected={logView === "journey"}
                 aria-controls="reader-panel"
-                onClick={() => setLogView("journey")}
+                onKeyDown={(event) => handleTabKeyDown(event, ["list", "journey", "ai-reader"])} onClick={() => setLogView("journey")}
                 className={`min-h-11 px-3 py-1 text-xs font-bold rounded-full transition ${logView === "journey" ? "bg-natural-sage text-white" : "bg-natural-cream text-natural-stone border border-natural-border"}`}
               >
                 Journey
@@ -1311,7 +1315,7 @@ export default function BookDetail() {
                 type="button"
                 role="tab"
                 id="ai-reader-tab"
-                onClick={() => {
+                onKeyDown={(event) => handleTabKeyDown(event, ["list", "journey", "ai-reader"])} onClick={() => {
                   if (logView !== "ai-reader") {
                     captureAnalyticsEvent("book_wiki_opened", {
                       book_id: id,
@@ -1444,6 +1448,7 @@ export default function BookDetail() {
                                   isNavigationTarget={navigationTargetLogId === log.id}
                                   onNavigationHandled={() => setNavigationTargetLogId(null)}
                                   onMarkerCreated={refreshMarkers}
+                                  onRequestSource={requestSourceText}
                                 />
                                 <ReadingLensCard
                                   lens={lenses.find(

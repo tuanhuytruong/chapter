@@ -159,6 +159,7 @@ export interface LogRow {
   page_start: number;
   page_end: number;
   raw_text: string | null;
+  raw_text_available?: boolean;
   summary: string | null;
   key_insights: string[] | null;
   quote: string | null;

@@ -89,17 +89,30 @@ booksRouter.use((req, res, next) => {
   next();
 });
 
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 async function ownerCanMutate(
   req: Request,
   res: Response,
   bookId: string,
 ): Promise<boolean> {
-  const found = await query("SELECT owner_id FROM books WHERE id=$1", [bookId]);
-  if (!found.rows.length) {
-    res.status(404).json({ error: "book not found" });
+  if (!isUuid(bookId)) {
+    res.status(400).json({ error: "book id must be a UUID" });
     return false;
   }
-  return requireOwner(req, res, found.rows[0].owner_id);
+  try {
+    const found = await query("SELECT owner_id FROM books WHERE id=$1", [bookId]);
+    if (!found.rows.length) {
+      res.status(404).json({ error: "book not found" });
+      return false;
+    }
+    return requireOwner(req, res, found.rows[0].owner_id);
+  } catch (e: any) {
+    res.status(503).json({ error: "DB unavailable", detail: e.message });
+    return false;
+  }
 }
 
 // App timezone is Asia/Bangkok (UTC+7) — all "today" logic and daily-summary
@@ -941,11 +954,15 @@ booksRouter.post(
           `INSERT INTO ai_reader_jobs (book_id, status, started_at, completed_at, error_message)
            VALUES ($1, 'running', now(), NULL, NULL)
            ON CONFLICT (book_id) DO UPDATE SET status='running', started_at=now(), completed_at=NULL, error_message=NULL
+           -- A process crash must not leave this durable job permanently stuck.
+           -- The row lock plus this predicate means only one request can reclaim
+           -- an expired lease; a live worker remains an observable duplicate.
            WHERE ai_reader_jobs.status != 'running'
+              OR ai_reader_jobs.started_at < now() - interval '15 minutes'
            RETURNING status, started_at`,
           [id],
         );
-        if (claimed.rows.length) return { kind: "claimed" as const };
+        if (claimed.rows.length) return { kind: "claimed" as const, startedAt: claimed.rows[0].started_at };
         const existing = await client.query(
           "SELECT status, started_at FROM ai_reader_jobs WHERE book_id=$1",
           [id],
@@ -970,8 +987,9 @@ booksRouter.post(
       void processBookForWiki(id, true)
         .then(async (updated) => {
           await query(
-            "UPDATE ai_reader_jobs SET status='idle', completed_at=now(), error_message=$2 WHERE book_id=$1",
-            [id, updated ? null : "No readable sessions could be processed."],
+            `UPDATE ai_reader_jobs SET status='idle', completed_at=now(), error_message=$2
+             WHERE book_id=$1 AND status='running' AND started_at=$3`,
+            [id, updated ? null : "No readable sessions could be processed.", claim.startedAt],
           );
         })
         .catch(async (error: any) => {
@@ -980,8 +998,9 @@ booksRouter.post(
             error.message,
           );
           await query(
-            "UPDATE ai_reader_jobs SET status='failed', completed_at=now(), error_message=$2 WHERE book_id=$1",
-            [id, String(error.message || "Generation failed").slice(0, 300)],
+            `UPDATE ai_reader_jobs SET status='failed', completed_at=now(), error_message=$2
+             WHERE book_id=$1 AND status='running' AND started_at=$3`,
+            [id, String(error.message || "Generation failed").slice(0, 300), claim.startedAt],
           );
         });
       res.status(202).json({ ok: true, status: "running" });
@@ -1201,16 +1220,40 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
       return res
         .status(404)
         .json({ error: "reading round not found for book" });
+    const overview = req.query.view === "overview";
     const { rows } = await query(
       `SELECT l.id, l.book_id, l.reading_round, l.date, l.session, l.page_start, l.page_end, l.summary,
               l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
-              CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END AS raw_text,
+              CASE WHEN $4::boolean THEN NULL ELSE CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END END AS raw_text,
+              CASE WHEN b.owner_id = $3 THEN l.raw_text IS NOT NULL AND btrim(l.raw_text) <> '' ELSE false END AS raw_text_available,
               CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes
        FROM reading_log l JOIN books b ON b.id = l.book_id
        WHERE l.book_id = $1 AND l.reading_round=$2 ORDER BY l.date DESC, l.session DESC`,
-      [id, readingRound, userFrom(req).id],
+      [id, readingRound, userFrom(req).id, overview],
     );
     res.json(rows);
+  } catch (e: any) {
+    res.status(503).json({ error: "DB unavailable", detail: e.message });
+  }
+});
+
+// Fetch one owner's source session on demand. The round overview deliberately
+// omits raw_text so opening Book Detail does not serialize every session body.
+booksRouter.get("/:id/logs/:logId", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  try {
+    const { rows } = await query(
+      `SELECT l.id, l.book_id, l.reading_round, l.date, l.session, l.page_start, l.page_end,
+              l.summary, l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
+              CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END AS raw_text,
+              CASE WHEN b.owner_id = $3 THEN l.raw_text IS NOT NULL AND btrim(l.raw_text) <> '' ELSE false END AS raw_text_available,
+              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes
+       FROM reading_log l JOIN books b ON b.id=l.book_id
+       WHERE l.book_id=$1 AND l.id=$2`,
+      [id, logId, userFrom(req).id],
+    );
+    if (!rows.length) return res.status(404).json({ error: "log not found" });
+    res.json(rows[0]);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
@@ -1621,14 +1664,20 @@ async function reserveAdvance(
     const book = books[0];
     if (!book || (book.status !== "active" && !force)) return null;
     const dateStr = today();
+    // A reserved session belongs to its original date/session even after midnight.
+    // Resume it before allocating any new range so reserved pages cannot be skipped.
+    // Empty text is also retryable: a prior extraction can fail after reservation.
     const { rows: pending } = await client.query(
-      `SELECT * FROM reading_log WHERE book_id=$1 AND reading_round=$3 AND date=$2 AND raw_text IS NULL ORDER BY session DESC LIMIT 1`,
-      [bookId, dateStr, book.current_reading_round],
+      `SELECT * FROM reading_log
+       WHERE book_id=$1 AND reading_round=$2 AND (raw_text IS NULL OR btrim(raw_text)='')
+       ORDER BY date ASC, session ASC
+       LIMIT 1`,
+      [bookId, book.current_reading_round],
     );
     if (pending[0])
       return {
         book,
-        dateStr,
+        dateStr: pending[0].date,
         log: pending[0],
         start: pending[0].page_start,
         end: pending[0].page_end,
@@ -2097,18 +2146,42 @@ booksRouter.post(
         true,
       );
       const parsed = parseSummary(raw, book.summary_mode || "casual");
-      const { rows } = await query(
-        `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,
-        [parsed.summary, parsed.key_insights, parsed.quote, logId, id],
-      );
-      res.json(rows[0]);
+      const updated = await withTransaction(async (client) => {
+        const { rows } = await client.query(
+          `UPDATE reading_log SET summary=$1, key_insights=$2, quote=$3 WHERE id=$4 AND book_id=$5 RETURNING *`,
+          [parsed.summary, parsed.key_insights, parsed.quote, logId, id],
+        );
+        if (!rows[0]) return null;
+        // A retry replaces unreviewed generated prompts, but never removes a
+        // card with a Return response: that response is part of reader history.
+        await client.query(
+          `DELETE FROM review_cards rc
+           WHERE rc.log_id=$1
+             AND NOT EXISTS (SELECT 1 FROM return_responses rr WHERE rr.review_card_id=rc.id)`,
+          [logId],
+        );
+        const firstDue = reviewOutcome(1, false, entry.date).dueDate;
+        for (const [insightIndex, insight] of parsed.key_insights.entries()) {
+          const trimmed = insight.trim();
+          if (trimmed)
+            await client.query(
+              `INSERT INTO review_cards (book_id,log_id,insight_index,insight,due_date)
+               VALUES ($1,$2,$3,$4,$5)
+               ON CONFLICT (log_id,insight_index) DO NOTHING`,
+              [id, logId, insightIndex, trimmed, firstDue],
+            );
+        }
+        return rows[0];
+      });
+      if (!updated) return res.status(404).json({ error: "log not found" });
+      res.json(updated);
     } catch (e: any) {
       res.status(500).json({ error: "retry failed", detail: e.message });
     }
   },
 );
 
-booksRouter.post("/:id/logs/:logId/story-thread/repair", async (req: Request, res: Response) => { const { id, logId } = req.params; if (!(await ownerCanMutate(req,res,id))) return; try { const { rows } = await query(`SELECT rl.*, b.title, b.author, b.total_pages, b.summary_lang, b.status AS book_status, b.reading_experience FROM reading_log rl JOIN books b ON b.id=rl.book_id WHERE rl.id=$1 AND rl.book_id=$2 AND b.reading_experience='story'`,[logId,id]); const entry=rows[0]; if (!entry?.raw_text) return res.status(400).json({error:"session has no extracted text to repair"}); if (entry.book_status === "paused") return res.status(409).json({error:"paused books cannot repair Story Thread"}); const analyses=await repairStoryThreadFromLog(entry,entry); const job=await getStoryThreadRepairJob(id,entry.reading_round); res.json({ analyses, job }); } catch(e:any) { res.status(500).json({error:"continuity repair failed",detail:e.message}); } });
+booksRouter.post("/:id/logs/:logId/story-thread/repair", async (req: Request, res: Response) => { const { id, logId } = req.params; if (!(await ownerCanMutate(req,res,id))) return; try { const { rows } = await query(`SELECT rl.*, b.title, b.author, b.total_pages, b.summary_lang, b.status AS book_status, b.reading_experience FROM reading_log rl JOIN books b ON b.id=rl.book_id WHERE rl.id=$1 AND rl.book_id=$2 AND b.reading_experience='story'`,[logId,id]); const entry=rows[0]; if (!entry?.raw_text) return res.status(400).json({error:"session has no extracted text to repair"}); if (entry.book_status === "paused") return res.status(409).json({error:"paused books cannot repair Story Thread"}); const analyses=await repairStoryThreadFromLog({ ...entry, id },entry); const job=await getStoryThreadRepairJob(id,entry.reading_round); res.json({ analyses, job }); } catch(e:any) { res.status(500).json({error:"continuity repair failed",detail:e.message}); } });
 
 // PATCH /api/books/:id/logs/:logId — update personal notes on a log entry
 booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {

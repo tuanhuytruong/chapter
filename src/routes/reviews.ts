@@ -188,31 +188,39 @@ reviewsRouter.post("/:id/return", async (req: Request, res: Response) => {
 
 // POST /api/reviews/:id — score a revealed card. Ownership is enforced via book.
 reviewsRouter.post("/:id", async (req: Request, res: Response) => {
+  if (!uuid(req.params.id)) return res.status(400).json({ error: "review card id must be a UUID" });
   const remembered = req.body?.remembered;
   if (typeof remembered !== "boolean") return res.status(400).json({ error: "remembered must be a boolean" });
 
   try {
-    const existing = (await query(
-      `SELECT rc.id, rc.interval_days
-       FROM review_cards rc JOIN books b ON b.id=rc.book_id
-       WHERE rc.id=$1 AND b.owner_id=$2`,
-      [req.params.id, userFrom(req).id]
-    )).rows[0];
-    if (!existing) return res.status(404).json({ error: "review card not found" });
-
-    const schedule = reviewOutcome(Number(existing.interval_days), remembered, today());
-    const { rows } = await query(
-      `UPDATE review_cards
-       SET interval_days=$1,
-           repetitions=CASE WHEN $2 THEN repetitions+1 ELSE 0 END,
-           due_date=$3,
-           last_reviewed_at=now()
-       WHERE id=$4
-       RETURNING id, book_id, log_id, insight_index, insight, interval_days,
-                 repetitions, due_date, last_reviewed_at`,
-      [schedule.intervalDays, remembered, schedule.dueDate, existing.id]
-    );
-    res.json(rows[0]);
+    const result = await withTransaction(async (client) => {
+      // The due predicate lives under the row lock, so concurrent legacy posts
+      // cannot score the same occurrence twice.
+      const { rows: cards } = await client.query(
+        `SELECT rc.id, rc.interval_days
+         FROM review_cards rc JOIN books b ON b.id=rc.book_id
+         WHERE rc.id=$1 AND b.owner_id=$2 AND rc.due_date <= $3
+         FOR UPDATE OF rc, b`,
+        [req.params.id, userFrom(req).id, today()],
+      );
+      const card = cards[0];
+      if (!card) return null;
+      const schedule = reviewOutcome(Number(card.interval_days), remembered, today());
+      const { rows } = await client.query(
+        `UPDATE review_cards
+         SET interval_days=$1,
+             repetitions=CASE WHEN $2 THEN repetitions+1 ELSE 0 END,
+             due_date=$3,
+             last_reviewed_at=now()
+         WHERE id=$4
+         RETURNING id, book_id, log_id, insight_index, insight, interval_days,
+                   repetitions, due_date, last_reviewed_at`,
+        [schedule.intervalDays, remembered, schedule.dueDate, card.id],
+      );
+      return rows[0];
+    });
+    if (!result) return res.status(404).json({ error: "review card not found" });
+    res.json(result);
   } catch (e: any) {
     res.status(500).json({ error: "review update failed", detail: e.message });
   }
