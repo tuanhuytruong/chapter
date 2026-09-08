@@ -3,7 +3,7 @@ import { Info } from "lucide-react";
 
 export type GlossaryLanguage = "vi" | "en";
 export type GlossaryLanguageSetting = GlossaryLanguage | "auto";
-export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied" | "ArgumentMap" | "AssumptionsLimits" | "KeyConcepts" | "QuestionsForward" | "ReadingNotes" | "ReadingLens" | "Consistency" | "Velocity" | "Momentum" | "Slipping" | "Steady" | "OnFire" | "Pace" | "Streak";
+export type GlossaryKey = "Deepened" | "Shifted" | "Introduced" | "Resolved" | "Uncertain" | "Open" | "Escalating" | "Claim" | "Support" | "Evidence" | "Example" | "Implication" | "Implied" | "ArgumentMap" | "AssumptionsLimits" | "KeyConcepts" | "QuestionsForward" | "ReadingNotes" | "ReadingLens" | "Consistency" | "Velocity" | "Momentum" | "Slipping" | "Steady" | "OnFire" | "Pace" | "Streak" | "InnerMovement" | "Shift" | "Tension" | "WantVsAction" | "StillOpen";
 
 const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viDetail: string }> = {
   Deepened: { en: "Deepened", vi: "Đào sâu", enDetail: "The reading develops this idea with more nuance or detail.", viDetail: "Phần đọc phát triển ý này với thêm sắc thái hoặc chi tiết." },
@@ -33,6 +33,11 @@ const TERMS: Record<GlossaryKey, { en: string; vi: string; enDetail: string; viD
   OnFire: { en: "On fire", vi: "Bùng cháy", enDetail: "Reading over the last 3 days is more than 120% of the previous 3 days.", viDetail: "Lượng đọc 3 ngày gần nhất tăng hơn 120% so với 3 ngày trước đó." },
   Pace: { en: "Pace", vi: "Tiến độ", enDetail: "Estimated days left to finish = remaining chunks ÷ chunks per day.", viDetail: "Ước tính số ngày còn lại để hết sách = chunks còn lại ÷ chunks mỗi ngày." },
   Streak: { en: "Streak", vi: "Chuỗi ngày", enDetail: "Consecutive days with at least one reading session.", viDetail: "Số ngày liên tiếp có ít nhất một phiên đọc." },
+  InnerMovement: { en: "Inner movement", vi: "Chuyển động nội tâm", enDetail: "A grounded change, tension, or unresolved pull in a character during this saved reading session.", viDetail: "Một chuyển biến, giằng co hoặc điều còn để ngỏ của nhân vật, được ghi nhận từ phiên đọc đã lưu." },
+  Shift: { en: "Shift", vi: "Chuyển biến", enDetail: "A change in a character’s expressed feeling, stance, or way of responding in this reading.", viDetail: "Sự thay đổi trong cảm xúc, thái độ hoặc cách phản ứng được thể hiện của nhân vật trong phần đọc này." },
+  Tension: { en: "Tension", vi: "Giằng co", enDetail: "A pressure or conflict the character is shown facing; it is not a clinical diagnosis.", viDetail: "Áp lực hoặc mâu thuẫn mà nhân vật được thể hiện là đang đối diện; không phải chẩn đoán tâm lý." },
+  WantVsAction: { en: "Want vs. action", vi: "Điều muốn làm và hành động", enDetail: "The contrast between what the character appears to want and what they do in the reading.", viDetail: "Sự tương phản giữa điều nhân vật có vẻ mong muốn và hành động họ thực hiện trong phần đọc." },
+  StillOpen: { en: "Still open", vi: "Còn để ngỏ", enDetail: "A question or tension the reading has not established clearly enough to resolve yet.", viDetail: "Một câu hỏi hoặc giằng co mà phần đọc hiện có chưa đủ rõ để khép lại." },
 };
 
 export function resolveGlossaryLanguage(setting: GlossaryLanguageSetting, sourceText = ""): GlossaryLanguage {
