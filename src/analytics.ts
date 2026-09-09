@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import posthog from "posthog-js";
+import type posthogType from "posthog-js";
 
 const projectApiKey = import.meta.env.VITE_POSTHOG_KEY?.trim();
 const deploymentEnvironment = import.meta.env.VITE_POSTHOG_ENVIRONMENT?.trim();
@@ -12,21 +12,22 @@ const analyticsContext = {
   environment: deploymentEnvironment || "unknown",
 };
 
-if (projectApiKey) {
-  posthog.init(projectApiKey, {
-    api_host: import.meta.env.VITE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com",
-    defaults: "2026-05-30",
-    autocapture: false,
-    // PostHog-managed page views/leaves include pathname metadata. Chapter book
-    // routes contain private IDs, so route timing is captured only through the
-    // explicit, anonymised event below.
-    capture_pageview: false,
-    capture_pageleave: false,
-    person_profiles: "identified_only",
-    disable_session_recording: true,
-  });
-  // Applies to explicit events and PostHog-managed pageview/pageleave events.
-  posthog.register(analyticsContext);
+let posthogLoader: Promise<typeof posthogType | null> | null = null;
+
+function getPostHog(): Promise<typeof posthogType | null> {
+  if (!projectApiKey) return Promise.resolve(null);
+  if (!posthogLoader) {
+    posthogLoader = import("posthog-js").then(({ default: posthog }) => {
+      posthog.init(projectApiKey, {
+        api_host: import.meta.env.VITE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com",
+        defaults: "2026-05-30", autocapture: false, capture_pageview: false, capture_pageleave: false,
+        person_profiles: "identified_only", disable_session_recording: true,
+      });
+      posthog.register(analyticsContext);
+      return posthog;
+    }).catch(() => null);
+  }
+  return posthogLoader;
 }
 
 /**
@@ -34,11 +35,11 @@ if (projectApiKey) {
  * an email, display name, or reading/private-content field.
  */
 export function identifyAnalyticsUser(userId: string, accountHandle: string): void {
-  if (projectApiKey) posthog.identify(userId, { account_handle: accountHandle });
+  void getPostHog().then((posthog) => posthog?.identify(userId, { account_handle: accountHandle }));
 }
 
 export function resetAnalyticsUser(): void {
-  if (projectApiKey) posthog.reset();
+  void getPostHog().then((posthog) => posthog?.reset());
 }
 
 export type AnalyticsEvent =
@@ -97,5 +98,5 @@ export function captureAnalyticsEvent(
   event: AnalyticsEvent,
   properties?: AnalyticsProperties,
 ): void {
-  if (projectApiKey) posthog.capture(event, properties);
+  void getPostHog().then((posthog) => posthog?.capture(event, properties));
 }

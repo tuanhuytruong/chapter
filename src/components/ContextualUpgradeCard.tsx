@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -35,13 +34,7 @@ export function ContextualUpgradeCard({ prompt, onDismiss, dismissError }: Conte
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
-      className="relative my-6 overflow-hidden rounded-2xl border border-natural-sage/25 bg-natural-sage/5 p-5"
-    >
+    <section className="contextual-upgrade-card relative my-6 overflow-hidden rounded-2xl border border-natural-sage/25 bg-natural-sage/5 p-5">
       {/* Dismiss button */}
       <button
         onClick={handleDismiss}
@@ -75,6 +68,6 @@ export function ContextualUpgradeCard({ prompt, onDismiss, dismissError }: Conte
           </button>
         </div>
       </div>
-    </motion.div>
+    </section>
   );
 }

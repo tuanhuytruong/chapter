@@ -13,14 +13,15 @@ const assert = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message);
 };
 
-for (const eagerRoute of ["Library", "Today"]) {
-  assert(app.includes(`import ${eagerRoute} from './pages/${eagerRoute}';`), `${eagerRoute} must remain eagerly imported`);
+for (const [component, page] of [["Library", "Library"], ["Today", "Today"]]) {
+  assert(app.includes(`const ${component} = lazy(() => import('./pages/${page}'));`), `${component} must be route-lazy`);
+  assert(!app.includes(`import ${component} from './pages/${page}';`), `${component} must not be eagerly imported`);
 }
 
 const lazyRoutes = [
   ["BookDetail", "BookDetail"], ["Insights", "Insights"], ["Review", "Review"],
-  ["ReadingCalendar", "Calendar"], ["Momentum", "Momentum"], ["Achievements", "Achievements"],
-  ["Profile", "Profile"], ["Account", "Account"], ["Pricing", "Pricing"], ["Quotes", "Quotes"],
+  ["ReadingCalendar", "Calendar"], ["Momentum", "Momentum"], ["Streaks", "Streaks"], ["Achievements", "Achievements"],
+  ["Profile", "Profile"], ["Account", "Account"], ["Pricing", "Pricing"], ["Quotes", "Quotes"], ["Help", "Help"],
 ];
 for (const [component, page] of lazyRoutes) {
   assert(app.includes(`const ${component} = lazy(() => import('./pages/${page}'));`), `${component} must be route-lazy`);

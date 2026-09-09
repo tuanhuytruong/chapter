@@ -1,32 +1,29 @@
-import fs from "node:fs";
 import path from "node:path";
+import { allJavaScriptFiles, closure, readManifest, resolveManifestKey, sizeForFile, sumEntries } from "./route-assets";
+import { largestLazyChunkGzipBudget, routeBudgets, totalJavaScriptRawBudget } from "./route-budget.config";
 
 const distDir = path.resolve("dist");
-// Baseline captured from the pre-splitting DEV build. Tighten this after Phase 1
-// moves secondary routes out of the entry chunk.
-const limitBytes = Number(process.env.CHAPTER_PERF_TOTAL_JS_BUDGET_BYTES || 1_050_000);
+const manifest = readManifest(distDir);
+const entry = closure(manifest, "index.html");
+const failures: string[] = [];
 
-function listFiles(dir: string): string[] {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const fullPath = path.join(dir, entry.name);
-    return entry.isDirectory() ? listFiles(fullPath) : [fullPath];
-  });
+const total = allJavaScriptFiles(distDir).reduce((sum, file) => sum + sizeForFile(path.join(distDir, "assets", ".."), `assets/${file}`).raw, 0);
+console.log(`[perf] total_js_raw=${total} budget=${totalJavaScriptRawBudget}`);
+if (total > totalJavaScriptRawBudget) failures.push(`total JS raw ${total} exceeds ${totalJavaScriptRawBudget}`);
+
+for (const route of routeBudgets) {
+  const keys = route.manifestKey === "index.html" ? entry : [...new Set([...entry, ...closure(manifest, resolveManifestKey(manifest, route.manifestKey))])];
+  const bytes = sumEntries(distDir, manifest, keys);
+  const status = bytes.gzip <= route.initialGzipBudget ? "pass" : "fail";
+  console.log(`[perf] route=${route.id} raw=${bytes.raw} gzip=${bytes.gzip} brotli=${bytes.brotli} gzip_budget=${route.initialGzipBudget} status=${status}`);
+  if (status === "fail") failures.push(`${route.id} gzip ${bytes.gzip} exceeds ${route.initialGzipBudget}`);
 }
 
-const assets = listFiles(distDir)
-  .filter((file) => /\.(?:js|css)$/i.test(file))
-  .map((file) => ({ file: path.relative(process.cwd(), file), bytes: fs.statSync(file).size }))
-  .sort((a, b) => b.bytes - a.bytes);
-
-if (!assets.length) {
-  throw new Error("No built JS/CSS assets found. Run npm run build before npm run perf:audit:assets.");
+const dynamicKeys = Object.keys(manifest).filter((key) => !manifest[key].isEntry && key !== "index.html");
+const largest = dynamicKeys.map((key) => ({ key, bytes: sumEntries(distDir, manifest, [key]) })).sort((a, b) => b.bytes.gzip - a.bytes.gzip)[0];
+if (largest) {
+  console.log(`[perf] largest_lazy_chunk=${largest.key} raw=${largest.bytes.raw} gzip=${largest.bytes.gzip} budget=${largestLazyChunkGzipBudget}`);
+  if (largest.bytes.gzip > largestLazyChunkGzipBudget) failures.push(`largest lazy chunk ${largest.key} gzip ${largest.bytes.gzip} exceeds ${largestLazyChunkGzipBudget}`);
 }
 
-const jsBytes = assets.filter((asset) => asset.file.endsWith(".js")).reduce((total, asset) => total + asset.bytes, 0);
-console.log(`[perf] built_js_bytes=${jsBytes} budget_bytes=${limitBytes}`);
-for (const asset of assets) console.log(`[perf] asset=${asset.file} bytes=${asset.bytes}`);
-
-if (jsBytes > limitBytes) {
-  throw new Error(`Built JavaScript ${jsBytes} bytes exceeds the current baseline guardrail ${limitBytes} bytes.`);
-}
+if (failures.length) throw new Error(`Asset budget failures:\n- ${failures.join("\n- ")}`);

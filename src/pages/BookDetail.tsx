@@ -47,17 +47,22 @@ import Toast from "../components/Toast";
 import type { MindMapData } from "../components/MindMap";
 import { useJobPolling } from "../hooks/useJobPolling";
 
-import JourneyView from "../components/JourneyView";
-import MindMap from "../components/MindMap";
-import StoryThreadView from "../components/story/StoryThreadView";
-import BookWiki from "../components/BookWiki";
-import PodcastPanel from "../components/PodcastPanel";
-import { ContextualUpgradeCard } from "../components/ContextualUpgradeCard";
 import { GuideCard } from "../onboarding";
 import ChapterDropdown from "../components/ChapterDropdown";
 import ReadingMarkers from "../components/ReadingMarkers";
 import { BookDetailSkeleton } from "../components/ContentSkeleton";
 import { captureAnalyticsEvent } from "../analytics";
+
+const JourneyView = React.lazy(() => import("../components/JourneyView"));
+const MindMap = React.lazy(() => import("../components/MindMap"));
+const StoryThreadView = React.lazy(() => import("../components/story/StoryThreadView"));
+const BookWiki = React.lazy(() => import("../components/BookWiki"));
+const PodcastPanel = React.lazy(() => import("../components/PodcastPanel"));
+const ContextualUpgradeCard = React.lazy(() => import("../components/ContextualUpgradeCard").then((module) => ({ default: module.ContextualUpgradeCard })));
+
+function BookDetailPanelFallback({ label = "Loading reading view" }: { label?: string }) {
+  return <div className="min-h-28 rounded-2xl border border-natural-border bg-natural-cream p-4 text-xs text-natural-stone" role="status" aria-live="polite">{label}…</div>;
+}
 
 function InlineMarkdown({ text }: { text: string }) {
   // Defensive: LLMs sometimes emit "**Label:*** text" (bold close + stray list
@@ -1224,13 +1229,15 @@ export default function BookDetail() {
 
       {logView === "podcast" ? (
         <div key={logView} id="podcast-panel" role="tabpanel" aria-label="Podcast" className="motion-tab-panel mt-1">
-        <PodcastPanel
-          bookId={book.id}
-          canEdit={Boolean(book.can_edit)}
-          canGenerate={Boolean(book.can_edit) && book.status === "active"}
-          isEpub={book.file_type === "epub"}
-          onClose={() => setLogView("list")}
-        />
+        <React.Suspense fallback={<BookDetailPanelFallback label="Loading podcast" />}>
+          <PodcastPanel
+            bookId={book.id}
+            canEdit={Boolean(book.can_edit)}
+            canGenerate={Boolean(book.can_edit) && book.status === "active"}
+            isEpub={book.file_type === "epub"}
+            onClose={() => setLogView("list")}
+          />
+        </React.Suspense>
         </div>
       ) : book.reading_experience === "story" ? (
         <>
@@ -1254,6 +1261,7 @@ export default function BookDetail() {
             {rounds.length > 0 && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading</span><ChapterDropdown id="reading-round" className="w-full sm:w-64" value={String(selectedRound ?? book.current_reading_round)} onChange={(value) => { setStoryRetryingLogId(null); setSelectedRound(Number(value)); }} options={rounds.map((round) => ({ value: String(round.reading_round), label: round.reading_round === book.current_reading_round ? `Current reading · Round ${round.reading_round}` : `Previous reading · Round ${round.reading_round}${round.finished_at ? ` · ${round.status === "archived" ? "Archived" : "Finished"} ${new Date(round.finished_at).toLocaleDateString()}` : ""}` }))}/>{selectedRound !== book.current_reading_round && <button type="button" onClick={() => { setStoryRetryingLogId(null); setSelectedRound(book.current_reading_round); }} className="shrink-0 text-xs font-bold text-natural-sage underline underline-offset-2">Current</button>}</div>}
           </div>
           <div key={logView} className="motion-tab-panel">
+            <React.Suspense fallback={<BookDetailPanelFallback label="Loading Story Thread" />}>
             <StoryThreadView
               analyses={storyThread}
               logs={logs}
@@ -1267,6 +1275,7 @@ export default function BookDetail() {
               retryingLogId={storyRetryingLogId}
               canEdit={Boolean(book.can_edit)}
             />
+            </React.Suspense>
           </div>
         </>
       ) : (
@@ -1388,6 +1397,7 @@ export default function BookDetail() {
                 hidden={logView !== "ai-reader"}
                 className="motion-tab-panel rounded-[24px] border border-natural-border bg-natural-cream p-4 shadow-sm sm:p-5"
               >
+                <React.Suspense fallback={<BookDetailPanelFallback label="Loading AI Reader" />}>
                 <BookWiki
                   bookId={id}
                   totalPages={book.total_pages}
@@ -1401,6 +1411,7 @@ export default function BookDetail() {
                     dismissError={upgradeDismissError}
                   />
                 )}
+                </React.Suspense>
               </div>
             )}
             {logView !== "ai-reader" && (
@@ -1429,12 +1440,14 @@ export default function BookDetail() {
                 ) : (
                   <>
                     {logView === "journey" ? (
+                      <React.Suspense fallback={<BookDetailPanelFallback label="Loading Journey" />}>
                       <JourneyView
                         logs={filteredLogs}
                         fileType={book.file_type}
                         expanded={journeyExpanded}
                         setExpanded={setJourneyExpanded}
                       />
+                      </React.Suspense>
                     ) : (
                       <div className="space-y-3">
                         <ReadingMarkers markers={markers} canEdit={!!book.can_edit} onDelete={deleteMarker} onGoToSession={openSavedReadingSession} />
@@ -1511,7 +1524,7 @@ export default function BookDetail() {
                 </div>
               ) : (
                 mindmapData && (
-                  <MindMap data={mindmapData} bookTitle={book.title} />
+                  <React.Suspense fallback={<BookDetailPanelFallback label="Loading Knowledge Map" />}><MindMap data={mindmapData} bookTitle={book.title} /></React.Suspense>
                 )
               )}
             </div>
