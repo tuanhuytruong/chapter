@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import { QUIET_STREAK_TIERS } from "../src/quietStreak.ts";
+import { getQuietStreakTierPresentation, QUIET_STREAK_TIER_PRESENTATION } from "../src/quietStreakPresentation.ts";
+assert.equal(Object.keys(QUIET_STREAK_TIER_PRESENTATION).length, QUIET_STREAK_TIERS.length);
+assert.match(QUIET_STREAK_TIER_PRESENTATION["first-thread"].chip, /emerald/);
+assert.match(QUIET_STREAK_TIER_PRESENTATION["deepened-practice"].card.earned, /8B4F73/);
+assert.match(QUIET_STREAK_TIER_PRESENTATION["reading-life"].card.earned, /62774A/);
+assert.notEqual(QUIET_STREAK_TIER_PRESENTATION["deepened-practice"].card.earned, QUIET_STREAK_TIER_PRESENTATION["reading-life"].card.earned);
+assert.match(getQuietStreakTierPresentation(null).chip, /natural/);
+console.log("STREAK_TIER_PRESENTATION_FIXTURES_OK");

@@ -1,12 +1,14 @@
 import { CircleGauge } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { QuietStreakSummary } from "../api";
+import { getQuietStreakTierPresentation } from "../quietStreakPresentation";
 
 export function readingRhythmPresentation(rhythm: QuietStreakSummary | null | undefined) {
   if (!rhythm) return { label: "Reading rhythm", accessibleLabel: "Reading rhythm. Open Reading rhythm.", tone: "border-natural-border bg-natural-cream text-natural-stone" };
   const tier = rhythm.highest_tier;
-  if (rhythm.current_streak > 0) return { label: `${rhythm.current_streak}-day rhythm`, accessibleLabel: `${rhythm.current_streak}-day reading rhythm${tier ? `. ${tier.title} achieved.` : ""} Open Reading rhythm.`, tone: tier ? "border-natural-sage/35 bg-natural-sage/10 text-natural-sage" : "border-natural-border bg-natural-cream text-natural-dark" };
-  if (tier) return { label: "Your rhythm", accessibleLabel: `${tier.title} remains part of your rhythm. Open Reading rhythm.`, tone: "border-natural-sage/30 bg-natural-sage/10 text-natural-sage" };
+  const tierTone = getQuietStreakTierPresentation(tier?.id).chip;
+  if (rhythm.current_streak > 0) return { label: `${rhythm.current_streak}-day rhythm`, accessibleLabel: `${rhythm.current_streak}-day reading rhythm${tier ? `. ${tier.title} achieved.` : ""} Open Reading rhythm.`, tone: tier ? tierTone : "border-natural-border bg-natural-cream text-natural-dark" };
+  if (tier) return { label: "Your rhythm", accessibleLabel: `${tier.title} remains part of your rhythm. Open Reading rhythm.`, tone: tierTone };
   return { label: "Begin your rhythm", accessibleLabel: "Begin your reading rhythm. Open Reading rhythm.", tone: "border-natural-border bg-natural-cream text-natural-stone" };
 }
 

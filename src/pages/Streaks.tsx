@@ -6,18 +6,10 @@ import QuietStreakStrip from "../components/QuietStreakStrip";
 
 function dayWord(days: number) { return `${days} reading day${days === 1 ? "" : "s"}`; }
 
-const tierTone: Record<QuietStreakTier["id"], { earned: string; ahead: string; icon: string; label: string }> = {
-  "first-thread": { earned: "border-emerald-600/55 bg-emerald-500/10", ahead: "border-emerald-600/35 bg-emerald-500/5", icon: "bg-emerald-700 text-white", label: "text-emerald-700 dark:text-emerald-300" },
-  "steady-reader": { earned: "border-teal-600/55 bg-teal-500/10", ahead: "border-teal-600/35 bg-teal-500/5", icon: "bg-teal-700 text-white", label: "text-teal-700 dark:text-teal-300" },
-  "quiet-practice": { earned: "border-orange-600/55 bg-orange-500/10", ahead: "border-orange-600/35 bg-orange-500/5", icon: "bg-orange-700 text-white", label: "text-orange-700 dark:text-orange-300" },
-  "deep-current": { earned: "border-indigo-600/55 bg-indigo-500/10", ahead: "border-indigo-600/35 bg-indigo-500/5", icon: "bg-indigo-700 text-white", label: "text-indigo-700 dark:text-indigo-300" },
-  "quiet-horizon": { earned: "border-sky-600/55 bg-sky-500/10", ahead: "border-sky-600/35 bg-sky-500/5", icon: "bg-sky-700 text-white", label: "text-sky-700 dark:text-sky-300" },
-  "deepened-practice": { earned: "border-violet-600/55 bg-violet-500/10", ahead: "border-violet-600/35 bg-violet-500/5", icon: "bg-violet-700 text-white", label: "text-violet-700 dark:text-violet-300" },
-  "reading-life": { earned: "border-amber-500/60 bg-amber-400/10", ahead: "border-amber-500/40 bg-amber-400/5", icon: "bg-amber-600 text-white", label: "text-amber-700 dark:text-amber-300" },
-};
+import { getQuietStreakTierPresentation } from "../quietStreakPresentation";
 
 function BadgeCard({ tier, earned }: { tier: QuietStreakTier; earned: boolean }) {
-  const tone = tierTone[tier.id];
+  const tone = getQuietStreakTierPresentation(tier.id).card;
   return <article className={`rounded-2xl border p-4 ${earned ? tone.earned : tone.ahead}`}>
     <div className="flex items-start gap-3"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${earned ? tone.icon : `border ${tone.ahead} bg-transparent ${tone.label}`}`}><Award className="h-5 w-5" /></div><div className="min-w-0"><div className="flex items-center gap-2"><h2 className="font-bold text-natural-dark">{tier.title}</h2>{earned && <CheckCircle2 aria-label="Earned" className="h-4 w-4 text-natural-sage" />}</div><p className="mt-1 text-xs leading-relaxed text-natural-stone">{tier.description}</p><p className={`mt-3 text-xs font-bold uppercase tracking-wider ${tone.label}`}>{tier.days} days · {earned ? "Earned" : "Ahead"}</p></div></div>
   </article>;
