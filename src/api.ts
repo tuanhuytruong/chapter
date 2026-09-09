@@ -425,7 +425,7 @@ export interface RhythmBookItem {
 }
 
 export interface QuietStreakTier {
-  id: "first-thread" | "steady-reader" | "quiet-practice" | "deep-current" | "reading-life";
+  id: "first-thread" | "steady-reader" | "quiet-practice" | "deep-current" | "quiet-horizon" | "deepened-practice" | "reading-life";
   title: string;
   days: number;
   ringClass: string;

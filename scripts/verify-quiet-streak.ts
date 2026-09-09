@@ -5,6 +5,8 @@ assert.deepEqual(quietStreakSummary([], [], now), { active_days: [], current_str
 assert.deepEqual(activeDays(["2026-09-01", "2026-09-02"], ["2026-09-02", "2026-09-03"]), ["2026-09-01", "2026-09-02", "2026-09-03"]);
 assert.equal(quietStreakSummary(["2026-09-01", "2026-09-02"], [], now).current_streak, 2);
 assert.equal(quietStreakSummary(["2026-08-30"], [], now).current_streak, 0);
-for (const [count, id] of [[3,"first-thread"],[7,"steady-reader"],[21,"quiet-practice"],[60,"deep-current"],[180,"reading-life"]] as const) { const start = new Date("2026-03-08T00:00:00Z"); const days = Array.from({length: count}, (_, i) => new Date(start.getTime()+i*86400000).toISOString().slice(0,10)); assert.equal(quietStreakSummary(days, [], now).highest_tier?.id, id); }
+for (const [count, id] of [[3,"first-thread"],[7,"steady-reader"],[21,"quiet-practice"],[60,"deep-current"],[90,"quiet-horizon"],[120,"deepened-practice"],[180,"reading-life"]] as const) { const start = new Date("2026-03-08T00:00:00Z"); const days = Array.from({length: count}, (_, i) => new Date(start.getTime()+i*86400000).toISOString().slice(0,10)); assert.equal(quietStreakSummary(days, [], now).highest_tier?.id, id); }
 const retained = quietStreakSummary(Array.from({length:21},(_,i)=>`2026-07-${String(i+1).padStart(2,"0")}`), [], now); assert.equal(retained.current_streak, 0); assert.equal(retained.highest_tier?.id, "quiet-practice");
 assert.equal(quietStreakDateKey("2026-09-02T17:30:00.000Z"), "2026-09-03"); console.log("QUIET_STREAK_FIXTURES_OK");
+
+assert.deepEqual(QUIET_STREAK_TIERS.map((tier) => tier.days), [3, 7, 21, 60, 90, 120, 180]);

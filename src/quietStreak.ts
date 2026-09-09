@@ -1,10 +1,12 @@
-export type QuietStreakTierId = "first-thread" | "steady-reader" | "quiet-practice" | "deep-current" | "reading-life";
+export type QuietStreakTierId = "first-thread" | "steady-reader" | "quiet-practice" | "deep-current" | "quiet-horizon" | "deepened-practice" | "reading-life";
 export type QuietStreakTier = { id: QuietStreakTierId; title: string; days: number; ringClass: string; description: string };
 export const QUIET_STREAK_TIERS: readonly QuietStreakTier[] = [
   { id: "first-thread", title: "First Thread", days: 3, ringClass: "ring-natural-sage/70", description: "Three days of making room for a story." },
   { id: "steady-reader", title: "Steady Reader", days: 7, ringClass: "ring-natural-sage", description: "A week held gently in rhythm." },
   { id: "quiet-practice", title: "Quiet Practice", days: 21, ringClass: "ring-orange-700/65", description: "A practice taking a quieter, deeper shape." },
   { id: "deep-current", title: "Deep Current", days: 60, ringClass: "ring-indigo-500/70", description: "A current you have kept returning to." },
+  { id: "quiet-horizon", title: "Quiet Horizon", days: 90, ringClass: "ring-sky-500/70", description: "A longer horizon shaped by returning, one day at a time." },
+  { id: "deepened-practice", title: "Deepened Practice", days: 120, ringClass: "ring-violet-500/70", description: "A practice with room to settle into your life." },
   { id: "reading-life", title: "A Reading Life", days: 180, ringClass: "ring-amber-400", description: "Reading has become part of how you live." },
 ];
 export type QuietStreakSummary = { active_days: string[]; current_streak: number; longest_streak: number; highest_tier: QuietStreakTier | null; next_tier: QuietStreakTier | null; active_today: boolean };
