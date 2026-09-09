@@ -9,6 +9,7 @@ import { extractJson as extractSharedJson } from "./llmJson.js";
 
 import { callLLM } from "./llm.js";
 import { query } from "./db.js";
+import { bestEffortUpsertSearchDocument } from "./librarySearchRepository.js";
 import { extractRange } from "./extractor.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -650,6 +651,9 @@ async function processBookForWikiNow(bookId: string, force = false): Promise<boo
       Date.now() - generationMs,
     ]
   );
+
+  const owner = await query<{ owner_id: string; title: string; current_reading_round: number }>("SELECT owner_id,title,current_reading_round FROM books WHERE id=$1", [bookId]);
+  if (owner.rows[0]) await bestEffortUpsertSearchDocument({ ownerId: owner.rows[0].owner_id, bookId, readingRound: owner.rows[0].current_reading_round, kind: "wiki", sourceKey: bookId, title: `BookWiki · ${owner.rows[0].title}`, body: [wiki.overview, wiki.book_so_far, wiki.current_position, wiki.narrative_arc, ...(wiki.concepts || []).map((item: any) => `${item.name || item.term || ""} ${item.definition || item.explanation || ""}`), ...(wiki.themes || []).map((item: any) => typeof item === "string" ? item : `${item.name || ""} ${item.description || ""}`), ...(wiki.people || []).map((item: any) => `${item.name || ""} ${item.pulse || ""}`), ...(wiki.open_questions || []), ...(wiki.carry_forward_insights || [])].filter(Boolean).join("\n") });
 
   return true;
 }

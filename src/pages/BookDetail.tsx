@@ -155,6 +155,9 @@ export default function BookDetail() {
   // merely the enclosing book.
   const returnParams = new URLSearchParams(location.search);
   const returnLogId = returnParams.get("returnLog");
+  const librarySearchLogId = returnParams.get("log");
+  const librarySearchView = returnParams.get("view");
+  const librarySearchTab = returnParams.get("tab");
   const returnRoundRaw = Number(returnParams.get("returnRound"));
   const returnRound = Number.isInteger(returnRoundRaw) && returnRoundRaw > 0 ? returnRoundRaw : null;
   const [book, setBook] = useState<BookRow | null>(null);
@@ -261,6 +264,14 @@ export default function BookDetail() {
     setNavigationTargetLogId(logId);
     setLogView(book?.reading_experience === "story" ? "story-thread" : "list");
   };
+  useEffect(() => {
+    if (!book) return;
+    if (librarySearchTab === "ai-reader") { setHasOpenedAiReader(true); setLogView("ai-reader"); return; }
+    if (librarySearchView === "story-thread") { setLogView("story-thread"); if (librarySearchLogId) setNavigationTargetLogId(librarySearchLogId); return; }
+    if (librarySearchLogId && logs.some((log) => log.id === librarySearchLogId)) {
+      setSearch(""); setNavigationTargetLogId(librarySearchLogId); setLogView(book.reading_experience === "story" ? "story-thread" : "list");
+    }
+  }, [book, logs, librarySearchLogId, librarySearchTab, librarySearchView]);
 
   const load = useCallback(async (requestedRound?: number) => {
     if (!id) return;

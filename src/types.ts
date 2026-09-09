@@ -132,6 +132,9 @@ export interface StoryThreadRow {
   page_end: number;
 }
 
+export type LibrarySearchKind = "book" | "wiki" | "quote" | "note" | "reflection" | "story_session" | "story_memory";
+export type LibrarySearchResult = { kind: LibrarySearchKind; bookId: string; bookTitle: string; bookAuthor: string; readingRound: number | null; logId: string | null; pageStart: number | null; pageEnd: number | null; title: string; excerpt: string; rank: number };
+
 export type StoryMemoryEvidence = { logId: string; session: number; pageStart: number; pageEnd: number };
 export type StoryMemoryResponse = { readingRound: number; status: "ready" | "generating" | "failed" | "unavailable"; memory: { storySoFar: string; characters: Array<{ id: string; displayName: string; aliases: Array<{ name: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; roles: string[]; interior: Array<{ shift: string; conflict: string; desireVsAction: string; subtext: string; unresolved: string; evidence: StoryMemoryEvidence }>; unresolved: string[] }>; identityHypotheses: Array<{ id: string; leftCharacterId: string; rightCharacterId: string; claim: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence[] }>; revealEvents: Array<{ eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; openQuestions: string[]; coveredThrough: StoryMemoryEvidence | null } | null; events: Array<{ eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; updatedAt: string | null; retryAllowed: boolean };
 

@@ -1,4 +1,5 @@
 import { query } from "./db.js";
+import { bestEffortUpsertSearchDocument } from "./librarySearchRepository.js";
 
 export type StoryThread = { id: string; label: string; status: "open" | "escalating" | "resolved" | "uncertain"; detail: string };
 export type StoryCharacter = { name: string; pulse: string };
@@ -210,6 +211,8 @@ export async function upsertStoryThreadAnalysis(bookId: string, logId: string, a
   await query(`INSERT INTO story_thread_analyses (book_id, log_id, schema_version, analysis, story_recap) VALUES ($1,$2,1,$3::jsonb,$4) ON CONFLICT (log_id, schema_version) DO UPDATE SET analysis=EXCLUDED.analysis, story_recap=EXCLUDED.story_recap, generated_at=now()`, [bookId, logId, JSON.stringify(analysis), analysis.storyRecap]);
 
   await markStoryThreadReady(logId);
+  const owner = await query<{ owner_id: string; title: string; reading_round: number; page_start: number; page_end: number }>(`SELECT b.owner_id,b.title,rl.reading_round,rl.page_start,rl.page_end FROM books b JOIN reading_log rl ON rl.book_id=b.id WHERE rl.id=$1 AND b.id=$2`, [logId, bookId]);
+  if (owner.rows[0]) await bestEffortUpsertSearchDocument({ ownerId: owner.rows[0].owner_id, bookId, readingRound: owner.rows[0].reading_round, logId, kind: "story_session", sourceKey: logId, title: `Story Thread · ${owner.rows[0].title}`, body: [analysis.storyRecap, analysis.storySoFar, ...(analysis.innerMovements || []).flatMap((item) => [item.characterName,item.emotionalShift,item.innerConflict,item.desireVsAction,item.unresolved])].filter(Boolean).join("\n"), pageStart: owner.rows[0].page_start, pageEnd: owner.rows[0].page_end });
 
   // Rebuild from every persisted session in chronological order. This prevents a
   // retry of an earlier log from replacing the newest Story State with stale data.
@@ -236,6 +239,8 @@ export async function rebuildStoryMemorySnapshot(bookId: string, readingRound: n
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     ON CONFLICT (book_id,reading_round,event_type,subject_key,source_log_id,current_claim) DO NOTHING`,
     [bookId, readingRound, event.eventType, event.subjectKey, event.priorClaim || null, event.currentClaim, event.confidence, event.evidence.logId, event.evidence.session, event.evidence.pageStart, event.evidence.pageEnd]);
+  const owner = await query<{ owner_id: string; title: string }>("SELECT owner_id,title FROM books WHERE id=$1", [bookId]);
+  if (owner.rows[0]) await bestEffortUpsertSearchDocument({ ownerId: owner.rows[0].owner_id, bookId, readingRound, kind: "story_memory", sourceKey: `${bookId}:${readingRound}`, title: `Story Memory · ${owner.rows[0].title}`, body: [state.storySoFar, ...(state.characters || []).flatMap((character) => [character.displayName, ...(character.aliases || []).map((alias) => alias.name), ...(character.interior || []).flatMap((item) => [item.shift,item.conflict,item.desireVsAction,item.unresolved])]), ...(state.revealEvents || []).flatMap((event) => [event.priorClaim,event.currentClaim])].filter(Boolean).join("\n") });
   return state;
 }
 

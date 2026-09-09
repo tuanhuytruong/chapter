@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, BookOpen, Search, ChevronDown, ChevronUp, ListOrdered, Play, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
-import type { BookRow } from '../types';
+import type { BookRow, LibrarySearchKind, LibrarySearchResult } from '../types';
 import BookCard from '../components/BookCard';
 import AddBookModal from '../components/AddBookModal';
 import Toast from '../components/Toast';
@@ -10,6 +10,7 @@ import QuoteWall from '../components/QuoteWall';
 import SortMenu from '../components/SortMenu';
 import { GuideCard, useOnboarding } from '../onboarding';
 import { captureAnalyticsEvent } from "../analytics";
+import LibrarySearchResults from '../components/LibrarySearchResults';
 
 type Filter = 'all' | 'active' | 'queued' | 'paused' | 'finished';
 const FILTERS: { id: Filter; label: string }[] = [
@@ -30,6 +31,7 @@ const SORTS: { id: Sort; label: string }[] = [
 
 export default function Library() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [books, setBooks] = useState<BookRow[]>([]);
   const scope = searchParams.get('scope') === 'all' ? 'all' : 'mine';
   const [streaks, setStreaks] = useState<Record<string, number>>({});
@@ -42,6 +44,12 @@ export default function Library() {
   const setSort = (value: Sort) => setBrowse({ sort: value });
   const setSearch = (value: string) => setBrowse({ q: value });
   const [showAdd, setShowAdd] = useState(false);
+  const [searchDraft, setSearchDraft] = useState(search);
+  const composingSearch = useRef(false);
+  const [globalResults, setGlobalResults] = useState<LibrarySearchResult[]>([]);
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalKind, setGlobalKind] = useState<LibrarySearchKind | undefined>();
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
   const { dismiss } = useOnboarding();
 
@@ -59,6 +67,13 @@ export default function Library() {
   }, [scope]);
 
   useEffect(() => { void load(); }, [load]);
+  // Updating the URL on every keystroke interrupts Vietnamese IME composition
+  // (for example "việt" can become "vieêệt"). Keep an input draft and commit
+  // after composition/pause instead; Book Detail follows the same principle.
+  useEffect(() => { if (!composingSearch.current) setSearchDraft(search); }, [search]);
+  useEffect(() => { if (composingSearch.current || searchDraft === search) return; const timer = window.setTimeout(() => setSearch(searchDraft), 260); return () => window.clearTimeout(timer); }, [searchDraft, search]);
+  useEffect(() => { if (scope !== "mine" || search.trim().length < 2) { setGlobalResults([]); setGlobalLoading(false); setGlobalError(null); return; } let cancelled=false; const timer=window.setTimeout(() => { setGlobalLoading(true); api.searchLibrary(search,{kind:globalKind}).then((rows)=>{if(!cancelled){setGlobalResults(rows);setGlobalError(null)}}).catch(()=>{if(!cancelled)setGlobalError("unavailable")}).finally(()=>{if(!cancelled)setGlobalLoading(false)}); },220); return ()=>{cancelled=true;window.clearTimeout(timer)}; }, [scope,search,globalKind]);
+  const openSearchResult = (result: LibrarySearchResult) => { const params = new URLSearchParams(); if (result.logId) params.set("log",result.logId); if (result.kind === "story_session" || result.kind === "story_memory") params.set("view","story-thread"); if (result.kind === "wiki") params.set("tab","ai-reader"); navigate(`/books/${result.bookId}${params.size ? `?${params}` : ""}`); };
 
   const statusCounts = useMemo(() => books.reduce<Record<Filter, number>>((counts, book) => {
     counts[book.status as Filter] = (counts[book.status as Filter] || 0) + 1;
@@ -157,12 +172,13 @@ export default function Library() {
       {!showQueue && <div className="grid grid-cols-1 gap-2 sm:flex sm:justify-end">
         <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
           <Search className="h-3.5 w-3.5 shrink-0 text-natural-stone" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title/author" className="min-w-0 flex-1 bg-transparent font-sans text-xs outline-none sm:w-32 sm:flex-none" />
+          <input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} onCompositionStart={() => { composingSearch.current = true; }} onCompositionEnd={(event) => { composingSearch.current = false; setSearchDraft(event.currentTarget.value); }} onKeyDown={(event) => { if (event.key === "Enter" && globalResults[0]) { event.preventDefault(); openSearchResult(globalResults[0]); } }} placeholder={scope === 'mine' ? "Search your library" : "Search title/author"} aria-label={scope === 'mine' ? "Search your library" : "Search title and author"} className="min-w-0 flex-1 bg-transparent font-sans text-xs outline-none sm:w-52 sm:flex-none" />
         </div>
+        {scope === 'mine' && search.trim().length >= 2 && <div className="flex flex-wrap gap-1" role="group" aria-label="Search type">{([undefined,'book','wiki','quote','note','story_memory'] as Array<LibrarySearchKind|undefined>).map((kind) => <button key={kind || 'all'} type="button" onClick={() => setGlobalKind(kind)} aria-pressed={globalKind === kind} className={`min-h-11 rounded-full border px-3 text-[10px] font-bold ${globalKind === kind ? 'border-natural-sage bg-natural-sage/10 text-natural-sage' : 'border-natural-border text-natural-stone'}`}>{kind ? ({book:'Books',wiki:'Ideas',quote:'Quotes',note:'Notes',story_memory:'Story'} as any)[kind] : 'All'}</button>)}</div>}
         <SortMenu value={sort} onChange={setSort} />
       </div>}
 
-      {loading ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="h-36 animate-pulse rounded-[24px] border border-natural-border bg-natural-cream" />)}</div>
+      {scope === 'mine' && search.trim().length >= 2 ? <LibrarySearchResults results={globalResults} loading={globalLoading} error={globalError} onOpen={openSearchResult} /> : loading ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="h-36 animate-pulse rounded-[24px] border border-natural-border bg-natural-cream" />)}</div>
         : showQueue && queued.length > 0 ? <section className="rounded-[28px] border border-natural-border bg-natural-cream p-4 shadow-xs sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="font-sans text-xs font-bold uppercase tracking-[0.16em] text-natural-sage">Personal queue</p><h2 className="mt-1 flex items-center gap-2 font-sans text-lg font-bold text-natural-dark"><ListOrdered className="h-5 w-5" /> Up next</h2></div><span className="rounded-full bg-white px-3 py-1 font-sans text-xs font-bold text-natural-stone">{queued.length} book{queued.length === 1 ? '' : 's'}</span></div>
           <div className="space-y-2">{queued.map((book, index) => <article key={book.id} className="flex flex-wrap items-center gap-2 rounded-2xl border border-natural-border bg-white/65 p-3 sm:flex-nowrap"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-natural-sage/15 text-sm font-bold text-natural-sage">{index + 1}</span><div className="min-w-0 flex-1"><p className="truncate font-sans text-sm font-bold text-natural-dark">{book.title}</p><p className="truncate font-sans text-xs text-natural-stone">{book.author}</p></div><div className="flex shrink-0 gap-1"><button aria-label={`Move ${book.title} earlier`} onClick={() => moveQueuedBook(index, -1)} disabled={index === 0} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronUp className="h-4 w-4" /></button><button aria-label={`Move ${book.title} later`} onClick={() => moveQueuedBook(index, 1)} disabled={index === queued.length - 1} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronDown className="h-4 w-4" /></button><button onClick={() => startQueuedBook(book)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-natural-sage px-3 font-sans text-xs font-bold text-white hover:bg-natural-sage-dark"><Play className="h-3.5 w-3.5" /> Start</button></div></article>)}</div>

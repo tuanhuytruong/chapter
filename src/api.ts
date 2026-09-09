@@ -8,6 +8,8 @@ import type {
   StoryThreadRow,
   StoryThreadRepairJob,
   StoryMemoryResponse,
+  LibrarySearchKind,
+  LibrarySearchResult,
   SummaryMode,
 } from "./types";
 import type { ReturnOutcome, ReviewCardRow } from "./review";
@@ -468,6 +470,10 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 export const api = {
   listBooks: (scope: "mine" | "all" = "mine") =>
     req<BookRow[]>(`${BASE}?scope=${scope}`),
+  searchLibrary: (q: string, filters: { kind?: LibrarySearchKind; bookId?: string } = {}) => {
+    const params = new URLSearchParams({ q }); if (filters.kind) params.set("kind", filters.kind); if (filters.bookId) params.set("bookId", filters.bookId);
+    return req<LibrarySearchResult[]>(`${BASE}/search?${params}`);
+  },
   getBook: (id: string) => req<BookRow>(`${BASE}/${id}`),
   createBook: (body: Partial<BookRow>) =>
     req<BookRow>(`${BASE}`, { method: "POST", body: JSON.stringify(body) }),

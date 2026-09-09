@@ -470,6 +470,13 @@ CREATE TABLE IF NOT EXISTS chapter.story_memory_events (
 );
 CREATE INDEX IF NOT EXISTS idx_story_memory_events_book_round ON chapter.story_memory_events (book_id, reading_round, source_session ASC, created_at ASC);
 
+-- Unified Library Search indexes compact generated/user artifacts only; never raw reading text.
+CREATE TABLE IF NOT EXISTS chapter.search_documents (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE, book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE, reading_round INTEGER, log_id UUID REFERENCES chapter.reading_log(id) ON DELETE CASCADE, kind TEXT NOT NULL CHECK (kind IN ('book','wiki','quote','note','reflection','story_session','story_memory')), source_key TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, normalized_text TEXT NOT NULL, page_start INTEGER, page_end INTEGER, search_vector tsvector NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (owner_id,kind,source_key)
+);
+CREATE INDEX IF NOT EXISTS idx_search_documents_owner_vector ON chapter.search_documents USING GIN (search_vector);
+CREATE INDEX IF NOT EXISTS idx_search_documents_owner_kind_updated ON chapter.search_documents (owner_id,kind,updated_at DESC);
+
 -- AI Reader base tables must be created before their additive fields below.
 CREATE TABLE IF NOT EXISTS chapter.ai_reader_chunks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

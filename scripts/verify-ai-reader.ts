@@ -97,7 +97,7 @@ const bookWikiComponent = readFileSync(new URL("../src/components/BookWiki.tsx",
 assert.match(bookWikiComponent, /req<BookWikiData>\(`\/api\/books\/\$\{bookId\}\/wiki`\)\.catch/);
 assert.match(bookWikiComponent, /if \(error\.message\.startsWith\("404:"\)\) return null/);
 assert.match(bookWikiComponent, /The owner has not generated a shared AI Reader map for this book yet\./);
-assert.match(bookWikiComponent, /import \{ GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage \} from "\.\/ContextualGlossary"/);
+assert.match(bookWikiComponent, /import \{ GlossaryLabel, (GlossaryTerm, )?resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguage \} from "\.\/ContextualGlossary"/);
 assert.match(bookWikiComponent, /const glossaryLanguage: GlossaryLanguage = resolveGlossaryLanguage\(/);
 assert.match(bookWikiComponent, /const preserveScroll = \(update: \(\) => void\) => \{/);
 assert.match(bookWikiComponent, /const pointerScrollY = useRef<number \| null>\(null\)/);
@@ -130,7 +130,7 @@ assert.match(daySummarySource, /focus\(\{ preventScroll: true \}\)/);
 assert.match(daySummarySource, /navigationHighlight/);
 assert.match(bookWikiComponent, /evidence\.map\(\(entry, evidenceIndex\).*?<button type="button"/s, "map evidence remains individually drillable without form submission");
 const storyThreadView = readFileSync(new URL("../src/components/story/StoryThreadView.tsx", import.meta.url), "utf8");
-assert.match(storyThreadView, /import \{ GlossaryLabel, resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguageSetting \} from "\.\.\/ContextualGlossary"/);
+assert.match(storyThreadView, /import \{ GlossaryLabel, (GlossaryTerm, )?resolveGlossaryLanguage, type GlossaryKey, type GlossaryLanguageSetting \} from "\.\.\/ContextualGlossary"/);
 assert.match(storyThreadView, /const glossaryLanguage = resolveGlossaryLanguage\(summaryLang/);
 assert.match(storyThreadView, /open: "Open", escalating: "Escalating", resolved: "Resolved", uncertain: "Uncertain"/);
 const glossarySource = readFileSync(new URL("../src/components/ContextualGlossary.tsx", import.meta.url), "utf8");

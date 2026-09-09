@@ -1,0 +1,7 @@
+export type LibrarySearchKind = "book" | "wiki" | "quote" | "note" | "reflection" | "story_session" | "story_memory";
+export type SearchDocumentInput = { ownerId: string; bookId: string; readingRound?: number | null; logId?: string | null; kind: LibrarySearchKind; sourceKey: string; title: string; body: string; pageStart?: number | null; pageEnd?: number | null };
+export type LibrarySearchResult = { kind: LibrarySearchKind; bookId: string; bookTitle: string; bookAuthor: string; readingRound: number | null; logId: string | null; pageStart: number | null; pageEnd: number | null; title: string; excerpt: string; rank: number };
+const compact = (value: unknown, max: number) => typeof value === "string" ? value.replace(/\0/g, "").replace(/\s+/g, " ").trim().slice(0, max) : "";
+export function normalizeLibrarySearchText(value: unknown): string { return compact(value, 10_000).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLocaleLowerCase(); }
+export function buildSearchDocument(input: SearchDocumentInput): SearchDocumentInput | null { const title = compact(input.title, 220); const body = compact(input.body, 4_000); return title && body ? { ...input, title, body } : null; }
+export function safeSearchExcerpt(value: unknown, query: string): string { const text = compact(value, 320); const at = normalizeLibrarySearchText(text).indexOf(normalizeLibrarySearchText(query)); if (at <= 80) return text; return `…${text.slice(Math.max(0, at - 72), Math.min(text.length, at + 248))}`; }

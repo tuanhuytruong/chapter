@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import crypto from "node:crypto";
 import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { query, withClient, withTransaction } from "../db.js";
+import { searchLibrary, bestEffortUpsertSearchDocument, bestEffortDeleteSearchDocument } from "../librarySearchRepository.js";
 import {
   buildEpubReadingUnits,
   extractRange,
@@ -535,7 +536,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
         ],
       );
     });
-    res.status(201).json(rows[0]);
+    const savedBook = rows[0];
+    await bestEffortUpsertSearchDocument({ ownerId: userFrom(req).id, bookId: savedBook.id, readingRound: savedBook.current_reading_round, kind: "book", sourceKey: savedBook.id, title: savedBook.title, body: `${savedBook.title}\n${savedBook.author}` });
+    res.status(201).json(savedBook);
   } catch (e: any) {
     const statusCode = Number.isInteger(e?.statusCode) ? e.statusCode : 503;
     res.status(statusCode).json({
@@ -704,7 +707,10 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
       return updated.rows;
     });
     if (!rows.length) return res.status(404).json({ error: "book not found" });
-    res.json(rows[0]);
+    const savedBook = rows[0];
+    await bestEffortUpsertSearchDocument({ ownerId: userFrom(req).id, bookId: savedBook.id, readingRound: savedBook.current_reading_round, kind: "book", sourceKey: savedBook.id, title: savedBook.title, body: `${savedBook.title}
+${savedBook.author}` });
+    res.json(savedBook);
   } catch (e: any) {
     res.status(e.statusCode || 503).json({ error: "DB unavailable", detail: e.message });
   }
@@ -746,6 +752,19 @@ booksRouter.delete("/:id", async (req: Request, res: Response) => {
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
+});
+
+// GET /api/books/search — owner-only unified retrieval; kept before /:id routes.
+booksRouter.get("/search", async (req: Request, res: Response) => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const kind = typeof req.query.kind === "string" ? req.query.kind : undefined;
+  const bookId = typeof req.query.bookId === "string" ? req.query.bookId : undefined;
+  const allowedKinds = new Set(["book", "wiki", "quote", "note", "reflection", "story_session", "story_memory"]);
+  if (q.length < 2 || q.length > 120) return res.status(400).json({ error: "query must be 2–120 characters" });
+  if (kind && !allowedKinds.has(kind)) return res.status(400).json({ error: "unknown search kind" });
+  if (bookId && !isUuid(bookId)) return res.status(400).json({ error: "book id must be a UUID" });
+  try { res.json(await searchLibrary(userFrom(req).id, { q, kind: kind as any, bookId })); }
+  catch (error: any) { res.status(503).json({ error: "library search unavailable", detail: error.message }); }
 });
 
 // GET /api/books/:id/story-thread — persisted Story continuity, never source text.
@@ -1625,6 +1644,7 @@ booksRouter.post("/:id/reflection", async (req: Request, res: Response) => {
       "UPDATE books SET reflection_text=$1, reflection_at=now() WHERE id=$2 RETURNING reflection_text, reflection_at",
       [reflection, id],
     );
+    await bestEffortUpsertSearchDocument({ ownerId: userFrom(req).id, bookId: id, kind: "reflection", sourceKey: id, title: `Reflection · ${book.title}`, body: reflection });
     res.json(rows[0]);
   } catch (e: any) {
     res.status(500).json({ error: "reflection failed", detail: e.message });
@@ -1916,6 +1936,7 @@ async function advanceBookNow(
       readingExperience: book.reading_experience || "analytical",
     };
   });
+  if (result?.log?.quote) await bestEffortUpsertSearchDocument({ ownerId: book.owner_id, bookId: result.bookId, readingRound: result.log.reading_round, logId: result.log.id, kind: "quote", sourceKey: result.log.id, title: `Quote · ${result.title}`, body: result.log.quote, pageStart: result.log.page_start, pageEnd: result.log.page_end });
   if (result?.log?.raw_text) {
     await markReadingProgressCompanionStaleIfCovered(
       result.bookId,
@@ -2223,6 +2244,8 @@ booksRouter.post(
         return rows[0];
       });
       if (!updated) return res.status(404).json({ error: "log not found" });
+      if (updated.quote) await bestEffortUpsertSearchDocument({ ownerId: userFrom(req).id, bookId: id, readingRound: updated.reading_round, logId, kind: "quote", sourceKey: logId, title: `Quote · ${book.title}`, body: updated.quote, pageStart: updated.page_start, pageEnd: updated.page_end });
+      else await bestEffortDeleteSearchDocument(userFrom(req).id, "quote", logId);
       res.json(updated);
     } catch (e: any) {
       res.status(500).json({ error: "retry failed", detail: e.message });
@@ -2245,7 +2268,13 @@ booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
       [notes, logId, id],
     );
     if (!rows.length) return res.status(404).json({ error: "log not found" });
-    res.json(rows[0]);
+    const saved = rows[0];
+    const owner = await query<{ owner_id: string; title: string }>("SELECT owner_id,title FROM books WHERE id=$1", [id]);
+    if (owner.rows[0]) {
+      if (String(notes).trim()) await bestEffortUpsertSearchDocument({ ownerId: owner.rows[0].owner_id, bookId: id, readingRound: saved.reading_round, logId, kind: "note", sourceKey: logId, title: `Note · ${owner.rows[0].title}`, body: String(notes), pageStart: saved.page_start, pageEnd: saved.page_end });
+      else await bestEffortDeleteSearchDocument(owner.rows[0].owner_id, "note", logId);
+    }
+    res.json(saved);
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
