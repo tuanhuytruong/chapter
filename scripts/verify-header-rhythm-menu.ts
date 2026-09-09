@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { readingRhythmPresentation } from "../src/components/ReadingRhythmChip.js";
+const tier = { id: "steady-reader" as const, title: "Steady Reader", days: 7, ringClass: "ring-natural-sage", description: "A week" };
+assert.equal(readingRhythmPresentation({ current_streak: 7, longest_streak: 7, highest_tier: tier, next_tier: null, active_today: true, active_days: [] }).label, "7-day rhythm");
+assert.match(readingRhythmPresentation({ current_streak: 0, longest_streak: 7, highest_tier: tier, next_tier: null, active_today: false, active_days: [] }).accessibleLabel, /Steady Reader/);
+assert.equal(readingRhythmPresentation({ current_streak: 0, longest_streak: 0, highest_tier: null, next_tier: null, active_today: false, active_days: [] }).label, "Begin your rhythm");
+const shell = readFileSync(new URL("../src/components/AppShell.tsx", import.meta.url), "utf8");
+assert.match(shell, /aria-haspopup="menu"/); assert.match(shell, /desktop-account-menu/); assert.match(shell, /ReadingRhythmChip/); assert.match(shell, /Plan & membership/); assert.match(shell, /onPointerDown/); assert.match(shell, /event.key === 'Escape'/); assert.doesNotMatch(shell, /<MembershipTierBadge/); assert.doesNotMatch(shell, /QuietStreakBadge/);
+console.log("HEADER_RHYTHM_MENU_FIXTURES_OK");

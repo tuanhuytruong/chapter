@@ -4,21 +4,19 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { presetFromAvatarValue } from '../avatar-presets';
 import AnimalAvatar from './AnimalAvatar';
 import JourneyDrawer from './JourneyDrawer';
-import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X, CircleHelp } from 'lucide-react';
+import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X, CircleHelp, ChevronDown, UserRound, CreditCard } from 'lucide-react';
 import { useAuth } from '../AuthContext';
-import { api, type MembershipTier, type QuietStreakTier } from '../api';
-import QuietStreakBadge from './QuietStreakBadge';
-import MembershipTierBadge from './MembershipTierBadge';
+import { api, type QuietStreakSummary } from '../api';
+import ReadingRhythmChip from './ReadingRhythmChip';
 import useSwipeNav from '../hooks/useSwipeNav';
-import { getCachedEntitlements } from '../membershipCache';
 
 const primaryLink = (active: boolean) => active
   ? 'flex min-h-10 items-center justify-center gap-1.5 border-b-2 border-natural-dark pb-0.5 font-bold text-natural-dark md:min-h-0 no-underline'
   : 'flex min-h-10 items-center justify-center gap-1.5 text-natural-stone hover:text-natural-dark md:min-h-0 no-underline';
 
-function Avatar({ user, tier }: { user: ReturnType<typeof useAuth>["user"]; tier: QuietStreakTier | null }) {
+function Avatar({ user }: { user: ReturnType<typeof useAuth>["user"] }) {
   const preset = presetFromAvatarValue(user?.avatarUrl);
-  return <QuietStreakBadge tier={tier}><div className={`flex h-8 w-8 overflow-hidden rounded-full ${preset?.tone || 'bg-natural-sage/20'}`}>{preset ? <AnimalAvatar id={preset.id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span>}</div></QuietStreakBadge>;
+  return <div className={`flex h-8 w-8 overflow-hidden rounded-full ${preset?.tone || 'bg-natural-sage/20'}`}>{preset ? <AnimalAvatar id={preset.id} className="h-full w-full" /> : <span className="flex h-full w-full items-center justify-center font-sans text-[10px] font-bold text-natural-sage">{user?.displayName?.[0]?.toUpperCase()}</span>}</div>;
 }
 
 export default function AppShell() {
@@ -27,104 +25,30 @@ export default function AppShell() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(null);
-  const [quietTier, setQuietTier] = useState<QuietStreakTier | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [rhythm, setRhythm] = useState<QuietStreakSummary | null>(null);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const accountTriggerRef = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuPresence = usePresence(mobileMenuOpen);
   const contentRef = useRef<HTMLDivElement>(null);
   const swipeNav = useSwipeNav(contentRef);
-
-  const toggleDark = () => {
-    const next = !isDark;
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-    setIsDark(next);
-  };
-
-  const closeMobileMenu = (restoreFocus = false) => {
-    setMobileMenuOpen(false);
-    if (restoreFocus && mobileMenuRef.current?.contains(document.activeElement)) {
-      window.setTimeout(() => mobileMenuTriggerRef.current?.focus(), 0);
-    }
-  };
-
+  const toggleDark = () => { const next = !isDark; document.documentElement.classList.toggle('dark', next); localStorage.setItem('theme', next ? 'dark' : 'light'); setIsDark(next); };
+  const closeMobileMenu = (restoreFocus = false) => { setMobileMenuOpen(false); if (restoreFocus && mobileMenuRef.current?.contains(document.activeElement)) window.setTimeout(() => mobileMenuTriggerRef.current?.focus(), 0); };
+  const closeAccountMenu = (restoreFocus = false) => { setAccountMenuOpen(false); if (restoreFocus && accountMenuRef.current?.contains(document.activeElement)) window.setTimeout(() => accountTriggerRef.current?.focus(), 0); };
   useEffect(() => { swipeNav.attach(); return swipeNav.detach; }, [swipeNav]);
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMobileMenu(true);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [mobileMenuOpen]);
-  useEffect(() => {
-    let active = true;
-    if (!user) return;
-    void getCachedEntitlements(user.id, api.getEntitlements).then((data) => {
-      if (active) setMembershipTier(data.subscription.tier);
-    }).catch(() => {
-      if (active) setMembershipTier(null);
-    });
-    return () => { active = false; };
-  }, [user?.id]);
-  useEffect(() => {
-    let active = true;
-    if (!user) { setQuietTier(null); return; }
-    void api.getRhythm().then(({ quiet_streak }) => { if (active) setQuietTier(quiet_streak.highest_tier); }).catch(() => { if (active) setQuietTier(null); });
-    return () => { active = false; };
-  }, [user?.id]);
-  useEffect(() => { setJourneyOpen(false); }, [location.pathname]);
-
-  return (
-    <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-sans">
-      <header className="sticky top-0 z-40 border-b border-natural-border bg-natural-bg">
-        <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="flex h-14 items-center justify-between gap-3 md:h-20">
-            <NavLink to="/" aria-label="Chapter — Read less. Learn more." className="flex min-w-0 shrink items-center gap-2 md:gap-3">
-              <img src="/chapter-book-mark.svg" alt="" className="h-9 w-9 shrink-0 md:h-11 md:w-11" />
-              <div className="min-w-0 leading-none">
-                <span className="block font-sans text-[1.35rem] font-bold tracking-tight text-natural-dark md:text-[1.65rem]">chapter</span>
-                <span className="hidden pt-1 font-sans text-[9px] font-medium tracking-[0.08em] text-natural-stone md:block">Read less. Learn more.</span>
-              </div>
-            </NavLink>
-
-            <nav className="hidden shrink-0 items-center gap-6 font-sans text-xs font-semibold uppercase tracking-widest md:flex" aria-label="Primary navigation">
-              <NavLink to="/today" aria-label="Today" className={({ isActive }) => primaryLink(isActive)}><Sparkles className="h-3.5 w-3.5" /><span>Today</span></NavLink>
-              <NavLink to="/" end aria-label="Library" className={({ isActive }) => primaryLink(isActive)}><BookMarked className="h-3.5 w-3.5" /><span>Library</span></NavLink>
-              <NavLink to="/review" aria-label="Returns" className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Returns</span></NavLink>
-            </nav>
-
-            <div className="hidden shrink-0 items-center gap-2 md:flex">
-              <button onClick={() => setJourneyOpen(true)} aria-label="Open reading journey" title="Your Journey" aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Map className="h-3.5 w-3.5" /></button>
-              <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50">{isDark ? <Sun className="h-3.5 w-3.5 text-natural-clay" /> : <Moon className="h-3.5 w-3.5 text-natural-stone" />}</button>
-              {membershipTier && <MembershipTierBadge tier={membershipTier} />}
-              <NavLink to="/profile" aria-label="Your profile" title="Your profile" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Avatar user={user} tier={quietTier} /><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span></NavLink>
-              <NavLink to="/help" aria-label="Help" title="How Chapter works" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><CircleHelp className="h-3.5 w-3.5" /></NavLink><NavLink to="/account" aria-label="Telegram settings" title="Telegram settings" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Settings2 className="h-3.5 w-3.5" /></NavLink>
-              <button onClick={() => void logout()} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50" title="Sign out" aria-label="Sign out"><LogOut className="h-3.5 w-3.5" /></button>
-            </div>
-
-            <button ref={mobileMenuTriggerRef} onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileMenuOpen} aria-controls="mobile-account-menu" className="flex h-10 w-10 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50 md:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}</button>
-          </div>
-          <nav className="flex h-11 items-stretch justify-around border-t border-natural-border font-sans text-[10px] font-bold uppercase tracking-[0.12em] md:hidden" aria-label="Primary navigation">
-            <NavLink to="/today" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Sparkles className="h-3.5 w-3.5" />Today</NavLink>
-            <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><BookMarked className="h-3.5 w-3.5" />Library</NavLink>
-            <NavLink to="/review" onClick={() => setMobileMenuOpen(false)} aria-label="Returns" className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Returns</NavLink>
-          </nav>
-          {mobileMenuPresence.mounted && <div ref={mobileMenuRef} id="mobile-account-menu" data-state={mobileMenuPresence.phase} aria-hidden={!mobileMenuOpen} className="motion-menu border-t border-natural-border py-2 md:hidden">
-            <NavLink to="/profile" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} tier={quietTier} /><span>Profile</span></NavLink>
-            {membershipTier && <MembershipTierBadge tier={membershipTier} mobile onNavigate={() => closeMobileMenu()} />}
-            <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => { closeMobileMenu(); setJourneyOpen(true); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Map className="h-4 w-4 text-natural-stone" />Your Journey</button>
-            <NavLink to="/help" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><CircleHelp className="h-4 w-4 text-natural-stone" />Help</NavLink><NavLink to="/account" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>
-            <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={toggleDark} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark">{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}{isDark ? 'Use light theme' : 'Use dark theme'}</button>
-            <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => void logout()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-clay"><LogOut className="h-4 w-4" />Sign out</button>
-          </div>}
-        </div>
-      </header>
-
-      <JourneyDrawer open={journeyOpen} onClose={() => setJourneyOpen(false)} />
-      <main ref={contentRef} className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-6 sm:py-8 lg:px-8"><div key={location.pathname} className="route-content"><Outlet /></div></main>
-    </div>
-  );
+  useEffect(() => { if (!mobileMenuOpen) return; const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') closeMobileMenu(true); }; document.addEventListener('keydown', onKeyDown); return () => document.removeEventListener('keydown', onKeyDown); }, [mobileMenuOpen]);
+  useEffect(() => { if (!accountMenuOpen) return; const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') closeAccountMenu(true); }; const onPointerDown = (event: PointerEvent) => { if (!accountMenuRef.current?.contains(event.target as Node) && !accountTriggerRef.current?.contains(event.target as Node)) closeAccountMenu(); }; document.addEventListener('keydown', onKeyDown); document.addEventListener('pointerdown', onPointerDown); return () => { document.removeEventListener('keydown', onKeyDown); document.removeEventListener('pointerdown', onPointerDown); }; }, [accountMenuOpen]);
+  useEffect(() => { let active = true; if (!user) { setRhythm(null); return; } void api.getRhythm().then(({ quiet_streak }) => { if (active) setRhythm(quiet_streak); }).catch(() => { if (active) setRhythm(null); }); return () => { active = false; }; }, [user?.id]);
+  useEffect(() => { setJourneyOpen(false); closeAccountMenu(); }, [location.pathname]);
+  const desktopMenuItem = 'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-natural-dark hover:bg-natural-sage/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50';
+  return <div className="min-h-screen bg-natural-bg text-natural-dark flex flex-col font-sans"><header className="sticky top-0 z-40 border-b border-natural-border bg-natural-bg"><div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8"><div className="flex h-14 items-center justify-between gap-3 md:h-20">
+    <NavLink to="/" aria-label="Chapter — Read less. Learn more." className="flex min-w-0 shrink items-center gap-2 md:gap-3"><img src="/chapter-book-mark.svg" alt="" className="h-9 w-9 shrink-0 md:h-11 md:w-11" /><div className="min-w-0 leading-none"><span className="block font-sans text-[1.35rem] font-bold tracking-tight text-natural-dark md:text-[1.65rem]">chapter</span><span className="hidden pt-1 font-sans text-[9px] font-medium tracking-[0.08em] text-natural-stone md:block">Read less. Learn more.</span></div></NavLink>
+    <nav className="hidden shrink-0 items-center gap-6 font-sans text-xs font-semibold uppercase tracking-widest md:flex" aria-label="Primary navigation"><NavLink to="/today" aria-label="Today" className={({ isActive }) => primaryLink(isActive)}><Sparkles className="h-3.5 w-3.5" /><span>Today</span></NavLink><NavLink to="/" end aria-label="Library" className={({ isActive }) => primaryLink(isActive)}><BookMarked className="h-3.5 w-3.5" /><span>Library</span></NavLink><NavLink to="/review" aria-label="Returns" className={({ isActive }) => primaryLink(isActive)}><Brain className="h-3.5 w-3.5" /><span>Returns</span></NavLink></nav>
+    <div className="hidden shrink-0 items-center gap-2 md:flex"><button onClick={() => setJourneyOpen(true)} aria-label="Open reading journey" title="Your Journey" aria-expanded={journeyOpen} aria-controls="journey-menu" className="flex h-8 w-8 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Map className="h-3.5 w-3.5" /></button><ReadingRhythmChip rhythm={rhythm} /><div className="relative"><button ref={accountTriggerRef} type="button" onClick={() => setAccountMenuOpen((open) => !open)} aria-label="Open account menu" aria-haspopup="menu" aria-expanded={accountMenuOpen} aria-controls="desktop-account-menu" className="flex min-h-11 items-center gap-2 rounded-full border border-natural-border bg-natural-cream px-2 outline-none hover:border-natural-sage/50 focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Avatar user={user} /><span className="hidden max-w-[96px] truncate text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span><ChevronDown className={`h-3.5 w-3.5 text-natural-stone transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} /></button>{accountMenuOpen && <div ref={accountMenuRef} id="desktop-account-menu" role="menu" aria-label="Account menu" className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-72 rounded-2xl border border-natural-border bg-natural-cream p-2 shadow-xl"><div className="flex items-center gap-3 px-3 py-3"><Avatar user={user} /><div className="min-w-0"><p className="truncate text-sm font-bold text-natural-dark">{user?.displayName || 'Your profile'}</p><p className="truncate text-xs text-natural-stone">@{user?.username}</p></div></div><div className="border-t border-natural-border pt-1"><NavLink role="menuitem" to="/profile" onClick={() => closeAccountMenu()} className={desktopMenuItem}><UserRound className="h-4 w-4 text-natural-stone" />Profile</NavLink><NavLink role="menuitem" to="/momentum" onClick={() => closeAccountMenu()} className={desktopMenuItem}><CircleHelp className="h-4 w-4 text-natural-sage" /><span className="flex-1">Reading rhythm</span><span className="text-xs text-natural-stone">{rhythm?.current_streak ? `${rhythm.current_streak} days` : 'View'}</span></NavLink><NavLink role="menuitem" aria-label="Help" to="/help" onClick={() => closeAccountMenu()} className={desktopMenuItem}><CircleHelp className="h-4 w-4 text-natural-stone" />Help</NavLink><NavLink role="menuitem" to="/account" onClick={() => closeAccountMenu()} className={desktopMenuItem}><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink><button role="menuitem" type="button" onClick={toggleDark} className={desktopMenuItem}>{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}Appearance · {isDark ? 'Light' : 'Dark'}</button></div><div className="mt-1 border-t border-natural-border pt-1"><NavLink role="menuitem" to="/pricing" onClick={() => closeAccountMenu()} className={desktopMenuItem}><CreditCard className="h-4 w-4 text-natural-stone" />Plan & membership</NavLink><button role="menuitem" type="button" onClick={() => void logout()} className={`${desktopMenuItem} text-natural-clay`}><LogOut className="h-4 w-4" />Sign out</button></div></div>}</div></div>
+    <button ref={mobileMenuTriggerRef} onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileMenuOpen} aria-controls="mobile-account-menu" className="flex h-10 w-10 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/50 md:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}</button>
+  </div><nav className="flex h-11 items-stretch justify-around border-t border-natural-border font-sans text-[10px] font-bold uppercase tracking-[0.12em] md:hidden" aria-label="Primary navigation"><NavLink to="/today" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Sparkles className="h-3.5 w-3.5" />Today</NavLink><NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><BookMarked className="h-3.5 w-3.5" />Library</NavLink><NavLink to="/review" onClick={() => setMobileMenuOpen(false)} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 ${isActive ? 'border-b-2 border-natural-dark text-natural-dark' : 'text-natural-stone'}`}><Brain className="h-3.5 w-3.5" />Returns</NavLink></nav>
+  {mobileMenuPresence.mounted && <div ref={mobileMenuRef} id="mobile-account-menu" data-state={mobileMenuPresence.phase} aria-hidden={!mobileMenuOpen} className="motion-menu border-t border-natural-border py-2 md:hidden"><NavLink to="/profile" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-medium text-natural-dark"><Avatar user={user} /><span>Profile</span></NavLink><ReadingRhythmChip rhythm={rhythm} mobile onNavigate={() => closeMobileMenu()} /><NavLink to="/help" aria-label="Help" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-medium text-natural-dark"><CircleHelp className="h-4 w-4 text-natural-stone" />Help</NavLink><NavLink to="/account" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink><button tabIndex={mobileMenuOpen ? 0 : -1} onClick={toggleDark} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-sm font-medium text-natural-dark">{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}Appearance · {isDark ? 'Light' : 'Dark'}</button><div className="my-1 border-t border-natural-border"/><NavLink to="/pricing" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-medium text-natural-dark"><CreditCard className="h-4 w-4 text-natural-stone" />Plan & membership</NavLink><button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => void logout()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-sm font-medium text-natural-clay"><LogOut className="h-4 w-4" />Sign out</button></div>}
+  </div></header><JourneyDrawer open={journeyOpen} onClose={() => setJourneyOpen(false)} /><main ref={contentRef} className="mx-auto w-full max-w-7xl flex-1 px-3 py-5 sm:px-6 sm:py-8 lg:px-8"><div key={location.pathname} className="route-content"><Outlet /></div></main></div>;
 }
-
