@@ -74,3 +74,23 @@ body {
   background-color: var(--color-natural-bg);
   color: var(--color-natural-dark);
 }
+
+
+/* Today uses surface-aware layers: light mode retains its existing editorial whites;
+   dark mode becomes a quiet warm-charcoal ladder instead of alternating polarity. */
+.today-card-surface { background-color: #fff; }
+.today-tab-idle { background-color: var(--color-natural-cream); }
+.today-tab-active { background-color: #fff; }
+.today-insight-row { background-color: var(--color-natural-cream); }
+.today-status-surface { background-color: #fff; }
+.today-progress-track { background-color: var(--color-natural-cream); }
+
+.dark .today-card-surface { background-color: #292A23; border-color: #3A3B31; }
+.dark .today-tab-idle { background-color: #292B24; border-color: #36392F; color: #C8C8BA; }
+.dark .today-tab-idle:hover { background-color: #303229; }
+.dark .today-tab-active { background-color: #414437; border-color: #65725A; color: #F2F0E8; }
+.dark .today-insight-row { background-color: #202119; color: #F0EFE6; }
+.dark .today-insight-row .today-insight-index { border-color: #45483C; color: #C8CBBD; background-color: #303229; }
+.dark .today-insight-row .today-insight-count { color: #B0B3A6; }
+.dark .today-status-surface { background-color: #292A23; border-color: #3A3B31; }
+.dark .today-progress-track { background-color: #3B3D34; }

@@ -12,7 +12,7 @@ assert.match(today, /Today is part of your rhythm\./);
 assert.match(today, /QuietStreakStrip/);
 assert.match(today, /quiet_streak_milestone_seen/);
 assert.match(insights, /QuietStreakStrip/);
-assert.match(shell, /QuietStreakBadge/);
+assert.match(shell, /ReadingRhythmChip/); assert.match(shell, /to="\/streaks"/);
 assert.match(profile, /QuietStreakBadge/);
 assert.match(unlock, /chapter:quiet-streak-seen:v1/);
 assert.match(unlock, /motion-reduce:transition-none/);

@@ -17,6 +17,7 @@ const Insights = lazy(() => import('./pages/Insights'));
 const Review = lazy(() => import('./pages/Review'));
 const ReadingCalendar = lazy(() => import('./pages/Calendar'));
 const Momentum = lazy(() => import('./pages/Momentum'));
+const Streaks = lazy(() => import('./pages/Streaks'));
 const Achievements = lazy(() => import('./pages/Achievements'));
 const Account = lazy(() => import('./pages/Account'));
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -50,6 +51,7 @@ function AppRoutes() {
     <Route path="/review" element={<SecondaryRoute><Review /></SecondaryRoute>} />
     <Route path="/calendar" element={<SecondaryRoute><ReadingCalendar /></SecondaryRoute>} />
     <Route path="/momentum" element={<SecondaryRoute><Momentum /></SecondaryRoute>} />
+    <Route path="/streaks" element={<SecondaryRoute><Streaks /></SecondaryRoute>} />
     <Route path="/achievements" element={<SecondaryRoute><Achievements /></SecondaryRoute>} />
     <Route path="/profile" element={<SecondaryRoute><Profile /></SecondaryRoute>} />
     <Route path="/account" element={<SecondaryRoute><Account /></SecondaryRoute>} />
