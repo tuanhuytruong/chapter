@@ -73,7 +73,10 @@ export default function Library() {
   useEffect(() => { if (!composingSearch.current) setSearchDraft(search); }, [search]);
   useEffect(() => { if (composingSearch.current || searchDraft === search) return; const timer = window.setTimeout(() => setSearch(searchDraft), 260); return () => window.clearTimeout(timer); }, [searchDraft, search]);
   useEffect(() => { if (scope !== "mine" || search.trim().length < 2) { setGlobalResults([]); setGlobalLoading(false); setGlobalError(null); return; } let cancelled=false; const timer=window.setTimeout(() => { setGlobalLoading(true); api.searchLibrary(search,{kind:globalKind}).then((rows)=>{if(!cancelled){setGlobalResults(rows);setGlobalError(null)}}).catch(()=>{if(!cancelled)setGlobalError("unavailable")}).finally(()=>{if(!cancelled)setGlobalLoading(false)}); },220); return ()=>{cancelled=true;window.clearTimeout(timer)}; }, [scope,search,globalKind]);
-  const openSearchResult = (result: LibrarySearchResult) => { const params = new URLSearchParams(); if (result.logId) params.set("log",result.logId); if (result.kind === "story_session" || result.kind === "story_memory") params.set("view","story-thread"); if (result.kind === "wiki") params.set("tab","ai-reader"); navigate(`/books/${result.bookId}${params.size ? `?${params}` : ""}`); };
+  // Search results with a saved-session source use the same immutable anchor as
+  // Returns. This selects the originating reading round, opens that session and
+  // scrolls/highlights it instead of stopping at the enclosing book.
+  const openSearchResult = (result: LibrarySearchResult) => { const params = new URLSearchParams(); if (result.logId) { params.set("returnLog", result.logId); if (result.readingRound != null) params.set("returnRound", String(result.readingRound)); } if (result.kind === "story_session" || result.kind === "story_memory") params.set("view","story-thread"); if (result.kind === "wiki") params.set("tab","ai-reader"); navigate(`/books/${result.bookId}${params.size ? `?${params}` : ""}`); };
 
   const statusCounts = useMemo(() => books.reduce<Record<Filter, number>>((counts, book) => {
     counts[book.status as Filter] = (counts[book.status as Filter] || 0) + 1;

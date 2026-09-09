@@ -1,4 +1,8 @@
 import assert from "node:assert/strict"; import { readFileSync } from "node:fs"; const library=readFileSync(new URL("../src/pages/Library.tsx",import.meta.url),"utf8"); const results=readFileSync(new URL("../src/components/LibrarySearchResults.tsx",import.meta.url),"utf8"); assert.match(library,/Search your library/); assert.match(library,/api.searchLibrary/); assert.match(library,/220/); assert.match(results,/aria-live/); assert.match(results,/Nothing in your saved library/); console.log("LIBRARY_SEARCH_UI_FIXTURES_OK");
 const detail=readFileSync(new URL("../src/pages/BookDetail.tsx",import.meta.url),"utf8"); assert.match(library,/event.key === "Enter"/); assert.match(detail,/librarySearchLogId/); assert.match(detail,/librarySearchTab === "ai-reader"/);
+assert.match(library,/params.set\("returnLog", result.logId\)/);
+assert.match(library,/params.set\("returnRound", String\(result.readingRound\)\)/);
+assert.match(detail,/returnLogId/);
+assert.match(detail,/returnRound/);
 
 assert.match(library,/onCompositionStart/); assert.match(library,/searchDraft/); assert.match(library,/260/);
