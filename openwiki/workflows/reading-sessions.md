@@ -8,6 +8,8 @@ sources:
     resource: repo://src/aiReader.ts
   - id: openwiki-source-9d47595c2a2ea0b2c9b2cc8d
     resource: repo://src/api.ts
+  - id: openwiki-source-70d4664310eebb80ab5b564c
+    resource: repo://src/db.ts
   - id: openwiki-source-a3f029feba00e1de286184bb
     resource: repo://src/extractor.ts
   - id: openwiki-source-46566cc7ea754e2f350a3165
@@ -19,7 +21,7 @@ sources:
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+    at: 2026-09-08T19:54:21.058Z
 ---
 
 # Reading Sessions Workflow

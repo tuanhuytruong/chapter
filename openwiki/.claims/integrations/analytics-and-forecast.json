@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e7e853a1710620f2d21dbbe664d9cd2bc2859df937a807da71597fa78daef9f2",
+  "pageVersion": "sha256:a6097aa69bde106fb473b95cc362900b17f8616ca66c6d9acadd86f660462fe7",
   "claims": [
     {
       "id": "claim_6df7c6e36d5f43eba09961c50b206aac",
-      "statement": "OpenWiki initializes PostHog analytics conditionally when VITE_POSTHOG_KEY is present in the environment.",
+      "statement": "OpenWiki initializes PostHog analytics conditionally when VITE_POSTHOG_KEY is present in the environment, with session recording disabled and page view tracking explicitly managed.",
       "evidence": [
         {
-          "resource": "repo://src/analytics.ts#L4-L16",
-          "version": "repo-lines-v1:sha256:d75fb4989ef13e3d9844f503c2e5b614acdb5d34b53579f06be8107ad2365935:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YjZjYmEwOWZkZDRhN2YxNzBhOTRlNjMxYzBkOGU1NGVlZDUxMzI0Y2ViMmYxYWMwY2M3OTRmMDQ5MmRmZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyNzE1N2QwNGExNmQ3ODdhZDQwYmZhOTgwMzEzZDk1MDk0OWY4NmM0NDlhZjQxNzU2NTFlNDY4OTEyNGI2NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2MTMxOGFiMmY4MDQ2MWIxMDM1ZTJlMmJjYzkyYmVlZTExOGMwNjY1ZjQ0NTc0YWYxZmE5OGVlZjEwYmEzYzAifQ"
+          "resource": "repo://src/analytics.ts#L15-L29",
+          "version": "repo-lines-v1:sha256:ebf1322a9da5245dce114bd33d3bbd8daa8443a8765b3eb98ebee10084b9c389:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MTQyZTY3MTJjODMwZWNlYTA3YWZiZTFkMjJjYTg4YTc2NGY3NGFlZmM4MWFkMjQ5ZmFmODc0YWExZDU1MGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0M2U5ZDdhOGJiYzgyNmVhYTg5YzhkNTU4YzM0NDViMTliODM2Mjc1ZTY1Njk1NmMyZDFkYTY2ODNhM2Y1MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwNTRiMDkyYTY1NzJkZGYzODYxZjc4MDhkNmRhYmQ4YzgxMzlmMTE2MWQ3MTNkMjI2MDAyMDNlN2E4Y2MxMTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTI5ZTkxZTBmOTljM2U4MjVkZTY5YjQzNWZiNjQ4NGQxYjBhMWRmMmY0NjU2MWFiZjFhMjlmMDQxODhiODgifQ"
         }
       ]
     },
@@ -28,11 +28,11 @@
     },
     {
       "id": "claim_e3c10978b2a74ea48b5262c7ec68b47b",
-      "statement": "Product analytics capture predefined event types spanning book additions, uploads, reading sessions, podcast generation, and user lifecycle events.",
+      "statement": "Product analytics capture predefined event types spanning book additions, user lifecycle events, reading sessions, podcast activity, and route performance samples, excluding sensitive user content.",
       "evidence": [
         {
-          "resource": "repo://src/analytics.ts#L30-L46",
-          "version": "repo-lines-v1:sha256:94e66e207f300e6f6e1f127b7eae3182a319073dc7d30fa412a6c3e7b6dc0a7a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjZjFlZmQzZTI4YmQ0NWU0YWJiZTYxMTk2NTBhYmVhYWQzYmM1NjczNzYzZDEyMzA4YzMwN2Q0YWUzOGQxYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTBiMmY0M2UwODQ3MjgxZTBmN2M5NTZhNzE3M2Q3ZTQ3MGVlYmQ3MzQzOWU1ZGUzMjI2Y2ZlODA1NWM3OWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjNDlhZTgyZjc5NDMzZGE3Yjk3NmU4OWUyZGU0YzZmYzBhOGVhMWI4MDAzMGIxMWVjMzIwOGFiNDhkMWJjOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwMjZhY2NiZWZjMzRhODA3MzY3MmYxNjg1ZDlhNWVkNDM3NDhlYjE4OGNlMThiYmUwYzA3YTdiMTNkNjZjOTcifQ"
+          "resource": "repo://src/analytics.ts#L44-L65",
+          "version": "repo-lines-v1:sha256:4b8e5a6acce6d226f91095d2203bb781b48923b69bdca6dc970c95f3338bbfdc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjZjFlZmQzZTI4YmQ0NWU0YWJiZTYxMTk2NTBhYmVhYWQzYmM1NjczNzYzZDEyMzA4YzMwN2Q0YWUzOGQxYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTBiMmY0M2UwODQ3MjgxZTBmN2M5NTZhNzE3M2Q3ZTQ3MGVlYmQ3MzQzOWU1ZGUzMjI2Y2ZlODA1NWM3OWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjNDlhZTgyZjc5NDMzZGE3Yjk3NmU4OWUyZGU0YzZmYzBhOGVhMWI4MDAzMGIxMWVjMzIwOGFiNDhkMWJjOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwMjZhY2NiZWZjMzRhODA3MzY3MmYxNjg1ZDlhNWVkNDM3NDhlYjE4OGNlMThiYmUwYzA3YTdiMTNkNjZjOTcifQ"
         }
       ]
     },
@@ -83,6 +83,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "at": "2026-09-08T19:54:21.058Z"
   }
 }

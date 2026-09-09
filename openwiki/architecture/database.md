@@ -4,8 +4,8 @@ title: Database & Storage
 description: Comprehensive documentation of the database schema, migrations, connection handling, and storage repositories in Chapter.
 tags: [database, postgresql, migrations, schema, storage, repositories]
 verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-25T17:44:34.504Z
+  - by: openwiki/0.5.0
+    at: 2026-09-08T19:54:21.058Z
 sources:
   - id: openwiki-source-6b57b34d9d5d29d041e98f86
     resource: repo://migrations/20260825_add_reading_progress_companions.sql
@@ -13,7 +13,7 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
-generated: {by: "openwiki/0.4.0", at: "2026-08-25T17:44:34.504Z"}
+generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
 ---
 
 # Database & Storage
@@ -36,9 +36,9 @@ Database connectivity is managed centrally via `src/db.ts`, leveraging the `pg` 
 - **Transactions**: Provides robust transaction helpers (`withTransaction`, `withBackgroundTransaction`) that wrap operations in `BEGIN`, `COMMIT`, with automatic `ROLLBACK` on failure and structured outcome logging.
   - *Evidence:* repo://src/db.ts#L120-L152
 - **Schema Bootstrap & Verification**:
-  - `ensureSchema()` reads `src/db/schema.sql`, strips comments, splits statements by `;`, and executes them against the pool. It gracefully handles harmless permission errors when `CREATE SCHEMA` is restricted from runtime DB roles.
-  - `verifyCoreSchema()` queries `to_regclass` to ensure all core feature tables exist before accepting authenticated requests.
-  - *Evidence:* repo://src/db.ts#L154-L200
+  - `ensureSchema()` reads `src/db/schema.sql`, strips comments, splits statements by `;`, and executes them sequentially. It handles `CREATE SCHEMA` errors gracefully by warning and continuing if the schema already exists, while failing on other SQL errors.
+  - `verifyCoreSchema()` uses `to_regclass` to check that all critical tables (e.g., `books`, `reading_log`, `reading_progress_companions`) exist in the `chapter` schema before permitting operations.
+  - *Evidence:* repo://src/db.ts#L154-L207
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:96276cf1f1cd9aa412957d0718b30acf9217fffccd29f5adf5bb1991bf2d5cfe",
+  "pageVersion": "sha256:f82969635f3ebd8a62861e2414cc5d00518920c60009519d3e4ad39a80270df0",
   "claims": [
     {
       "id": "claim_f2dd2def582a4ef2b5d23bddce43ded0",
@@ -45,8 +45,8 @@
       "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic and parse schema.sql by stripping comments and splitting statements.",
       "evidence": [
         {
-          "resource": "repo://src/db.ts#L154-L200",
-          "version": "repo-lines-v1:sha256:7e5bc2ca30e5fd708f52004ec569c214d9d608380b217edbe27e1cda28de5850:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkZjEzZTIwMGIxMThhN2Q4ZTIxYjQzZjY0OGNhZDUwM2MxOTQ1OWFhYjFlNTljMzViMjMxMDY1NDgxNzJmYTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyMmNiYzQyZTExZDVmZWM2MGYwODNlZDQzY2MzOThjYmJkYjM5MmQwNjg3MDk5ZjU3OTI1MmE5ZjkxNzkzNGQifQ"
+          "resource": "repo://src/db.ts#L154-L207",
+          "version": "repo-lines-v1:sha256:4e2c0ebcdc32216dcb16efa7e482b50ada6f762a2640a19a6a48d584bde2bb81:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -72,7 +72,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-25T17:44:34.504Z"
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-08T19:54:21.058Z"
   }
 }

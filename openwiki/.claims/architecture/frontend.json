@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d066b45953b9c302cb0f0b4845764b293155ce7edc6662ef2a9d574a7363f61",
+  "pageVersion": "sha256:d32c313fcfa42fa12611f4e2b1a9f0827d79bbe7fd8d8d69def70d9a03205ebf",
   "claims": [
     {
       "id": "claim_c6a2036918dd46d4929e7d93833fd572",
@@ -17,24 +17,24 @@
       "statement": "Client-side routing is configured in src/App.tsx using react-router-dom, switching between authentication routes and AppShell-wrapped authenticated views.",
       "evidence": [
         {
-          "resource": "repo://src/App.tsx#L22-L29",
-          "version": "repo-lines-v1:sha256:7422fd61c474cd9be4bb3fb7f25ba44fd748c5df80c051ffb47ed65a7ecd19b6:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDcyYTIyM2VjMTQwYmQ4OTY4NjJiYzYyMDA1ODJiZGRjMjk3MWNhNDVmMDU5Mjk2ZmU5NzI1NjQ2YzdlNDc1MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzAzOTJlMmZmZmM4OGI2NmFjYjRlZDBjNDE4NWI1NGIxZjZkM2E2NmFiMTRmMzRkMDRjMTMxOTQxN2M2Yjc5OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2RiYTJhMmVmMDBkNmJjZDNkM2QzMzk1ZTM3ZThmZTkxYjc1ZDc5OTg3ZTJlYTAzMTQ3NDhiZTk5NTYxZTdiZCJ9"
+          "resource": "repo://src/App.tsx#L40-L58",
+          "version": "repo-lines-v1:sha256:81650784c5ebcce25215ae69f65b517bbd66ecc1816df460f18b703a19916cce:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MmEyMjNlYzE0MGJkODk2ODYyYmM2MjAwNTgyYmRkYzI5NzFjYTQ1ZjA1OTI5NmZlOTcyNTY0NmM3ZTQ3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmYTYyYzljNWM3M2M0ZGQ5MzE3ZGJmZGIzMmVkZDhiOTg5MzUzZDg1OWNjMjBjNTRjYjQ2NzUxZWQ3N2E2NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEyM2U0MmQwNjFkOTkxMTJlNDJiYWE2Mjk1OGEwYjgzMzQzMjc1NjUyNzYwMDM1NDliNDczMmM5MTBiYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhM2M2ZDA1YzdkZDcyOTlmZjVmMmE3YmJlZTA4ZDZmODhlY2YwMDY3NzkxNGY1MGIzNmE5ZjAwZTU3YWE1ZWYifQ"
         }
       ]
     },
     {
       "id": "claim_cf7ffe5d5bfe42e1874abf8ab6796d06",
-      "statement": "The AppShell component provides persistent top navigation including branding, primary links (Today, Library, Review with due badges), journey drawer access, theme toggles, membership tier badges, profile and account links, and sign-out controls. Mobile navigation is handled via a bottom-style collapsible menu.",
+      "statement": "The AppShell component provides persistent top navigation including branding, primary links (Today, Library, Returns), journey drawer access, theme toggles, membership tier badges, profile and account links, and sign-out controls. Mobile navigation is handled via a bottom-style collapsible menu and bottom tab bar.",
       "evidence": [
         {
-          "resource": "repo://src/components/AppShell.tsx#L76-L99",
-          "version": "repo-lines-v1:sha256:bfc6ada9a92a13d23f03c647c815f7e3e48f6640c24b5b8b1b5122f8962c1d14:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOGVmMDQ3M2U4MGQ1OWQ0NTY4ODY0NmJlZTMzMTJjMDI2ZmE2NzEyYjg3NzMxMjNmZjJhYjgwMmRmZjE2ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYjZlMjZmZDZlMTM0Yjk0NDg3NzdhOWM1ZjIwOGIxNmU2NTg2MGNkYjY2YzAyMWFlOWMxMjYyZjNjYTI3ZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwNDQwNGUxMTU3YjMxYjBkNDhlMzZkZjI2Yjg3OTE2YzlmZGY2N2M5ODRiOTI2MDAwMWM0M2VmZjNmNWIwYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5OGM4NThhMDk4ZjBjYzQ4YjU1M2Y4NjExZWQ0NDQwOGQzNTI2NGFjZDc2MTIyZTM2OWM4MjFmMmMzZjE0OGEifQ"
+          "resource": "repo://src/components/AppShell.tsx#L83-L121",
+          "version": "repo-lines-v1:sha256:79efd674574bc4a3981d7cac236c851a406294ddeb9c6e30557fcd5e267f2be0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzOGNjYWZiZWY1NjYyNjg5YjZkMDJjOTVhYmQ2YjdlZDRjM2M3NjdjMzVjZDg1NzVmN2RhOGE2MjVhNDQ5YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllNTQ2NmZiMDZjMWEwMTIzN2FiZWU4YzdiZjYwYWYwNzY2NTFiYzdmNzU4OWYxZjQ4NDFmODUxMzI0YmVjNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNGUxNWRhYjE3YzljYTk5MDViNzhkN2MzOGMxMjc3MDBlM2M5OWM4ZjE0N2ZiM2E0NjgwNWUyYjRjYjE1ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5NjdiYzE3Zjc1YzQ3YTQ5ZjM0ZDkyNzhhYWVkNDFmYTk0YTljMmUzZWQ4NmU4YjdjM2YxOWYwY2I2Zjc4ZjIifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "at": "2026-09-08T19:54:21.058Z"
   }
 }

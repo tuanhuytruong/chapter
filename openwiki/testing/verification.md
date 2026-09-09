@@ -12,10 +12,10 @@ sources:
     resource: repo://scripts/verify-posthog-identity.ts
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
+generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+    at: 2026-09-08T19:54:21.058Z
 ---
 
 # Testing & Verification Scripts
@@ -44,7 +44,7 @@ npx tsx scripts/verify-posthog-identity.ts
 npx tsx scripts/verify-reading-forecast.ts
 ```
 
-The project defines numerous verify:* scripts in `package.json` to test isolated features, database schemas, and platform behavior [repo://package.json#L6-L54].
+The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior [repo://package.json#L6-L61].
 
 ## Type Checking & Linting
 
