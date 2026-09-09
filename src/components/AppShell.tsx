@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { presetFromAvatarValue } from '../avatar-presets';
 import AnimalAvatar from './AnimalAvatar';
 import JourneyDrawer from './JourneyDrawer';
-import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X } from 'lucide-react';
+import { BookMarked, Brain, Map, Moon, Sparkles, Sun, LogOut, Settings2, MoreHorizontal, X, CircleHelp } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { api, type MembershipTier, type QuietStreakTier } from '../api';
 import QuietStreakBadge from './QuietStreakBadge';
@@ -100,7 +100,7 @@ export default function AppShell() {
               <button onClick={toggleDark} aria-label={isDark ? 'Use light theme' : 'Use dark theme'} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50">{isDark ? <Sun className="h-3.5 w-3.5 text-natural-clay" /> : <Moon className="h-3.5 w-3.5 text-natural-stone" />}</button>
               {membershipTier && <MembershipTierBadge tier={membershipTier} />}
               <NavLink to="/profile" aria-label="Your profile" title="Your profile" className="flex min-h-10 items-center gap-1.5 rounded-full outline-none hover:opacity-70 focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Avatar user={user} tier={quietTier} /><span className="hidden max-w-[100px] truncate font-sans text-xs font-medium text-natural-dark lg:inline">{user?.displayName}</span></NavLink>
-              <NavLink to="/account" aria-label="Telegram settings" title="Telegram settings" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Settings2 className="h-3.5 w-3.5" /></NavLink>
+              <NavLink to="/help" aria-label="Help" title="How Chapter works" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><CircleHelp className="h-3.5 w-3.5" /></NavLink><NavLink to="/account" aria-label="Telegram settings" title="Telegram settings" className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50"><Settings2 className="h-3.5 w-3.5" /></NavLink>
               <button onClick={() => void logout()} className="flex h-7 w-7 items-center justify-center rounded-full border border-natural-border bg-natural-cream text-natural-stone outline-none hover:text-natural-dark focus-visible:ring-2 focus-visible:ring-natural-sage/50" title="Sign out" aria-label="Sign out"><LogOut className="h-3.5 w-3.5" /></button>
             </div>
 
@@ -115,7 +115,7 @@ export default function AppShell() {
             <NavLink to="/profile" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Avatar user={user} tier={quietTier} /><span>Profile</span></NavLink>
             {membershipTier && <MembershipTierBadge tier={membershipTier} mobile onNavigate={() => closeMobileMenu()} />}
             <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => { closeMobileMenu(); setJourneyOpen(true); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Map className="h-4 w-4 text-natural-stone" />Your Journey</button>
-            <NavLink to="/account" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>
+            <NavLink to="/help" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><CircleHelp className="h-4 w-4 text-natural-stone" />Help</NavLink><NavLink to="/account" tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => closeMobileMenu()} className="flex min-h-11 items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark"><Settings2 className="h-4 w-4 text-natural-stone" />Telegram settings</NavLink>
             <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={toggleDark} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-dark">{isDark ? <Sun className="h-4 w-4 text-natural-clay" /> : <Moon className="h-4 w-4 text-natural-stone" />}{isDark ? 'Use light theme' : 'Use dark theme'}</button>
             <button tabIndex={mobileMenuOpen ? 0 : -1} onClick={() => void logout()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 font-sans text-sm font-medium text-natural-clay"><LogOut className="h-4 w-4" />Sign out</button>
           </div>}

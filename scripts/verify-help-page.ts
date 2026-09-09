@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { filterHelpTopics, helpTopics } from "../src/helpContent.js";
+assert.deepEqual(helpTopics.map((topic) => topic.id), ["getting-started", "companions", "returns", "podcast", "library-search", "privacy-sharing", "troubleshooting"]);
+assert.match(helpTopics.find((topic) => topic.id === "library-search")!.questions.map((item) => item.answer).join(" "), /does not index raw reading text/i);
+assert.match(helpTopics.find((topic) => topic.id === "returns")!.questions.map((item) => item.answer).join(" "), /exact source session/i);
+assert.match(helpTopics.find((topic) => topic.id === "podcast")!.questions.map((item) => item.answer).join(" "), /EPUB books only/i);
+assert.ok(filterHelpTopics(helpTopics, "retry").some((topic) => topic.id === "troubleshooting"));
+const help = readFileSync(new URL("../src/pages/Help.tsx", import.meta.url), "utf8");
+const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+const shell = readFileSync(new URL("../src/components/AppShell.tsx", import.meta.url), "utf8");
+const onboarding = readFileSync(new URL("../src/onboarding.tsx", import.meta.url), "utf8");
+assert.match(help, /Search help/); assert.match(help, /aria-expanded/); assert.match(help, /aria-controls/); assert.match(help, /scrollIntoView/); assert.match(help, /No help topics match/);
+assert.match(app, /path="\/help"/); assert.match(app, /lazy\(\(\) => import\('\.\/pages\/Help'\)\)/);
+assert.match(shell, /to="\/help"/); assert.match(shell, /aria-label="Help"/); assert.match(onboarding, /to="\/help"/);
+console.log("HELP_PAGE_FIXTURES_OK");

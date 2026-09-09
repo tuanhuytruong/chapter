@@ -22,6 +22,7 @@ const Account = lazy(() => import('./pages/Account'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Quotes = lazy(() => import('./pages/Quotes'));
+const Help = lazy(() => import('./pages/Help'));
 
 function RoutePerformanceObserver() {
   const location = useLocation();
@@ -54,6 +55,7 @@ function AppRoutes() {
     <Route path="/account" element={<SecondaryRoute><Account /></SecondaryRoute>} />
     <Route path="/pricing" element={<SecondaryRoute><Pricing /></SecondaryRoute>} />
     <Route path="/quotes" element={<SecondaryRoute><Quotes /></SecondaryRoute>} />
+    <Route path="/help" element={<SecondaryRoute><Help /></SecondaryRoute>} />
     <Route path="*" element={<Library />} />
   </Route></Routes></BrowserRouter></OnboardingProvider>;
 }
