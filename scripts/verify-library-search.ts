@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { buildSearchDocument, normalizeLibrarySearchText, safeSearchExcerpt } from "../src/librarySearch.js";
-const doc=buildSearchDocument({ownerId:"o",bookId:"b",kind:"note",sourceKey:"l",title:"A",body:"Cô đơn",pageStart:1,pageEnd:1}); assert.equal(normalizeLibrarySearchText(doc?.body),"co don"); assert.match(safeSearchExcerpt("x ".repeat(100)+"cô đơn", "co don"),/cô đơn/); assert.equal(buildSearchDocument({ownerId:"o",bookId:"b",kind:"note",sourceKey:"l",title:"",body:"x"}),null); console.log("LIBRARY_SEARCH_FIXTURES_OK");
+const doc=buildSearchDocument({ownerId:"o",bookId:"b",kind:"note",sourceKey:"l",title:"A",body:"Cô đơn",pageStart:1,pageEnd:1}); assert.equal(normalizeLibrarySearchText(doc?.body),"co don"); assert.match(safeSearchExcerpt("x ".repeat(100)+"cô đơn", "co don"),/cô đơn/);
+assert.match(safeSearchExcerpt("một ".repeat(60)+"miếng bánh", "banh"),/miếng bánh/);
+assert.doesNotMatch(safeSearchExcerpt("một ".repeat(60)+"miếng bánh", "banh"),/…iếng/); assert.equal(buildSearchDocument({ownerId:"o",bookId:"b",kind:"note",sourceKey:"l",title:"",body:"x"}),null); console.log("LIBRARY_SEARCH_FIXTURES_OK");
 
 import { readFileSync } from "node:fs";
 const route = readFileSync(new URL("../src/routes/books.ts", import.meta.url), "utf8");
