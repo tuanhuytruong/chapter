@@ -905,7 +905,7 @@ export default function BookDetail() {
                         ? "Podcast currently supports EPUB books only."
                         : "Listen by chapter"
                     }
-                    className="flex min-h-11 min-w-[132px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark transition-all duration-150 active:scale-[0.94] active:bg-natural-sage/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="flex h-11 w-[132px] shrink-0 items-center justify-center gap-1.5 rounded-full border border-natural-border bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-natural-dark transition-all duration-150 active:scale-[0.94] active:bg-natural-sage/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {openingPodcast ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -924,7 +924,7 @@ export default function BookDetail() {
                         ? "This shared book is read-only."
                         : undefined
                     }
-                    className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-transform duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
+                    className="flex h-11 w-[132px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-natural-clay px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-transform duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-clay focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
                   >
                     {advancing ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
