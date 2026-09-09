@@ -3,6 +3,9 @@ type: Quickstart & Task Routing Map
 title: Quickstart & Navigation
 description: Core quickstart, repository navigation, local setup, and task-routing map for Chapter - an advanced book tracking and reading intelligence platform.
 tags: [quickstart, documentation, overview, navigation, architecture, workflows]
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -14,10 +17,7 @@ sources:
     resource: repo://src/App.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.0", at: "2026-09-05T16:00:46.565Z" }
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-08T19:54:21.058Z
+generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
 ---
 
 # Quickstart & Navigation
@@ -101,6 +101,4 @@ npm start
 Verify platform health using package scripts:
 ```bash
 npm run verify:db
-npm run verify:ai
 ```
-These scripts call the internal files in `repo://scripts/`.

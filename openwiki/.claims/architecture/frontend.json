@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d32c313fcfa42fa12611f4e2b1a9f0827d79bbe7fd8d8d69def70d9a03205ebf",
+  "pageVersion": "sha256:9ef4aec7e7bfe2f2dc646ed40ae60aec63b3a78b4d1a7ae29c4ed70c07b90849",
   "claims": [
     {
       "id": "claim_c6a2036918dd46d4929e7d93833fd572",
@@ -17,8 +17,8 @@
       "statement": "Client-side routing is configured in src/App.tsx using react-router-dom, switching between authentication routes and AppShell-wrapped authenticated views.",
       "evidence": [
         {
-          "resource": "repo://src/App.tsx#L40-L58",
-          "version": "repo-lines-v1:sha256:81650784c5ebcce25215ae69f65b517bbd66ecc1816df460f18b703a19916cce:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MmEyMjNlYzE0MGJkODk2ODYyYmM2MjAwNTgyYmRkYzI5NzFjYTQ1ZjA1OTI5NmZlOTcyNTY0NmM3ZTQ3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmYTYyYzljNWM3M2M0ZGQ5MzE3ZGJmZGIzMmVkZDhiOTg5MzUzZDg1OWNjMjBjNTRjYjQ2NzUxZWQ3N2E2NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEyM2U0MmQwNjFkOTkxMTJlNDJiYWE2Mjk1OGEwYjgzMzQzMjc1NjUyNzYwMDM1NDliNDczMmM5MTBiYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhM2M2ZDA1YzdkZDcyOTlmZjVmMmE3YmJlZTA4ZDZmODhlY2YwMDY3NzkxNGY1MGIzNmE5ZjAwZTU3YWE1ZWYifQ"
+          "resource": "repo://src/App.tsx#L43-L64",
+          "version": "repo-lines-v1:sha256:a6224356a1e9490470ecf36a84aaf20084d683940f93453966468bee7b38cd61:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MmEyMjNlYzE0MGJkODk2ODYyYmM2MjAwNTgyYmRkYzI5NzFjYTQ1ZjA1OTI5NmZlOTcyNTY0NmM3ZTQ3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEyM2U0MmQwNjFkOTkxMTJlNDJiYWE2Mjk1OGEwYjgzMzQzMjc1NjUyNzYwMDM1NDliNDczMmM5MTBiYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkYmEyYTJlZjAwZDZiY2QzZDNkMzM5NWUzN2U4ZmU5MWI3NWQ3OTk4N2UyZWEwMzE0NzQ4YmU5OTU2MWU3YmQifQ"
         }
       ]
     },
@@ -27,14 +27,14 @@
       "statement": "The AppShell component provides persistent top navigation including branding, primary links (Today, Library, Returns), journey drawer access, theme toggles, membership tier badges, profile and account links, and sign-out controls. Mobile navigation is handled via a bottom-style collapsible menu and bottom tab bar.",
       "evidence": [
         {
-          "resource": "repo://src/components/AppShell.tsx#L83-L121",
-          "version": "repo-lines-v1:sha256:79efd674574bc4a3981d7cac236c851a406294ddeb9c6e30557fcd5e267f2be0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzOGNjYWZiZWY1NjYyNjg5YjZkMDJjOTVhYmQ2YjdlZDRjM2M3NjdjMzVjZDg1NzVmN2RhOGE2MjVhNDQ5YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllNTQ2NmZiMDZjMWEwMTIzN2FiZWU4YzdiZjYwYWYwNzY2NTFiYzdmNzU4OWYxZjQ4NDFmODUxMzI0YmVjNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNGUxNWRhYjE3YzljYTk5MDViNzhkN2MzOGMxMjc3MDBlM2M5OWM4ZjE0N2ZiM2E0NjgwNWUyYjRjYjE1ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5NjdiYzE3Zjc1YzQ3YTQ5ZjM0ZDkyNzhhYWVkNDFmYTk0YTljMmUzZWQ4NmU4YjdjM2YxOWYwY2I2Zjc4ZjIifQ"
+          "resource": "repo://src/components/AppShell.tsx#L48-L54",
+          "version": "repo-lines-v1:sha256:af418c2c5adbf69ebfb34e8af8dcde4a2a97bcecc5e4eb8f6e8fec54806d9641:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGRlOGJhMzhjYTFlNzFkMzM1MTViOWI0OThiNjJkYTQ0NmU2NDA5ZDVjODgyNjczMGJjYzQ3ZjU4NGViZjY2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDE5NGM1ODMzOGI0OGRjYWQyZDU1N2RkY2JmZjhiMWM2NDhmYzE0YzEzNjIyNTI4OGYxMzlmZGI0OWM3NTgxZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjI5NWM2Zjk3NjZjZWM0OTk2OTgwNWQ3YTE5NTdiNmU1MzMyN2MzYWQwMmQyZDM3NzQ2NDdmMDVmZjgxM2NlMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWYwMGYwZDMyYzBlZTIzYzVmM2RjODUwY2Y5NGE0ODgxODlkNWY0NWJhYjY4ZTEyMjcxM2NiMTEyM2YyNjM2YSJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-08T19:54:21.058Z"
+    "at": "2026-09-09T19:45:31.755Z"
   }
 }

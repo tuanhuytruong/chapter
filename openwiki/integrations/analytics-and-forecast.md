@@ -3,6 +3,9 @@ type: technical-documentation
 title: Analytics & Reading Forecast
 description: Documentation of Posthog analytics integration, privacy identity safeguards, and reading forecast estimation mechanisms.
 tags: [analytics, posthog, forecasting, reading-goals, verification]
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-6d428306e6d9164f86db303a
     resource: repo://scripts/verify-posthog-identity.ts
@@ -13,9 +16,6 @@ sources:
   - id: openwiki-source-cbb920902434f20dd8ad0cbd
     resource: repo://src/readingForecast.ts
 generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-08T19:54:21.058Z
 ---
 
 # Analytics & Reading Forecast

@@ -3,6 +3,9 @@ type: database-schema
 title: Database Schema & Migrations
 description: Comprehensive overview of the Chapter PostgreSQL database schema, isolation under the chapter schema, connection pool management, and migration workflow including recent reading markers.
 tags: [database, postgresql, schema, migrations, sql, reading-markers]
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-fa0ff70930b09c59a414a681
     resource: repo://migrations/20260828_add_reading_markers.sql
@@ -10,15 +13,12 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-08T19:54:21.058Z
+generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
 ---
 
 # Database Schema & Migrations
 
-Chapter is built on a PostgreSQL database (or compatible SQL store via `pg`) using a dedicated schema isolation strategy (`chapter`). The schema design supports book tracking, reading sessions, user management, authentication tracking, AI interactions, billing orders, and private reading markers.
+Chapter is built on a PostgreSQL database using a dedicated schema isolation strategy (`chapter`). The schema design supports book tracking, reading sessions, user management, authentication tracking, AI interactions, billing orders, and private reading markers.
 
 ```mermaid
 erDiagram
@@ -38,8 +38,8 @@ erDiagram
 Database interactions are managed centrally through `repo://src/db.ts`, which wraps the node-postgres (`pg`) connection pool.
 
 - **Schema Isolation**: All tables are created within the PostgreSQL `chapter` schema (`search_path=chapter`).
-- **Connection Bootstrap (`ensureSchema`)**: On startup, the application reads `repo://src/db/schema.sql` and executes SQL bootstrap statements sequentially, handling environment permissions and logging schema status (`repo://src/db.ts`).
-- **Core Schema Verification (`verifyCoreSchema`)**: Ensures all essential feature tables (e.g., `books`, `reading_log`, `reading_markers`, `auth_rate_limits`, `subscriptions`) are present before serving authenticated API requests (`repo://src/db.ts`).
+- **Connection Bootstrap**: On startup, the application reads `repo://src/db/schema.sql` and executes SQL bootstrap statements sequentially, handling environment permissions and logging schema status (`repo://src/db.ts`).
+- **Core Schema Verification**: Ensures all essential feature tables (e.g., `books`, `reading_log`, `reading_markers`, `auth_rate_limits`, `subscriptions`) are present before serving authenticated API requests (`repo://src/db.ts`).
 - **Query Timeouts & Transactions**: Provides strict statement and lock timeouts tailored for interactive API requests versus background tasks through `withTransaction` and `withBackgroundTransaction` (`repo://src/db.ts`).
 
 ---
@@ -49,13 +49,13 @@ Database interactions are managed centrally through `repo://src/db.ts`, which wr
 The complete database structure defined in `repo://src/db/schema.sql` encompasses several domain subsystems:
 
 ### Users & Authentication
-- **`chapter.users`**: Stores user profiles, roles, authentication hashes, email verification timestamps, OAuth `google_sub`, device/client metadata (`last_login_client`, `device_type`, `browser`), and environment settings (`prd` / `dev`).
-- **`chapter.user_login_events`**: Immutable audit logs of authentication events (`password`, `google`, `password_reset`), client types (`web_desktop`, `web_android`, `web_ios`), device types, and browser metadata.
-- **`chapter.password_reset_tokens`**: Secure tokens for password recovery linked to users with expiration timestamps and IP hash audits.
-- **`chapter.auth_rate_limits`**: Durable rate limiting counters for sensitive authentication endpoints (`login`, `signup`, `forgot_password`, `reset_password`, `oauth`) keyed by SHA-256 hash combinations.
+- **`chapter.users`**: Stores user profiles, roles, authentication hashes, and device metadata.
+- **`chapter.user_login_events`**: Immutable audit logs of authentication events (`password`, `google`, `password_reset`), client types, and device metadata.
+- **`chapter.password_reset_tokens`**: Secure tokens for password recovery linked to users.
+- **`chapter.auth_rate_limits`**: Durable rate limiting counters for sensitive authentication endpoints keyed by SHA-256 hash combinations.
 
 ### Books & Reading Intelligence
-- **Books & Reading Log**: Tables tracking user libraries, reading metadata, uploaded files (`repo://src/routes/upload.ts`), and reading sessions.
+- **Books & Reading Log**: Tables tracking user libraries, reading metadata, uploaded files, and reading sessions.
 - **Reading Markers**: Private annotations and bookmarks (`repo://src/db/schema.sql`, `repo://migrations/20260828_add_reading_markers.sql`).
 
 ---

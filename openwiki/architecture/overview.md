@@ -3,6 +3,9 @@ type: architecture-overview
 title: System Architecture Overview
 description: High-level system architecture of Chapter, detailing the React 19 and Vite frontend, Express TypeScript backend, PostgreSQL database, security, sessions, configuration, and API routing.
 tags: [architecture, backend, frontend, database, security, configuration]
+verified:
+  - by: openwiki/0.5.0
+    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
@@ -16,15 +19,12 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-08T19:54:21.058Z
+generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
 ---
 
 # System Architecture Overview
 
-Chapter is a full-scale reading companion application designed for book lovers to track reading progress, manage libraries, generate AI-powered podcasts, capture insights, and review reading habits. 
+Chapter is a full-scale reading companion application designed for book lovers to track reading progress, manage libraries, generate AI-powered podcasts, capture insights, and review reading habits.
 
 The system comprises an Express TypeScript backend server interacting with a PostgreSQL database via `pg`, and a single-page React frontend built with Vite, React Router, and Tailwind CSS.
 
@@ -86,4 +86,4 @@ Configuration handling is centralized in `repo://src/config.ts`, combining doten
 
 - **Environment Mode**: Validates `APP_ENV` to be either `prd` or `dev`.
 - **Database & Timeouts**: Configures connection pools, query timeouts, and background worker limits.
-- **External Integrations**: Manages API keys and endpoints for LLM services (9router), Telegram bots, VietQR billing, Resend email delivery, and Google OAuth.
+- **External Integrations**: Manages API keys and endpoints for LLM services, Telegram bots, VietQR billing, Resend email delivery, and Google OAuth.

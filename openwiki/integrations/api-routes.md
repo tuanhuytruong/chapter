@@ -8,10 +8,10 @@ sources:
     resource: repo://src/api.ts
   - id: openwiki-source-449cc5af19f441ac60ec275b
     resource: repo://src/routes/books.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
+generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-08T19:54:21.058Z
+    at: 2026-09-09T19:45:31.755Z
 ---
 
 # API Routes
@@ -49,6 +49,7 @@ sequenceDiagram
 - **`POST /api/books`**: Creates or registers a new book entity.
 - **`GET /api/books/:id`**: Retrieves details for a specific book.
 - **`PATCH /api/books/:id`**: Updates book metadata.
+- **`PUT /api/books/queue`**: Reorders the book reading queue.
 - **`DELETE /api/books/:id`**: Deletes a book.
 - **`POST /api/books/:id/advance`**: Advances reading progress for a book. Extracts units, invokes LLM summarization and insight extraction, writes a reading log, and returns an `AdvanceResult`.
 - **`GET /api/books/:id/log`**: Fetches reading logs/history for a book and optional reading round.

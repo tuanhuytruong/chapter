@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0938a35a62b44cafb5b93fd4326066cc10ca8f9d90d9a00a34eb564c7d0df13f",
+  "pageVersion": "sha256:61eac0564f1665259810e74d861f915322dac9ad2ad79cfbb1ea0ff22b9bda5f",
   "claims": [
     {
       "id": "claim_6d53874a00c246788601ac4bd2549040",
-      "statement": "The API client defines methods for listing, creating, updating, reordering, and deleting books under /api/books.",
+      "statement": "The API client defines methods for listing, creating, retrieving, updating, reordering, and deleting books under /api/books.",
       "evidence": [
         {
-          "resource": "repo://src/api.ts#L408-L425",
-          "version": "repo-lines-v1:sha256:f64ffbcb28ffb55bce0df54dd0f8e81a36dc10acd70576607f2870e6572f7807:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxYjQ5YzRmNjU5MTA1ZDg5NGM3ODVlMWM2ODA3YTNmZjJjNmJlNmUzNjFhZWUzNGY0ZTY0OGQ5NGQ5Yzc2MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMWU4NDkxNmIzZDMzMGE1ZWVhOTBhZDE1Nzg5MWFlODY3NjQyZGIwNzkzODMyOWJiNDhjYWMwYmY2ODcyYWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkNjIyMWZlZWVjZTdiOTNjMDQzNjFmNGQ0YzFjMTE0ZDMwNzlhNDUzODgwMmUzMzczM2U3YjFiZjVmNjU3NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyOGZiZDI1ODhjYzg1ZTljODgyNDMxMDIyYTgwMzRlYmUyM2I3OTM3MTgyNTE2MTI3ODJlNzdkN2NhMzc0ODUifQ"
+          "resource": "repo://src/api.ts#L471-L491",
+          "version": "repo-lines-v1:sha256:bc0c6d26cd218112853732b5bf22a690ccdc29f4efeb6b44303bb043d0f15bb1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxNGQyZjg3YTI3NGI0MDhhMWY2NDU5ZjA1OWU2MjVhZmUxOGY5MDIyZWUyZmQ3MTZmNjM0ZjNhM2QyMzIxODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMWU4NDkxNmIzZDMzMGE1ZWVhOTBhZDE1Nzg5MWFlODY3NjQyZGIwNzkzODMyOWJiNDhjYWMwYmY2ODcyYWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmOTlhYzJmZmI4NWQ1ZDE2NTUxY2EyNjBmYTI4Mzk0MDBmOTY3NzM0MWMxZjg4NTNmYTkxMGEzNmQ3NzU3ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyOGZiZDI1ODhjYzg1ZTljODgyNDMxMDIyYTgwMzRlYmUyM2I3OTM3MTgyNTE2MTI3ODJlNzdkN2NhMzc0ODUifQ"
         }
       ]
     },
@@ -85,6 +85,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-08T19:54:21.058Z"
+    "at": "2026-09-09T19:45:31.755Z"
   }
 }

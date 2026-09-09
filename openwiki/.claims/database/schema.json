@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:49184a0fbf569c5270973fcaa575a1f226cbafb66783e5ac9ad812821f68d3e5",
+  "pageVersion": "sha256:4634c74e953367a796e8a0639cac44d9c45360e61bb6a1da93a2fd8de216ac6b",
   "claims": [
     {
       "id": "claim_4912e1c90a0842fe8690750ffaa7cbcc",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://src/db/schema.sql",
-          "version": "repo-file-v1:sha256:6480d1cc64d6ea1edc6fca849b963e65b4a1a147f87a3fbd33a9d6da7f982e9e"
+          "version": "repo-file-v1:sha256:191e309f56b990caef777fb00beca47dbb8570cb52caeca0e41e313d5a21a1e5"
         }
       ]
     },
@@ -26,13 +26,13 @@
         },
         {
           "resource": "repo://src/db/schema.sql",
-          "version": "repo-file-v1:sha256:6480d1cc64d6ea1edc6fca849b963e65b4a1a147f87a3fbd33a9d6da7f982e9e"
+          "version": "repo-file-v1:sha256:191e309f56b990caef777fb00beca47dbb8570cb52caeca0e41e313d5a21a1e5"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-08T19:54:21.058Z"
+    "at": "2026-09-09T19:45:31.755Z"
   }
 }

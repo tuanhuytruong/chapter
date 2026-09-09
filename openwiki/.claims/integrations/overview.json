@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:1c0f94c9eb0b54800432c8d3c53106a5a71d066cc6532f560c571c2edd25d166",
+  "claims": [
+    {
+      "id": "claim_cbe258deca024bb19b944de231aa70e2",
+      "statement": "The system architecture centralizes third-party integrations into four primary categories: LLM/TTS for AI processing, Analytics for metrics and forecasting, API routes for external interaction, and messaging integrations for communication.",
+      "evidence": [
+        {
+          "resource": "repo://src/analytics.ts",
+          "version": "repo-file-v1:sha256:426814e0e533fcd4dcde67951a85cb57dbd48cbe70e3ae7858583ee86e6037b4"
+        },
+        {
+          "resource": "repo://src/api.ts",
+          "version": "repo-file-v1:sha256:914859038bdfe9b09edbb37946f9659e55b0ddb82fd7dcec82437a6d9cebec3a"
+        },
+        {
+          "resource": "repo://src/llm.ts",
+          "version": "repo-file-v1:sha256:ba3ae8a477820d467a16d40356b634908edb6d63a06a4ff77fff1a942ba8cb16"
+        },
+        {
+          "resource": "repo://src/telegram.ts",
+          "version": "repo-file-v1:sha256:50f9b0140ba31bb74896f6dce2871e57e0a51a53e174acdcc7db59ceada9f033"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-09-09T19:45:31.755Z"
+  }
+}

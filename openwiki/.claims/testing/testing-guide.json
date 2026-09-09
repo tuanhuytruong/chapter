@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:644a35f63f92079d60160babe9ebf7ad36e6ad665cb2cc5215d5aa1b4a14c148",
+  "pageVersion": "sha256:501a9cf22616078df79fdd1f2370a600f24f35a6dd9bee82f0dc70b0e9e341a7",
   "claims": [
     {
       "id": "claim_b5030033d08341849d646b96e597998e",
-      "statement": "OpenWiki utilizes focused TypeScript verification scripts located in the scripts/ directory rather than traditional end-to-end test runners, validating specific subsystems and algorithms directly.",
+      "statement": "The project utilizes focused TypeScript verification scripts located in the scripts/ directory rather than traditional end-to-end test runners, validating specific subsystems and algorithms directly.",
       "evidence": [
         {
-          "resource": "repo://package.json#L12-L53",
-          "version": "repo-lines-v1:sha256:ce3d650c9dea5abd838cf48b214b9a4321d3802b48426cec94f3acccb3834824:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNjg1NmUwOTlkNTJlNjEzYmE2ZWEwNGY2ZmU1YTNmZGUyMzA2MzdiZjU4Mzk3ZDc5NDViMjk4YjVjZjgxYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTllYzg3NmQ1OTJmMjI5NDU0ZGVjOTY4NjViMzg1YmYyMmIyOGE4MGYxNWUxNDYyMGE4NzQ5ZjFlMGYwODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhODI0ZDA1ZGY0ZjM2NTdkNGRmYzJlZmVlNGU5NjljZGVkZWRjOTZiZGM1NTUxMmY4YmVmYjY4NDhjMDY2OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
+          "resource": "repo://package.json#L12-L62",
+          "version": "repo-lines-v1:sha256:edbd568f1a16dda5ee8e31a105de62d44f15ac3eba56e5a7ffb2292f7b3692d4:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNjg1NmUwOTlkNTJlNjEzYmE2ZWEwNGY2ZmU1YTNmZGUyMzA2MzdiZjU4Mzk3ZDc5NDViMjk4YjVjZjgxYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTllYzg3NmQ1OTJmMjI5NDU0ZGVjOTY4NjViMzg1YmYyMmIyOGE4MGYxNWUxNDYyMGE4NzQ5ZjFlMGYwODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhODI0ZDA1ZGY0ZjM2NTdkNGRmYzJlZmVlNGU5NjljZGVkZWRjOTZiZGM1NTUxMmY4YmVmYjY4NDhjMDY2OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
         }
       ]
     },
@@ -65,6 +65,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-08T19:54:21.058Z"
+    "at": "2026-09-09T19:45:31.755Z"
   }
 }
