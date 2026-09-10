@@ -46,6 +46,7 @@ export default function Library() {
   const [showAdd, setShowAdd] = useState(false);
   const [searchDraft, setSearchDraft] = useState(search);
   const composingSearch = useRef(false);
+  const [isSearchComposing, setIsSearchComposing] = useState(false);
   const [globalResults, setGlobalResults] = useState<LibrarySearchResult[]>([]);
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -71,11 +72,11 @@ export default function Library() {
   // (for example "việt" can become "vieêệt"). Keep an input draft and commit
   // after composition/pause instead; Book Detail follows the same principle.
   useEffect(() => { if (!composingSearch.current) setSearchDraft(search); }, [search]);
-  useEffect(() => { if (composingSearch.current || searchDraft === search) return; const timer = window.setTimeout(() => setSearch(searchDraft), 260); return () => window.clearTimeout(timer); }, [searchDraft, search]);
+  useEffect(() => { if (isSearchComposing || searchDraft === search) return; const timer = window.setTimeout(() => setSearch(searchDraft), 260); return () => window.clearTimeout(timer); }, [isSearchComposing, searchDraft, search]);
   // Query from the draft rather than waiting for URL synchronization first.
   // This keeps Vietnamese IME safe while removing the previous serial 260ms + 220ms delay.
   const globalQuery = searchDraft.trim();
-  useEffect(() => { if (scope !== "mine" || globalQuery.length < 2 || composingSearch.current) { setGlobalResults([]); setGlobalLoading(false); setGlobalError(null); return; } let cancelled=false; const timer=window.setTimeout(() => { setGlobalLoading(true); api.searchLibrary(globalQuery,{kind:globalKind}).then((rows)=>{if(!cancelled){setGlobalResults(rows);setGlobalError(null)}}).catch(()=>{if(!cancelled)setGlobalError("unavailable")}).finally(()=>{if(!cancelled)setGlobalLoading(false)}); },160); return ()=>{cancelled=true;window.clearTimeout(timer)}; }, [scope,globalQuery,globalKind]);
+  useEffect(() => { if (scope !== "mine" || globalQuery.length < 2 || isSearchComposing) { setGlobalResults([]); setGlobalLoading(false); setGlobalError(null); return; } let cancelled=false; const timer=window.setTimeout(() => { setGlobalLoading(true); api.searchLibrary(globalQuery,{kind:globalKind}).then((rows)=>{if(!cancelled){setGlobalResults(rows);setGlobalError(null)}}).catch(()=>{if(!cancelled)setGlobalError("unavailable")}).finally(()=>{if(!cancelled)setGlobalLoading(false)}); },160); return ()=>{cancelled=true;window.clearTimeout(timer)}; }, [scope,globalQuery,globalKind,isSearchComposing]);
   // Search results with a saved-session source use the same immutable anchor as
   // Returns. This selects the originating reading round, opens that session and
   // scrolls/highlights it instead of stopping at the enclosing book.
@@ -178,7 +179,7 @@ export default function Library() {
       {!showQueue && <div className="grid grid-cols-1 gap-2 sm:flex sm:justify-end">
         <div className="flex min-h-11 items-center gap-1.5 rounded-full border border-natural-border bg-natural-cream px-3 py-2 sm:w-auto">
           <Search className="h-3.5 w-3.5 shrink-0 text-natural-stone" />
-          <input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} onCompositionStart={() => { composingSearch.current = true; }} onCompositionEnd={(event) => { composingSearch.current = false; setSearchDraft(event.currentTarget.value); }} onKeyDown={(event) => { if (event.key === "Enter" && globalResults[0]) { event.preventDefault(); openSearchResult(globalResults[0]); } }} placeholder={scope === 'mine' ? "Search your library" : "Search title/author"} aria-label={scope === 'mine' ? "Search your library" : "Search title and author"} className="min-w-0 flex-1 bg-transparent font-sans text-xs outline-none sm:w-52 sm:flex-none" />
+          <input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} onCompositionStart={() => { composingSearch.current = true; setIsSearchComposing(true); }} onCompositionEnd={(event) => { composingSearch.current = false; setSearchDraft(event.currentTarget.value); setIsSearchComposing(false); }} onKeyDown={(event) => { if (event.key === "Enter" && globalResults[0]) { event.preventDefault(); openSearchResult(globalResults[0]); } }} placeholder={scope === 'mine' ? "Search your library" : "Search title/author"} aria-label={scope === 'mine' ? "Search your library" : "Search title and author"} className="min-w-0 flex-1 bg-transparent font-sans text-xs outline-none sm:w-52 sm:flex-none" />
         </div>
         {scope === 'mine' && globalQuery.length >= 2 && <div className="flex flex-wrap gap-1" role="group" aria-label="Search type">{([undefined,'book','wiki','quote','note','story_memory'] as Array<LibrarySearchKind|undefined>).map((kind) => <button key={kind || 'all'} type="button" onClick={() => setGlobalKind(kind)} aria-pressed={globalKind === kind} className={`min-h-11 rounded-full border px-3 text-[10px] font-bold ${globalKind === kind ? 'border-natural-sage bg-natural-sage/10 text-natural-sage' : 'border-natural-border text-natural-stone'}`}>{kind ? ({book:'Books',wiki:'Ideas',quote:'Quotes',note:'Notes',story_memory:'Story'} as any)[kind] : 'All'}</button>)}</div>}
         <SortMenu value={sort} onChange={setSort} />
