@@ -2,7 +2,14 @@ import assert from "node:assert/strict"; import { readFileSync } from "node:fs";
 const detail=readFileSync(new URL("../src/pages/BookDetail.tsx",import.meta.url),"utf8"); assert.match(library,/event.key === "Enter"/); assert.match(detail,/librarySearchLogId/); assert.match(detail,/librarySearchTab === "ai-reader"/);
 assert.match(library,/params.set\("returnLog", result.logId\)/);
 assert.match(library,/params.set\("returnRound", String\(result.readingRound\)\)/);
-assert.match(detail,/returnLogId/);
+assert.match(detail,/sourceAnchorLogId = returnLogId \|\| librarySearchLogId/);
+assert.match(detail,/setNavigationTargetLogId\(sourceAnchorLogId\)/);
+assert.match(detail,/navigationTargetLogId=\{navigationTargetLogId\}/);
 assert.match(detail,/returnRound/);
 
 assert.match(library,/onCompositionStart/); assert.match(library,/searchDraft/); assert.match(library,/260/);
+
+const story = readFileSync(new URL("../src/components/story/StoryThreadView.tsx",import.meta.url),"utf8");
+assert.match(story,/isNavigationTarget\?\.*/);
+assert.match(story,/scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
+console.log("LIBRARY_SEARCH_SOURCE_ANCHOR_FIXTURES_OK");

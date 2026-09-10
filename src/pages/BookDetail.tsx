@@ -162,6 +162,7 @@ export default function BookDetail() {
   const returnParams = new URLSearchParams(location.search);
   const returnLogId = returnParams.get("returnLog");
   const librarySearchLogId = returnParams.get("log");
+  const sourceAnchorLogId = returnLogId || librarySearchLogId;
   const librarySearchView = returnParams.get("view");
   const librarySearchTab = returnParams.get("tab");
   const returnRoundRaw = Number(returnParams.get("returnRound"));
@@ -283,14 +284,17 @@ export default function BookDetail() {
       document.getElementById(aiReaderReturnTargetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }));
   };
+  // A global-search result carries one immutable log anchor. Resolve it after
+  // the requested reading round has loaded, then let the rendered destination
+  // card own scrolling/focus. This must not depend on the legacy `log` alias.
   useEffect(() => {
     if (!book) return;
     if (librarySearchTab === "ai-reader") { setHasOpenedAiReader(true); setLogView("ai-reader"); return; }
-    if (librarySearchView === "story-thread") { setLogView("story-thread"); if (librarySearchLogId) setNavigationTargetLogId(librarySearchLogId); return; }
-    if (librarySearchLogId && logs.some((log) => log.id === librarySearchLogId)) {
-      setSearch(""); setNavigationTargetLogId(librarySearchLogId); setLogView(book.reading_experience === "story" ? "story-thread" : "list");
-    }
-  }, [book, logs, librarySearchLogId, librarySearchTab, librarySearchView]);
+    if (!sourceAnchorLogId || !logs.some((log) => log.id === sourceAnchorLogId)) return;
+    setSearch("");
+    setNavigationTargetLogId(sourceAnchorLogId);
+    setLogView(librarySearchView === "story-thread" || book.reading_experience === "story" ? "story-thread" : "list");
+  }, [book, logs, sourceAnchorLogId, librarySearchTab, librarySearchView]);
 
   const load = useCallback(async (requestedRound?: number) => {
     if (!id) return;
@@ -319,11 +323,8 @@ export default function BookDetail() {
       setSummaryMode(b.summary_mode || "casual");
       const sortedLogs = sortLogsNewestFirst(overview);
       setLogs(sortedLogs);
-      if (returnLogId && sortedLogs.some((log) => log.id === returnLogId)) {
-        setSearch("");
-        setNavigationTargetLogId(returnLogId);
-        setLogView("list");
-      }
+      // Search/Returns anchors are applied by the post-render effect below;
+      // doing it there guarantees the destination card exists before scrolling.
       hasLoadedInitialDetail.current = true;
       setLoading(false);
 
@@ -356,7 +357,7 @@ export default function BookDetail() {
       hasLoadedInitialDetail.current = true;
       setLoading(false);
     }
-  }, [id, returnLogId]);
+  }, [id]);
 
   useEffect(() => {
     void load(selectedRound ?? undefined);
@@ -1288,6 +1289,8 @@ export default function BookDetail() {
               onRepair={repairStoryThread}
               retryingLogId={storyRetryingLogId}
               canEdit={Boolean(book.can_edit)}
+              navigationTargetLogId={navigationTargetLogId}
+              onNavigationHandled={() => setNavigationTargetLogId(null)}
             />
             </React.Suspense>
           </div>
