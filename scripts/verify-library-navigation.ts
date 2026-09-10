@@ -16,3 +16,8 @@ assert.match(detail, /startsWith\("\/\?"\)/);
 assert.match(detail, /\/?scope=mine&filter=active&sort=recent/);
 assert.doesNotMatch(detail, /navigate\(-1\)/);
 console.log("LIBRARY_NAVIGATION_FIXTURES_OK");
+
+const librarySource = readFileSync(new URL("../src/pages/Library.tsx", import.meta.url), "utf8");
+assert.match(librarySource, /const globalQuery = searchDraft\.trim\(\)/);
+assert.match(librarySource, /api\.searchLibrary\(globalQuery/);
+assert.match(librarySource, /},160\);/);
