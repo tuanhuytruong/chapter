@@ -8,9 +8,15 @@ import {
   Info,
 } from "lucide-react";
 import type {
+  LogRow,
   ReadingProgressCompanionRow,
   ReadingProgressItem,
 } from "../types";
+import {
+  formatCompanionCoverage,
+  newerSavedSessionCount,
+  readingProgressActionState,
+} from "../readingProgressCompanionPresentation";
 
 function Refs({
   item,
@@ -80,6 +86,7 @@ export default function ReadingProgressCard({
   hasRawText,
   canEdit,
   bookStatus,
+  logs,
   loading,
   onRefresh,
   onOpenReadingSession,
@@ -90,14 +97,15 @@ export default function ReadingProgressCard({
   hasRawText: boolean;
   canEdit: boolean;
   bookStatus: string;
+  logs: LogRow[];
   loading: boolean;
   onRefresh: () => Promise<void>;
   onOpenReadingSession: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   if (!logCount) return null;
-  const paused = bookStatus !== "active";
-  const action = companion ? "Refresh reading thread" : "Create reading thread";
+  const actionState = readingProgressActionState({ canEdit, hasRawText, bookStatus, companion });
+  const newerSessions = companion ? newerSavedSessionCount(logs, companion.last_log_id) : 0;
   const refresh = async () => {
     try {
       await onRefresh();
@@ -133,45 +141,41 @@ export default function ReadingProgressCard({
               </button>
             ) : "Your reading so far"}
           </h2>
-          {companion && <p className="mt-1 text-xs leading-relaxed text-natural-stone">{companion.stale ? `Updated through Session ${companion.last_log_session ?? "?"}; new saved sessions are not yet included.` : `Updated through Session ${companion.last_log_session ?? "?"} · ${companion.sessions_covered} saved sessions included.`}</p>}
-          {!companion && canEdit && (
+          {companion && (
+            <p className="mt-1 text-xs leading-relaxed text-natural-stone">
+              {companion.stale
+                ? `${formatCompanionCoverage(companion.last_log_date, companion.last_log_session, companion.sessions_covered).replace("Updated", "Last updated")}${newerSessions ? ` — ${newerSessions} newer saved ${newerSessions === 1 ? "session is" : "sessions are"} waiting.` : "; new saved sessions are not yet included."}`
+                : `${formatCompanionCoverage(companion.last_log_date, companion.last_log_session, companion.sessions_covered)} · ${companion.sessions_covered} saved sessions included.`}
+            </p>
+          )}
+          {!companion && (
             <p className="mt-1 text-xs leading-relaxed text-natural-stone">
               Create a grounded thread from your saved reading text.
             </p>
           )}
         </div>
-        {canEdit && hasRawText && (
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            disabled={loading || paused}
-            title={
-              paused
-                ? "Resume this book to refresh its reading thread."
-                : undefined
-            }
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            {loading ? "Creating…" : action}
-          </button>
-        )}
+        <div className="shrink-0 sm:min-w-[14rem]">
+          {actionState.kind === "shared" ? (
+            <p className="py-2 text-xs leading-relaxed text-natural-stone sm:text-right">{actionState.message}</p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={actionState.kind === "action" ? () => void refresh() : undefined}
+                disabled={loading || actionState.kind !== "action"}
+                aria-describedby={actionState.kind === "disabled" ? "reading-progress-action-reason" : undefined}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-natural-sage px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {loading ? "Creating…" : actionState.label}
+              </button>
+              {actionState.kind === "disabled" && (
+                <p id="reading-progress-action-reason" className="mt-2 text-xs leading-relaxed text-natural-stone sm:text-right">{actionState.reason}</p>
+              )}
+            </>
+          )}
+        </div>
       </div>
-      {!companion && canEdit && !hasRawText && (
-        <p className="mt-3 text-xs text-natural-stone">
-          This companion becomes available after a saved session includes source
-          text.
-        </p>
-      )}
-      {!companion && !canEdit && hasRawText && (
-        <p className="mt-3 text-xs text-natural-stone">
-          A reading thread will appear once the book owner creates it.
-        </p>
-      )}
       {companion && expanded && (
         <div
           id="reading-progress-content"

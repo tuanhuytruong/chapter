@@ -10,6 +10,24 @@ import {
   type ProgressSource,
 } from "../src/readingProgressCompanion.js";
 
+import {
+  formatCompanionCoverage,
+  newerSavedSessionCount,
+  readingProgressActionState,
+} from "../src/readingProgressCompanionPresentation.js";
+import type { LogRow } from "../src/types.js";
+
+const progressLogs: LogRow[] = [
+  { id: "covered", book_id: "book", reading_round: 1, date: "2026-09-10", session: 2, page_start: 1, page_end: 2, raw_text: "text", summary: null, key_insights: null, quote: null, telegram_sent: false, notes: null, chapter_title: null, created_at: "2026-09-10T04:00:00.000Z" },
+  { id: "newer", book_id: "book", reading_round: 1, date: "2026-09-10", session: 3, page_start: 3, page_end: 4, raw_text: "text", summary: null, key_insights: null, quote: null, telegram_sent: false, notes: null, chapter_title: null, created_at: "2026-09-10T05:00:00.000Z" },
+];
+assert.equal(formatCompanionCoverage("2026-09-10", 2, 49), "Updated through Sep 10, 2026 · Session 2");
+assert.equal(formatCompanionCoverage(null, null, 1), "Updated from 1 saved session");
+assert.equal(newerSavedSessionCount(progressLogs, "covered"), 1);
+assert.equal(readingProgressActionState({ canEdit: true, hasRawText: false, bookStatus: "active", companion: null }).kind, "disabled");
+assert.equal(readingProgressActionState({ canEdit: false, hasRawText: true, bookStatus: "active", companion: null }).kind, "shared");
+assert.equal(readingProgressActionState({ canEdit: true, hasRawText: true, bookStatus: "paused", companion: null }).kind, "disabled");
+
 const source: ProgressSource = {
   logId: "11111111-1111-4111-8111-111111111111",
   session: 1,
@@ -90,13 +108,19 @@ assert.match(card, /Mạch chính và trạng thái/);
 assert.match(card, /GLOSSARY\[title\]\[language\]/);
 assert.match(card, /role="tooltip"/);
 assert.match(card, /aria-expanded/);
+assert.match(card, /formatCompanionCoverage/);
+assert.match(card, /newerSavedSessionCount/);
+const presentation = readFileSync(new URL("../src/readingProgressCompanionPresentation.ts", import.meta.url), "utf8");
+assert.match(presentation, /The book owner can refresh this reading thread/);
+assert.match(presentation, /selectable source text/);
+assert.doesNotMatch(card, /Updated through Session/);
 assert.doesNotMatch(card, /Expand" : "Collapse"\} reading thread/);
 const detail = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
 assert.match(detail, /pct >= 95/);
 assert.match(detail, /book\.can_edit && pct >= 95/);
 assert.doesNotMatch(detail, /pct >= 85/);
 assert.match(detail, /const sortLogsNewestFirst/);
-assert.match(detail, /setLogs\(sortLogsNewestFirst\(l\)\)/);
+assert.match(detail, /setLogs\(sortedLogs\)/);
 assert.match(detail, /Earlier session · same day/);
 assert.doesNotMatch(detail, /Session \{si \+ 1\} · same day/);
 console.log("READING_PROGRESS_COMPANION_FIXTURES_OK");

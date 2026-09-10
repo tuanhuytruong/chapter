@@ -1416,7 +1416,7 @@ export default function BookDetail() {
             )}
             {logView !== "ai-reader" && (
               <div key={logView} id="reader-panel" role="tabpanel" aria-labelledby={logView === "journey" ? "journey-tab" : "list-tab"} className="motion-tab-panel">
-                <ReadingProgressCard companion={readingProgress} readingRound={selectedRound ?? book.current_reading_round} logCount={logs.length} hasRawText={logs.some((log) => Boolean(log.raw_text?.trim()))} canEdit={Boolean(book.can_edit)} bookStatus={book.status} loading={readingProgressLoading} onRefresh={refreshReadingProgress} onOpenReadingSession={openSavedReadingSession} />
+                <ReadingProgressCard companion={readingProgress} readingRound={selectedRound ?? book.current_reading_round} logCount={logs.length} hasRawText={logs.some((log) => Boolean(log.raw_text?.trim()))} canEdit={Boolean(book.can_edit)} bookStatus={book.status} logs={logs} loading={readingProgressLoading} onRefresh={refreshReadingProgress} onOpenReadingSession={openSavedReadingSession} />
                 {logs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-12 bg-natural-cream rounded-[28px] border border-natural-border text-center space-y-2">
                     <BookOpen className="w-8 h-8 text-natural-stone" />
