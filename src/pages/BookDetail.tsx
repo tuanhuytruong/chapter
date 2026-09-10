@@ -120,12 +120,13 @@ function ReadingLensSynthesis({ text }: { text: string }) {
     const heading = line.match(/^#{1,3}\s+(.+)$/);
     if (heading) {
       flushBullets();
+      const title = /^Five insights to carry forward$/i.test(heading[1].trim()) ? "What to carry with you" : heading[1];
       blocks.push(
         <h3
           key={`heading-${index}`}
           className="pt-2 text-sm font-bold text-natural-dark"
         >
-          <InlineMarkdown text={heading[1]} />
+          <InlineMarkdown text={title} />
         </h3>,
       );
       continue;
@@ -144,7 +145,7 @@ function ReadingLensSynthesis({ text }: { text: string }) {
   }
   flushBullets();
   return (
-    <article className="mt-4 space-y-3 rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-xs leading-relaxed text-natural-dark">
+    <article className="mt-4 space-y-3 rounded-2xl border border-natural-border bg-natural-cream/60 p-4 text-sm leading-relaxed text-natural-dark">
       {blocks}
     </article>
   );
@@ -217,6 +218,7 @@ export default function BookDetail() {
   const [hasOpenedAiReader, setHasOpenedAiReader] = useState(false);
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [navigationTargetLogId, setNavigationTargetLogId] = useState<string | null>(null);
+  const [aiReaderReturnTargetId, setAiReaderReturnTargetId] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
   const [reflectionLoading, setReflectionLoading] = useState(false);
@@ -260,14 +262,23 @@ export default function BookDetail() {
     });
   };
 
-  const openSavedReadingSession = (logId: string) => {
+  const openSavedReadingSession = (logId: string, aiReaderSourceId?: string) => {
     if (!logs.some((log) => log.id === logId)) {
       setToast({ type: "err", msg: "This saved session is not available in the selected reading round." });
       return;
     }
     setSearch("");
+    setAiReaderReturnTargetId(aiReaderSourceId || null);
     setNavigationTargetLogId(logId);
     setLogView(book?.reading_experience === "story" ? "story-thread" : "list");
+  };
+  const returnToAiReader = () => {
+    if (!aiReaderReturnTargetId) return;
+    setHasOpenedAiReader(true);
+    setLogView("ai-reader");
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      document.getElementById(aiReaderReturnTargetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }));
   };
   useEffect(() => {
     if (!book) return;
@@ -1403,6 +1414,7 @@ export default function BookDetail() {
                   totalPages={book.total_pages}
                   canEdit={!!book.can_edit}
                   onOpenReadingSession={openSavedReadingSession}
+                  returnTargetId={aiReaderReturnTargetId}
                 />
                 {book.can_edit && upgradePrompt && (
                   <ContextualUpgradeCard
@@ -1478,6 +1490,7 @@ export default function BookDetail() {
                                   onNavigationHandled={() => setNavigationTargetLogId(null)}
                                   onMarkerCreated={refreshMarkers}
                                   onRequestSource={requestSourceText}
+                                  onReturnToAiReader={navigationTargetLogId === log.id && aiReaderReturnTargetId ? returnToAiReader : undefined}
                                 />
                                 <ReadingLensCard
                                   lens={lenses.find(

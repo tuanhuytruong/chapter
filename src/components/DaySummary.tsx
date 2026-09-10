@@ -30,6 +30,7 @@ interface DaySummaryProps {
   onNavigationHandled?: () => void;
   onMarkerCreated?: () => void;
   onRequestSource?: (logId: string) => Promise<LogRow>;
+  onReturnToAiReader?: () => void;
 }
 
 /** Highlight search matches in text */
@@ -70,7 +71,7 @@ function DeepReadingSummary({ text, highlight }: { text: string; highlight?: str
   return <div className="space-y-3 font-sans"><p className="text-[10px] font-bold uppercase tracking-widest text-natural-sage">Deep Reading</p>{sections.map((section, index) => <section key={section.title} className={index ? 'border-t border-natural-border pt-3' : ''}><h4 className="text-xs font-bold text-natural-dark">{section.title}</h4><div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} highlight={highlight} /></div></section>)}</div>;
 }
 
-const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled, onMarkerCreated, onRequestSource }) => {
+const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, bookId, canEdit = false, highlight, fileType = 'pdf', summaryMode = 'casual', onRetryComplete, isNavigationTarget = false, onNavigationHandled, onMarkerCreated, onRequestSource, onReturnToAiReader }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [navigationHighlight, setNavigationHighlight] = useState(false);
   const [open, setOpen] = useState(false);
@@ -203,6 +204,11 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
           )}
         </div>
         <div className="flex items-center gap-1">
+          {onReturnToAiReader && (
+            <button type="button" onClick={onReturnToAiReader} className="min-h-8 rounded-full border border-natural-sage/35 px-2 text-[10px] font-bold text-natural-sage hover:bg-natural-sage/10">
+              Back to AI Reader
+            </button>
+          )}
           {canEdit && (log.raw_text_available || log.raw_text) && (
             <button type="button" onClick={retrySummary} disabled={retrying} aria-label={`Retry summary for session ${log.session}`} title="Retry summary" className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-natural-stone transition hover:bg-natural-bg hover:text-natural-dark disabled:opacity-50">
               <RotateCcw className={`w-3.5 h-3.5 ${retrying ? 'animate-spin' : ''}`} />

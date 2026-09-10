@@ -109,16 +109,16 @@ assert.match(bookWikiComponent, /if \(Math\.abs\(window\.scrollY - saved\) > 1\)
 assert.doesNotMatch(bookWikiComponent, /pendingScrollY/, "AI Reader scroll preservation must not share a mutable offset between interactions");
 assert.match(bookWikiComponent, /<GlossaryLabel term="Evidence" language=\{language\}/);
 assert.match(bookWikiComponent, /<GlossaryLabel term=\{stateTerm\} language=\{language\}/);
-assert.match(bookWikiComponent, /onOpenReadingSession: \(logId: string\) => void/);
+assert.match(bookWikiComponent, /onOpenReadingSession: \(logId: string, sourceId\?: string\) => void/);
 assert.match(bookWikiComponent, /language=\{glossaryLanguage\}[\s\S]*onSession=\{onOpenReadingSession\}/);
-assert.match(bookWikiComponent, /onClick=\{\(\) => entry\.log_id && onSession\(entry\.log_id\)\}/);
+assert.match(bookWikiComponent, /onClick=\{\(\) => entry\.log_id && onSession\(entry\.log_id, `ai-reader-path-/);
 assert.match(bookWikiComponent, /onClick=\{\(\) => preserveScroll\(\(\) => setOpenSession/);
 assert.match(bookWikiComponent, /language === "vi" \? "Trang" : "Pages"/);
 assert.match(bookWikiComponent, /\["Deepened", "Shifted", "Introduced", "Resolved", "Uncertain", "Implied"\]/);
 assert.doesNotMatch(bookWikiComponent, /<GlossaryLabel(?![^>]*language=)/);
 assert.doesNotMatch(bookWikiComponent, /<button(?! type="button")/);
 const bookDetailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
-assert.match(bookDetailSource, /const openSavedReadingSession = \(logId: string\) => \{/);
+assert.match(bookDetailSource, /const openSavedReadingSession = \(logId: string, aiReaderSourceId\?: string\) => \{/);
 assert.match(bookDetailSource, /setLogView\("list"\)/);
 assert.match(bookDetailSource, /setNavigationTargetLogId\(logId\)/);
 assert.match(bookDetailSource, /onOpenReadingSession=\{openSavedReadingSession\}/);
@@ -147,4 +147,17 @@ assert.match(migration, /CREATE TABLE IF NOT EXISTS chapter\.ai_reader_jobs/);
 assert.match(migration, /status TEXT NOT NULL DEFAULT 'idle' CHECK \(status IN \('idle', 'running', 'failed'\)\)/);
 for (const column of ["reading_path", "thread_map", "entity_map", "connections", "current_reading_state", "next_session_context"]) assert.match(v2Migration, new RegExp(`ADD COLUMN IF NOT EXISTS ${column}`));
 assert.match(v2Migration, /output_language IN \('vi', 'en'\)/);
+
+assert.match(bookWikiComponent, /ai-reader-path-/);
+assert.match(bookWikiComponent, /returnTargetId/);
+const mindMapComponent = readFileSync(new URL("../src/components/MindMap.tsx", import.meta.url), "utf8");
+assert.doesNotMatch(mindMapComponent, /useState/);
+assert.doesNotMatch(mindMapComponent, /aria-expanded/);
+assert.match(mindMapComponent, /Recorded relationship/);
+const detailComponent = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
+const daySummaryComponent = readFileSync(new URL("../src/components/DaySummary.tsx", import.meta.url), "utf8");
+assert.match(daySummaryComponent, /Back to AI Reader/);
+assert.match(detailComponent, /What to carry with you/);
+assert.match(detailComponent, /text-sm leading-relaxed text-natural-dark/);
+
 console.log("AI_READER_NARRATIVE_FIXTURES_OK");

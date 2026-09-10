@@ -1176,7 +1176,7 @@ async function startServer() {
         return res.json(null);
       }
 
-      const prompt = `You are helping a reader understand the key concepts in "${book.title}" by ${book.author}.
+      const prompt = `You are building a knowledge map for "${book.title}" by ${book.author}, not a mini-summary.
 
 Here are all the key insights collected across their reading sessions:
 ${allInsights.map((i: string, n: number) => `${n + 1}. ${i}`).join("\n")}
@@ -1189,14 +1189,14 @@ Return ONLY a JSON object with this exact structure:
   "root": "One sentence thesis of the whole book",
   "branches": [
     {
-      "theme": "Theme name (2-4 words)",
+      "theme": "Concept, force, or question (2-4 words)",
       "color": "#hex color",
-      "nodes": [{ "text": "specific insight grounded in the supplied sessions", "evidence": "brief supporting detail from a supplied insight or summary, only when present", "page": 12 }]
+      "nodes": [{ "text": "relationship in the form A → B, tension, or cause → consequence; not a standalone summary", "evidence": "brief supporting detail from a supplied insight or summary, only when present", "page": 12 }]
     }
   ]
 }
 
-Use 3-5 branches. Each branch should have 2-4 nodes. Colors should be calm, warm, and distinct. Do not invent evidence or page numbers: omit evidence and page whenever the supplied material does not establish them. Existing clients may also read legacy string nodes.
+Use 3-5 branches. Each branch should have 2-4 nodes. Make every node show a meaningful relationship, tension, cause/consequence, or change connected to its branch; do not restate plot or write generic lessons. Colors should be calm, warm, and distinct. Do not invent evidence or page numbers: omit evidence and page whenever the supplied material does not establish them. Existing clients may also read legacy string nodes.
 Return only valid JSON, no markdown, no explanation.`;
 
       const raw = await callLLM(
