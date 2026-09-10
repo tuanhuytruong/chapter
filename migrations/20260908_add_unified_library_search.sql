@@ -58,9 +58,10 @@ ON CONFLICT (owner_id,kind,source_key) DO UPDATE SET body=EXCLUDED.body,normaliz
 
 INSERT INTO chapter.search_documents (owner_id,book_id,reading_round,log_id,kind,source_key,title,body,normalized_text,page_start,page_end,search_vector,updated_at)
 SELECT b.owner_id,sta.book_id,rl.reading_round,rl.id,'story_session',rl.id::text,'Story Thread · '||b.title,
-  concat_ws(E'\n',sta.story_recap,sta.analysis::text),lower(translate(concat_ws(E'\n',sta.story_recap,sta.analysis::text),'đĐ','dD')),rl.page_start,rl.page_end,
-  to_tsvector('simple',lower(translate(concat_ws(E'\n',sta.story_recap,sta.analysis::text),'đĐ','dD'))),now()
+  sta.story_recap,lower(translate(sta.story_recap,'đĐ','dD')),rl.page_start,rl.page_end,
+  to_tsvector('simple',lower(translate(sta.story_recap,'đĐ','dD'))),now()
 FROM chapter.story_thread_analyses sta JOIN chapter.reading_log rl ON rl.id=sta.log_id JOIN chapter.books b ON b.id=sta.book_id
+WHERE nullif(btrim(sta.story_recap),'') IS NOT NULL
 ON CONFLICT (owner_id,kind,source_key) DO UPDATE SET body=EXCLUDED.body,normalized_text=EXCLUDED.normalized_text,search_vector=EXCLUDED.search_vector,updated_at=now();
 
 INSERT INTO chapter.search_documents (owner_id,book_id,reading_round,log_id,kind,source_key,title,body,normalized_text,page_start,page_end,search_vector,updated_at)

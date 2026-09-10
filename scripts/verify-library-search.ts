@@ -12,7 +12,7 @@ const migration = readFileSync(new URL("../migrations/20260908_add_unified_libra
 
 assert.match(route, /owner_id=\$1/); assert.match(route, /kind: "book"/); assert.match(route, /kind: "reflection"/); const aiReader = readFileSync(new URL("../src/aiReader.ts", import.meta.url), "utf8"); assert.match(aiReader,/kind: "wiki"/); const story = readFileSync(new URL("../src/storyThread.ts", import.meta.url), "utf8"); assert.match(story,/kind: "story_session"/);
 
-assert.match(story,/kind: "story_memory"/); assert.match(migration,/story_thread_analyses/); assert.match(migration,/story_memory_snapshots/);
+assert.match(story,/kind: "story_memory"/); assert.match(migration,/story_thread_analyses/); assert.match(migration,/sta\.story_recap/); assert.doesNotMatch(migration,/sta\.analysis::text/); assert.match(migration,/story_memory_snapshots/);
 
 assert.match(route,/bestEffortUpsertSearchDocument/); assert.match(route,/kind: "quote"/); assert.match(route,/bestEffortDeleteSearchDocument/);
 
