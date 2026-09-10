@@ -121,6 +121,8 @@ const bookDetailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", imp
 assert.match(bookDetailSource, /const openSavedReadingSession = \(logId: string, aiReaderSourceId\?: string\) => \{/);
 assert.match(bookDetailSource, /setLogView\("list"\)/);
 assert.match(bookDetailSource, /setNavigationTargetLogId\(logId\)/);
+assert.match(bookDetailSource, /setAiReaderReturnLogId\(aiReaderSourceId \? logId : null\)/);
+assert.match(bookDetailSource, /onReturnToAiReader=\{aiReaderReturnLogId === log.id/);
 assert.match(bookDetailSource, /onOpenReadingSession=\{openSavedReadingSession\}/);
 assert.match(bookDetailSource, /isNavigationTarget=\{navigationTargetLogId === log\.id\}/);
 const daySummarySource = readFileSync(new URL("../src/components/DaySummary.tsx", import.meta.url), "utf8");

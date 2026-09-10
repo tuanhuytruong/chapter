@@ -219,6 +219,7 @@ export default function BookDetail() {
   const [journeyExpanded, setJourneyExpanded] = useState<string | null>(null);
   const [navigationTargetLogId, setNavigationTargetLogId] = useState<string | null>(null);
   const [aiReaderReturnTargetId, setAiReaderReturnTargetId] = useState<string | null>(null);
+  const [aiReaderReturnLogId, setAiReaderReturnLogId] = useState<string | null>(null);
   const [mindmapData, setMindmapData] = useState<MindMapData | null>(null);
   const [mindmapLoading, setMindmapLoading] = useState(false);
   const [reflectionLoading, setReflectionLoading] = useState(false);
@@ -269,12 +270,14 @@ export default function BookDetail() {
     }
     setSearch("");
     setAiReaderReturnTargetId(aiReaderSourceId || null);
+    setAiReaderReturnLogId(aiReaderSourceId ? logId : null);
     setNavigationTargetLogId(logId);
     setLogView(book?.reading_experience === "story" ? "story-thread" : "list");
   };
   const returnToAiReader = () => {
     if (!aiReaderReturnTargetId) return;
     setHasOpenedAiReader(true);
+    setAiReaderReturnLogId(null);
     setLogView("ai-reader");
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
       document.getElementById(aiReaderReturnTargetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1490,7 +1493,7 @@ export default function BookDetail() {
                                   onNavigationHandled={() => setNavigationTargetLogId(null)}
                                   onMarkerCreated={refreshMarkers}
                                   onRequestSource={requestSourceText}
-                                  onReturnToAiReader={navigationTargetLogId === log.id && aiReaderReturnTargetId ? returnToAiReader : undefined}
+                                  onReturnToAiReader={aiReaderReturnLogId === log.id && aiReaderReturnTargetId ? returnToAiReader : undefined}
                                 />
                                 <ReadingLensCard
                                   lens={lenses.find(
