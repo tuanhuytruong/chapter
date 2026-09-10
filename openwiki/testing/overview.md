@@ -4,14 +4,14 @@ title: Testing Overview
 description: Comprehensive guide for testing and verification in Chapter using script-driven integration suites and ephemeral testing environments.
 tags: [testing, verification, scripts, integration-tests, quality-assurance]
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 sources:
   - id: openwiki-source-6251e90fd58f3c041d6f5c9b
     resource: repo://scripts/verify-podcast.ts
   - id: openwiki-source-2af1b88b1e8e0259806fc72d
     resource: repo://scripts/verify-reading-intention-reflection.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 ---
 
 # Testing Overview
@@ -31,8 +31,8 @@ Verification scripts are located in the `/scripts/` directory. They act as both 
 
 -   **`scripts/verify-podcast.ts`**: Verifies podcast catalog grouping, EPUB chapter extraction, archive-pending states, and audio streaming with HTTP Range requests. repo://scripts/verify-podcast.ts
 -   **`scripts/verify-reading-intention-reflection.ts`**: Validates database migrations for reading intentions, API routing, and AI-generated reflection prompts. repo://scripts/verify-reading-intention-reflection.ts
--   **`scripts/verify-upload-content.ts`**: Tests file upload validation, EPUB/PDF parsing, and filename sanitization.
--   **`scripts/verify-reading-progress-companion.ts`**: Checks AI reading progress companion prompts and session boundary conditions.
+-   **`scripts/verify-upload-content.ts`**: Tests file upload validation, EPUB/PDF parsing, and filename sanitization. repo://scripts/verify-upload-content.ts
+-   **`scripts/verify-reading-progress-companion.ts`**: Checks AI reading progress companion prompts and session boundary conditions. repo://scripts/verify-reading-progress-companion.ts
 
 ## Execution and Performance
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bb9f55e5836ab3f3570471a2ccc8fde6459d111d4fb1b7cc081cc137357b50b9",
+  "pageVersion": "sha256:308bf6563602cc8bc5fa2ea444ef7a7a7da7e489ed9cfa1c7e47b7e5905ba924",
   "claims": [
     {
       "id": "claim_459df64de5234fed83a1b299c5d35955",
@@ -32,11 +32,11 @@
     },
     {
       "id": "claim_1491fb2dcee044ed858758a0e61415e2",
-      "statement": "Reading progress companions synthesize reading logs into main threads, converging insights, open threads, and carry-forward points, and track a stale flag that becomes true when new reading logs are added after the last generation.",
+      "statement": "Reading progress companions synthesize reading logs into main threads, converging insights, open threads, and carry-forward points, and track a stale flag updated by ReadingProgressCard when new reading logs are added after the last generation.",
       "evidence": [
         {
           "resource": "repo://src/components/ReadingProgressCard.tsx#L99-L100",
-          "version": "repo-lines-v1:sha256:e86450623eb950cf3c0d5d9f731145bacece349d1e833e34cdcea3b93d1039fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGE5MjZjYzJhNjllNjkzOTA2ZDZlMjBiMWY1OTg2MmM0NjY3MjkyODU1NWE4MWM3OGJjM2MyY2NhYzcwM2VjZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmM4NjMwMDRmZmY5NDdiOGQ1YzMyYThlMjM3MjE2MWFkZTIxNzc5NTljNjc4YTlkYzgyNWUxZDE5MTFiZTJhMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWQ4N2Q5YTgyOWZlMmFjYmU2NDRmODg5MDIzYzI1NTk3YjE1MTE1NDBhYmRkMTJlOWQ1NTAzMWVhOGFiNTNkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGZiMzI5MDFhMjM2NjY2YjZmYzIyNDgwMDQ3YWE5MWVkNTlmNTAwZTczYzc5ODI3MWNmOGM3MmQxNGMzODM1ZSJ9"
+          "version": "repo-lines-v1:sha256:c8395e357aa0e54065bc77916e1cf8f71cdeef4bf2aaf223ecc1c9fa37a365f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjNjNjMyZDUyNTc5NTI5NGRmMTg4NzVjYmQ4YTVhNGRiODUzZDkwM2QzOTQyMDFiNGUxNzkyZGQ1ZDI5YzJkYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTQ0MDZjZTY5MDU0YjQ3OTE4ODAzNGNlNTY4YjQ2ZDI2YWQ4ZjA1NWZiN2UyMzFjZTFlZGNmOWM2M2JhMjZlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWQ4N2Q5YTgyOWZlMmFjYmU2NDRmODg5MDIzYzI1NTk3YjE1MTE1NDBhYmRkMTJlOWQ1NTAzMWVhOGFiNTNkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGZiMzI5MDFhMjM2NjY2YjZmYzIyNDgwMDQ3YWE5MWVkNTlmNTAwZTczYzc5ODI3MWNmOGM3MmQxNGMzODM1ZSJ9"
         },
         {
           "resource": "repo://src/types.ts#L82-L82",
@@ -46,7 +46,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "by": "openwiki/0.5.1",
+    "at": "2026-09-10T19:40:31.384Z"
   }
 }

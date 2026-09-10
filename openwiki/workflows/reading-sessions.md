@@ -1,13 +1,18 @@
 ---
 type: concept
-title: Reading Sessions Workflow
-description: End-to-end reading session lifecycle, text extraction, and reading modes including casual reading, deep reading, and story threads.
-tags: [reading-sessions, ai-reader, extraction, story-threads, reading-lens]
+title: Reading Sessions
+description: Guide to understanding how reading progress is tracked in OpenWiki.
+tags: [reading-sessions, progress-tracking]
+verified:
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 sources:
   - id: openwiki-source-2595616fbfe0d9510c40d225
     resource: repo://src/aiReader.ts
   - id: openwiki-source-9d47595c2a2ea0b2c9b2cc8d
     resource: repo://src/api.ts
+  - id: openwiki-source-ddf75957c1dba6e13c946ffe
+    resource: repo://src/components/ReadingProgressCard.tsx
   - id: openwiki-source-70d4664310eebb80ab5b564c
     resource: repo://src/db.ts
   - id: openwiki-source-a3f029feba00e1de286184bb
@@ -18,50 +23,28 @@ sources:
     resource: repo://src/readingLens.ts
   - id: openwiki-source-778c364c9c8bbe2c782bb309
     resource: repo://src/storyThread.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 ---
 
-# Reading Sessions Workflow
+# Reading Sessions
 
-The OpenWiki reading sessions workflow manages the end-to-end lifecycle of ingesting documents (PDF and EPUB), extracting readable text, conducting interactive reading sessions across different modes (casual reading, deep reading, and story threads), and synthesizing insights into book wikis via the AI Reader.
+Reading sessions in OpenWiki are the primary way users interact with their documents, enabling tracked progress through the material and continuous refinement of narrative understanding.
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant API as API Routes (/src/api.ts)
-    participant Extractor as Text Extractor (/src/extractor.ts)
-    participant Reader as AI Reader & Lens (/src/aiReader.ts, /src/readingLens.ts)
-    participant DB as SQLite Storage (/src/db.ts)
+## Progress Tracking Workflow
 
-    User->>API: Upload Document (PDF/EPUB)
-    API->>Extractor: Extract chapters, text, and pages
-    Extractor-->>DB: Store pages and text units
-    User->>API: Start Reading Session / Request Chunk
-    API->>Reader: Process reading range & analyze threads
-    Reader-->>DB: Save chunk analysis & narrative state
-    API-->>User: Return session state, lens, and story threads
-```
-<p align="center"><em>End-to-end reading session lifecycle and text extraction flow.</em></p>
+The core of progress tracking relies on the `ReadingProgressCard` component, which surfaces processed insights and reading milestones back to the user.
 
-## Reading Modes
+1. **Ingestion & Processing**: As documents are read, the system tracks progress via sessions. Each session records a range of pages and maps them to narrative threads or thematic updates.
+2. **Component Rendering**: The `src/components/ReadingProgressCard.tsx` component is responsible for displaying the progress. It receives the following data:
+   - `companion`: Data from `ReadingProgressCompanionRow` that contains summarized insights, story threads, and narrative status.
+   - `logs`: Historical record of reading activity.
+3. **User Interaction**:
+   - Users can refresh progress data via `onRefresh`.
+   - Clicking on specific reference buttons within the progress card (rendered by the `Refs` sub-component in `src/components/ReadingProgressCard.tsx`) triggers `onOpenReadingSession`, allowing users to jump back to specific reading logs.
 
-OpenWiki supports multiple reading modes tailored to different engagement depths and narrative tracking needs:
+## Technical Details
 
-- **Casual Reading (`src/aiReader.ts`)**: Focuses on high-level session summaries, quick takeaways, and maintaining a lightweight narrative thread without deep structural analysis.
-- **Deep Reading (`src/readingLens.ts`, `src/aiReader.ts`)**: Employs reading lenses and close-reading analysis to extract substantive concepts, character pulses, notable quotes, and entity changes across chapters.
-- **Story Threads (`src/storyThread.ts`, `src/aiReader.ts`)**: Tracks narrative arcs, thematic threads, and entity movements across multiple reading sessions, establishing continuity and connections as the book progresses.
-
-## Document Extraction & Reading Units
-
-Document extraction is handled by `src/extractor.ts` and associated worker scripts (such as `src/pdfExtractorWorker.mjs`):
-- **PDF & EPUB Ingestion**: Automatically parses structure, table of contents, chapters, and page boundaries.
-- **Reading Units**: Content is segmented into discrete pages and logical reading ranges (chunks) to ensure predictable LLM processing limits and maintain context window efficiency.
-
-## End-to-End Workflow
-
-1. **Initialization**: A book or document is uploaded and processed into structured pages via the extraction pipeline.
-2. **Execution**: Users initiate reading sessions through API endpoints. The AI Reader (`src/aiReader.ts`) and Reading Lens (`src/readingLens.ts`) analyze text chunks, evaluating active threads, entities, and changes.
-3. **Conclusion**: Session insights, summaries, and updated thread maps are persisted to SQLite (`src/db.ts`) and synthesized into the overall book wiki.
+The `ReadingProgressCard` relies on the following mechanisms:
+- **Reference Resolution**: Each reading insight is anchored to specific reading logs (`LogRow`), allowing navigation between summary points and the actual text segments they refer to.
+- **Glossary Tooltips**: Provides context for categories like "Story so far" and "Narrative arcs", ensuring users understand the tracking logic.
+- **State Integration**: The card integrates with the broader reading companion service (`readingProgressCompanionPresentation.ts`) to calculate progress states and coverage.

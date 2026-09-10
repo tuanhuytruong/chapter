@@ -4,8 +4,8 @@ title: Database Schema & Migrations
 description: Comprehensive documentation of PostgreSQL schema, connection management in src/db.ts, database migrations, indexing, ownership constraints, and transactional safety for reading sessions.
 tags: [database, postgresql, schema, migrations, transactions, architecture]
 verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-29T19:44:06.027Z
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 sources:
   - id: openwiki-source-25fa9ab7c0715dd94360a213
     resource: repo://migrations/20260728_add_podcast.sql
@@ -17,11 +17,13 @@ sources:
     resource: repo://migrations/20260826_add_podcast_unavailable_status.sql
   - id: openwiki-source-6b1db57a0627fa8cd59cc63a
     resource: repo://migrations/20260829_backfill_reading_round_history.sql
+  - id: openwiki-source-066188e04e203a08bb0227d4
+    resource: repo://migrations/20260908_add_unified_library_search.sql
   - id: openwiki-source-70d4664310eebb80ab5b564c
     resource: repo://src/db.ts
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 ---
 
 # Database Schema & Migrations
@@ -45,7 +47,7 @@ Database connections are managed via `node-postgres` (`pg`) in `src/db.ts`. Conn
 
 ## Core Database Schema
 
-The complete database schema is maintained in `src/db/schema.sql` and verified on startup via `verifyCoreSchema()` [repo://src/db.ts#L154-L197]. Below is an overview of the core architectural tables and entities:
+The complete database schema is maintained in `src/db/schema.sql` and verified on startup via `verifyCoreSchema()` [repo://src/db.ts#L154-L197].
 
 ```mermaid
 erDiagram
@@ -97,58 +99,20 @@ erDiagram
         TEXT audio_url
     }
 
-    uploaded_files {
+    search_documents {
         UUID id PK
-        UUID user_id FK
-        TEXT original_name
-        TEXT storage_path
+        UUID owner_id FK
+        UUID book_id FK
+        TEXT kind
+        TEXT body
+        tsvector search_vector
     }
-
-    users ||--o{ uploaded_files : owns
-    books ||--o{ reading_log : logs
-    books ||--o{ book_reading_rounds : tracks
-    books ||--o{ podcasts : generates
 ```
 
-### 1. Identity & Multi-User Authentication
-- **`chapter.users`**: Stores user profiles, authentication metadata (`password_hash`, `google_sub`), environment flags (`prd` or `dev`), notification preferences (`telegram_chat_id`, `podcast_voice_gender`), and activity timestamps [repo://src/db/schema.sql#L19-L33].
-- **`chapter.user_login_events`**: Tracks detailed login telemetry (auth method, client device, browser, PWA status) [repo://src/db/schema.sql#L59-L66].
-- **`chapter.password_reset_tokens`**: Secure hashed storage for password recovery requests with expiration and usage tracking [repo://src/db/schema.sql#L74-L85].
-- **`chapter.auth_rate_limits`**: Durable sliding-window rate limiting table using SHA-256 hashed keys for sensitive routes (`login`, `signup`, `forgot_password`, `reset_password`, `oauth`) [repo://src/db/schema.sql#L86-L97].
-
-### 2. Session Management
-- **`chapter.session`**: Backs Express session middleware using `connect-pg-simple`, ensuring sessions persist reliably across server restarts with indexed expiration times [repo://src/db/schema.sql#L112-L118].
-
-### 3. Books & Reading Lifecycle
-- **`chapter.books`**: Central repository for books, tracking reading configuration (`daily_pages`, `summary_lang`, `reading_experience`, `summary_mode`), active cursor position (`current_page`, `current_reading_round`), status (`active`, `paused`, `finished`, `queued`), and user reflections [repo://src/db/schema.sql#L123-L142].
-- **`chapter.reading_log`**: Records granular reading sessions with page spans (`page_start`, `page_end`), time spent, and associated reading round [repo://src/db/schema.sql#L147-L157 in migrations].
-- **`chapter.book_reading_rounds`**: Preserves multi-pass reading history. Each completed or active pass through a book maintains its own lifecycle status (`active`, `paused`, `finished`), start/finish timestamps, and final page count.
-
-### 4. AI Readers, Story Threads, & Lenses
-- **`chapter.story_thread_analyses` & `chapter.story_state_snapshots`**: Maintain persistent narrative threads, character tracking, and continuity maps for analytical/story reading experiences.
-- **`chapter.reading_progress_companions` & `chapter.reading_markers`**: Support AI-driven reading progress insights and bookmark/marker metadata.
-- **`chapter.ask_reading_answers` & `chapter.cross_book_connections`**: Store Q&A records against reading material and cross-book semantic connections.
-
-### 5. Podcasts & Recaps
-- **`chapter.podcasts` & `chapter.podcast_recaps`**: Manage audio generation jobs, narrator configuration per reading round, playback progress, and availability states (`ready`, `generating`, `unavailable`) [repo://migrations/20260728_add_podcast.sql, repo://migrations/20260805_podcast_narrator_per_round.sql, repo://migrations/20260826_add_podcast_unavailable_status.sql].
-
 ---
 
-## Database Migrations & Versioning
+## Database Schema Changes
 
-Schema evolution is handled via versioned SQL migration scripts located in the `/migrations/` directory.
+Recent schema migrations focus on unifying search capabilities across generated and user-provided artifacts:
 
-- **Execution Order**: Migrations are named chronologically by date prefix (e.g., `20260723_multi_user.sql`, `20260802_add_reading_rounds.sql`, `20260829_backfill_reading_round_history.sql`) [repo://migrations/].
-- **Backfill Safety**: Recent migrations include specialized data backfills. For example, `20260829_backfill_reading_round_history.sql` populates historical reading rounds from existing `reading_log` entries prior to the introduction of the dedicated lifecycle table, using idempotency guards (`ON CONFLICT (book_id, reading_round) DO NOTHING`) to allow safe, repeated application [repo://migrations/20260829_backfill_reading_round_history.sql#L1-L37].
-- **Idempotency & Constraints**: Migration scripts extensively use `IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS`, and conditional column additions (`ADD COLUMN IF NOT EXISTS`) to ensure smooth upgrades across development and production environments.
-
----
-
-## Indexing & Ownership Security
-
-- **Ownership & Access Control**: Uploaded files and user-specific entities enforce foreign key constraints with cascade rules (e.g., `REFERENCES chapter.users(id) ON DELETE CASCADE`) paired with ownership verification hardening (e.g., `20260727_hardening_upload_ownership.sql`) [repo://migrations/20260727_hardening_upload_ownership.sql].
-- **Performance Indexes**: High-frequency lookup paths are indexed:
-  - `idx_books_status` on `chapter.books(status)` [repo://src/db/schema.sql#L144]
-  - `idx_users_last_active_at` and login event indexes for user telemetry [repo://src/db/schema.sql#L66-L67]
-  - Partial unique indexes on normalized emails and Google subjects (`users_email_normalized_unique`, `users_google_sub_unique`) [repo://src/db/schema.sql#L69-L72]
-  - Window cleanup indexes on rate limiting tables [repo://src/db/schema.sql#L96-L97]
+- `20260908_add_unified_library_search.sql`: Introduces `chapter.search_documents` for efficient, normalized full-text search across books, wikis, notes, reflections, story threads, and story memory snapshots. This table utilizes GIN indexes on `search_vector` for high-performance retrieval [repo://migrations/20260908_add_unified_library_search.sql].

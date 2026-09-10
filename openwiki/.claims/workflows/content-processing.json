@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3053133d936f52f44c8656f97f33fcde6305d3ab6abcd83a71348821ac102e51",
+  "pageVersion": "sha256:7e9d6bc594d5ab0884ed2b51be520f57ba1875a65634dfc3a62f3925eae5c680",
   "claims": [
     {
       "id": "claim_446aaeebf5ee41b582fd531f6bef180d",
@@ -66,17 +66,17 @@
     },
     {
       "id": "claim_c2d661e731bc45a0bbdb898e7e38a314",
-      "statement": "Reading progress, resume cursors, and audio streaming with HTTP Range requests are supported for podcast playback.",
+      "statement": "Reading progress, resume cursors, audio streaming with HTTP Range requests, and automated validation of companion logic (including language auto-detection and fact extraction) are supported for podcast playback.",
       "evidence": [
         {
-          "resource": "repo://src/routes/podcasts.ts",
-          "version": "repo-file-v1:sha256:778bab2fffb0e4109d0c2503ebb931f5584c3449956bf760fe8dacb70b381947"
+          "resource": "repo://scripts/verify-reading-progress-companion.ts",
+          "version": "repo-file-v1:sha256:eb8e513c1e0a96c678eed8bbf7e42c47db3fbf2126ed404a6f4b1713aa57e001"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.0",
-    "at": "2026-08-26T19:17:20.603Z"
+    "by": "openwiki/0.5.1",
+    "at": "2026-09-10T19:40:31.384Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:529d3e0e7c26e7e4d349566849335da00d9fff6c20af81f1affd72101c805fcc",
+  "pageVersion": "sha256:51eb5400bfc1e47153ff4aed87950a598e93d178bcbceefe12d57c56bfb24642",
   "claims": [
     {
       "id": "claim_5aa26247a2fa4607b1c0cb3406835803",
@@ -51,10 +51,48 @@
           "version": "repo-file-v1:sha256:9985c9452e9a9f7c1f5209f03c07d1a7f259e19ed27402be2db9036c5d1e88c6"
         }
       ]
+    },
+    {
+      "id": "claim_36bf2a0870b143a797fc6680391b1c79",
+      "statement": "The ReadingProgressCard component in src/components/ReadingProgressCard.tsx is the primary UI element for visualizing reading progress, surfacing narrative insights, and linking reading sessions to historical logs.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx",
+          "version": "repo-file-v1:sha256:9a21bd99c4d1537aabf12f8de5ce91a12df673d86a2a5efee807192505a9615a"
+        }
+      ]
+    },
+    {
+      "id": "claim_fad40432af68463da884d81746df201a",
+      "statement": "Reading progress insights are anchored to specific logs via Refs, which enable users to navigate directly to past reading sessions, allowing for seamless context switching between summaries and source text.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L21-L42",
+          "version": "repo-lines-v1:sha256:f09e640dc6aeaf81184b0c80f5a74088518bdc2b11fc667c3baea3e33b30cf37:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZDhlYmM5YjJhN2M2ZjYyZDQyZGU1NGVjZWU1MzRhZGY4ZDVmNDM1YmIxNWM1YTJjMzU4MmMyZWI3ZWU1NDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlODI1MDAwYzQ0NmM1MDg2MTEwN2UzNjY4ODdhMGQ4OWIwM2Y4ZjA5MTdmNzdhOTE5NDY0MTNkNDA3NmNhNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1NDllZGRjNmVkNWE0NmZlM2QzMDhlYTYxOTg1MDVlZWYxMDZkMGUwNWFjNjI3OGRkZjgzYmZiNzAyMTg4YzgifQ"
+        },
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L82-L100",
+          "version": "repo-lines-v1:sha256:fd0546cda587a705e35b6b0b58ef0640d50aec5026017319164479b34fbc6b41:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NjVlNWNlZGNmOWFiZDY0ZjgwYTQ0OWU4YWRlZjk0ZGE0ZWU3NjdjMzg1MjkwYzJiOWQ4Yzc2NzhiYmNmYzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5MmVlOGY0YmNkYWNmMjQ2ZWNlNTRlNmUwZjRmMTU5MDcwZTdkOGVhYTU3Yjk4ZTkyM2MzNjY5OWYyNjA2MmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwODY3YTYzODc0ZDM0YTJhMDAyNGMzYWRjYzdjNzExMmM2NjUyMzNiNzZhODQ1YTYxNmNmYjNmZmQzNDQ1OTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YTNhYWM5ZWU0YTY2ZTk2NTk1OWJlNDI1M2ZkMDM4Mzk4M2YwMDY0N2EwMDA5YTU5MzNlNDMxY2RiOGM5NDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9c64dc5a59ef43329ee47727062c67c1",
+      "statement": "Reading sessions in OpenWiki facilitate document interaction by processing content into structured progress data, providing narrative insights through reading companions, and maintaining connectivity between summaries and original reading logs via structured companion state.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L19-L19",
+          "version": "repo-lines-v1:sha256:d67a9eda6082ecc21a7efa75f417ed524d37c42b44a7bdd5c0df425d42c32ded:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDY3YTllZGE2MDgyZWNjMjFhN2VmYTc1ZjQxN2VkNTI0ZDM3YzQyYjQ0YTdiZGQ1YzBkZjQyNWQ0MmMzMmRlZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDY3YTllZGE2MDgyZWNjMjFhN2VmYTc1ZjQxN2VkNTI0ZDM3YzQyYjQ0YTdiZGQ1YzBkZjQyNWQ0MmMzMmRlZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmEzMDlmNWQ2ZTM2NjdlYjUxMGM0NGExYzdjMzI5NWMxYjQyN2ZlNzEwYzg3MmU3ZTk1N2FlNGRiNzUyNjU0NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWY0MmJhNDZjYmZjYzNiZmZkZTRjMzM3MjJmMTg0YjU0Yzg0YzQ3ZWJmNjFiOGI2Y2RhYzIyZDNiNTBmN2FiZSJ9"
+        },
+        {
+          "resource": "repo://src/components/ReadingProgressCard.tsx#L83-L84",
+          "version": "repo-lines-v1:sha256:732540aab532165aa276c40f227038824d8afb6b2d9c51bd77d170c340649c25:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTM5NDRkNTdmZDM3NDhlNzNjZmY3MGQzZDZkZjZkZWQ5Y2RjYmNkYWY4ZTJmNmUwMzdkZWY5MGYxZDUxZDg2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmRjMzcxODAxODNmNTkzYTZmZmEwYjVkYzBmMjkxNjgzOTk3YTQxOGQyNmZiOTRkNjRhZDllYWU2OTJjYzc2NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDAyNTJlNTAxMmIxODI0ODExZDNjMjc3OGMwODhkYTA2NDJhODQ4MGZiNTk1ZDQ2OTA4YWI3OWZiYjhiMGZkYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDY5OTBlODVkZjk0NmJjMWQ0OTQ5YjhiMjgwYTMyZjQ0NjYwNWVkY2EyYzk0NjViZWU3NTIyN2E1YmI0NjEzZSJ9"
+        }
+      ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.0",
-    "at": "2026-09-09T19:45:31.755Z"
+    "by": "openwiki/0.5.1",
+    "at": "2026-09-10T19:40:31.384Z"
   }
 }

@@ -14,10 +14,10 @@ sources:
     resource: repo://src/db/schema.sql
   - id: openwiki-source-c457d3d1a63d5dc86f0da7ef
     resource: repo://src/types.ts
-generated: {by: "openwiki/0.4.0", at: "2026-08-26T19:17:20.603Z"}
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 ---
 
 # Domain Model
@@ -67,7 +67,7 @@ The **Reading Progress Companion** (`ReadingProgressCompanionRow`) synthesizes a
 - **Open Threads**: Unresolved questions or narrative tension points to carry into subsequent pages.
 - **Carry Forward**: Durable insights and principles preserved across reading rounds.
 
-Companions maintain a `stale` flag (`ReadingProgressCompanionRow#stale`) which becomes true when new reading sessions are logged after the last companion generation, prompting readers to refresh their reading thread.
+Companions maintain a `stale` flag (`ReadingProgressCompanionRow#stale`) which is updated by `ReadingProgressCard` when new reading logs are recorded after the last generated companion state, indicating that the synthesis needs refresh.
 
 ## Reading Intentions
 

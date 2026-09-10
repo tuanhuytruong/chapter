@@ -14,10 +14,10 @@ sources:
     resource: repo://scripts/verify-upload-content.ts
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
-generated: {by: "openwiki/0.4.0", at: "2026-08-26T19:17:20.603Z"}
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-05T16:00:46.565Z
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 ---
 
 # Verification Scripts & Operations
@@ -31,7 +31,7 @@ Verification scripts live under the `/scripts/` directory. They are standalone T
 Common verification scripts include:
 - **`verify-podcast.ts`**: Tests podcast catalog grouping, EPUB chapter extraction, Telegram archiving simulation, audio range requests, and playlist resume progress persistence repo://scripts/verify-podcast.ts.
 - **`verify-reading-intention-reflection.ts`**: Validates reading intention constraints, column migrations, and AI reflection output contracts repo://scripts/verify-reading-intention-reflection.ts.
-- **`verify-reading-progress-companion.ts`**: Checks AI reading progress companion prompts, JSON parsing rules, and boundary conditions for reading sessions repo://scripts/verify-reading-progress-companion.ts.
+- **`verify-reading-progress-companion.ts`**: Verifies AI reading progress companion prompts, JSON parsing rules for conversation threads, reading session boundary conditions, multi-language support, and consistency between reading companion code and UI/route implementations repo://scripts/verify-reading-progress-companion.ts.
 - **`verify-upload-content.ts`**: Tests file upload validation for PDFs and EPUB containers, handling of scanned non-selectable PDFs, Mojibake repair for unicode filenames, and secure stored filename sanitization repo://scripts/verify-upload-content.ts.
 
 ## Running Verification Scripts

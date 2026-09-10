@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:818dad8a82576e4af54782e31db22603caf0affc8be1129f0194dfd952e13723",
+  "pageVersion": "sha256:2b688d7d2a568555d7f029050e4b86b54ef25b2cbf9db8a00a50605699350383",
   "claims": [
     {
       "id": "claim_06eeb48f24ce4d518cd565730b67cecd",
@@ -85,10 +85,56 @@
           "version": "repo-file-v1:sha256:ba4a2ac2925a3a361094b1b026ae8b373adc87623e76c1fe87e8bf784bc4ff88"
         }
       ]
+    },
+    {
+      "id": "claim_27ea642386854e49a1f120831a0f6a6f",
+      "statement": "The search_documents table, introduced in migration 20260908_add_unified_library_search.sql, provides a unified indexing mechanism for book-related artifacts including notes, reflections, and story threads to facilitate efficient full-text search.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/20260908_add_unified_library_search.sql",
+          "version": "repo-file-v1:sha256:9fe3dcb0d158fd821716cd0d432b9c0076a2c6cf2f6c7051a48fea2e6ad86068"
+        }
+      ]
+    },
+    {
+      "id": "claim_e2509fc984f14adfaa6de0a5fa1f1359",
+      "statement": "Request budgets, enforced through statement and lock timeouts in timedQuery and timedTransaction, ensure fast HTTP request SLAs.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L102-L102",
+          "version": "repo-lines-v1:sha256:1967bc498440b0dfc683a0bbc01f898ea1c41372bf41b4054af6e739e08c027f:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTk2N2JjNDk4NDQwYjBkZmM2ODNhMGJiYzAxZjg5OGVhMWM0MTM3MmJmNDFiNDA1NGFmNmU3MzllMDhjMDI3ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTk2N2JjNDk4NDQwYjBkZmM2ODNhMGJiYzAxZjg5OGVhMWM0MTM3MmJmNDFiNDA1NGFmNmU3MzllMDhjMDI3ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzg5NTE4ZWI3ZDQyMjBiMjNjM2IxZGVkMDQ1NjNmNWU4YTc3NjQyNmNiMTliY2I3YTk4OTk1NzE4MzU4NTdiMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2VkNWRiMjI4ZDNmMTFmNGE2YmRjZWUwOTE3MDY0MDlhOGE4MmZlOGMzMTEyZWNjMDRhZjNkY2FhNWVkODIzZCJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L143-L143",
+          "version": "repo-lines-v1:sha256:8557e03b3a4fd1c4b5e0200358adac6200424aa31d065fac6f62220f9b916d4a:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODU1N2UwM2IzYTRmZDFjNGI1ZTAyMDAzNThhZGFjNjIwMDQyNGFhMzFkMDY1ZmFjNmY2MjIyMGY5YjkxNmQ0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU1N2UwM2IzYTRmZDFjNGI1ZTAyMDAzNThhZGFjNjIwMDQyNGFhMzFkMDY1ZmFjNmY2MjIyMGY5YjkxNmQ0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDdlZDcwODczM2M0MDk2MDhiMjdhNmI0M2NiYTViNmU2NDQ3YTYyZWY0NTg4ODg1MGU0NWQ2ZmM2NzY2ZTY5OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTUzOTY0ZGMyZTdlNGVkMDA2MjYxMjc2NGE4NTQxODBhNDhlMDI1YmY0YTZhNjJiOWIwYzI0NDA2NmMxNGFmOSJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L16-L19",
+          "version": "repo-lines-v1:sha256:b1d1108972f3e3eadcd37207be97bbb6f7c5fd5e93cb109ae74c9bf08d254366:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODA5ZDE5N2NiNDg1MmU4OTE0ODE1NWM3MTNhYjZlNTkzMTczZTA2NzUyNjE1ODZiMzBjMDYzMmQ0MzYxMmVlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWExZDFhNjMzOTAyMjljNzk4MzQ3ZTgzYTA0MDU0NDFjOTQwMDAzNTI4NGFkMTY4YzFiZjZjZGYxZDcwYTM3MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmE2YjMzNTZjNDAwODM0ZjdmYWFlNWIwZTU4MjIzMjQ4ZWM4MmEzNTY5NmVkNjI0ZmVmN2ZlYWU3NmYzYzA2ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTQ1YmJkNWVhYjhkMjViZjZlNmJjZWJjYjNhZmE2ODUwMjVhMTkxYzExOGY3ODVlNjNlNTJiN2ZjM2RhZjA1YSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2851ae7eed594fa9a21c6daa490ae1b6",
+      "statement": "Background operations utilize separate budgets with more permissive timeouts for tasks such as AI enrichment and data backfilling.",
+      "evidence": [
+        {
+          "resource": "repo://src/db.ts#L107-L107",
+          "version": "repo-lines-v1:sha256:c7d7f9205db32fd212c70d0c7b860547ee3f37d67b4c0c9cec12893f7c8668fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzdkN2Y5MjA1ZGIzMmZkMjEyYzcwZDBjN2I4NjA1NDdlZTNmMzdkNjdiNGMwYzljZWMxMjg5M2Y3Yzg2NjhmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzdkN2Y5MjA1ZGIzMmZkMjEyYzcwZDBjN2I4NjA1NDdlZTNmMzdkNjdiNGMwYzljZWMxMjg5M2Y3Yzg2NjhmYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTcwMDhkNDRhMzEwMmQzODJhOGMzZTlmM2NmYWE1ZjU1Y2Y2OGQxZTM2ODI2NWUyZTk5MWM4YzlhZWRhZjVjZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTBlNWU1NzVhMWVjZGFiNTY3Y2MzOWM5YzQ2NzI3ZTYwYTg1MDBkYjc5NTkwNzMyZDU5YjMzMjQ2ZmEyNDQ0OSJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L148-L148",
+          "version": "repo-lines-v1:sha256:008d1f9a730117b0667f2e71ba17a0d4e5faa047e53fcb1baf4d2f0b0f65f845:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA4ZDFmOWE3MzAxMTdiMDY2N2YyZTcxYmExN2EwZDRlNWZhYTA0N2U1M2ZjYjFiYWY0ZDJmMGIwZjY1Zjg0NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA4ZDFmOWE3MzAxMTdiMDY2N2YyZTcxYmExN2EwZDRlNWZhYTA0N2U1M2ZjYjFiYWY0ZDJmMGIwZjY1Zjg0NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTE2YmRhYzFlNTcyZDE2MTJiZDFkMDU3ZDU3ZDdmYjc4ZDVlYzM4MWM2YTU0NTdkMmIwMjAxZWZkZDQzN2NjYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjk3NjIzMDg2YTJlOTUxZWZmYjA1NWM5MmFlZTE1ZDczOGYzZmU3YTEyZjI0NGY3N2VmNjE2ZTA4YzU2NjM2OSJ9"
+        },
+        {
+          "resource": "repo://src/db.ts#L20-L23",
+          "version": "repo-lines-v1:sha256:f17db0877c100e2b137acb2d552e52bd37dd11695f03c980be4dac83f9e3c318:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg0NTRlZTc3ODIyM2E0Y2Y5ZjcxMWQwMDczNWNjODcxNjg0ZTM5ZmFkZmM3N2Y2NzQ1NGY5YzNlNzNmNWNlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWExZDFhNjMzOTAyMjljNzk4MzQ3ZTgzYTA0MDU0NDFjOTQwMDAzNTI4NGFkMTY4YzFiZjZjZGYxZDcwYTM3MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDFkOTU2MjYwNWM3OTExMmFhNjVjNzE4NWZhZGM4N2E5OTU4N2UzNjQwYjkyYjMwZjI5M2M1ZjU0YmU5MTg5MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDc3MzE4MDljOGUzNDYzMDExY2QxYTE1ZThmZWRkM2E3NjgzNmM1ZTcyOGEwMGQ5NjY3ZDU1MjQ5MjBhN2E5NSJ9"
+        }
+      ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.4.3",
-    "at": "2026-08-29T19:44:06.027Z"
+    "by": "openwiki/0.5.1",
+    "at": "2026-09-10T19:40:31.384Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:337595eb5493f7fd4b0b2af72a7a84bd7ec7eca488962881a888ff9106649486",
+  "pageVersion": "sha256:c5be77adb3dada4c31cadd114decbefc25a6fab1c5453c22ab1916d79bf711ed",
   "claims": [
     {
       "id": "claim_600d88e4d92f4e33a71a83fe548e0d68",
@@ -28,7 +28,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/verify-reading-progress-companion.ts",
-          "version": "repo-file-v1:sha256:7c259f468e749fa97449b6e5538641c9f7a6707a47d94bbfb634600c3b4df0ac"
+          "version": "repo-file-v1:sha256:eb8e513c1e0a96c678eed8bbf7e42c47db3fbf2126ed404a6f4b1713aa57e001"
         }
       ]
     },
@@ -54,7 +54,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.0",
-    "at": "2026-09-05T16:00:46.565Z"
+    "by": "openwiki/0.5.1",
+    "at": "2026-09-10T19:40:31.384Z"
   }
 }

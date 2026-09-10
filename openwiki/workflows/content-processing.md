@@ -4,22 +4,22 @@ title: Content Processing & Podcasts
 description: End-to-end workflows for uploading EPUB and PDF content, managing books and reading rounds, and generating or verifying AI podcast episodes.
 tags: [workflows, content, upload, podcasts, reading]
 verified:
-  - by: openwiki/0.4.0
-    at: 2026-08-26T19:17:20.603Z
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 sources:
   - id: openwiki-source-6251e90fd58f3c041d6f5c9b
     resource: repo://scripts/verify-podcast.ts
+  - id: openwiki-source-f19bd693059c4c56bc4e791e
+    resource: repo://scripts/verify-reading-progress-companion.ts
   - id: openwiki-source-13927404d8ceb664565801bb
     resource: repo://scripts/verify-upload-content.ts
   - id: openwiki-source-e6ae3303314e5a8bb9e4bde3
     resource: repo://src/podcast/generate.ts
   - id: openwiki-source-3a9f5ed6f801cb82536e8136
     resource: repo://src/podcast/tts.ts
-  - id: openwiki-source-88482dcd95c70813a5dd01c1
-    resource: repo://src/routes/podcasts.ts
   - id: openwiki-source-8536bfae8360377e8c22add2
     resource: repo://src/routes/upload.ts
-generated: {by: "openwiki/0.4.0", at: "2026-08-26T19:17:20.603Z"}
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 ---
 
 # Content Processing & Podcasts
@@ -91,5 +91,6 @@ sequenceDiagram
 
 ## Reading Progress & Playback
 
-- **Progress Tracking**: Users can update resume cursors and completion marks via `/api/podcasts/books/:bookId/playlist/progress`.
+- **Progress Tracking**: Users update resume cursors and completion marks via `/api/podcasts/books/:bookId/playlist/progress`.
+- **Companion Logic**: `scripts/verify-reading-progress-companion.ts` validates the companion logic, including language auto-detection and fact extraction from reading sessions.
 - **Audio Streaming**: Audio proxy endpoints support standard HTTP Range requests (`bytes=...`) for smooth scrubbing and seeking during playback.

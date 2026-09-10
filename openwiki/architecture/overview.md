@@ -4,8 +4,8 @@ title: System Architecture Overview
 description: High-level system architecture of Chapter, detailing the React 19 and Vite frontend, Express TypeScript backend, PostgreSQL database, security, sessions, configuration, and API routing.
 tags: [architecture, backend, frontend, database, security, configuration]
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
+  - by: openwiki/0.5.1
+    at: 2026-09-10T19:40:31.384Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
@@ -19,7 +19,7 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 ---
 
 # System Architecture Overview
@@ -43,7 +43,7 @@ flowchart TD
 The backend entry point is `repo://server.ts`, which sets up the Express application instance, configures security headers, session storage, and mounts modular feature routers under `/api`.
 
 ### Key Responsibilities & Middleware
-- **Security & Headers**: Implements custom Content Security Policy (CSP), HTTP Strict Transport Security (HSTS), frame options (`DENY`), and rate limiting (`repo://src/auth-rate-limit.ts`) for sensitive authentication routes.
+- **Security & Headers**: Implements custom Content Security Policy (CSP), HTTP Strict Transport Security (HSTS), frame options (`DENY`), and rate limiting for sensitive authentication routes.
 - **Session Management**: Session state is backed by PostgreSQL via `connect-pg-simple` operating within the `chapter` database schema (`repo://server.ts`).
 - **Proxy Trust**: Configured with `app.set("trust proxy", 1)` to support secure cookies behind production reverse proxies.
 
@@ -55,7 +55,7 @@ Routes are modularized into dedicated feature files and mounted in `repo://serve
 - **Podcasts**: `repo://src/routes/podcasts.ts` and `repo://src/routes/podcast-recap.ts` manage audio generation queues and feeds.
 - **Entitlements & Billing**: `repo://src/routes/entitlements.ts` and `repo://src/routes/billing.ts` manage subscription tiers and payment gateways.
 - **Analytics & Reviews**: `repo://src/routes/monthly-review.ts` provides monthly retrospectives and momentum tracking.
-- **AI & Cross-Book Intelligence**: `repo://src/routes/ask-reading.ts` and `repo://src/routes/cross-book-connections.ts` power LLM-based Q&A and cross-book synthesis (`repo://src/llm.ts`).
+- **AI & Cross-Book Intelligence**: `repo://src/routes/ask-reading.ts` and `repo://src/routes/cross-book-connections.ts` power LLM-based Q&A and cross-book synthesis.
 - **Telegram Integration**: `repo://src/telegram-link.ts` handles webhook linking for Telegram bot reminders and quick capture.
 
 ---
@@ -64,9 +64,9 @@ Routes are modularized into dedicated feature files and mounted in `repo://serve
 
 Database interactions are managed through `repo://src/db.ts`, which wraps the node-postgres (`pg`) connection pool.
 
-- **Schema Isolation**: Forces the search path to the `chapter` schema (`search_path=chapter`) across connections (`repo://src/db.ts`).
-- **Query Execution & Timeouts**: Enforces timed execution wrappers (`timedQuery`, `backgroundQuery`, `withTransaction`) that apply strict statement and lock timeouts tailored for interactive requests versus background tasks (`repo://src/db.ts`).
-- **Migrations & Verification**: Schema bootstrap and migrations are handled via `ensureSchema` and `verifyCoreSchema` (`repo://src/db.ts`).
+- **Schema Isolation**: Forces the search path to the `chapter` schema (`search_path=chapter`) across connections.
+- **Query Execution & Timeouts**: Enforces timed execution wrappers (`timedQuery`, `backgroundQuery`, `withTransaction`) that apply strict statement and lock timeouts tailored for interactive requests versus background tasks.
+- **Migrations & Verification**: Schema bootstrap and migrations are handled via `ensureSchema` and `verifyCoreSchema`.
 
 ---
 
