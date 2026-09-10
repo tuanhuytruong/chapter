@@ -22,6 +22,8 @@ const progressLogs: LogRow[] = [
   { id: "newer", book_id: "book", reading_round: 1, date: "2026-09-10", session: 3, page_start: 3, page_end: 4, raw_text: "text", summary: null, key_insights: null, quote: null, telegram_sent: false, notes: null, chapter_title: null, created_at: "2026-09-10T05:00:00.000Z" },
 ];
 assert.equal(formatCompanionCoverage("2026-09-10", 2, 49), "Updated through Sep 10, 2026 · Session 2");
+assert.equal(formatCompanionCoverage("2026-09-10T00:00:00.000Z", 2, 49), "Updated through Sep 10, 2026 · Session 2");
+assert.equal(formatCompanionCoverage("invalid-date", 2, 1), "Updated from 1 saved session");
 assert.equal(formatCompanionCoverage(null, null, 1), "Updated from 1 saved session");
 assert.equal(newerSavedSessionCount(progressLogs, "covered"), 1);
 assert.equal(readingProgressActionState({ canEdit: true, hasRawText: false, bookStatus: "active", companion: null }).kind, "disabled");

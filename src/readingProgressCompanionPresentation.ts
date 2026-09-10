@@ -13,9 +13,15 @@ export function formatCompanionCoverage(
   if (!lastLogDate || !lastLogSession) {
     return `Updated from ${sessionsCovered} saved ${sessionsCovered === 1 ? "session" : "sessions"}`;
   }
+  // API serialization can supply either a PostgreSQL date (YYYY-MM-DD) or a
+  // full ISO timestamp. Normalize both without appending a second time suffix.
+  const parsed = new Date(lastLogDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return `Updated from ${sessionsCovered} saved ${sessionsCovered === 1 ? "session" : "sessions"}`;
+  }
   const date = new Intl.DateTimeFormat("en-US", {
     month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
-  }).format(new Date(`${lastLogDate}T00:00:00Z`));
+  }).format(parsed);
   return `Updated through ${date} · Session ${lastLogSession}`;
 }
 
