@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-09-13T19:27:18.243Z",
+  "updatedAt": "2026-09-14T20:56:45.759Z",
   "command": "update",
-  "gitHead": "3daafd6bc101d9dc10087686345e97072f8e9257",
+  "gitHead": "d42bb4becba39fddd75bf0f88ca5231f189d36a3",
   "model": "n8n",
   "status": "complete",
   "language": "en"
