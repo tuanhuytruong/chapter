@@ -4,7 +4,7 @@ okf_version: "0.2"
 
 # Files
 
-- [Quickstart & Navigation](quickstart.md) - Core quickstart, repository navigation, local setup, and task-routing map for Chapter - an advanced book tracking and reading intelligence platform.
+- [Quickstart](quickstart.md) - Entry point and navigation guide for the OpenWiki documentation.
 
 # Directories
 

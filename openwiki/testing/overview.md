@@ -4,14 +4,22 @@ title: Testing Overview
 description: Comprehensive guide for testing and verification in Chapter using script-driven integration suites and ephemeral testing environments.
 tags: [testing, verification, scripts, integration-tests, quality-assurance]
 verified:
-  - by: openwiki/0.5.1
-    at: 2026-09-10T19:40:31.384Z
+  - by: openwiki/0.5.2
+    at: 2026-09-15T20:14:22.648Z
 sources:
+  - id: openwiki-source-99d1e224ad0b0c03f96db8fb
+    resource: repo://scripts/verify-ai-reader.ts
+  - id: openwiki-source-a149657b396d498a3d4c8e48
+    resource: repo://scripts/verify-listen-rhythm.ts
   - id: openwiki-source-6251e90fd58f3c041d6f5c9b
     resource: repo://scripts/verify-podcast.ts
   - id: openwiki-source-2af1b88b1e8e0259806fc72d
     resource: repo://scripts/verify-reading-intention-reflection.ts
-generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
+  - id: openwiki-source-da5cc72121dfa62863673095
+    resource: repo://scripts/verify-returns.ts
+  - id: openwiki-source-56a09b823dafa476ebe9fcfb
+    resource: repo://scripts/verify-story-thread.ts
+generated: { by: "openwiki/0.5.2", at: "2026-09-15T20:14:22.648Z" }
 ---
 
 # Testing Overview
@@ -33,6 +41,10 @@ Verification scripts are located in the `/scripts/` directory. They act as both 
 -   **`scripts/verify-reading-intention-reflection.ts`**: Validates database migrations for reading intentions, API routing, and AI-generated reflection prompts. repo://scripts/verify-reading-intention-reflection.ts
 -   **`scripts/verify-upload-content.ts`**: Tests file upload validation, EPUB/PDF parsing, and filename sanitization. repo://scripts/verify-upload-content.ts
 -   **`scripts/verify-reading-progress-companion.ts`**: Checks AI reading progress companion prompts and session boundary conditions. repo://scripts/verify-reading-progress-companion.ts
+-   **`scripts/verify-ai-reader.ts`**: Validates AI reader interactions, including streaming, context management, and document parsing. repo://scripts/verify-ai-reader.ts
+-   **`scripts/verify-listen-rhythm.ts`**: Tests audio rhythm, playback states, and progress synchronization. repo://scripts/verify-listen-rhythm.ts
+-   **`scripts/verify-story-thread.ts`**: Verifies story memory persistence, thread management, and continuity. repo://scripts/verify-story-thread.ts
+-   **`scripts/verify-returns.ts`**: Tests the book return flow, logic, and state management. repo://scripts/verify-returns.ts
 
 ## Execution and Performance
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb37e244c28b16676c23b3cf83a2ee1853ec15196dbcadbbf6ef0569f0f61fef",
+  "pageVersion": "sha256:86f85ea07c94695f57036281491ccbfaa39450e2da79ea3e990631d6e9de1e05",
   "claims": [
     {
       "id": "claim_473c7e89e6fb44d990aa149589279f45",
@@ -39,10 +39,20 @@
           "version": "repo-lines-v1:sha256:975a4c88f7b95df25ee41d30cef02af1e60fb742caefb34e2d6bbea99d7aeb60:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTllYzg3NmQ1OTJmMjI5NDU0ZGVjOTY4NjViMzg1YmYyMmIyOGE4MGYxNWUxNDYyMGE4NzQ5ZjFlMGYwODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_e20ba0d84e17466aafc7dfe7006286f3",
+      "statement": "The OpenWiki project is a modular repository using centralized documentation for architectural domains.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L1-L10",
+          "version": "repo-lines-v1:sha256:16c63660e04deac4c91410d77f61ab0d23e2599e15f713dc8f052480b7933061:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMDI5YjAxMDhjZWEzNDgwZGFmMzA2OTZjZTE2ZDY5NTM2MDRlYzE0YmZlYjhiOGU2N2I3ZDcyZDZiNWI1OGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlN2UyMGVjM2IxMzFmNzU3ODkyMWQ4MGZkNjU0MzcyOTU2NDQ2MmU0YmE5MzAyNjUwNzc2NmI2NDJkNTgyYmYifQ"
+        }
+      ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.1",
-    "at": "2026-09-10T19:40:31.384Z"
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-15T20:14:22.648Z"
   }
 }

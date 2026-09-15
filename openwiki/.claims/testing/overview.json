@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d2e03f71f7b7fad03457d5c6d4ee5cd16f7e2e19031f0f1174b5ff86448b950",
+  "pageVersion": "sha256:7152cb071f1eecbb56f755532c92a5044964c91f23cec41efdab90878a85e7c0",
   "claims": [
     {
       "id": "claim_270d10b2150941b1af2dead4ac2ad31f",
@@ -35,10 +35,50 @@
           "version": "repo-file-v1:sha256:c8dee80075b9d0052f88957b1ba9401a048bf52940eacbc0ef7ca92f857f46ff"
         }
       ]
+    },
+    {
+      "id": "claim_4d0a80f4be954526b41676eeda520eb0",
+      "statement": "scripts/verify-ai-reader.ts validates AI reader interactions, including streaming, context management, and document parsing.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-ai-reader.ts",
+          "version": "repo-file-v1:sha256:7a95ad49e42b379c0a4edaa6da5d73e375fe3cee168a91c6c2e6fa6c80620fa2"
+        }
+      ]
+    },
+    {
+      "id": "claim_ba9a26ff2833466ca1ed96a34defda73",
+      "statement": "scripts/verify-listen-rhythm.ts tests audio rhythm, playback states, and progress synchronization.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-listen-rhythm.ts",
+          "version": "repo-file-v1:sha256:0e80dc0d5a48d9ba5fe23f88c2993e39f19e1f56b9ec72296a031c852e4d63d8"
+        }
+      ]
+    },
+    {
+      "id": "claim_19c95b560b9946609745eff1bf743c7b",
+      "statement": "scripts/verify-story-thread.ts verifies story memory persistence, thread management, and continuity.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-story-thread.ts",
+          "version": "repo-file-v1:sha256:d0deb955ebba856b955d90fd87b678fa698dc4a98dded7a5bd9c3e07cf1789a0"
+        }
+      ]
+    },
+    {
+      "id": "claim_f9954c4b8801422c87ffc85d63110c60",
+      "statement": "scripts/verify-returns.ts tests the book return flow, logic, and state management.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/verify-returns.ts",
+          "version": "repo-file-v1:sha256:1849bfd74b15b80bcc2c1bc260ae38b5b9e63b73587c30c4db634137a80781aa"
+        }
+      ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.1",
-    "at": "2026-09-10T19:40:31.384Z"
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-15T20:14:22.648Z"
   }
 }

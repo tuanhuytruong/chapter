@@ -4,18 +4,20 @@ title: Workflow Overview
 description: High-level guide to the primary user-facing workflows in the system.
 tags: [workflow, overview]
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
+  - by: openwiki/0.5.2
+    at: 2026-09-15T20:14:22.648Z
 sources:
   - id: openwiki-source-2595616fbfe0d9510c40d225
     resource: repo://src/aiReader.ts
+  - id: openwiki-source-f7c142d54c919db5f16a5ea3
+    resource: repo://src/auth.ts
   - id: openwiki-source-70d4664310eebb80ab5b564c
     resource: repo://src/db.ts
   - id: openwiki-source-a3f029feba00e1de286184bb
     resource: repo://src/extractor.ts
   - id: openwiki-source-c0912ceeea70ad7f18d724c1
     resource: repo://src/readingProgressCompanion.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-15T20:14:22.648Z" }
 ---
 
 # Workflow Overview
@@ -45,6 +47,11 @@ Content processing involves the ingestion and transformation of media/text into 
 - **Ingestion**: Raw content is stored.
 - **Normalization**: Content is parsed and structured.
 - **Enrichment**: Metadata and AI-generated segments are added.
+
+### 4. Authentication
+Authentication manages user identity and resource access control.
+- **Session Management**: Uses `express-session` to maintain user state and identity (e.g., `src/auth.ts`).
+- **Access Control**: Implements `requireAuth` for endpoint security and `requireOwner` to ensure resources are only modified by their owners.
 
 ```mermaid
 graph LR
