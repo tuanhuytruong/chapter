@@ -70,6 +70,20 @@ if (!sessionSecret)
 // Production deployments terminate TLS at the reverse proxy. Trust that single
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
+
+// Keep legacy Chapter links usable while moving the canonical public origins.
+// The two applications use different subdomains, so sessions intentionally do
+// not cross this redirect; browsers establish a secure cookie on the new host.
+const legacyChapterHosts = new Set(["chapter.mrl.asia", "chapter-dev.mrl.asia"]);
+app.use((req, res, next) => {
+  const hostname = req.hostname.toLowerCase();
+  if (!legacyChapterHosts.has(hostname)) return next();
+  const canonical = hostname === "chapter-dev.mrl.asia"
+    ? "https://chapter-dev.srv.io.vn"
+    : "https://chapter.srv.io.vn";
+  return res.redirect(308, `${canonical}${req.originalUrl}`);
+});
+
 app.use(compression());
 app.use((_req, res, next) => {
   res.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https:; media-src 'self' blob:; connect-src 'self' https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'");

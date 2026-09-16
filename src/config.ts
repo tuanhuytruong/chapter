@@ -53,7 +53,7 @@ export const config = {
   googleClientId: optionalEnv("GOOGLE_CLIENT_ID"),
   googleClientSecret: optionalEnv("GOOGLE_CLIENT_SECRET"),
   resendApiKey: optionalEnv("RESEND_API_KEY"),
-  resendFrom: optionalEnv("RESEND_FROM") || "Chapter <no-reply@account.mrl.asia>",
+  resendFrom: optionalEnv("RESEND_FROM") || "Chapter <no-reply@account.srv.io.vn>",
   passwordResetTtlMinutes: Math.min(60, Math.max(15, Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 45))),
   authRateLimitWindowMs: boundedIntegerEnv("AUTH_RATE_LIMIT_WINDOW_MS", 15 * 60_000, 60_000, 60 * 60_000),
   authLoginMaxAttempts: boundedIntegerEnv("AUTH_LOGIN_MAX_ATTEMPTS", 10, 1, 100),
