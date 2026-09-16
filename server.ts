@@ -56,6 +56,9 @@ import {
 } from "./src/auth-identity.js";
 import { sendPasswordResetEmail } from "./src/email.js";
 import { authRateLimit, authRateLimitPolicies } from "./src/auth-rate-limit.js";
+import { consumeFeedbackRateLimit } from "./src/feedback-rate-limit.js";
+import { validateFeedbackInput } from "./src/feedback.js";
+import { notifyFeedback } from "./src/telegram.js";
 
 // Each release folder owns its listener through .env.local (3000 PRD / 3001 DEV).
 const PORT = config.port;
@@ -665,6 +668,26 @@ app.get("/api/auth/profile", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Could not load profile" });
   }
 });
+app.post("/api/feedback", async (req: Request, res: Response) => {
+  const parsed = validateFeedbackInput(req.body);
+  if (parsed.ok === false) return res.status(400).json({ error: parsed.error });
+  if (!(await consumeFeedbackRateLimit(req, res))) return;
+  try {
+    const { rows } = await query<{ id: string; created_at: Date }>(
+      `INSERT INTO feedback (owner_id, kind, message, route_path, client_platform, browser_family)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at`,
+      [userFrom(req).id, parsed.value.kind, parsed.value.message, parsed.value.routePath, parsed.value.clientPlatform, parsed.value.browserFamily],
+    );
+    const feedback = rows[0];
+    void notifyFeedback({ id: feedback.id, kind: parsed.value.kind, message: parsed.value.message, routePath: parsed.value.routePath, createdAt: feedback.created_at })
+      .catch((error: any) => console.error(`[feedback] notification failed: ${error?.message || "unknown error"}`));
+    return res.status(201).json({ id: feedback.id, createdAt: feedback.created_at.toISOString() });
+  } catch (error: any) {
+    console.error(`[feedback] submission failed: ${error?.code || "unknown"}`);
+    return res.status(500).json({ error: "We could not save your feedback. Please try again." });
+  }
+});
+
 app.patch("/api/auth/profile", async (req: Request, res: Response) => {
   const displayName =
     typeof req.body?.displayName === "string"

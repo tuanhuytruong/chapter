@@ -49,6 +49,7 @@ export type AnalyticsEvent =
   | "book_upload_failed"
   | "book_upload_started"
   | "book_wiki_opened"
+  | "feedback_submitted"
   | "login_completed"
   | "podcast_episode_completed"
   | "podcast_episode_played"

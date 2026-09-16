@@ -40,6 +40,7 @@
     "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
     "verify:auth-signup": "tsx scripts/verify-auth-signup.ts",
     "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",
+    "verify:feedback": "tsx scripts/verify-feedback.ts",
     "verify:platform-db": "tsx scripts/verify-platform-db.ts",
     "verify:platform": "tsx scripts/verify-platform-headers.ts",
     "verify:today-review": "tsx scripts/verify-today-review.ts",

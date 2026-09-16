@@ -441,6 +441,18 @@ export interface QuietStreakSummary {
   active_today: boolean;
 }
 
+export type FeedbackKind = "bug" | "idea" | "other";
+export type FeedbackPlatform = "web_desktop" | "web_android" | "web_ios" | "unknown";
+export type FeedbackBrowser = "chrome" | "safari" | "firefox" | "edge" | "other" | "unknown";
+export type FeedbackInput = {
+  kind: FeedbackKind;
+  message: string;
+  routePath: string;
+  clientPlatform: FeedbackPlatform;
+  browserFamily: FeedbackBrowser;
+};
+export type FeedbackSubmission = { id: string; createdAt: string };
+
 export interface RhythmResponse {
   reading_days: string[];
   listening_days: string[];
@@ -468,6 +480,8 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  submitFeedback: (body: FeedbackInput) =>
+    req<FeedbackSubmission>("/api/feedback", { method: "POST", body: JSON.stringify(body) }),
   listBooks: (scope: "mine" | "all" = "mine") =>
     req<BookRow[]>(`${BASE}?scope=${scope}`),
   searchLibrary: (q: string, filters: { kind?: LibrarySearchKind; bookId?: string } = {}) => {

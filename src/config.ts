@@ -35,6 +35,7 @@ export const config = {
   telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME ?? "",
   telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "",
   telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
+  feedbackTelegramChatId: optionalEnv("FEEDBACK_TELEGRAM_CHAT_ID") || optionalEnv("TELEGRAM_CHAT_ID"),
   podcastTelegramArchiveChatId: optionalEnv("PODCAST_TELEGRAM_ARCHIVE_CHAT_ID"),
   podcastCacheDir: process.env.PODCAST_CACHE_DIR ?? "/opt/chapter/workspace/podcast-cache",
   podcastCacheTtlHours: Number(process.env.PODCAST_CACHE_TTL_HOURS ?? 48),
