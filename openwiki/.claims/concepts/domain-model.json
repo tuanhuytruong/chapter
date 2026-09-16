@@ -1,18 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:308bf6563602cc8bc5fa2ea444ef7a7a7da7e489ed9cfa1c7e47b7e5905ba924",
+  "pageVersion": "sha256:29bc2dc75fd79fac5dfecf280d825a7a1cfb8dcb82692ec72af241135f3cadcb",
   "claims": [
     {
       "id": "claim_459df64de5234fed83a1b299c5d35955",
       "statement": "Books support an owner-private reading_intention field representing personal motivation or learning goals when starting a book.",
       "evidence": [
         {
-          "resource": "repo://migrations/20260826_add_book_reading_intention.sql#L1-L3",
-          "version": "repo-lines-v1:sha256:ca4edc3165773766ad99e1a07a38b6cc68cd3c7f016384ddf99d9d475581776f:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzM2MzNlNmE5YzE2M2M2NzQ3ZmI5OTc5ZjA3NzkwMDUwNzlhZTQ1ZTZmZDIwY2Q0NWVmNDMwMDU2MjAzYWJiNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGNjYmY4ZjZkYTJlNTlmMmZjNTNiNzI0ZmI1YjZkNDk4OTI2NDdmMjJmOGI1NjQxMjdkY2Y3NDkzOGU0YWM5MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
-        },
-        {
-          "resource": "repo://src/types.ts#L51-L54",
-          "version": "repo-lines-v1:sha256:446d2d68d88bde5cf6134c5e9372fd248526f56f1681f73eee53e1caa3d068d4:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmI3ODAzY2RlM2ZjMzY1Y2I3ZWJiMmJjYzExMjExNmNjYWQ3MDU4ZDA3ZmY5ZmQ3ZmFmM2YxMDNhOWQxMzViNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGI0ZmM2ZTM2Mjg0NWUxMzA4ZTlhYmY0ODBhMTUyMzQ0ODdlMjVmYWRhYjU2NmE3YTQwOTE4YWU4NTBhMGViYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmE1ZDgwMmNmM2M5ODZkNzgxY2ExNmEzNzIzNWU3NGY2NTg5MDAzMGYxODgxYmM4ZGI2MzU2ZjJjODllMDg5NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTYwOTc4OWVlMTUzMWY5MDFjMWVjNDM2YTYyOWNjYmY5OGJiMGVlZTY5YjQyZTViOGYwMjhlNmEyYTE3YzgzZSJ9"
+          "resource": "repo://migrations/20260826_add_book_reading_intention.sql",
+          "version": "repo-file-v1:sha256:ca4edc3165773766ad99e1a07a38b6cc68cd3c7f016384ddf99d9d475581776f"
         }
       ]
     },
@@ -21,12 +17,8 @@
       "statement": "Podcasts support an unavailable status constraint to handle situations where source material or generation prerequisites become invalid.",
       "evidence": [
         {
-          "resource": "repo://migrations/20260826_add_podcast_unavailable_status.sql#L1-L9",
-          "version": "repo-lines-v1:sha256:3b6eea495f9822b147866d144d20b939d1bdc3da9368a875629028867d933d5b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjNjMzRhNmJhZWNmNGJjOThmMjFmNTZmOWYxZmMwMDMwNTFiNjFhYWVjMTRmY2Q4ZDdlODBiNjM0MWYyZWNjZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTgzZThjMWY0YWQ2MTJhNWJkOTIwNjdjMjliZGI5YjE1OTdmZDU0MWViZWQ0MTAyNjA3OWFhYmQ2YTRhNWJmMyJ9"
-        },
-        {
-          "resource": "repo://src/db/schema.sql#L328-L328",
-          "version": "repo-lines-v1:sha256:8224fe6c3ca26e1d28ae2d035d6d51789ee86f40daa29b4279126d534bf84de3:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODIyNGZlNmMzY2EyNmUxZDI4YWUyZDAzNWQ2ZDUxNzg5ZWU4NmY0MGRhYTI5YjQyNzkxMjZkNTM0YmY4NGRlMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODIyNGZlNmMzY2EyNmUxZDI4YWUyZDAzNWQ2ZDUxNzg5ZWU4NmY0MGRhYTI5YjQyNzkxMjZkNTM0YmY4NGRlMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTdjNWQyOWFjYjg2YWJiOWQwZDA2OTVkNzdhYWYyYzMxN2ZjMjdmMDI4MzhjNTcwYjFlZGIxMWM0MjE1MzcwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2RmOWIxODBjNjk5ZjNhMDgzZmJmNmJlN2VjMWZjYTM0MjA1OTc5Y2M1YWM3ZjNhMjdlMjEyNmE5ZjVlOWMwMCJ9"
+          "resource": "repo://migrations/20260826_add_podcast_unavailable_status.sql",
+          "version": "repo-file-v1:sha256:ba4a2ac2925a3a361094b1b026ae8b373adc87623e76c1fe87e8bf784bc4ff88"
         }
       ]
     },
@@ -36,17 +28,13 @@
       "evidence": [
         {
           "resource": "repo://src/components/ReadingProgressCard.tsx#L99-L100",
-          "version": "repo-lines-v1:sha256:c8395e357aa0e54065bc77916e1cf8f71cdeef4bf2aaf223ecc1c9fa37a365f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjNjNjMyZDUyNTc5NTI5NGRmMTg4NzVjYmQ4YTVhNGRiODUzZDkwM2QzOTQyMDFiNGUxNzkyZGQ1ZDI5YzJkYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTQ0MDZjZTY5MDU0YjQ3OTE4ODAzNGNlNTY4YjQ2ZDI2YWQ4ZjA1NWZiN2UyMzFjZTFlZGNmOWM2M2JhMjZlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWQ4N2Q5YTgyOWZlMmFjYmU2NDRmODg5MDIzYzI1NTk3YjE1MTE1NDBhYmRkMTJlOWQ1NTAzMWVhOGFiNTNkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGZiMzI5MDFhMjM2NjY2YjZmYzIyNDgwMDQ3YWE5MWVkNTlmNTAwZTczYzc5ODI3MWNmOGM3MmQxNGMzODM1ZSJ9"
-        },
-        {
-          "resource": "repo://src/types.ts#L82-L82",
-          "version": "repo-lines-v1:sha256:ea643cb0a54cef953b9d24d4f19730c3d637d9b07c15a8fde58fb01a057d6571:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NDNjYjBhNTRjZWY5NTNiOWQyNGQ0ZjE5NzMwYzNkNjM3ZDliMDdjMTVhOGZkZTU4ZmIwMWEwNTdkNjU3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NDNjYjBhNTRjZWY5NTNiOWQyNGQ0ZjE5NzMwYzNkNjM3ZDliMDdjMTVhOGZkZTU4ZmIwMWEwNTdkNjU3MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmMxYjBiMzRiYjIxODNjNThiMGE3MGM3ZDExYzVkYWYwYjU4OWU1NjY2Y2YwMWJmMDgyMzg1NzUxZTQ1M2IyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTI4NWMyNTg0MmEyMzIxYzlhNjY4YmFmNTZkZWM2ODU1OTY4N2UzYzBlOWVjZmRkMjE0NDZhMzVlYjY3ZDIxNiJ9"
+          "version": "repo-lines-v1:sha256:29ac0addadaa20818b88a5e0c4b176cc0e0c34b5673ecddc38ee5966aa617dd5:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTgzNThmYmJlZjRlNjI2OWE2NDVhMWU4NmYwMWRhMjQwYTk2MjNkNTAyNjZhYjcwZGYzMzNlZDQzNTJmYTJiOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDkyZWU4ZjRiY2RhY2YyNDZlY2U1NGU2ZTBmNGYxNTkwNzBlN2Q4ZWFhNTdiOThlOTIzYzM2Njk5ZjI2MDYyYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDRkNmQ0YWE1NDE4ZDBlODZlMzk4N2IzZDEzZTBmZmNlZGZiMjBhMDdhMGFhNjliMjYzNDljNTc0Mzc4ZWYyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTVhM2FhYzllZTRhNjZlOTY1OTU5YmU0MjUzZmQwMzgzOTgzZjAwNjQ3YTAwMDlhNTkzM2U0MzFjZGI4Yzk0MiJ9"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.1",
-    "at": "2026-09-10T19:40:31.384Z"
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-16T20:06:06.880Z"
   }
 }

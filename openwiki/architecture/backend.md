@@ -5,7 +5,7 @@ description: Comprehensive documentation of the Express and Node.js backend serv
 tags: [backend, express, node, routing, middleware, authentication, api]
 verified:
   - by: openwiki/0.5.2
-    at: 2026-09-15T20:14:22.648Z
+    at: 2026-09-16T20:06:06.880Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts

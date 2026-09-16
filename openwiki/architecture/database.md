@@ -5,7 +5,7 @@ description: Comprehensive documentation of the database schema, migrations, con
 tags: [database, postgresql, migrations, schema, storage, repositories]
 verified:
   - by: openwiki/0.5.2
-    at: 2026-09-15T20:14:22.648Z
+    at: 2026-09-16T20:06:06.880Z
 sources:
   - id: openwiki-source-6b57b34d9d5d29d041e98f86
     resource: repo://migrations/20260825_add_reading_progress_companions.sql
@@ -13,7 +13,7 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
-generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
 ---
 
 # Database & Storage
@@ -56,7 +56,7 @@ The complete schema lives in `src/db/schema.sql` and is organized around users, 
 2. **Books & Reading Progression**:
    - Core tables include `books`, `reading_log`, `uploaded_files`, `review_cards`, `weekly_reading_goals`, `reading_rounds`, and `reading_progress_companions`.
    - `chapter.reading_progress_companions`: Stores synthesized reading progress summaries per book and reading round, maintaining JSONB blobs for main threads, converging insights, open threads, and carry-forward state.
-   - *Evidence:* repo://src/db/schema.sql#L1-L15 (schema overview), repo://src/db.ts#L189-L196 (verification list), repo://migrations/20260825_add_reading_progress_companions.sql#L1-L3
+   - *Evidence:* repo://src/db/schema.sql#L1-L15, repo://src/db.ts#L189-L196, repo://migrations/20260825_add_reading_progress_companions.sql#L1-L3
 3. **AI Readers, Podcast & Synthesis**:
    - Specialized tables for AI reader continuity maps, narrative expansions, podcast episodes, podcast recaps, ask-reading Q&A, and cross-book connections.
 
@@ -80,4 +80,3 @@ Chapter implements dedicated repository modules that encapsulate data access log
 ### Notable Repositories
 - **Reading Progress Companion Repository (`src/readingProgressCompanionRepository.ts`)**: Manages reads, upserts, and invalidations for companion states across reading rounds.
 - **Reading Lens Repository (`src/readingLensRepository.ts`)**: Handles persistence and retrieval of reading lens analyses.
-- *Evidence:* repo://src/1-L3 (migrations), repo://src/db.ts#L1-L200 (database core), repo://src/db/schema.sql#L1-L100 (schema initialization).

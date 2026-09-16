@@ -14,8 +14,8 @@ sources:
     resource: repo://scripts/verify-reading-forecast.ts
 generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
+  - by: openwiki/0.5.2
+    at: 2026-09-16T20:06:06.880Z
 ---
 
 # Testing & Verification Scripts

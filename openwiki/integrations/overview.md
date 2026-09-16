@@ -3,9 +3,6 @@ type: concept
 title: Integration Overview
 description: Centralized documentation for third-party integrations and extensibility points.
 tags: [integrations, architecture, extensibility]
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-101c2f2abc2ca60e0aa57602
     resource: repo://src/analytics.ts
@@ -16,6 +13,9 @@ sources:
   - id: openwiki-source-17e364daae10a75201d19438
     resource: repo://src/telegram.ts
 generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+verified:
+  - by: openwiki/0.5.2
+    at: 2026-09-16T20:06:06.880Z
 ---
 
 # Integration Overview

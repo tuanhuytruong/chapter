@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5b1b4267b2db3dc44a289810b2e56b1b53ee3bf0fdfbd65b32a0167f49ed708c",
+  "pageVersion": "sha256:740c5f4e0198663e4115046abbb82ccf919e0768680f44075a468c6d4445c5b2",
   "claims": [
     {
       "id": "claim_d442e026af93411da97d93e6aad0dbee",
-      "statement": "The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior.",
+      "statement": "The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior, ranging from core feature verification to performance audits.",
       "evidence": [
         {
-          "resource": "repo://package.json#L6-L61",
-          "version": "repo-lines-v1:sha256:975a4c88f7b95df25ee41d30cef02af1e60fb742caefb34e2d6bbea99d7aeb60:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTllYzg3NmQ1OTJmMjI5NDU0ZGVjOTY4NjViMzg1YmYyMmIyOGE4MGYxNWUxNDYyMGE4NzQ5ZjFlMGYwODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
+          "resource": "repo://package.json#L6-L64",
+          "version": "repo-lines-v1:sha256:df9b7a16520b99144c24eb013538fad1da89559b83e514817fe4f7bbce33324a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
         }
       ]
     },
@@ -64,7 +64,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.0",
-    "at": "2026-09-09T19:45:31.755Z"
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-16T20:06:06.880Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9f0551c8fdafe08584471cd7cc386899ae1c79d288a06cdf4ba97a5d1cc90d97",
+  "pageVersion": "sha256:16860cbef8d0c2a1885e7bc0b43bc1e295c890463da2bd0cd98aff116a6fb6a6",
   "claims": [
     {
       "id": "claim_f2dd2def582a4ef2b5d23bddce43ded0",
@@ -42,11 +42,11 @@
     },
     {
       "id": "claim_498a063ae6c246619b386d5f4a3b2faf",
-      "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic and parse schema.sql by stripping comments and splitting statements.",
+      "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic; they parse schema.sql by stripping comments and splitting statements, and then perform sequential execution and existence checks via to_regclass.",
       "evidence": [
         {
           "resource": "repo://src/db.ts#L154-L207",
-          "version": "repo-lines-v1:sha256:4e2c0ebcdc32216dcb16efa7e482b50ada6f762a2640a19a6a48d584bde2bb81:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-lines-v1:sha256:b3b04e8bdfcbee6adbce7eed543ac5d51ce70574902ffbf02cc74af7cf02bb91:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -73,6 +73,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-15T20:14:22.648Z"
+    "at": "2026-09-16T20:06:06.880Z"
   }
 }

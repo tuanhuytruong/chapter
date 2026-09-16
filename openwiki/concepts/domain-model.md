@@ -10,14 +10,10 @@ sources:
     resource: repo://migrations/20260826_add_podcast_unavailable_status.sql
   - id: openwiki-source-ddf75957c1dba6e13c946ffe
     resource: repo://src/components/ReadingProgressCard.tsx
-  - id: openwiki-source-125e76395473d098c7269d6d
-    resource: repo://src/db/schema.sql
-  - id: openwiki-source-c457d3d1a63d5dc86f0da7ef
-    resource: repo://src/types.ts
 generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
 verified:
-  - by: openwiki/0.5.1
-    at: 2026-09-10T19:40:31.384Z
+  - by: openwiki/0.5.2
+    at: 2026-09-16T20:06:06.880Z
 ---
 
 # Domain Model

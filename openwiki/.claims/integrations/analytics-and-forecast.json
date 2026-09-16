@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cfc4fbde45c1a9fe8c0d735eeba785c690dd2dd969594263a9c2af5dfcac2e01",
+  "pageVersion": "sha256:4294e20e8eea2f8a37a69640d703ddd35c00149510d3efffb31a8116d6281604",
   "claims": [
     {
       "id": "claim_e3c10978b2a74ea48b5262c7ec68b47b",
-      "statement": "Product analytics capture predefined event types spanning book additions, user lifecycle events, reading sessions, podcast activity, and route performance samples, excluding sensitive user content.",
+      "statement": "Product analytics capture predefined event types spanning book additions, user lifecycle events, reading sessions, podcast activity, route performance samples, and feedback or return interactions, excluding sensitive user content.",
       "evidence": [
         {
-          "resource": "repo://src/analytics.ts#L44-L65",
-          "version": "repo-lines-v1:sha256:4b8e5a6acce6d226f91095d2203bb781b48923b69bdca6dc970c95f3338bbfdc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjZjFlZmQzZTI4YmQ0NWU0YWJiZTYxMTk2NTBhYmVhYWQzYmM1NjczNzYzZDEyMzA4YzMwN2Q0YWUzOGQxYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTBiMmY0M2UwODQ3MjgxZTBmN2M5NTZhNzE3M2Q3ZTQ3MGVlYmQ3MzQzOWU1ZGUzMjI2Y2ZlODA1NWM3OWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjNDlhZTgyZjc5NDMzZGE3Yjk3NmU4OWUyZGU0YzZmYzBhOGVhMWI4MDAzMGIxMWVjMzIwOGFiNDhkMWJjOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwMjZhY2NiZWZjMzRhODA3MzY3MmYxNjg1ZDlhNWVkNDM3NDhlYjE4OGNlMThiYmUwYzA3YTdiMTNkNjZjOTcifQ"
+          "resource": "repo://src/analytics.ts#L45-L67",
+          "version": "repo-lines-v1:sha256:c210e7993c9f3d7982605f40a588785c6f38983e6287b4ce70abd6627809004c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjZjFlZmQzZTI4YmQ0NWU0YWJiZTYxMTk2NTBhYmVhYWQzYmM1NjczNzYzZDEyMzA4YzMwN2Q0YWUzOGQxYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTBiMmY0M2UwODQ3MjgxZTBmN2M5NTZhNzE3M2Q3ZTQ3MGVlYmQ3MzQzOWU1ZGUzMjI2Y2ZlODA1NWM3OWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5NWMyYjJjMGE5NmY5MzNmOTg2MDNhZGNmZWEyNTkwNjU4MmI4M2ZlNWQ4ZTM0MjMyN2FkN2I2M2Y5MmY0ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwMjZhY2NiZWZjMzRhODA3MzY3MmYxNjg1ZDlhNWVkNDM3NDhlYjE4OGNlMThiYmUwYzA3YTdiMTNkNjZjOTcifQ"
         }
       ]
     },
@@ -82,7 +82,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.0",
-    "at": "2026-09-09T19:45:31.755Z"
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-16T20:06:06.880Z"
   }
 }

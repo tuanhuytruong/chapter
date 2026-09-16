@@ -4,8 +4,8 @@ title: Authentication Workflow
 description: Trace authentication and session workflows across the frontend and backend in OpenWiki.
 tags: [authentication, session, workflow, security]
 verified:
-  - by: openwiki/0.4.3
-    at: 2026-08-28T01:29:33.698Z
+  - by: openwiki/0.5.2
+    at: 2026-09-16T20:06:06.880Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
@@ -13,7 +13,7 @@ sources:
     resource: repo://src/auth.ts
   - id: openwiki-source-2aec1d517831237b3c9d71ac
     resource: repo://src/AuthContext.tsx
-generated: { by: "openwiki/0.4.3", at: "2026-08-28T01:29:33.698Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
 ---
 
 # Authentication Workflow
@@ -74,6 +74,7 @@ sequenceDiagram
 #### Google OAuth 2.0 Integration
 - **Initiation (`GET /api/auth/google`)**: Generates cryptographic random tokens for `state`, `nonce`, and a PKCE `verifier` / `code_challenge`. Stores them temporarily in `req.session.googleAuth` with a 10-minute TTL.
 - **Callback (`GET /api/auth/google/callback`)**: Exchanges the authorization code via `OAuth2Client` using PKCE, verifies the ID token, matches or auto-provisions the user account based on Google `sub` or email, and establishes the session.
+- **Account Linking/Merging (`/api/auth/google-merge`)**: Allows users to link multiple identities. When an identity conflict arises (e.g., Google account linked to a different existing user), it temporarily persists a merge intent in `req.session.googleMerge` until the user confirms the account merge, at which point it securely migrates user data (books, progress, subscriptions) before removing the duplicate identity.
 
 #### Password Recovery
 - **Forgot Password (`POST /api/auth/forgot-password`)**: Generates an opaque recovery token, hashes it for storage in `password_reset_tokens`, and delivers a reset URL via `src/email.ts`. Always responds with a generic recovery message to prevent user enumeration.

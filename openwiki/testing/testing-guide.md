@@ -3,9 +3,6 @@ type: guide
 title: Testing Guide
 description: Testing strategies, test runner setup, key verification test suites, and backend/frontend validation instructions for the project.
 tags: [testing, verification, scripts, type-checking, quality-assurance, architecture]
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -15,12 +12,15 @@ sources:
     resource: repo://scripts/verify-posthog-identity.ts
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
+verified:
+  - by: openwiki/0.5.2
+    at: 2026-09-16T20:06:06.880Z
 ---
 
 # Testing Guide
 
-The project utilizes a robust verification-script pattern rather than traditional end-to-end test runners (such as Jest or Playwright). The testing strategy relies on isolated, executable TypeScript verification scripts located in the `scripts/` directory, supported by TypeScript type checking (`tsc --noEmit`), database schema checks, and production build pipelines.
+The project employs focused TypeScript verification scripts, primarily executed via `npx tsx`, to validate individual features, algorithms, and system invariants rather than relying on heavy end-to-end testing frameworks. This approach leverages the `scripts/` directory, where each file serves as an isolated test suite, often interacting directly with the PostgreSQL database or core logic modules. Scripts are integrated into the repository's `package.json` for streamlined invocation during development and CI, ensuring type-safe, repeatable, and granular system verification.
 
 ```mermaid
 flowchart TD

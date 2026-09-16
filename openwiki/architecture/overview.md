@@ -5,7 +5,7 @@ description: High-level system architecture of Chapter, detailing the React 19 a
 tags: [architecture, backend, frontend, database, security, configuration]
 verified:
   - by: openwiki/0.5.2
-    at: 2026-09-15T20:14:22.648Z
+    at: 2026-09-16T20:06:06.880Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
@@ -19,7 +19,7 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
 ---
 
 # System Architecture Overview
@@ -40,7 +40,7 @@ flowchart TD
 
 ## 1. Backend Architecture & Server Layout
 
-The backend entry point is `repo://server.ts`, which sets up the Express application instance, configures security headers, session storage, and mounts modular feature routers under `/api`.
+The backend entry point is `repo://server.ts`, which initializes an Express application, configures security headers (including CSP and HSTS), enables session storage via `connect-pg-simple` in PostgreSQL, and mounts modular feature routers under `/api`.
 
 ### Key Responsibilities & Middleware
 - **Security & Headers**: Implements custom Content Security Policy (CSP), HTTP Strict Transport Security (HSTS), frame options (`DENY`), and rate limiting for sensitive authentication routes.
@@ -48,42 +48,29 @@ The backend entry point is `repo://server.ts`, which sets up the Express applica
 - **Proxy Trust**: Configured with `app.set("trust proxy", 1)` to support secure cookies behind production reverse proxies.
 
 ### Modular API Routers
-Routes are modularized into dedicated feature files and mounted in `repo://server.ts`:
-- **Books & Reading**: `repo://src/routes/books.ts` handles book management, reading sessions, progress tracking, and reading markers.
-- **Reviews & Community**: `repo://src/routes/reviews.ts` handles user reviews and community recall cards.
-- **Uploads**: `repo://src/routes/upload.ts` manages EPUB, PDF, and cover image uploads.
-- **Podcasts**: `repo://src/routes/podcasts.ts` and `repo://src/routes/podcast-recap.ts` manage audio generation queues and feeds.
-- **Entitlements & Billing**: `repo://src/routes/entitlements.ts` and `repo://src/routes/billing.ts` manage subscription tiers and payment gateways.
-- **Analytics & Reviews**: `repo://src/routes/monthly-review.ts` provides monthly retrospectives and momentum tracking.
-- **AI & Cross-Book Intelligence**: `repo://src/routes/ask-reading.ts` and `repo://src/routes/cross-book-connections.ts` power LLM-based Q&A and cross-book synthesis.
-- **Telegram Integration**: `repo://src/telegram-link.ts` handles webhook linking for Telegram bot reminders and quick capture.
+API routing is modularized into dedicated routers for books, reviews, upload, podcasts, entitlements, billing, monthly reviews, ask-reading, and cross-book connections, all mounted in `repo://server.ts`.
 
 ---
 
 ## 2. Database Layer & Persistence
 
-Database interactions are managed through `repo://src/db.ts`, which wraps the node-postgres (`pg`) connection pool.
+Database operations are handled by `repo://src/db.ts` using a PostgreSQL connection pool configured to target the `chapter` schema.
 
-- **Schema Isolation**: Forces the search path to the `chapter` schema (`search_path=chapter`) across connections.
-- **Query Execution & Timeouts**: Enforces timed execution wrappers (`timedQuery`, `backgroundQuery`, `withTransaction`) that apply strict statement and lock timeouts tailored for interactive requests versus background tasks.
-- **Migrations & Verification**: Schema bootstrap and migrations are handled via `ensureSchema` and `verifyCoreSchema`.
+- **Query Execution & Timeouts**: Database queries use timed execution wrappers that enforce statement and lock timeouts for request versus background operations within transactions.
+- **Migrations & Verification**: Schema bootstrap and migrations are handled via `ensureSchema` and `verifyCoreSchema` modules.
 
 ---
 
 ## 3. Frontend Architecture & Client Routing
 
-The client-side application is built as a single-page React application (`repo://src/App.tsx`), styled with Tailwind CSS, and bundled with Vite.
+The client-side application is built as a single-page React application bundled with Vite.
 
-- **Frontend Root**: `repo://src/App.tsx` configures client-side routing via React Router and wraps authenticated views with auth, theme, and application providers.
-- **API Client Layer**: `repo://src/api.ts` provides strongly typed HTTP helper methods, membership models, and data structures interfacing with the backend REST endpoints.
-- **Analytics & PostHog Identity**: `repo://src/analytics.ts` initializes PostHog analytics (`posthog-js`), associating user IDs and account handles upon successful authentication (`posthog.identify`) and resetting session tracking on logout (`posthog.reset`).
+- **Frontend Entry**: `repo://src/main.tsx` bootstraps the React application into the DOM.
+- **Frontend Root**: `repo://src/App.tsx` configures client-side routing via React Router and wraps authenticated views with authentication, theme, and application providers.
+- **API Client Layer**: The API client layer in `repo://src/api.ts` defines strongly typed request handlers, membership models, and data structures corresponding to backend REST endpoints.
 
 ---
 
 ## 4. Configuration & Environment Management
 
-Configuration handling is centralized in `repo://src/config.ts`, combining dotenv loading from `.env.local` with strict environment variable validation.
-
-- **Environment Mode**: Validates `APP_ENV` to be either `prd` or `dev`.
-- **Database & Timeouts**: Configures connection pools, query timeouts, and background worker limits.
-- **External Integrations**: Manages API keys and endpoints for LLM services, Telegram bots, VietQR billing, Resend email delivery, and Google OAuth.
+Configuration handling in `repo://src/config.ts` centralizes environment variables from `.env.local`, validating deployment modes (`prd` vs `dev`), timeouts, and third-party integration settings (e.g., LLM services, Telegram, billing).

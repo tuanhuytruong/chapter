@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ac6423d078507c2db979e699eab340c7d0f8fdfbcf13f9fafb7434ebbf7070f6",
+  "pageVersion": "sha256:4d0ea2a0352681661b7a894069a6fb9a8db34abe9a14c2f3c2514819899611a3",
   "claims": [
     {
       "id": "claim_faa812b5674b4df6a0a89eac8303cb3d",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://src/db.ts",
-          "version": "repo-file-v1:sha256:9985c9452e9a9f7c1f5209f03c07d1a7f259e19ed27402be2db9036c5d1e88c6"
+          "version": "repo-file-v1:sha256:03fa42876907940a69aaeb05277f32bc80993cb66cd148b5f9c82a1badb17fdc"
         }
       ]
     },
@@ -44,17 +44,17 @@
     },
     {
       "id": "claim_2d856357453b472c92363a2965225d87",
-      "statement": "The system manages user sessions using express-session and enforces access control through requireAuth and requireOwner functions.",
+      "statement": "The system manages user sessions using express-session and enforces access control through requireAuth and requireOwner functions, as defined in src/auth.ts.",
       "evidence": [
         {
           "resource": "repo://src/auth.ts",
-          "version": "repo-file-v1:sha256:26c8e88402ff3a95c5053896564cd00b88883e36ddb1b8e860b5abfb3fe9daf6"
+          "version": "repo-file-v1:sha256:4c99541c49c6b42488a8a5309094c3cd91fe4812ae5a22c02748a12d470af7ef"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-15T20:14:22.648Z"
+    "at": "2026-09-16T20:06:06.880Z"
   }
 }
