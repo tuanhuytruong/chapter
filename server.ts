@@ -21,7 +21,7 @@ import { monthlyReviewsRouter } from "./src/routes/monthly-review.js";
 import { askReadingRouter } from "./src/routes/ask-reading.js";
 import { crossBookConnectionsRouter } from "./src/routes/cross-book-connections.js";
 import { podcastRecapRouter } from "./src/routes/podcast-recap.js";
-import { ensureSchema, query, verifyCoreSchema } from "./src/db.js";
+import { ensureSchema, query, verifyCoreSchema, withTransaction } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
 import { bestEffortRecordSuccessfulLogin, bestEffortTouchLastSeen, type AuthMethod } from "./src/userLifecycleTracking.js";
@@ -438,7 +438,19 @@ app.get("/api/auth/google/callback", async (req, res) => {
           [payload.sub, row.id],
         )
       ).rows[0];
-      if (conflict) throw new Error("link conflict");
+      if (conflict) {
+        // Google has just re-authenticated the identity and the user is already
+        // authenticated as the destination account. Do not merge implicitly:
+        // retain this short-lived, server-side proof until the user confirms.
+        req.session.googleMerge = {
+          sourceUserId: conflict.id,
+          destinationUserId: row.id,
+          googleSub: payload.sub,
+          expiresAt: Date.now() + 10 * 60_000,
+        };
+        await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+        return res.redirect(`${config.appUrl}/profile?google_merge=confirm`);
+      }
       await query(
         "UPDATE users SET google_sub=$1, email=COALESCE(email,$2), email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$3",
         [payload.sub, email, row.id],
@@ -481,6 +493,141 @@ app.get("/api/auth/google/callback", async (req, res) => {
     res.redirect(`${config.appUrl}/`);
   } catch {
     res.redirect(`${config.appUrl}/${authErrorPath}?auth_error=google`);
+  }
+});
+
+app.get("/api/auth/google-merge", (req, res) => {
+  const pending = req.session.googleMerge;
+  if (!pending || pending.expiresAt < Date.now() || pending.destinationUserId !== req.session.user?.id) {
+    delete req.session.googleMerge;
+    return res.status(404).json({ pending: false });
+  }
+  res.json({ pending: true });
+});
+
+app.post("/api/auth/google-merge", async (req, res) => {
+  const pending = req.session.googleMerge;
+  if (!pending || pending.expiresAt < Date.now() || pending.destinationUserId !== req.session.user?.id) {
+    delete req.session.googleMerge;
+    return res.status(409).json({ error: "This Google merge confirmation has expired. Connect Google again." });
+  }
+  try {
+    await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        "SELECT id, environment, google_sub, email FROM users WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE",
+        [[pending.sourceUserId, pending.destinationUserId]],
+      );
+      const source = rows.find((candidate: any) => candidate.id === pending.sourceUserId);
+      const destination = rows.find((candidate: any) => candidate.id === pending.destinationUserId);
+      if (!source || !destination || source.environment !== destination.environment || source.google_sub !== pending.googleSub || destination.google_sub) {
+        throw new Error("Google merge identity changed");
+      }
+      const sourceId = source.id, destinationId = destination.id;
+
+      // Tables that allow many historical rows can transfer ownership directly.
+      for (const [table, column] of [
+        ["books", "owner_id"], ["uploaded_files", "owner_id"],
+        ["podcasts", "user_id"], ["reading_markers", "owner_id"], ["return_responses", "owner_id"],
+        ["user_login_events", "user_id"], ["billing_orders", "owner_id"], ["billing_transactions", "owner_id"],
+        ["subscription_grants", "user_id"],
+      ] as const) {
+        await client.query(`UPDATE chapter.${table} SET ${column}=$1 WHERE ${column}=$2`, [destinationId, sourceId]);
+      }
+
+      // Existing reset links for the removed identity must never become a
+      // credential for the destination account after a merge.
+      await client.query("DELETE FROM chapter.password_reset_tokens WHERE user_id=$1", [sourceId]);
+
+      // Listening rows are idempotent per user/episode/day; retain the furthest
+      // progress when both accounts heard the same episode on the same day.
+      await client.query(`INSERT INTO chapter.podcast_listen_events (user_id, book_id, podcast_id, chapter_key, reading_round, listened_on, seconds_heard, completed, created_at, updated_at)
+        SELECT $1, book_id, podcast_id, chapter_key, reading_round, listened_on, seconds_heard, completed, created_at, updated_at
+        FROM chapter.podcast_listen_events WHERE user_id=$2
+        ON CONFLICT (user_id, podcast_id, listened_on) DO UPDATE SET
+          seconds_heard=GREATEST(chapter.podcast_listen_events.seconds_heard, EXCLUDED.seconds_heard),
+          completed=chapter.podcast_listen_events.completed OR EXCLUDED.completed,
+          updated_at=GREATEST(chapter.podcast_listen_events.updated_at, EXCLUDED.updated_at)`, [destinationId, sourceId]);
+      await client.query("DELETE FROM chapter.podcast_listen_events WHERE user_id=$1", [sourceId]);
+      await client.query(`DELETE FROM chapter.podcast_playback_progress source USING chapter.podcast_playback_progress destination
+        WHERE source.user_id=$1 AND destination.user_id=$2 AND source.book_id=destination.book_id AND source.reading_round=destination.reading_round
+          AND source.updated_at <= destination.updated_at`, [sourceId, destinationId]);
+      await client.query(`DELETE FROM chapter.podcast_playback_progress destination USING chapter.podcast_playback_progress source
+        WHERE destination.user_id=$1 AND source.user_id=$2 AND destination.book_id=source.book_id AND destination.reading_round=source.reading_round
+          AND destination.updated_at < source.updated_at`, [destinationId, sourceId]);
+      await client.query("UPDATE chapter.podcast_playback_progress SET user_id=$1 WHERE user_id=$2", [destinationId, sourceId]);
+
+      // Dedupe each unique ownership contract explicitly before transfer.
+      await client.query(`DELETE FROM chapter.search_documents source USING chapter.search_documents destination
+        WHERE source.owner_id=$1 AND destination.owner_id=$2 AND source.kind=destination.kind AND source.source_key=destination.source_key
+          AND source.updated_at <= destination.updated_at`, [sourceId, destinationId]);
+      await client.query(`DELETE FROM chapter.search_documents destination USING chapter.search_documents source
+        WHERE destination.owner_id=$1 AND source.owner_id=$2 AND destination.kind=source.kind AND destination.source_key=source.source_key
+          AND destination.updated_at < source.updated_at`, [destinationId, sourceId]);
+      await client.query("UPDATE chapter.search_documents SET owner_id=$1 WHERE owner_id=$2", [destinationId, sourceId]);
+      await client.query(`DELETE FROM chapter.usage_events source USING chapter.usage_events destination
+        WHERE source.user_id=$1 AND destination.user_id=$2 AND source.feature_key=destination.feature_key AND source.period_key=destination.period_key
+          AND source.event_type=destination.event_type AND source.request_key=destination.request_key AND source.created_at <= destination.created_at`, [sourceId, destinationId]);
+      await client.query(`DELETE FROM chapter.usage_events destination USING chapter.usage_events source
+        WHERE destination.user_id=$1 AND source.user_id=$2 AND destination.feature_key=source.feature_key AND destination.period_key=source.period_key
+          AND destination.event_type=source.event_type AND destination.request_key=source.request_key AND destination.created_at < source.created_at`, [destinationId, sourceId]);
+      await client.query("UPDATE chapter.usage_events SET user_id=$1 WHERE user_id=$2", [destinationId, sourceId]);
+      await client.query(`DELETE FROM chapter.monthly_reviews source USING chapter.monthly_reviews destination
+        WHERE source.owner_id=$1 AND destination.owner_id=$2 AND source.period_key=destination.period_key AND source.generated_at <= destination.generated_at`, [sourceId, destinationId]);
+      await client.query(`DELETE FROM chapter.monthly_reviews destination USING chapter.monthly_reviews source
+        WHERE destination.owner_id=$1 AND source.owner_id=$2 AND destination.period_key=source.period_key AND destination.generated_at < source.generated_at`, [destinationId, sourceId]);
+      await client.query("UPDATE chapter.monthly_reviews SET owner_id=$1 WHERE owner_id=$2", [destinationId, sourceId]);
+      await client.query(`DELETE FROM chapter.ask_reading_answers source USING chapter.ask_reading_answers destination
+        WHERE source.owner_id=$1 AND destination.owner_id=$2 AND source.request_key=destination.request_key AND source.created_at <= destination.created_at`, [sourceId, destinationId]);
+      await client.query(`DELETE FROM chapter.ask_reading_answers destination USING chapter.ask_reading_answers source
+        WHERE destination.owner_id=$1 AND source.owner_id=$2 AND destination.request_key=source.request_key AND destination.created_at < source.created_at`, [destinationId, sourceId]);
+      await client.query("UPDATE chapter.ask_reading_answers SET owner_id=$1 WHERE owner_id=$2", [destinationId, sourceId]);
+      await client.query(`INSERT INTO chapter.membership_prompt_state (owner_id, prompt_key, shown_at, dismissed_at, updated_at)
+        SELECT $1, prompt_key, shown_at, dismissed_at, updated_at FROM chapter.membership_prompt_state WHERE owner_id=$2
+        ON CONFLICT (owner_id, prompt_key) DO UPDATE SET
+          shown_at=COALESCE(GREATEST(chapter.membership_prompt_state.shown_at, EXCLUDED.shown_at), chapter.membership_prompt_state.shown_at, EXCLUDED.shown_at),
+          dismissed_at=COALESCE(GREATEST(chapter.membership_prompt_state.dismissed_at, EXCLUDED.dismissed_at), chapter.membership_prompt_state.dismissed_at, EXCLUDED.dismissed_at),
+          updated_at=GREATEST(chapter.membership_prompt_state.updated_at, EXCLUDED.updated_at)`, [destinationId, sourceId]);
+      await client.query("DELETE FROM chapter.membership_prompt_state WHERE owner_id=$1", [sourceId]);
+
+      // Per-user preferences/artifacts have one canonical row. Keep the more
+      // recent generated artifact and union non-destructive onboarding state.
+      await client.query(`INSERT INTO chapter.onboarding_progress (owner_id, dismissed_steps, updated_at)
+        SELECT $1, dismissed_steps, updated_at FROM chapter.onboarding_progress WHERE owner_id=$2
+        ON CONFLICT (owner_id) DO UPDATE SET dismissed_steps=(SELECT ARRAY(SELECT DISTINCT unnest(chapter.onboarding_progress.dismissed_steps || EXCLUDED.dismissed_steps))), updated_at=GREATEST(chapter.onboarding_progress.updated_at, EXCLUDED.updated_at)`, [destinationId, sourceId]);
+      await client.query("DELETE FROM chapter.onboarding_progress WHERE owner_id=$1", [sourceId]);
+      for (const table of ["weekly_reading_goals", "cross_book_connections", "podcast_recaps"] as const) {
+        await client.query(`DELETE FROM chapter.${table} source USING chapter.${table} destination
+          WHERE source.owner_id=$1 AND destination.owner_id=$2 AND source.updated_at <= destination.updated_at`, [sourceId, destinationId]);
+        await client.query(`DELETE FROM chapter.${table} destination USING chapter.${table} source
+          WHERE destination.owner_id=$1 AND source.owner_id=$2 AND destination.updated_at < source.updated_at`, [destinationId, sourceId]);
+        await client.query(`UPDATE chapter.${table} SET owner_id=$1 WHERE owner_id=$2`, [destinationId, sourceId]);
+      }
+
+      // Preserve the stronger active entitlement and retain its provider IDs.
+      const subscription = await client.query(`SELECT * FROM chapter.subscriptions WHERE user_id = ANY($1::uuid[]) FOR UPDATE`, [[sourceId, destinationId]]);
+      const rank = (row: any) => ({ free: 0, plus: 1, deep_reader: 2 }[row.tier] ?? 0) + (["active", "trialing"].includes(row.status) ? 10 : 0);
+      const chosen = subscription.rows.sort((a: any, b: any) => rank(b) - rank(a))[0];
+      if (chosen) {
+        await client.query("DELETE FROM chapter.subscriptions WHERE user_id = ANY($1::uuid[]) AND user_id<>$2", [[sourceId, destinationId], chosen.user_id]);
+        if (chosen.user_id === sourceId) await client.query("UPDATE chapter.subscriptions SET user_id=$1 WHERE user_id=$2", [destinationId, sourceId]);
+      }
+
+      // Record the explicit user-confirmed merge before removing the duplicate
+      // identity; only a one-way subject hash is retained for audit/support.
+      await client.query("INSERT INTO chapter.account_merge_events (destination_user_id, source_user_id, provider, provider_subject_hash) VALUES ($1,$2,'google',$3)", [destinationId, sourceId, sha256(pending.googleSub)]);
+
+      // Revoke stale sessions, transfer Google identity, then remove only the
+      // duplicate identity. All user-owned data above now belongs to destination.
+      await client.query("DELETE FROM chapter.session WHERE sess->'user'->>'id'=$1", [sourceId]);
+      await client.query("UPDATE chapter.users SET google_sub=$1, email=COALESCE(email,$2), email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$3", [pending.googleSub, source.email, destinationId]);
+      await client.query("DELETE FROM chapter.users WHERE id=$1", [sourceId]);
+    });
+    delete req.session.googleMerge;
+    await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("[auth] Google account merge failed", error instanceof Error ? error.message : "unknown");
+    res.status(409).json({ error: "We could not merge these accounts safely. Please contact support." });
   }
 });
 

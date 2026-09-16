@@ -785,3 +785,18 @@ CREATE TABLE IF NOT EXISTS chapter.story_thread_repair_jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_story_thread_repair_jobs_book_round ON chapter.story_thread_repair_jobs (book_id, reading_round, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_story_thread_repair_jobs_active ON chapter.story_thread_repair_jobs (book_id, reading_round) WHERE status='running';
+
+
+-- Explicit identity-merge audit. Source IDs are retained as values because the
+-- duplicate user is deleted after its owned data has been transferred.
+CREATE TABLE IF NOT EXISTS chapter.account_merge_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  destination_user_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE RESTRICT,
+  source_user_id UUID NOT NULL,
+  provider TEXT NOT NULL CHECK (provider IN ('google')),
+  provider_subject_hash TEXT NOT NULL,
+  merged_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (destination_user_id <> source_user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_account_merge_events_destination_merged
+  ON chapter.account_merge_events(destination_user_id, merged_at DESC);

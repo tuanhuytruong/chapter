@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Check, Loader2, Save, UserRound } from "lucide-react";
 import { useAuth } from "../AuthContext";
 import { AVATAR_PRESETS, avatarValueForPreset, presetFromAvatarValue, type AvatarPresetId } from "../avatar-presets";
@@ -18,6 +19,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [avatar, setAvatar] = useState<AvatarPresetId>(presetFromAvatarValue(user?.avatarUrl)?.id || "otter");
   const [busy, setBusy] = useState(false);
@@ -25,6 +27,8 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [identity, setIdentity] = useState<ProfileResponse | null>(null);
   const [rhythm, setRhythm] = useState<QuietStreakSummary | null>(null);
+  const [mergePending, setMergePending] = useState(false);
+  const [merging, setMerging] = useState(false);
 
   useEffect(() => {
     void request<ProfileResponse>("/api/auth/profile").then((profile) => {
@@ -33,6 +37,7 @@ export default function Profile() {
       setIdentity(profile);
     }).catch(() => setError("Could not load your profile."));
     void api.getRhythm().then(({ quiet_streak }) => setRhythm(quiet_streak)).catch(() => {});
+    if (searchParams.get("google_merge") === "confirm") void request<{ pending: boolean }>("/api/auth/google-merge").then(({ pending }) => setMergePending(pending)).catch(() => setError("Google merge confirmation expired. Connect Google again."));
   }, []);
 
   const save = async (event: React.FormEvent) => {
@@ -45,9 +50,20 @@ export default function Profile() {
     finally { setBusy(false); }
   };
 
+  const confirmGoogleMerge = async () => {
+    setMerging(true); setError(null);
+    try {
+      await request<{ ok: boolean }>("/api/auth/google-merge", { method: "POST", body: JSON.stringify({}) });
+      setMergePending(false); setSearchParams({}, { replace: true });
+      const profile = await request<ProfileResponse>("/api/auth/profile"); setIdentity(profile);
+    } catch (err: any) { setError(err.message || "Could not merge these accounts safely."); }
+    finally { setMerging(false); }
+  };
+
   const current = AVATAR_PRESETS.find(({ id }) => id === avatar)!;
   return <main className="mx-auto max-w-2xl space-y-5">
     <PageHeader eyebrow="Profile" title="Your reading identity" description="Choose a small companion for the places Chapter recognizes you." titleClassName="mt-1 text-3xl font-bold" descriptionClassName="mt-2 text-sm text-natural-stone" />
+    {mergePending && <section className="rounded-3xl border border-natural-sage/35 bg-natural-sage/10 p-5 shadow-sm" role="status"><h2 className="font-sans text-sm font-bold text-natural-dark">Merge your Google account?</h2><p className="mt-2 text-sm leading-6 text-natural-stone">This Google account already has a Chapter shelf. Merging keeps this signed-in account, brings its reading history here, and removes the duplicate sign-in.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => void confirmGoogleMerge()} disabled={merging} className="min-h-11 rounded-full bg-natural-sage px-4 text-xs font-bold text-white disabled:opacity-60">{merging ? "Merging…" : "Merge accounts"}</button><button type="button" onClick={() => { setMergePending(false); setSearchParams({}, { replace: true }); }} disabled={merging} className="min-h-11 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark">Not now</button></div></section>}
     <form onSubmit={save} className="space-y-6 rounded-3xl border border-natural-border bg-natural-cream p-5 shadow-sm sm:p-6">
       <div className="flex items-center gap-4"><QuietStreakBadge tier={rhythm?.highest_tier}><div className={`flex h-16 w-16 overflow-hidden rounded-[22px] ${current.tone} shadow-sm`}><AnimalAvatar id={current.id} alt={`${current.label} animal companion`} className="h-full w-full" /></div></QuietStreakBadge><div><p className="font-sans text-sm font-bold text-natural-dark">{displayName || "Your profile"}</p><p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-natural-stone">@{user?.username}</p></div></div>{rhythm ? <p className="text-sm text-natural-stone">{rhythm.current_streak > 0 ? `${rhythm.current_streak}-day current rhythm${rhythm.highest_tier ? ` · ${rhythm.highest_tier.title}` : ""}` : rhythm.highest_tier ? `${rhythm.highest_tier.title} remains part of your rhythm.` : "Your rhythm begins with one session."}</p> : null}
       <label className="block"><span className="font-sans text-xs font-bold text-natural-dark">Display name</span><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={60} required className="mt-2 block min-h-11 w-full rounded-xl border border-natural-border bg-white px-3 font-sans text-sm text-natural-dark outline-none focus:border-natural-sage focus:ring-2 focus:ring-natural-sage/15" /></label>
