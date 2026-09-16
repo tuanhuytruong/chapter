@@ -17,7 +17,7 @@ export default defineConfig(() => {
     server: {
       // Required only when the Express dev server is reverse-proxied publicly.
       // Production serves dist/ and never starts Vite middleware.
-      allowedHosts: ['chapter.mrl.asia'],
+      allowedHosts: ['chapter.srv.io.vn', 'chapter-dev.srv.io.vn', 'chapter.mrl.asia', 'chapter-dev.mrl.asia'],
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
