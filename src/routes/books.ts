@@ -479,9 +479,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode)
     ? summary_mode
     : "casual";
-  const readingExperience = ["analytical", "story"].includes(reading_experience)
-    ? reading_experience
-    : "analytical";
+  if (reading_experience !== undefined && !["analytical", "story", "reference"].includes(reading_experience))
+    return res.status(400).json({ error: "reading_experience must be analytical, story, or reference" });
+  const readingExperience = reading_experience === undefined ? "analytical" : reading_experience;
   const resolvedPath = normalizeUploadPath(file_path);
   let readingIntention: string | null;
   try {
@@ -651,11 +651,11 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   ).rows[0];
   if (!existing) return res.status(404).json({ error: "book not found" });
   if (
-    existing.reading_experience === "story" &&
+    existing.reading_experience !== "analytical" &&
     req.body.summary_mode !== undefined
   ) {
     return res.status(400).json({
-      error: "Story Thread books do not use analytical summary styles",
+      error: "Only analytical books use analytical summary styles",
     });
   }
   const sets: string[] = [];
@@ -1910,7 +1910,7 @@ async function advanceBookNow(
         `UPDATE book_reading_rounds SET status='finished', final_page=$1, finished_at=COALESCE(finished_at, now()), updated_at=now() WHERE book_id=$2 AND reading_round=$3`,
         [end, bookId, book.current_reading_round],
       );
-    if (book.reading_experience !== "story") {
+    if (book.reading_experience === "analytical") {
       const firstDue = reviewOutcome(1, false, dateStr).dueDate;
       for (const [insightIndex, insight] of parsed.key_insights.entries()) {
         const trimmed = insight.trim();
@@ -1955,7 +1955,7 @@ async function advanceBookNow(
         await markStoryThreadFailed(result.log.id, error).catch(() => undefined);
         console.warn("[story-thread] background analysis unavailable:", error.message);
       });
-    } else {
+    } else if (result.readingExperience === "analytical") {
       // Keep the reading transaction responsive. The session is already saved;
       // enrich it in order so the wiki only synthesizes persisted analyses.
       void (async () => {

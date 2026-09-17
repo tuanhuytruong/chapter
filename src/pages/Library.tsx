@@ -80,7 +80,7 @@ export default function Library() {
   // Search results with a saved-session source use the same immutable anchor as
   // Returns. This selects the originating reading round, opens that session and
   // scrolls/highlights it instead of stopping at the enclosing book.
-  const openSearchResult = (result: LibrarySearchResult) => { const params = new URLSearchParams(); if (result.logId) { params.set("returnLog", result.logId); if (result.readingRound != null) params.set("returnRound", String(result.readingRound)); } if (result.kind === "story_session" || result.kind === "story_memory") params.set("view","story-thread"); if (result.kind === "wiki") params.set("tab","ai-reader"); navigate(`/books/${result.bookId}${params.size ? `?${params}` : ""}`); };
+  const openSearchResult = (result: LibrarySearchResult) => { if (result.kind === "reference_card" && result.referenceCardId) { navigate(`/playbooks/${result.referenceCardId}`); return; } const params = new URLSearchParams(); if (result.logId) { params.set("returnLog", result.logId); if (result.readingRound != null) params.set("returnRound", String(result.readingRound)); } if (result.kind === "story_session" || result.kind === "story_memory") params.set("view","story-thread"); if (result.kind === "wiki") params.set("tab","ai-reader"); navigate(`/books/${result.bookId}${params.size ? `?${params}` : ""}`); };
 
   const statusCounts = useMemo(() => books.reduce<Record<Filter, number>>((counts, book) => {
     counts[book.status as Filter] = (counts[book.status as Filter] || 0) + 1;

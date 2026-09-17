@@ -30,7 +30,7 @@ export interface ReadingLog {
 
 // New server-side DB row shapes (snake_case from Postgres)
 export type SummaryMode = "casual" | "deep_reading";
-export type ReadingExperience = "analytical" | "story";
+export type ReadingExperience = "analytical" | "story" | "reference";
 
 export interface BookRow {
   id: string;
@@ -132,8 +132,17 @@ export interface StoryThreadRow {
   page_end: number;
 }
 
-export type LibrarySearchKind = "book" | "wiki" | "quote" | "note" | "reflection" | "story_session" | "story_memory";
-export type LibrarySearchResult = { kind: LibrarySearchKind; bookId: string; bookTitle: string; bookAuthor: string; readingRound: number | null; logId: string | null; pageStart: number | null; pageEnd: number | null; title: string; excerpt: string; rank: number };
+export type ReferenceCardType = "recipe" | "formula" | "procedure";
+export type RecipeFields = { servings: string | null; ingredients: Array<{ item: string; amount: string | null }>; steps: string[]; nutrition: string[]; substitutions: string[] };
+export type FormulaFields = { expression: string; variables: Array<{ symbol: string; meaning: string; unit: string | null }>; conditions: string[]; steps: string[]; example: string | null };
+export type ProcedureFields = { prerequisites: string[]; steps: string[]; checklist: string[]; expectedOutcome: string | null };
+export type ReferenceCardFields = RecipeFields | FormulaFields | ProcedureFields;
+export type ReferenceCardDraft = { cardType: ReferenceCardType; title: string; content: string; fields: ReferenceCardFields; tags: string[]; sourceExcerpt: string; personalAdaptation?: string; needsReview: boolean };
+export type ReferenceCard = { id: string; bookId: string; readingRound: number; logId: string; cardType: ReferenceCardType; title: string; content: string; fields: ReferenceCardFields; tags: string[]; personalAdaptation: string; sourceExcerpt: string; sourcePageStart: number; sourcePageEnd: number; needsReview: boolean; created_at: string; updated_at: string; last_used_at: string | null; usage_count: number; book_title: string; book_author: string; file_type: "pdf" | "epub"; book_status: BookRow["status"] };
+export type ReferenceCardUse = { id: string; note: string; used_at: string };
+
+export type LibrarySearchKind = "book" | "wiki" | "quote" | "note" | "reflection" | "story_session" | "story_memory" | "reference_card";
+export type LibrarySearchResult = { kind: LibrarySearchKind; bookId: string; bookTitle: string; bookAuthor: string; readingRound: number | null; logId: string | null; pageStart: number | null; pageEnd: number | null; title: string; excerpt: string; rank: number; referenceCardId?: string };
 
 export type StoryMemoryEvidence = { logId: string; session: number; pageStart: number; pageEnd: number };
 export type StoryMemoryResponse = { readingRound: number; status: "ready" | "generating" | "failed" | "unavailable"; memory: { storySoFar: string; characters: Array<{ id: string; displayName: string; aliases: Array<{ name: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; roles: string[]; interior: Array<{ shift: string; conflict: string; desireVsAction: string; subtext: string; unresolved: string; evidence: StoryMemoryEvidence }>; unresolved: string[] }>; identityHypotheses: Array<{ id: string; leftCharacterId: string; rightCharacterId: string; claim: string; status: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence[] }>; revealEvents: Array<{ eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; openQuestions: string[]; coveredThrough: StoryMemoryEvidence | null } | null; events: Array<{ eventType: "identity_hypothesis" | "identity_confirmed" | "identity_rejected" | "assumption_revised"; subjectKey: string; priorClaim?: string; currentClaim: string; confidence: "hypothesis" | "confirmed" | "rejected"; evidence: StoryMemoryEvidence }>; updatedAt: string | null; retryAllowed: boolean };

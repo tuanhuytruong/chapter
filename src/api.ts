@@ -11,6 +11,10 @@ import type {
   LibrarySearchKind,
   LibrarySearchResult,
   SummaryMode,
+  ReadingExperience,
+  ReferenceCard,
+  ReferenceCardDraft,
+  ReferenceCardUse,
 } from "./types";
 import type { ReturnOutcome, ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
@@ -338,7 +342,7 @@ export interface AdvanceResult {
   totalUnits: number;
   finished: boolean;
   log: LogRow;
-  readingExperience: "analytical" | "story";
+  readingExperience: ReadingExperience;
 }
 
 export interface PodcastEpisode {
@@ -480,6 +484,14 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  draftPlaybookCard: (body: { bookId: string; logId: string; preferredType?: ReferenceCardDraft["cardType"] | null }) => req<{ draft: ReferenceCardDraft; source: { positionLabel: string } }>("/api/playbooks/draft", { method: "POST", body: JSON.stringify(body) }),
+  createPlaybookCard: (body: ReferenceCardDraft & { bookId: string; logId: string; requestKey: string }) => req<{ card: ReferenceCard }>("/api/playbooks", { method: "POST", body: JSON.stringify(body) }),
+  listPlaybookCards: (params = "") => req<{ cards: ReferenceCard[] }>(`/api/playbooks${params ? `?${params}` : ""}`),
+  getPlaybookCard: (cardId: string) => req<{ card: ReferenceCard; uses: ReferenceCardUse[] }>(`/api/playbooks/${cardId}`),
+  updatePlaybookCard: (cardId: string, body: ReferenceCardDraft) => req<{ card: ReferenceCard }>(`/api/playbooks/${cardId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deletePlaybookCard: (cardId: string) => req<void>(`/api/playbooks/${cardId}`, { method: "DELETE" }),
+  recordPlaybookUse: (cardId: string, body: { requestKey: string; note?: string }) => req<{ use: ReferenceCardUse }>(`/api/playbooks/${cardId}/uses`, { method: "POST", body: JSON.stringify(body) }),
+
   submitFeedback: (body: FeedbackInput) =>
     req<FeedbackSubmission>("/api/feedback", { method: "POST", body: JSON.stringify(body) }),
   listBooks: (scope: "mine" | "all" = "mine") =>

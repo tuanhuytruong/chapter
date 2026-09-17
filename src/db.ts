@@ -193,7 +193,8 @@ export async function verifyCoreSchema(): Promise<void> {
     "membership_prompt_state", "monthly_reviews", "ask_reading_answers",
     "cross_book_connections", "podcast_recaps", "billing_orders",
     "billing_confirmations", "billing_transactions", "reading_progress_companions",
-    "auth_rate_limits", "feedback", "feedback_rate_limits",
+    "auth_rate_limits", "feedback", "feedback_rate_limits", "reference_cards",
+    "reference_card_uses", "search_documents",
   ];
   const { rows } = await query<{ relation: string | null }>(
     "SELECT to_regclass('chapter.' || unnest($1::text[])) AS relation",

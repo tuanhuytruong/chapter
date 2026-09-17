@@ -1,0 +1,11 @@
+import { emptyFieldsFor, normalizeReferenceCardDraft, normalizeTags, referenceCardSearchBody, sourceExcerptMatches, validateReferenceCardPayload } from "../src/referenceCards.js";
+const recipe=normalizeReferenceCardDraft({cardType:"recipe",title:"Soup",content:"Cook gently",fields:{servings:"2 phần",ingredients:[{item:"flour",amount:"250 g"}],steps:["Bake at 180°C"]},tags:["Food","food","quick"],sourceExcerpt:"Use 250 g flour at 180°C.",needsReview:false});
+if(recipe.cardType!=="recipe" || recipe.tags.join(",")!=="Food,quick" || !sourceExcerptMatches("Use 250 g flour at 180°C.",recipe.sourceExcerpt)) throw new Error("recipe grounding failed");
+const formula=normalizeReferenceCardDraft({cardType:"formula",title:"Force",content:"",fields:{expression:"F = m × a",variables:[{symbol:"m",meaning:"mass",unit:"kg"}],conditions:["constant mass"]},tags:[],sourceExcerpt:"F = m × a; m in kg.",needsReview:true});
+if((formula.fields as any).expression!=="F = m × a" || !sourceExcerptMatches("F = m × a; m in kg.",formula.sourceExcerpt))throw new Error("formula preservation failed");
+if(sourceExcerptMatches("Use 250 g flour", "Use 200 g flour"))throw new Error("near quantity mismatch accepted");
+if(validateReferenceCardPayload({...recipe,sourceExcerpt:""}).ok)throw new Error("empty source accepted");
+if(normalizeTags(Array.from({length:20},(_,i)=>`tag-${i}`)).length!==10)throw new Error("tag limit failed");
+if(referenceCardSearchBody(recipe).includes(recipe.sourceExcerpt))throw new Error("excerpt leaked to search body");
+if(JSON.stringify(emptyFieldsFor("procedure")).includes("expectedOutcome")===false)throw new Error("empty procedure missing shape");
+console.log("REFERENCE_CARD_EXTRACTION_FIXTURES_OK");

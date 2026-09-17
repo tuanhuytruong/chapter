@@ -64,7 +64,12 @@ export type AnalyticsEvent =
   | "review_completed"
   | "route_perf_sample"
   | "sign_up_completed"
-  | "weekly_goal_set";
+  | "weekly_goal_set"
+  | "reference_card_draft_requested"
+  | "reference_card_created"
+  | "reference_card_updated"
+  | "reference_card_used"
+  | "reference_card_deleted";
 
 type AnalyticsProperties = Record<string, boolean | number | string | null | undefined>;
 

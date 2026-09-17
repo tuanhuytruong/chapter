@@ -26,6 +26,8 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Quotes = lazy(() => import('./pages/Quotes'));
 const Help = lazy(() => import('./pages/Help'));
 const Feedback = lazy(() => import('./pages/Feedback'));
+const Playbooks = lazy(() => import('./pages/Playbooks'));
+const PlaybookDetail = lazy(() => import('./pages/PlaybookDetail'));
 
 function RoutePerformanceObserver() {
   const location = useLocation();
@@ -59,6 +61,8 @@ function AppRoutes() {
     <Route path="/account" element={<SecondaryRoute><Account /></SecondaryRoute>} />
     <Route path="/pricing" element={<SecondaryRoute><Pricing /></SecondaryRoute>} />
     <Route path="/quotes" element={<SecondaryRoute><Quotes /></SecondaryRoute>} />
+    <Route path="/playbooks" element={<SecondaryRoute><Playbooks /></SecondaryRoute>} />
+    <Route path="/playbooks/:id" element={<SecondaryRoute><PlaybookDetail /></SecondaryRoute>} />
     <Route path="/help" element={<SecondaryRoute><Help /></SecondaryRoute>} />
     <Route path="/feedback" element={<SecondaryRoute><Feedback /></SecondaryRoute>} />
     <Route path="*" element={<Library />} />

@@ -59,6 +59,7 @@ const StoryThreadView = React.lazy(() => import("../components/story/StoryThread
 const BookWiki = React.lazy(() => import("../components/BookWiki"));
 const PodcastPanel = React.lazy(() => import("../components/PodcastPanel"));
 const ContextualUpgradeCard = React.lazy(() => import("../components/ContextualUpgradeCard").then((module) => ({ default: module.ContextualUpgradeCard })));
+const ReferenceCardDraftModal = React.lazy(() => import("../components/playbooks/ReferenceCardDraftModal"));
 
 function BookDetailPanelFallback({ label = "Loading reading view" }: { label?: string }) {
   return <div className="min-h-28 rounded-2xl border border-natural-border bg-natural-cream p-4 text-xs text-natural-stone" role="status" aria-live="polite">{label}…</div>;
@@ -237,6 +238,7 @@ export default function BookDetail() {
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<
     string | null
   >(null);
+  const [referenceCardLogId, setReferenceCardLogId] = useState<string | null>(null);
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(
     null,
   );
@@ -1496,6 +1498,7 @@ export default function BookDetail() {
                                   onNavigationHandled={() => setNavigationTargetLogId(null)}
                                   onMarkerCreated={refreshMarkers}
                                   onRequestSource={requestSourceText}
+                                  {...(book.reading_experience === "reference" && book.can_edit && book.status === "active" ? { onCreateReferenceCard: () => setReferenceCardLogId(log.id) } : {})}
                                   onReturnToAiReader={aiReaderReturnLogId === log.id && aiReaderReturnTargetId ? returnToAiReader : undefined}
                                 />
                                 <ReadingLensCard
@@ -1572,6 +1575,7 @@ export default function BookDetail() {
           document.body,
         )}
 
+      {referenceCardLogId && <React.Suspense fallback={null}><ReferenceCardDraftModal bookId={book.id} logId={referenceCardLogId} onClose={() => setReferenceCardLogId(null)} onSaved={(cardId) => { setReferenceCardLogId(null); setToast({ type: "ok", msg: "Saved to Playbooks" }); navigate(`/playbooks/${cardId}`); }} /></React.Suspense>}
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       {/* Finish queue modal */}

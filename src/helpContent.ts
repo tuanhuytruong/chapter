@@ -1,4 +1,4 @@
-export type HelpTopicId = "getting-started" | "companions" | "returns" | "podcast" | "library-search" | "privacy-sharing" | "troubleshooting";
+export type HelpTopicId = "getting-started" | "companions" | "returns" | "podcast" | "library-search" | "privacy-sharing" | "troubleshooting" | "playbooks";
 export type HelpQuestion = { id: string; question: string; answer: string; keywords: readonly string[] };
 export type HelpTopic = { id: HelpTopicId; eyebrow: string; title: string; intro: string; questions: readonly HelpQuestion[] };
 
@@ -26,6 +26,7 @@ export const helpTopics: readonly HelpTopic[] = [
     { id: "source-navigation", question: "Why does a result open a reading session?", answer: "A result backed by a saved session opens its exact source session and reading round, rather than stopping at the book cover.", keywords: ["source", "session", "round", "result"] },
     { id: "raw-text", question: "Does search read all uploaded text?", answer: "No. Library Search does not index raw reading text. It searches the saved and derived memories listed above.", keywords: ["raw", "text", "privacy", "index"] },
   ] },
+  { id: "playbooks", eyebrow: "Reference", title: "Save reusable cards", intro: "Reference books turn a completed saved session into an editable recipe, formula, or procedure.", questions: [{ id: "create-card", question: "How do I create a reusable card?", answer: "Open a Reference book, find a saved session, and choose Create reusable card. Review the grounded draft before saving it to Playbooks.", keywords: ["reference", "playbook", "recipe", "formula", "procedure", "card"] }, { id: "card-source", question: "Can I change the source excerpt?", answer: "No. The excerpt is fixed to the saved session so the card stays traceable. You can edit structured fields, tags, and your separate personal adaptation.", keywords: ["source", "excerpt", "edit", "adaptation"] }] },
   { id: "privacy-sharing", eyebrow: "Privacy", title: "Your source material stays yours", intro: "Sharing a book does not turn private reading material into shared workspace data.", questions: [
     { id: "raw-private", question: "Who can see raw session text?", answer: "Raw saved session text remains private to the book owner. Companion features use saved material to ground their output.", keywords: ["raw", "private", "source", "owner"] },
     { id: "shared", question: "What can shared readers do?", answer: "Shared readers can view intentionally available book information and content. They cannot mutate private notes or create owner-only companion work.", keywords: ["shared", "read-only", "notes", "owner"] },
