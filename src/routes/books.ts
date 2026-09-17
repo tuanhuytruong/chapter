@@ -7,7 +7,10 @@ import {
   buildEpubReadingUnits,
   extractRange,
   getChapterTitle,
+  PDF_ILLUSTRATION_DETECTOR_VERSION,
 } from "../extractor.js";
+import { renderPdfPageToTempImage } from "../pdfIllustrationRenderer.js";
+import { analysePdfIllustration } from "../illustrationAnalysis.js";
 import { callLLM, callLLMCompletion, callJsonLLM, callNineRouter, parseSummary } from "../llm.js";
 import {
   boundStoryThreadSource,
@@ -319,29 +322,18 @@ export async function ensurePdfReadingUnits(
           offset < pages.length;
           offset += READING_UNIT_INSERT_BATCH_SIZE
         ) {
-          const batch = pages.slice(
-            offset,
-            offset + READING_UNIT_INSERT_BATCH_SIZE,
-          );
+          const batch = pages.slice(offset, offset + READING_UNIT_INSERT_BATCH_SIZE);
           const params: any[] = [];
           const values = batch.map((rawText: string, index: number) => {
             const n = params.length + 1;
             const unitIndex = offset + index + 1;
             const safeText = stripNul(rawText);
-            params.push(
-              book.id,
-              unitIndex,
-              null,
-              unitIndex,
-              `pdf-page-${unitIndex}`,
-              safeText,
-              safeText.length,
-              unitIndex,
-            );
-            return `($${n},$${n + 1},$${n + 2},$${n + 3},$${n + 4},$${n + 5},$${n + 6},$${n + 7})`;
+            const hasIllustration = Boolean(extracted.pageVisuals?.[unitIndex - 1]?.meaningful);
+            params.push(book.id, unitIndex, null, unitIndex, `pdf-page-${unitIndex}`, safeText, safeText.length, unitIndex, hasIllustration);
+            return `($${n},$${n + 1},$${n + 2},$${n + 3},$${n + 4},$${n + 5},$${n + 6},$${n + 7},$${n + 8})`;
           });
           await client.query(
-            `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${values.join(",")}`,
+            `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label,has_illustration) VALUES ${values.join(",")}`,
             params,
           );
         }
@@ -1284,7 +1276,9 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
               l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
               CASE WHEN $4::boolean THEN NULL ELSE CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END END AS raw_text,
               CASE WHEN b.owner_id = $3 THEN l.raw_text IS NOT NULL AND btrim(l.raw_text) <> '' ELSE false END AS raw_text_available,
-              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes
+              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes,
+              CASE WHEN b.owner_id = $3 THEN l.illustration_pages ELSE '{}'::int[] END AS illustration_pages,
+              CASE WHEN b.owner_id = $3 THEN (SELECT COALESCE(json_agg(json_build_object('pageNumber', i.page_number, 'status', i.status, 'analysis', i.analysis) ORDER BY i.page_number), '[]'::json) FROM reading_log_illustrations i WHERE i.reading_log_id=l.id AND i.source_hash=l.illustration_source_hash AND i.status='ready') ELSE '[]'::json END AS illustrations
        FROM reading_log l JOIN books b ON b.id = l.book_id
        WHERE l.book_id = $1 AND l.reading_round=$2 ORDER BY l.date DESC, l.session DESC`,
       [id, readingRound, userFrom(req).id, overview],
@@ -1305,7 +1299,9 @@ booksRouter.get("/:id/logs/:logId", async (req: Request, res: Response) => {
               l.summary, l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
               CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END AS raw_text,
               CASE WHEN b.owner_id = $3 THEN l.raw_text IS NOT NULL AND btrim(l.raw_text) <> '' ELSE false END AS raw_text_available,
-              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes
+              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes,
+              CASE WHEN b.owner_id = $3 THEN l.illustration_pages ELSE '{}'::int[] END AS illustration_pages,
+              CASE WHEN b.owner_id = $3 THEN (SELECT COALESCE(json_agg(json_build_object('pageNumber', i.page_number, 'status', i.status, 'analysis', i.analysis) ORDER BY i.page_number), '[]'::json) FROM reading_log_illustrations i WHERE i.reading_log_id=l.id AND i.source_hash=l.illustration_source_hash AND i.status='ready') ELSE '[]'::json END AS illustrations
        FROM reading_log l JOIN books b ON b.id=l.book_id
        WHERE l.book_id=$1 AND l.id=$2`,
       [id, logId, userFrom(req).id],
@@ -1315,6 +1311,51 @@ booksRouter.get("/:id/logs/:logId", async (req: Request, res: Response) => {
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
+});
+
+// Illustration pages are owner-private source material. Render only a detected page,
+// stream it with no-store, and remove the temporary image before the request finishes.
+booksRouter.get("/:id/logs/:logId/illustration-page/:page", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  const page = Number(req.params.page);
+  if (!(await ownerCanMutate(req, res, id))) return;
+  if (!Number.isInteger(page) || page < 1) return res.status(400).json({ error: "invalid illustration page" });
+  try {
+    const found = await query(`SELECT b.file_path,b.file_type,l.illustration_pages FROM reading_log l JOIN books b ON b.id=l.book_id WHERE l.id=$1 AND l.book_id=$2 AND b.status='active' AND $3=ANY(l.illustration_pages)`, [logId, id, page]);
+    if (!found.rows.length) return res.status(404).json({ error: "illustration unavailable" });
+    if (found.rows[0].file_type !== "pdf") return res.status(404).json({ error: "illustration unavailable" });
+    const image = await renderPdfPageToTempImage(found.rows[0].file_path, page);
+    try {
+      res.set({ "Content-Type": image.mimeType, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+      res.sendFile(image.path, {}, async () => { await image.cleanup(); });
+    } catch (error) { await image.cleanup(); throw error; }
+  } catch { if (!res.headersSent) res.status(503).json({ error: "illustration unavailable" }); }
+});
+
+const activeIllustrationAnalyses = new Map<string, Promise<{ pageNumber: number; status: "ready"; analysis: string }>>();
+booksRouter.post("/:id/logs/:logId/illustrations/:page/analyze", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  const page = Number(req.params.page);
+  if (!(await ownerCanMutate(req, res, id))) return;
+  if (!Number.isInteger(page) || page < 1) return res.status(400).json({ error: "invalid illustration page" });
+  try {
+    const found = await query(`SELECT b.file_path,b.file_type,b.status,l.illustration_pages,l.illustration_source_hash,u.raw_text FROM reading_log l JOIN books b ON b.id=l.book_id LEFT JOIN book_reading_units u ON u.book_id=l.book_id AND u.unit_index=$3 WHERE l.id=$1 AND l.book_id=$2 AND $3=ANY(l.illustration_pages)`, [logId, id, page]);
+    const row = found.rows[0];
+    if (!row || row.file_type !== "pdf" || row.status !== "active" || !row.illustration_source_hash) return res.status(404).json({ error: "illustration unavailable" });
+    const cached = await query(`SELECT analysis FROM reading_log_illustrations WHERE reading_log_id=$1 AND page_number=$2 AND source_hash=$3 AND status='ready'`, [logId, page, row.illustration_source_hash]);
+    if (cached.rows[0]?.analysis) return res.json({ pageNumber: page, status: "ready", analysis: cached.rows[0].analysis });
+    const key = `${logId}:${page}:${row.illustration_source_hash}`;
+    let job = activeIllustrationAnalyses.get(key);
+    if (!job) {
+      job = (async () => {
+        const analysis = await analysePdfIllustration({ filePath: row.file_path, page, pageText: String(row.raw_text || "") });
+        await query(`INSERT INTO reading_log_illustrations (reading_log_id,page_number,source_hash,status,analysis) VALUES ($1,$2,$3,'ready',$4) ON CONFLICT (reading_log_id,page_number,source_hash) DO UPDATE SET status='ready',analysis=EXCLUDED.analysis,updated_at=now()`, [logId, page, row.illustration_source_hash, analysis]);
+        return { pageNumber: page, status: "ready" as const, analysis };
+      })().finally(() => activeIllustrationAnalyses.delete(key));
+      activeIllustrationAnalyses.set(key, job);
+    }
+    res.json(await job);
+  } catch { res.status(503).json({ error: "illustration analysis unavailable" }); }
 });
 
 // GET /api/books/:id/reading-lens — no source text is exposed.
@@ -1762,17 +1803,20 @@ async function reserveAdvance(
       [bookId, dateStr],
     );
     const session = Number(daySessions[0]?.last_session || 0) + 1;
+    let illustrationPages: number[] = [];
+    let illustrationSourceHash: string | null = null;
+    if (book.file_type === "pdf") {
+      const facts = await client.query(
+        `SELECT unit_index FROM book_reading_units WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 AND has_illustration=true ORDER BY unit_index`,
+        [bookId, start, end],
+      );
+      illustrationPages = facts.rows.map((row: any) => Number(row.unit_index)).filter(Number.isInteger);
+      // The PDF bytes and the immutable session range invalidate stale notes after replacement.
+      illustrationSourceHash = crypto.createHash("sha256").update(fs.readFileSync(book.file_path)).update(`:${PDF_ILLUSTRATION_DETECTOR_VERSION}:${start}-${end}`).digest("hex");
+    }
     const { rows } = await client.query(
-      `INSERT INTO reading_log (book_id,reading_round,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [
-        bookId,
-        book.current_reading_round,
-        dateStr,
-        session,
-        start,
-        end,
-        "Reading session is being prepared.",
-      ],
+      `INSERT INTO reading_log (book_id,reading_round,date,session,page_start,page_end,summary,illustration_pages,illustration_source_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [bookId, book.current_reading_round, dateStr, session, start, end, "Reading session is being prepared.", illustrationPages, illustrationSourceHash],
     );
     await client.query("UPDATE books SET current_page=$1 WHERE id=$2", [
       end,

@@ -268,6 +268,7 @@ CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_unit
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS spine_index INT;
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS chapter_key TEXT;
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS page_label INT;
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS has_illustration BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_chapter
   ON chapter.book_reading_units (book_id, chapter_key, unit_index);
 
@@ -286,6 +287,8 @@ CREATE TABLE IF NOT EXISTS chapter.reading_log (
   key_insights  TEXT[] NOT NULL DEFAULT '{}',
   quote         TEXT,
   telegram_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  illustration_pages INT[] NOT NULL DEFAULT '{}',
+  illustration_source_hash TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (book_id, date)   -- idempotency guard for daily cron
 );
@@ -321,6 +324,21 @@ ALTER TABLE chapter.reading_log
 DROP INDEX IF EXISTS idx_reading_log_book_date;
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
+
+ALTER TABLE chapter.reading_log ADD COLUMN IF NOT EXISTS illustration_pages INT[] NOT NULL DEFAULT '{}';
+ALTER TABLE chapter.reading_log ADD COLUMN IF NOT EXISTS illustration_source_hash TEXT;
+CREATE TABLE IF NOT EXISTS chapter.reading_log_illustrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reading_log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  page_number INT NOT NULL CHECK (page_number > 0),
+  source_hash TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('ready', 'failed')),
+  analysis TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (reading_log_id, page_number, source_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_reading_log_illustrations_log ON chapter.reading_log_illustrations (reading_log_id, page_number);
 
 -- Private reader-owned anchors into a saved session. Marker text is never
 -- included in shared book detail queries.

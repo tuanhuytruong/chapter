@@ -88,6 +88,10 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
   const [markerNote, setMarkerNote] = useState("");
   const [savingMarker, setSavingMarker] = useState(false);
   const [markerError, setMarkerError] = useState<string | null>(null);
+  const [illustrationPage, setIllustrationPage] = useState<number | null>(() => log.illustration_pages?.[0] ?? null);
+  const [illustrationLoading, setIllustrationLoading] = useState(false);
+  const [illustrationError, setIllustrationError] = useState<string | null>(null);
+  const [illustrationAnalysis, setIllustrationAnalysis] = useState(() => log.illustrations?.[0]?.analysis ?? null);
   const sourceTextId = `session-${log.id}-source-text`;
   const notesId = `session-${log.id}-notes`;
 
@@ -165,6 +169,16 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
     }
   }, [log.id, log.raw_text, log.raw_text_available, onRequestSource, open]);
 
+  const analyseIllustration = useCallback(async () => {
+    if (!bookId || illustrationPage === null) return;
+    setIllustrationLoading(true); setIllustrationError(null);
+    try {
+      const result = await api.analyseIllustration(bookId, log.id, illustrationPage);
+      setIllustrationAnalysis(result.analysis);
+    } catch { setIllustrationError("Illustration analysis is unavailable right now."); }
+    finally { setIllustrationLoading(false); }
+  }, [bookId, illustrationPage, log.id]);
+
   const retrySummary = useCallback(async () => {
     setRetrying(true);
     setRetryError(null);
@@ -230,6 +244,18 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
 
       {retryError && <p className="text-[10px] text-red-600">{retryError}</p>}
       {sourceError && <p className="text-[10px] text-red-600">{sourceError}</p>}
+      {canEdit && fileType === "pdf" && illustrationPage !== null && bookId && (
+        <section className="rounded-xl border border-natural-border bg-natural-bg/50 p-3" aria-live="polite">
+          <p className="text-xs font-bold text-natural-dark">This session includes {log.illustration_pages?.length || 1} illustration{(log.illustration_pages?.length || 1) === 1 ? "" : "s"}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {(log.illustration_pages?.length || 0) > 1 && <select value={illustrationPage} onChange={(event) => { setIllustrationPage(Number(event.target.value)); setIllustrationAnalysis(log.illustrations?.find((i) => i.pageNumber === Number(event.target.value))?.analysis ?? null); }} aria-label="Illustration page" className="min-h-11 rounded-lg border border-natural-border bg-natural-cream px-2 text-xs">{log.illustration_pages?.map((page) => <option key={page} value={page}>Page {page}</option>)}</select>}
+            <a href={api.illustrationPageUrl(bookId, log.id, illustrationPage)} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-lg border border-natural-sage/40 px-3 text-xs font-bold text-natural-sage">View page</a>
+            <button type="button" onClick={analyseIllustration} disabled={illustrationLoading} className="min-h-11 rounded-lg bg-natural-sage px-3 text-xs font-bold text-white disabled:opacity-50">{illustrationLoading ? "Analyzing…" : illustrationAnalysis ? "Analyze again" : "Analyze illustration"}</button>
+          </div>
+          {illustrationError && <p className="mt-2 text-[11px] text-red-600">{illustrationError}</p>}
+          {illustrationAnalysis && <div className="mt-2 text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={illustrationAnalysis} /></div>}
+        </section>
+      )}
       {markOpen && <div className="rounded-xl border border-natural-border bg-natural-bg/50 p-3">
         <p className="text-[11px] font-bold text-natural-dark">Private marker · {fileType === "epub" ? "Chunk" : "Page"} {log.page_start}</p>
         <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Marker type">

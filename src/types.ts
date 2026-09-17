@@ -184,5 +184,7 @@ export interface LogRow {
   telegram_sent: boolean;
   notes: string | null;
   chapter_title: string | null;
+  illustration_pages?: number[];
+  illustrations?: Array<{ pageNumber: number; status: "ready" | "failed"; analysis: string | null }>;
   created_at: string;
 }

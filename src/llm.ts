@@ -289,9 +289,12 @@ function pause(ms: number): Promise<void> {
 export type LlmCompletion = { text: string; finishReason: string | null };
 
 /** Generic 9router call with arbitrary system + user prompts. */
+export type OpenAiVisionContent = Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }>;
+export type LlmUserContent = string | OpenAiVisionContent;
+
 export async function callLLMCompletion(
   system: string,
-  user: string,
+  user: LlmUserContent,
   temperature = 0.7,
   strict = false,
   jsonMode = false,
@@ -381,7 +384,7 @@ export async function callLLMCompletion(
 
 /** Generic compatibility API for callers that only require assistant text. */
 export async function callLLM(
-  system: string, user: string, temperature = 0.7, strict = false, jsonMode = false,
+  system: string, user: LlmUserContent, temperature = 0.7, strict = false, jsonMode = false,
   timeoutMs = Number(process.env.NINE_ROUTER_TIMEOUT_MS || 60_000), options: LlmCallOptions = {},
 ): Promise<string> {
   return (await callLLMCompletion(system, user, temperature, strict, jsonMode, timeoutMs, options)).text;

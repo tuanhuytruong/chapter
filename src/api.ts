@@ -522,6 +522,10 @@ export const api = {
     req<LogRow[]>(`${BASE}/${id}/log?view=overview${round ? `&round=${round}` : ""}`),
   getLogEntry: (id: string, logId: string) =>
     req<LogRow>(`${BASE}/${id}/logs/${logId}`),
+  illustrationPageUrl: (id: string, logId: string, page: number) =>
+    `${BASE}/${id}/logs/${logId}/illustration-page/${page}`,
+  analyseIllustration: (id: string, logId: string, page: number) =>
+    req<{ pageNumber: number; status: "ready"; analysis: string }>(`${BASE}/${id}/logs/${logId}/illustrations/${page}/analyze`, { method: "POST" }),
   getMarkers: (id: string, round: number) =>
     req<ReadingMarkerRow[]>(`${BASE}/${id}/markers?round=${encodeURIComponent(round)}`),
   createMarker: (id: string, body: { log_id: string; page_position: number; kind: ReadingMarkerKind; note?: string }) =>
