@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8a63faf5ff0191c97378a1bf992dfa2e26add4dd126fd0ffcefff41041d9e7ad",
+  "pageVersion": "sha256:d1709c2098f097d493f8ad5c156a05822c765800500b1fc5ff01840e87ec90e0",
   "claims": [
     {
       "id": "claim_c6a2036918dd46d4929e7d93833fd572",
@@ -14,27 +14,27 @@
     },
     {
       "id": "claim_689ac6c0b14842b29d682bdedb3f58c3",
-      "statement": "Client-side routing is configured in /src/App.tsx using react-router-dom, which handles authentication states by conditionally rendering the application shell or login routes.",
+      "statement": "Client-side routing is configured in /src/App.tsx using react-router-dom, which manages authentication states and conditionally renders the application shell or authentication-related routes.",
       "evidence": [
         {
-          "resource": "repo://src/App.tsx#L44-L65",
-          "version": "repo-lines-v1:sha256:c4119a7de6d15e708f77ee2a1ab6d74d7209ec9c7c6251934543cc4eac93424e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MmEyMjNlYzE0MGJkODk2ODYyYmM2MjAwNTgyYmRkYzI5NzFjYTQ1ZjA1OTI5NmZlOTcyNTY0NmM3ZTQ3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmYTYyYzljNWM3M2M0ZGQ5MzE3ZGJmZGIzMmVkZDhiOTg5MzUzZDg1OWNjMjBjNTRjYjQ2NzUxZWQ3N2E2NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEyM2U0MmQwNjFkOTkxMTJlNDJiYWE2Mjk1OGEwYjgzMzQzMjc1NjUyNzYwMDM1NDliNDczMmM5MTBiYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhM2M2ZDA1YzdkZDcyOTlmZjVmMmE3YmJlZTA4ZDZmODhlY2YwMDY3NzkxNGY1MGIzNmE5ZjAwZTU3YWE1ZWYifQ"
+          "resource": "repo://src/App.tsx#L46-L70",
+          "version": "repo-lines-v1:sha256:b26e89829a0b09b61de6660a519f9245b82e9fba06935bd749cea2363ce94ab8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MmEyMjNlYzE0MGJkODk2ODYyYmM2MjAwNTgyYmRkYzI5NzFjYTQ1ZjA1OTI5NmZlOTcyNTY0NmM3ZTQ3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEyM2U0MmQwNjFkOTkxMTJlNDJiYWE2Mjk1OGEwYjgzMzQzMjc1NjUyNzYwMDM1NDliNDczMmM5MTBiYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkYmEyYTJlZjAwZDZiY2QzZDNkMzM5NWUzN2U4ZmU5MWI3NWQ3OTk4N2UyZWEwMzE0NzQ4YmU5OTU2MWU3YmQifQ"
         }
       ]
     },
     {
       "id": "claim_cf7ffe5d5bfe42e1874abf8ab6796d06",
-      "statement": "The AppShell component orchestrates the UI layout and provides persistent navigation, including desktop branding, primary links (Today, Library, Returns), a journey drawer, theme toggles, and membership info, as well as mobile navigation via a collapsible menu and bottom tab bar.",
+      "statement": "The AppShell component orchestrates the UI layout and provides persistent navigation, including desktop branding, primary links (Today, Library, Returns, Playbooks), a journey drawer, theme toggles, and membership info, as well as mobile navigation via a collapsible menu and a persistent bottom navigation bar.",
       "evidence": [
         {
-          "resource": "repo://src/components/AppShell.tsx#L48-L54",
-          "version": "repo-lines-v1:sha256:4d06a14acf4453a7c72012366490e9b78d587c5726309d3ab669811c59845989:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGRlOGJhMzhjYTFlNzFkMzM1MTViOWI0OThiNjJkYTQ0NmU2NDA5ZDVjODgyNjczMGJjYzQ3ZjU4NGViZjY2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmFlMzU2NTIzZDk5MGU4MzQ2NmEyODlkYWVkOTQzZTI5NmM3MTM3NWMyNGNhMjEzMDZkNTRkMGZiZGVlYWM3ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjI5NWM2Zjk3NjZjZWM0OTk2OTgwNWQ3YTE5NTdiNmU1MzMyN2MzYWQwMmQyZDM3NzQ2NDdmMDVmZjgxM2NlMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWYwMGYwZDMyYzBlZTIzYzVmM2RjODUwY2Y5NGE0ODgxODlkNWY0NWJhYjY4ZTEyMjcxM2NiMTEyM2YyNjM2YSJ9"
+          "resource": "repo://src/components/AppShell.tsx#L48-L55",
+          "version": "repo-lines-v1:sha256:b2f6c9c8f02b70e3729d6577799b584454e49d1c591e8481869779e92051a9ae:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGRlOGJhMzhjYTFlNzFkMzM1MTViOWI0OThiNjJkYTQ0NmU2NDA5ZDVjODgyNjczMGJjYzQ3ZjU4NGViZjY2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWZjODU5MjY1NDQzYTVjNzcyYTA2M2JlMGEyYTVhYjU0MGM2NmU2MTliNGZmMjVkMDg5ZmQ0MTgxZTQzMjAzMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjI5NWM2Zjk3NjZjZWM0OTk2OTgwNWQ3YTE5NTdiNmU1MzMyN2MzYWQwMmQyZDM3NzQ2NDdmMDVmZjgxM2NlMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-16T20:06:06.880Z"
+    "at": "2026-09-17T20:19:11.636Z"
   }
 }

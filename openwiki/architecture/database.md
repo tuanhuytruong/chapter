@@ -5,7 +5,7 @@ description: Comprehensive documentation of the database schema, migrations, con
 tags: [database, postgresql, migrations, schema, storage, repositories]
 verified:
   - by: openwiki/0.5.2
-    at: 2026-09-16T20:06:06.880Z
+    at: 2026-09-17T20:19:11.636Z
 sources:
   - id: openwiki-source-6b57b34d9d5d29d041e98f86
     resource: repo://migrations/20260825_add_reading_progress_companions.sql

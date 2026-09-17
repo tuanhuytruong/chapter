@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a35120cc5072d4cfd0fdb96ff2f13d2d5472927f32b554a0383f40233a3c020a",
+  "pageVersion": "sha256:246889b8003daf535d52f7f5b123cb18a87d86d34cdeacad042d9dd5f5fb3621",
   "claims": [
     {
       "id": "claim_b5030033d08341849d646b96e597998e",
-      "statement": "The project utilizes focused TypeScript verification scripts located in the scripts/ directory rather than traditional end-to-end test runners, validating specific subsystems and algorithms directly via direct database connections or functional logic assertions.",
+      "statement": "The project utilizes focused TypeScript verification scripts located in the scripts/ directory as the primary mechanism for system validation, testing subsystems and algorithms directly through database connections and functional assertions rather than using traditional end-to-end test frameworks.",
       "evidence": [
         {
           "resource": "repo://package.json#L12-L63",
-          "version": "repo-lines-v1:sha256:b80d747148ebc6f5296bc71864fca9a80c0c58c3a41ab07064b92eea8b8840fe:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNjg1NmUwOTlkNTJlNjEzYmE2ZWEwNGY2ZmU1YTNmZGUyMzA2MzdiZjU4Mzk3ZDc5NDViMjk4YjVjZjgxYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MTllYzg3NmQ1OTJmMjI5NDU0ZGVjOTY4NjViMzg1YmYyMmIyOGE4MGYxNWUxNDYyMGE4NzQ5ZjFlMGYwODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhODI0ZDA1ZGY0ZjM2NTdkNGRmYzJlZmVlNGU5NjljZGVkZWRjOTZiZGM1NTUxMmY4YmVmYjY4NDhjMDY2OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
+          "version": "repo-lines-v1:sha256:1d3f779165c8a9694ed73d0ac66222443a524ff45abee50a812d7d32e308fc1c:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNjg1NmUwOTlkNTJlNjEzYmE2ZWEwNGY2ZmU1YTNmZGUyMzA2MzdiZjU4Mzk3ZDc5NDViMjk4YjVjZjgxYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNmEzNmZhNmFmM2MyZmZmMDUzNjRmYzFiNGQ2NTViYzkzN2VkYjg3ZjIxYmM0NWM2Yzk3ZjI0YTAzOWYzOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhODI0ZDA1ZGY0ZjM2NTdkNGRmYzJlZmVlNGU5NjljZGVkZWRjOTZiZGM1NTUxMmY4YmVmYjY4NDhjMDY2OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
         }
       ]
     },
@@ -65,6 +65,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-16T20:06:06.880Z"
+    "at": "2026-09-17T20:19:11.636Z"
   }
 }

@@ -3,6 +3,9 @@ type: guide
 title: Testing Guide
 description: Testing strategies, test runner setup, key verification test suites, and backend/frontend validation instructions for the project.
 tags: [testing, verification, scripts, type-checking, quality-assurance, architecture]
+verified:
+  - by: openwiki/0.5.2
+    at: 2026-09-17T20:19:11.636Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -13,9 +16,6 @@ sources:
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
 generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
-verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-16T20:06:06.880Z
 ---
 
 # Testing Guide

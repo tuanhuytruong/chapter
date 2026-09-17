@@ -10,10 +10,10 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-cee005696eb3fd632ce1fbad
     resource: repo://update.sh
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T19:44:06.027Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
 verified:
   - by: openwiki/0.5.2
-    at: 2026-09-16T20:06:06.880Z
+    at: 2026-09-17T20:19:11.636Z
 ---
 
 # Database Operations & Runbook
@@ -52,7 +52,7 @@ cp .env.example .env.local
 ## 2. Database Schema & Migrations
 
 ### Schema Initialization
-The application automatically ensures schema correctness upon server startup via `ensureSchema()`, which reads and executes statements from `src/db/schema.sql` [repo://src/db.ts#L154-L185]. Additionally, `verifyCoreSchema()` checks that all required tables (such as `books`, `reading_log`, `podcasts`, `subscriptions`, `billing_orders`, etc.) are present in the `chapter` schema [repo://src/db.ts#L187-L207].
+The application automatically ensures schema correctness upon server startup via `ensureSchema()`, which reads and executes statements from `src/db/schema.sql` [repo://src/db.ts#L154-L185]. Additionally, `verifyCoreSchema()` confirms that all mandatory feature tables—including those for reading logs, subscriptions, and billing data—exist in the `chapter` PostgreSQL schema before serving authenticated traffic, throwing an error if any are missing [repo://src/db.ts#L187-L207].
 
 ### Migration Procedures
 1. **Adding Migration Files**: Place new SQL migration scripts in the `migrations/` directory using timestamped naming conventions (e.g., `YYYYMMDD_description.sql`).

@@ -3,14 +3,9 @@ type: concept
 title: Reading Sessions
 description: Guide to understanding how reading progress is tracked in OpenWiki.
 tags: [reading-sessions, progress-tracking]
-verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-16T20:06:06.880Z
 sources:
   - id: openwiki-source-2595616fbfe0d9510c40d225
     resource: repo://src/aiReader.ts
-  - id: openwiki-source-9d47595c2a2ea0b2c9b2cc8d
-    resource: repo://src/api.ts
   - id: openwiki-source-ddf75957c1dba6e13c946ffe
     resource: repo://src/components/ReadingProgressCard.tsx
   - id: openwiki-source-70d4664310eebb80ab5b564c
@@ -23,7 +18,10 @@ sources:
     resource: repo://src/readingLens.ts
   - id: openwiki-source-778c364c9c8bbe2c782bb309
     resource: repo://src/storyThread.ts
-generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
+verified:
+  - by: openwiki/0.5.2
+    at: 2026-09-17T20:19:11.636Z
 ---
 
 # Reading Sessions
@@ -45,7 +43,7 @@ The core of progress tracking relies on the `ReadingProgressCard` component, whi
 ## Technical Details
 
 The `ReadingProgressCard` and session management rely on the following mechanisms:
-- **API & Persistence**: Reading progress is managed through API endpoints defined in `src/api.ts`, which interface with the persistent state stored in SQLite via `src/db.ts`.
+- **API & Persistence**: Reading progress is managed through API endpoints, which interface with the persistent state stored in SQLite via `repo://src/db.ts`.
 - **Reference Resolution**: Each reading insight is anchored to specific reading logs (`LogRow`), allowing navigation between summary points and the actual text segments they refer to.
 - **Glossary Tooltips**: Provides context for categories like "Story so far" and "Narrative arcs", ensuring users understand the tracking logic.
 - **State Integration**: The system integrates with the broader reading companion service (`readingProgressCompanionPresentation.ts`) to calculate progress states and coverage.

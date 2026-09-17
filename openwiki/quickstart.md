@@ -1,11 +1,11 @@
 ---
 type: Quickstart
 title: Quickstart
-description: Entry point and navigation guide for the OpenWiki documentation.
+description: Entry point and navigation guide for the Chapter reading companion repository.
 tags: [quickstart, documentation, overview]
 verified:
   - by: openwiki/0.5.2
-    at: 2026-09-16T20:06:06.880Z
+    at: 2026-09-17T20:19:11.636Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -17,15 +17,16 @@ sources:
     resource: repo://src/App.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
 ---
 
 # Quickstart
 
-Welcome to the OpenWiki documentation. This page serves as the entry point for understanding the repository, its architecture, and development workflows.
+Welcome to the Chapter documentation. This page serves as the entry point for understanding the repository, its architecture, and development workflows for this self-hosted reading companion.
 
 ## Overview
-OpenWiki provides a structured approach to documenting complex repositories. This documentation covers the system's architecture, development practices, and testing strategies.
+
+Chapter is a self-hosted reading companion built with React 19, Vite, TypeScript, Express, PostgreSQL, and OpenAI-compatible LLM/TTS providers. This documentation covers the system's architecture, development practices, and testing strategies.
 
 ## Getting Started
 
@@ -41,17 +42,19 @@ To set up the project locally:
    npm run dev
    ```
 
-3. **Platform Verification**: The repository includes a suite of verification scripts in the `/scripts/` directory to ensure platform health and test functionality. You can run these using `npm run`, for example:
+3. **Platform Verification**: The repository includes a suite of focused verification scripts in the `/scripts/` directory, such as `verify-platform-db.ts` and `verify-ai-reader.ts`, to ensure platform health and test functionality. You can run these using `npm run`, for example:
    ```bash
    npm run verify:platform-db
    npm run verify:ai-reader
    ```
 
 ## Entry Points
+
 * **Backend**: The primary entry point for the Express backend is `repo://server.ts`.
 * **Frontend**: The frontend application is initialized via `repo://src/main.tsx`, which renders the root `repo://src/App.tsx`.
 
 ## Navigation & Architecture Map
+
 Use the following documentation domains to navigate the system:
 
 * **[Architecture Overview](/openwiki/architecture/overview.md)**: High-level architectural design and component relationships.
@@ -61,6 +64,7 @@ Use the following documentation domains to navigate the system:
 * **[Testing Overview](/openwiki/testing/testing-guide.md)**: Strategy and procedures for testing and system verification.
 
 ## Adding Documentation
+
 To add or update documentation:
 1. Identify the relevant domain under the `/openwiki/` directory.
 2. If adding a new page, ensure it includes appropriate YAML frontmatter (type, title, description, tags).

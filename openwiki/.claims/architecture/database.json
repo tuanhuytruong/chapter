@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:16860cbef8d0c2a1885e7bc0b43bc1e295c890463da2bd0cd98aff116a6fb6a6",
+  "pageVersion": "sha256:4397c5de21f109b34590bb5a5442f4c9cb43b610ad0d70a9b3c333b19a80193e",
   "claims": [
     {
       "id": "claim_f2dd2def582a4ef2b5d23bddce43ded0",
@@ -42,11 +42,11 @@
     },
     {
       "id": "claim_498a063ae6c246619b386d5f4a3b2faf",
-      "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic; they parse schema.sql by stripping comments and splitting statements, and then perform sequential execution and existence checks via to_regclass.",
+      "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic; they parse schema.sql by stripping comments, splitting statements by semicolons, and performing sequential execution followed by existence verification via to_regclass.",
       "evidence": [
         {
           "resource": "repo://src/db.ts#L154-L207",
-          "version": "repo-lines-v1:sha256:b3b04e8bdfcbee6adbce7eed543ac5d51ce70574902ffbf02cc74af7cf02bb91:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-lines-v1:sha256:267022f1d11df652cce73efb9d3ef4eabb03d72454d9a1c76775378be0db8fb2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -73,6 +73,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-16T20:06:06.880Z"
+    "at": "2026-09-17T20:19:11.636Z"
   }
 }

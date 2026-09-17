@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:416e1cde28280fcee0d4d9684f59838695baecb472c69ffb09f88299e5b99e12",
+  "pageVersion": "sha256:e76d769faf1583c0f56e94da871130a2a742c4e681edca93056e734382379af6",
   "claims": [
     {
       "id": "claim_4912e1c90a0842fe8690750ffaa7cbcc",
@@ -8,11 +8,11 @@
       "evidence": [
         {
           "resource": "repo://src/db.ts",
-          "version": "repo-file-v1:sha256:03fa42876907940a69aaeb05277f32bc80993cb66cd148b5f9c82a1badb17fdc"
+          "version": "repo-file-v1:sha256:76a449396e57d1eab878b96cd4bbec2d665d3000c2b946fdb59f930e8a1be35b"
         },
         {
           "resource": "repo://src/db/schema.sql",
-          "version": "repo-file-v1:sha256:b08497131635ebdce5ec34e33921d4c2cba4cefdcf74220e202415652d446b20"
+          "version": "repo-file-v1:sha256:6f795bf18863f9c0371783d25090d9de277a4a804381b5e18a523f02642930e8"
         }
       ]
     },
@@ -26,13 +26,13 @@
         },
         {
           "resource": "repo://src/db/schema.sql",
-          "version": "repo-file-v1:sha256:b08497131635ebdce5ec34e33921d4c2cba4cefdcf74220e202415652d446b20"
+          "version": "repo-file-v1:sha256:6f795bf18863f9c0371783d25090d9de277a4a804381b5e18a523f02642930e8"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-16T20:06:06.880Z"
+    "at": "2026-09-17T20:19:11.636Z"
   }
 }

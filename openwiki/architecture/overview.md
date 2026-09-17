@@ -3,9 +3,6 @@ type: architecture-overview
 title: System Architecture Overview
 description: High-level system architecture of Chapter, detailing the React 19 and Vite frontend, Express TypeScript backend, PostgreSQL database, security, sessions, configuration, and API routing.
 tags: [architecture, backend, frontend, database, security, configuration]
-verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-16T20:06:06.880Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
@@ -20,6 +17,9 @@ sources:
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
 generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
+verified:
+  - by: openwiki/0.5.2
+    at: 2026-09-17T20:19:11.636Z
 ---
 
 # System Architecture Overview

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5c60c539d8aab77b25ee49b97d0a960c3cb365367ae5bad1b4594bff3b33626b",
+  "pageVersion": "sha256:6bada03802e9c813330981c809e554ae48fa03414abf9d6c497538ccce923b32",
   "claims": [
     {
       "id": "claim_5aa26247a2fa4607b1c0cb3406835803",
@@ -36,15 +36,11 @@
     },
     {
       "id": "claim_490fc0c4d8a74c579b0fc02582d0ce29",
-      "statement": "Reading sessions follow an end-to-end workflow of starting, conducting, and concluding via API routes and AI Reader synthesis, integrating with SQLite for persistent state.",
+      "statement": "Reading sessions follow an end-to-end workflow of starting, conducting, and concluding via API-integrated state management and AI Reader synthesis, which persist session data into SQLite.",
       "evidence": [
         {
           "resource": "repo://src/aiReader.ts#L3-L8",
           "version": "repo-lines-v1:sha256:e71f266a95357261fc95f3dbb86e5d946d94978629d6e1551c6a7a8a71d8fa84:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDhmZThlOWU4MjdjYWVmOTRhOGQzNGIzNjA3M2VkODQxOWYxYTM4MGM5MmVlYzcxZjQ0OTgxYTJmZmU2OTc3YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTcyYTQyOTM4MmIyZTE0NzE4ZTBlMzdiMDU3MGE4YTE3MDI5OTFmY2Q4NDk4Y2Q4NDA2MGE4YmY0ZjA1MDE3YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjIsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzA0MjA0NjJlMmQ4NmY1NDkxMTk5NzQ3ZDMxMzcxNTY0ZThiY2UwNjg3YTI3NDQxZWUxNjliOTIwZWQ0ZWY1YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGE3N2U1ZjRhOGY0MDJhMTE0N2U2ZmM0MDE2MWM1YjY0ZDgzNmVmYTc4OTAyYTg2MzExMmViYTQ5MGIyMjMzNCJ9"
-        },
-        {
-          "resource": "repo://src/api.ts#L1-L15",
-          "version": "repo-lines-v1:sha256:47dd3eaff3918bb5cade6d41b51b855a02b08bc08ceffe359cc226829419a1c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkYTRmYjQ3MTU3YjczNWU2YzJjYWJmMGFlMGU0MTBmZDVjNDQzNzYzN2U2MDUyMDNmYzQ2MTQ2ZjQ1NTIzYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2MmRhMjM2ODNjMjAyMGY0N2Q3MjY0YmM0ZmRkNTk1NDhkNDAzZWRlNWQ4ZGQ0YzYzZjM3YWViZjk4ZDRjYjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmNDhjMDZlODNjYzM2MWQ3NDUyMDAyYjk3ZDhiZjAxOTg2M2Q5ODVkZTllODhlZWYyMGY3NThhZGMwY2U1ZWIifQ"
         },
         {
           "resource": "repo://src/db.ts#L1-L20",
@@ -93,6 +89,6 @@
   ],
   "verification": {
     "by": "openwiki/0.5.2",
-    "at": "2026-09-16T20:06:06.880Z"
+    "at": "2026-09-17T20:19:11.636Z"
   }
 }
