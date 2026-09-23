@@ -10,10 +10,10 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-cee005696eb3fd632ce1fbad
     resource: repo://update.sh
-generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
+generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
 ---
 
 # Database Operations & Runbook

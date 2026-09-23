@@ -4,8 +4,8 @@ title: Domain Model
 description: Core domain models and business logic concepts including reading companions, reading intentions, book uploads, and podcast status management.
 tags: [domain, models, business-logic, books, podcasts, companions]
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
 sources:
   - id: openwiki-source-a7bfcf9c7093732581286157
     resource: repo://migrations/20260826_add_book_reading_intention.sql
@@ -13,7 +13,7 @@ sources:
     resource: repo://migrations/20260826_add_podcast_unavailable_status.sql
   - id: openwiki-source-ddf75957c1dba6e13c946ffe
     resource: repo://src/components/ReadingProgressCard.tsx
-generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
+generated: { by: "openwiki/0.6.0", at: "2026-09-23T20:19:06.296Z" }
 ---
 
 # Domain Model
@@ -67,11 +67,11 @@ Companions maintain a `stale` flag (`ReadingProgressCompanionRow#stale`) which i
 
 ## Reading Intentions
 
-Books support an owner-private **reading intention** (`BookRow#reading_intention`, introduced in migration `20260826_add_book_reading_intention.sql`). This field records the reader's personal motivation, learning goals, or inquiry focus when starting a book. It remains private to the owner and is distinct from shared book notes or public reviews.
+Books support an owner-private **reading intention** (`BookRow#reading_intention`). This field records the reader's personal motivation, learning goals, or inquiry focus when starting a book. It remains private to the owner and is distinct from shared book notes or public reviews.
 
 ## Book Upload and Content Processing
 
-Books are ingested as PDF or EPUB files (`BookRow#file_type`). Content processing pipelines extract raw text from uploaded files, breaking text down into parseable chunks, chapters, and page ranges so that AI components (such as Reading Lenses and Companions) can generate grounded citations (`ReadingProgressItem#refs`).
+Books are ingested as PDF or EPUB files. Content processing pipelines extract raw text from uploaded files, breaking text down into parseable chunks, chapters, and page ranges so that AI components (such as Reading Lenses and Companions) can generate grounded citations.
 
 ## Podcast Status Management
 
@@ -83,4 +83,4 @@ Podcasts generated from books or daily reflections track asynchronous generation
 - `archiving` / `archive_pending`: Storing audio artifacts.
 - `ready`: Available for playback and download.
 - `failed`: Encountered a terminal error during generation.
-- `unavailable`: Marked as explicitly unavailable (introduced in migration `20260826_add_podcast_unavailable_status.sql`) when source material or generation prerequisites become invalid or deleted.
+- `unavailable`: Marked as explicitly unavailable when source material or generation prerequisites become invalid or deleted.

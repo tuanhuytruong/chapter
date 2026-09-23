@@ -4,8 +4,8 @@ title: Backend Architecture
 description: Comprehensive documentation of the Express and Node.js backend server, middleware, authentication, and API routing architecture.
 tags: [backend, express, node, routing, middleware, authentication, api]
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts

@@ -4,8 +4,8 @@ title: Testing Overview
 description: Comprehensive guide for testing and verification in Chapter using script-driven integration suites and ephemeral testing environments.
 tags: [testing, verification, scripts, integration-tests, quality-assurance]
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-15T20:14:22.648Z
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
 sources:
   - id: openwiki-source-99d1e224ad0b0c03f96db8fb
     resource: repo://scripts/verify-ai-reader.ts
@@ -19,7 +19,7 @@ sources:
     resource: repo://scripts/verify-returns.ts
   - id: openwiki-source-56a09b823dafa476ebe9fcfb
     resource: repo://scripts/verify-story-thread.ts
-generated: { by: "openwiki/0.5.2", at: "2026-09-15T20:14:22.648Z" }
+generated: { by: "openwiki/0.6.0", at: "2026-09-23T20:19:06.296Z" }
 ---
 
 # Testing Overview
@@ -28,7 +28,7 @@ Testing and verification in **Chapter** rely on a pragmatic, script-driven integ
 
 ## Testing Philosophy
 
-1.  **Script-Driven Integration**: Each major feature is accompanied by a dedicated verification script in `scripts/` (e.g., `verify-podcast.ts`). These scripts simulate end-to-end workflows, including HTTP API calls and database state interactions.
+1.  **Script-Driven Integration**: Each major feature is accompanied by a dedicated verification script in `scripts/` (e.g., `scripts/verify-podcast.ts`). These scripts simulate end-to-end workflows, including HTTP API calls and database state interactions.
 2.  **Ephemeral Isolation**: Verification scripts frequently leverage `pg-mem` to instantiate a clean, in-memory PostgreSQL database, ensuring tests are deterministic and isolated from external environments.
 3.  **Strict Assertion Contracts**: Scripts utilize `node:assert/strict` or custom helpers to validate HTTP status codes, JSON payloads, and internal database records.
 4.  **Performance Audits**: When necessary, scripts profile core operations (like EPUB parsing or database migration throughput) to ensure system performance remains within acceptable bounds.
@@ -37,14 +37,15 @@ Testing and verification in **Chapter** rely on a pragmatic, script-driven integ
 
 Verification scripts are located in the `/scripts/` directory. They act as both integration tests and documentation for how features should behave.
 
--   **`scripts/verify-podcast.ts`**: Verifies podcast catalog grouping, EPUB chapter extraction, archive-pending states, and audio streaming with HTTP Range requests. repo://scripts/verify-podcast.ts
--   **`scripts/verify-reading-intention-reflection.ts`**: Validates database migrations for reading intentions, API routing, and AI-generated reflection prompts. repo://scripts/verify-reading-intention-reflection.ts
--   **`scripts/verify-upload-content.ts`**: Tests file upload validation, EPUB/PDF parsing, and filename sanitization. repo://scripts/verify-upload-content.ts
--   **`scripts/verify-reading-progress-companion.ts`**: Checks AI reading progress companion prompts and session boundary conditions. repo://scripts/verify-reading-progress-companion.ts
--   **`scripts/verify-ai-reader.ts`**: Validates AI reader interactions, including streaming, context management, and document parsing. repo://scripts/verify-ai-reader.ts
--   **`scripts/verify-listen-rhythm.ts`**: Tests audio rhythm, playback states, and progress synchronization. repo://scripts/verify-listen-rhythm.ts
--   **`scripts/verify-story-thread.ts`**: Verifies story memory persistence, thread management, and continuity. repo://scripts/verify-story-thread.ts
--   **`scripts/verify-returns.ts`**: Tests the book return flow, logic, and state management. repo://scripts/verify-returns.ts
+Common scripts include:
+-   **`scripts/verify-podcast.ts`**: Verifies podcast catalog grouping, EPUB chapter extraction, archive-pending states, and audio streaming with HTTP Range requests.
+-   **`scripts/verify-reading-intention-reflection.ts`**: Validates database migrations for reading intentions, API routing, and AI-generated reflection prompts.
+-   **`scripts/verify-upload-content.ts`**: Tests file upload validation, EPUB/PDF parsing, and filename sanitization.
+-   **`scripts/verify-reading-progress-companion.ts`**: Checks AI reading progress companion prompts and session boundary conditions.
+-   **`scripts/verify-ai-reader.ts`**: Validates AI reader interactions, including streaming, context management, and document parsing.
+-   **`scripts/verify-listen-rhythm.ts`**: Tests audio rhythm, playback states, and progress synchronization.
+-   **`scripts/verify-story-thread.ts`**: Verifies story memory persistence, thread management, and continuity.
+-   **`scripts/verify-returns.ts`**: Tests the book return flow, logic, and state management.
 
 ## Execution and Performance
 
@@ -74,7 +75,6 @@ flowchart TD
     E --> F{Assert Results}
     F -->|Success| G["Print Success Log & Exit 0"]
     F -->|Failure| H["Throw Assertion Error & Exit Non-Zero"]
-    %% End-to-end flow of a Chapter verification script.
 ```
 
 ## Adding New Tests

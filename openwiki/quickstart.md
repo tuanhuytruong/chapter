@@ -4,8 +4,8 @@ title: Quickstart
 description: Entry point and navigation guide for the Chapter reading companion repository.
 tags: [quickstart, documentation, overview]
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -17,7 +17,7 @@ sources:
     resource: repo://src/App.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
+generated: { by: "openwiki/0.6.0", at: "2026-09-23T20:19:06.296Z" }
 ---
 
 # Quickstart
@@ -59,9 +59,10 @@ Use the following documentation domains to navigate the system:
 
 * **[Architecture Overview](/openwiki/architecture/overview.md)**: High-level architectural design and component relationships.
 * **[Backend Architecture](/openwiki/architecture/backend.md)**: Details on the backend server structure, API routes, and service integration.
-* **[Database Architecture](/openwiki/architecture/database.md)**: Overview of the data layer, including schema design and management.
-* **[Workflow Overview](/openwiki/workflows/overview.md)**: Centralized guidance on development, deployment, and task-based workflows.
-* **[Testing Overview](/openwiki/testing/testing-guide.md)**: Strategy and procedures for testing and system verification.
+* **[Database Operations](/openwiki/operations/database.md)**: Operational documentation for the database system.
+* **[Domain Model](/openwiki/concepts/domain-model.md)**: Domain conceptual model.
+* **[Content Processing](/openwiki/workflows/content-processing.md)**: Documentation for content processing pipelines.
+* **[Testing Overview](/openwiki/testing/overview.md)**: Strategy and procedures for testing and system verification.
 
 ## Adding Documentation
 

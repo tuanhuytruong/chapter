@@ -3,9 +3,6 @@ type: workflow
 title: Content Processing & Podcasts
 description: End-to-end workflows for uploading EPUB and PDF content, managing books and reading rounds, and generating or verifying AI podcast episodes.
 tags: [workflows, content, upload, podcasts, reading]
-verified:
-  - by: openwiki/0.5.1
-    at: 2026-09-10T19:40:31.384Z
 sources:
   - id: openwiki-source-6251e90fd58f3c041d6f5c9b
     resource: repo://scripts/verify-podcast.ts
@@ -20,6 +17,9 @@ sources:
   - id: openwiki-source-8536bfae8360377e8c22add2
     resource: repo://src/routes/upload.ts
 generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
 ---
 
 # Content Processing & Podcasts

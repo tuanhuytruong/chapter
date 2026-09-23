@@ -16,10 +16,10 @@ sources:
     resource: repo://src/db.ts
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-23T20:19:06.296Z
+generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
 ---
 
 # System Architecture Overview
