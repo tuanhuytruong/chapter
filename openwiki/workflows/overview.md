@@ -4,8 +4,8 @@ title: Workflow Overview
 description: High-level guide to the primary user-facing workflows in the system.
 tags: [workflow, overview]
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-24T20:28:57.073Z
 sources:
   - id: openwiki-source-2595616fbfe0d9510c40d225
     resource: repo://src/aiReader.ts

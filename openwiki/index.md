@@ -4,7 +4,7 @@ okf_version: "0.2"
 
 # Files
 
-- [Quickstart](quickstart.md) - Entry point and navigation guide for the Chapter reading companion repository.
+- [Quickstart](quickstart.md) - Central entry point for navigating the Chapter repository, including architecture, workflows, and development environment setup.
 
 # Directories
 

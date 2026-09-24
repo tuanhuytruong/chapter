@@ -3,9 +3,6 @@ type: concept
 title: Testing Overview
 description: Comprehensive guide for testing and verification in Chapter using script-driven integration suites and ephemeral testing environments.
 tags: [testing, verification, scripts, integration-tests, quality-assurance]
-verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-23T20:19:06.296Z
 sources:
   - id: openwiki-source-99d1e224ad0b0c03f96db8fb
     resource: repo://scripts/verify-ai-reader.ts
@@ -20,6 +17,9 @@ sources:
   - id: openwiki-source-56a09b823dafa476ebe9fcfb
     resource: repo://scripts/verify-story-thread.ts
 generated: { by: "openwiki/0.6.0", at: "2026-09-23T20:19:06.296Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-09-24T20:28:57.073Z
 ---
 
 # Testing Overview

@@ -1,11 +1,11 @@
 ---
-type: Quickstart
+type: concept
 title: Quickstart
-description: Entry point and navigation guide for the Chapter reading companion repository.
-tags: [quickstart, documentation, overview]
+description: Central entry point for navigating the Chapter repository, including architecture, workflows, and development environment setup.
+tags: [quickstart, overview, development]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-09-23T20:19:06.296Z
+    at: 2026-09-24T20:28:57.073Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -17,57 +17,42 @@ sources:
     resource: repo://src/App.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.6.0", at: "2026-09-23T20:19:06.296Z" }
+generated: { by: "openwiki/0.6.0", at: "2026-09-24T20:28:57.073Z" }
 ---
 
 # Quickstart
 
-Welcome to the Chapter documentation. This page serves as the entry point for understanding the repository, its architecture, and development workflows for this self-hosted reading companion.
-
-## Overview
-
-Chapter is a self-hosted reading companion built with React 19, Vite, TypeScript, Express, PostgreSQL, and OpenAI-compatible LLM/TTS providers. This documentation covers the system's architecture, development practices, and testing strategies.
+Welcome to the Chapter repository, a self-hosted reading companion. This documentation provides a central entry point for developers to understand the repository structure, core systems, and common development tasks.
 
 ## Getting Started
 
-To set up the project locally:
+### Development Environment
+The project uses a standard Node.js development stack:
+1. **Install Dependencies**: `npm install`
+2. **Development Server**: `npm run dev` (uses `tsx` for the Express backend).
 
-1. **Install Dependencies**: Run the package installation command:
-   ```bash
-   npm install
-   ```
+### System Verification
+The repository provides verification scripts to ensure platform health. These are found in the `package.json` scripts section and exercise key system integrations:
+* `npm run verify:platform-db`: Tests database connectivity and migrations.
+* `npm run verify:ai-reader`: Validates the integration with configured LLM/TTS providers.
 
-2. **Run the Development Server**: The application uses `tsx` to serve the backend.
-   ```bash
-   npm run dev
-   ```
+## Key Entry Points
+* **Backend**: The Express server is initialized at `repo://server.ts`.
+* **Frontend**: The client application roots at `repo://src/main.tsx` and `repo://src/App.tsx`.
 
-3. **Platform Verification**: The repository includes a suite of focused verification scripts in the `/scripts/` directory, such as `verify-platform-db.ts` and `verify-ai-reader.ts`, to ensure platform health and test functionality. You can run these using `npm run`, for example:
-   ```bash
-   npm run verify:platform-db
-   npm run verify:ai-reader
-   ```
+## System Documentation Roadmap
 
-## Entry Points
+Use the following domains to navigate the architecture, workflows, and operational procedures:
 
-* **Backend**: The primary entry point for the Express backend is `repo://server.ts`.
-* **Frontend**: The frontend application is initialized via `repo://src/main.tsx`, which renders the root `repo://src/App.tsx`.
+### Architectural Foundations
+* **[Architecture Overview](/openwiki/architecture/overview.md)**: High-level system design and component relationships.
+* **[Backend Architecture](/openwiki/architecture/backend.md)**: Details on the backend server, API integration, and service structure.
+* **[Frontend Architecture](/openwiki/architecture/frontend.md)**: Describes the React-based frontend application structure.
+* **[Domain Model](/openwiki/concepts/domain-model.md)**: Vocabulary and core domain objects.
 
-## Navigation & Architecture Map
-
-Use the following documentation domains to navigate the system:
-
-* **[Architecture Overview](/openwiki/architecture/overview.md)**: High-level architectural design and component relationships.
-* **[Backend Architecture](/openwiki/architecture/backend.md)**: Details on the backend server structure, API routes, and service integration.
-* **[Database Operations](/openwiki/operations/database.md)**: Operational documentation for the database system.
-* **[Domain Model](/openwiki/concepts/domain-model.md)**: Domain conceptual model.
-* **[Content Processing](/openwiki/workflows/content-processing.md)**: Documentation for content processing pipelines.
-* **[Testing Overview](/openwiki/testing/overview.md)**: Strategy and procedures for testing and system verification.
-
-## Adding Documentation
-
-To add or update documentation:
-1. Identify the relevant domain under the `/openwiki/` directory.
-2. If adding a new page, ensure it includes appropriate YAML frontmatter (type, title, description, tags).
-3. Use repository-relative links (e.g., `repo://path/to/file`) when citing source evidence.
-4. Follow the established structure to maintain consistency across the wiki.
+### Operational & Development Workflows
+* **[Workflows Overview](/openwiki/workflows/overview.md)**: Roadmaps for key functional workflows.
+* **[Content Processing](/openwiki/workflows/content-processing.md)**: Lifecycle of content within the system.
+* **[Testing Overview](/openwiki/testing/overview.md)**: Strategy and procedures for system verification and testing.
+* **[Integrations Overview](/openwiki/integrations/overview.md)**: How the system interfaces with external services.
+* **[Database Operations](/openwiki/operations/database.md)**: Runbooks for database management and maintenance.

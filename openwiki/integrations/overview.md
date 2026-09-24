@@ -14,8 +14,8 @@ sources:
     resource: repo://src/telegram.ts
 generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.0
+    at: 2026-09-24T20:28:57.073Z
 ---
 
 # Integration Overview
