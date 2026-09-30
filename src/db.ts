@@ -151,6 +151,12 @@ export function withBackgroundTransaction<T>(
   return timedTransaction("background", backgroundTimeouts, fn);
 }
 
+// Advisory-lock key serializing schema bootstrap. Every bootstrapper (DEV/PRD
+// server boot, batch jobs) takes this lock because both releases share one
+// database — without it two concurrent boots interleave DROP/CREATE pairs and
+// the loser crashes on already exists.
+const SCHEMA_BOOTSTRAP_LOCK_KEY = "chapter_schema_bootstrap_v1";
+
 export async function ensureSchema(): Promise<void> {
   const fs = await import("fs");
   const path = await import("path");
@@ -166,22 +172,64 @@ export async function ensureSchema(): Promise<void> {
   // Bootstrap deliberately bypasses web timeout helpers; deploy/migration
   // execution is bounded by its supervisor rather than an API request SLA.
   const activePool = getPool();
-  for (const stmt of statements) {
+  // Pin bootstrap to a single pooled connection: advisory locks are
+  // session-scoped, so pool.query() across rotating connections cannot hold one.
+  const client = await activePool.connect();
+  let lockHeld = false;
+  try {
     try {
-      await activePool.query(stmt);
-    } catch (err: any) {
-      const isSchemaPermErr =
-        /create schema/i.test(stmt) && /permission denied/i.test(err.message);
-      if (isSchemaPermErr) {
-        console.warn("[db] skipping CREATE SCHEMA (permission denied) — assuming schema 'chapter' already exists");
-        continue;
-      }
-      console.error("[db] schema statement failed:", err.message);
-      console.error("[db] statement:", stmt.slice(0, 80));
-      throw err;
+      await client.query(
+        "SELECT pg_advisory_lock(hashtextextended($1::text, 0))",
+        [SCHEMA_BOOTSTRAP_LOCK_KEY],
+      );
+      lockHeld = true;
+    } catch (lockErr: any) {
+      // Offline doubles (pg-mem) have no advisory locks; bootstrap there is
+      // single-process, so proceed unlocked rather than fail.
+      console.warn(
+        "[db] schema bootstrap continuing without advisory lock:",
+        String(lockErr?.message || lockErr).slice(0, 120),
+      );
     }
+    for (const stmt of statements) {
+      try {
+        await client.query(stmt);
+      } catch (err: any) {
+        const isSchemaPermErr =
+          /create schema/i.test(stmt) && /permission denied/i.test(err.message);
+        if (isSchemaPermErr) {
+          console.warn("[db] skipping CREATE SCHEMA (permission denied) — assuming schema 'chapter' already exists");
+          continue;
+        }
+        // Tolerate a concurrent bootstrapper that won the DROP→ADD race
+        // (e.g. an old release without the advisory lock during rollout):
+        // the named object already exists, so there is nothing left to do.
+        const isAddConstraintRace =
+          /add constraint/i.test(stmt) &&
+          (err?.code === "42710" || /already exists/i.test(err.message || ""));
+        if (isAddConstraintRace) {
+          console.warn(
+            "[db] bootstrap ADD CONSTRAINT already applied concurrently — continuing:",
+            stmt.slice(0, 80),
+          );
+          continue;
+        }
+        console.error("[db] schema statement failed:", err.message);
+        console.error("[db] statement:", stmt.slice(0, 80));
+        throw err;
+      }
+    }
+    console.log("[db] schema ensured");
+  } finally {
+    if (lockHeld) {
+      await client
+        .query("SELECT pg_advisory_unlock(hashtextextended($1::text, 0))", [
+          SCHEMA_BOOTSTRAP_LOCK_KEY,
+        ])
+        .catch(() => undefined);
+    }
+    client.release();
   }
-  console.log("[db] schema ensured");
 }
 
 /** Core feature tables that must exist before the app serves authenticated APIs. */
