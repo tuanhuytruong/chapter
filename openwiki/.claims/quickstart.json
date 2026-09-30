@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc5af2aa7b5e01080b9ffcbcc5892f1418127ab601493e3597f4079013cd0165",
+  "pageVersion": "sha256:44c9a8edd56e0c636baa5a19c097e76ac42664356c4921536e62ada79c937122",
   "claims": [
     {
       "id": "claim_473c7e89e6fb44d990aa149589279f45",
@@ -17,11 +17,11 @@
       "statement": "The primary entry points are repo://server.ts for the backend Express server and the combination of repo://src/main.tsx and repo://src/App.tsx for the frontend application.",
       "evidence": [
         {
-          "resource": "repo://server.ts#L1-L50",
+          "resource": "repo://server.ts#L1-L51",
           "version": "repo-lines-v1:sha256:a153260c8229b4a5471c1cd14299987b8e4209e5cfd3d22b614cd15ab4be952d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjMGZlZjVhODI3ZGNmNWNlMDZkYzZjMjliYWI3ZmNhN2JhYzg0NTZiZGQzNmE0NTc5MjU0ZGRlZjQ0N2U4NzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyZDYwN2FiYmRjZTE0ZmZjOTc2Y2E2ZDhlNDQ0NjhmMTg1YmM2ZTY2MTMxZjc5M2IzN2RiODU5YjFkYzgwNDEifQ"
         },
         {
-          "resource": "repo://src/App.tsx#L1-L20",
+          "resource": "repo://src/App.tsx#L1-L22",
           "version": "repo-lines-v1:sha256:9be746f8b11f74026627942e300f76eb379f62f7c1bce12b9e50843e4ffce192:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMmQ1M2JhMmM0NzRjMzVhZTk5ZjExNDdiNDYxNjdiMDc3Nzg3OTJiYjZlMjZhZTM4ZTFjNDUxNjgxYzcyYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ODYxNjQxYjAzODg4MmYyODViNzM5YzBiODQ0MjlmYTBkNjk0YjQzMmY3ZDkxMmU3ODRjMTllN2IwNTRjMmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5MzJlZWFiYzA5ODE1NTY4MjY3ZWI2NGIwYjg5MjU4NjM5NGNkZTI1NGU2YWQyYmQ0ZmQwMzE4MWI5MzhmMDAifQ"
         },
         {
@@ -35,8 +35,8 @@
       "statement": "The repository uses focused verification scripts in repo://scripts/ (such as verify-platform-db.ts and verify-ai-reader.ts), executable via npm scripts, for testing and platform health verification.",
       "evidence": [
         {
-          "resource": "repo://package.json#L6-L61",
-          "version": "repo-lines-v1:sha256:a99321a4b3d6f7ab7561d8c531a4348825951c06f9a8182a629f72e5c0e3a158:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNmEzNmZhNmFmM2MyZmZmMDUzNjRmYzFiNGQ2NTViYzkzN2VkYjg3ZjIxYmM0NWM2Yzk3ZjI0YTAzOWYzOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
+          "resource": "repo://package.json#L6-L69",
+          "version": "repo-lines-v1:sha256:5f656d881784f8f79851028264bc32dcb94a85cd02a9851716e9ba72c5b5aa08:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNmEzNmZhNmFmM2MyZmZmMDUzNjRmYzFiNGQ2NTViYzkzN2VkYjg3ZjIxYmM0NWM2Yzk3ZjI0YTAzOWYzOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
         }
       ]
     },
@@ -52,7 +52,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

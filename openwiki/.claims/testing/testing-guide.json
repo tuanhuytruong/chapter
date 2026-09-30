@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:246889b8003daf535d52f7f5b123cb18a87d86d34cdeacad042d9dd5f5fb3621",
+  "pageVersion": "sha256:dad3e049c380b01ef940c1ea3172fb85d2c737e26c8b2e29d72143c8243c1715",
   "claims": [
     {
       "id": "claim_b5030033d08341849d646b96e597998e",
@@ -8,7 +8,15 @@
       "evidence": [
         {
           "resource": "repo://package.json#L12-L63",
-          "version": "repo-lines-v1:sha256:1d3f779165c8a9694ed73d0ac66222443a524ff45abee50a812d7d32e308fc1c:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNjg1NmUwOTlkNTJlNjEzYmE2ZWEwNGY2ZmU1YTNmZGUyMzA2MzdiZjU4Mzk3ZDc5NDViMjk4YjVjZjgxYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNmEzNmZhNmFmM2MyZmZmMDUzNjRmYzFiNGQ2NTViYzkzN2VkYjg3ZjIxYmM0NWM2Yzk3ZjI0YTAzOWYzOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhODI0ZDA1ZGY0ZjM2NTdkNGRmYzJlZmVlNGU5NjljZGVkZWRjOTZiZGM1NTUxMmY4YmVmYjY4NDhjMDY2OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
+          "version": "repo-lines-v1:sha256:60b08fe570972390c5fa9e0956587223afc579dfbde6dc5b5f0a8a921237fbea:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNjg1NmUwOTlkNTJlNjEzYmE2ZWEwNGY2ZmU1YTNmZGUyMzA2MzdiZjU4Mzk3ZDc5NDViMjk4YjVjZjgxYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3NTdhZGQyNTIwYWJkZjIwYWY2MGE2OTc5ZjNhNGNlNzQ5MjJlMGM5ZjhkMWY5NDhjZjZiMzY4MmFlZTUxYWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRhODI0ZDA1ZGY0ZjM2NTdkNGRmYzJlZmVlNGU5NjljZGVkZWRjOTZiZGM1NTUxMmY4YmVmYjY4NDhjMDY2OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxYjNkMGJjN2VjOTA1ZTAxMzVjY2RlMjEwODYxMDJmYzQ4ZmYwYzkzMDZlZWE0ZTZiNjM0NjczZjljN2YxOTAifQ"
+        },
+        {
+          "resource": "repo://scripts/verify-pdf-cache.ts",
+          "version": "repo-file-v1:sha256:3c87b03ce5e2a7fa3a18a5d27c1c6b10ab495957dc806055dc5d4bd6c7d048fd"
+        },
+        {
+          "resource": "repo://scripts/verify-pdf-illustration-contract.ts",
+          "version": "repo-file-v1:sha256:187c5239b9543cf325b1ee634f66b5cddb61a68fee39562b6ee0d9e4077e5a73"
         }
       ]
     },
@@ -37,7 +45,7 @@
       "statement": "The verify-posthog-identity.ts script enforces analytics privacy guarantees by verifying that posthog.identify only receives safe identifiers and excludes sensitive user data.",
       "evidence": [
         {
-          "resource": "repo://scripts/verify-posthog-identity.ts#L1-L11",
+          "resource": "repo://scripts/verify-posthog-identity.ts#L1-L14",
           "version": "repo-lines-v1:sha256:eb67a475ac17443a27bb24e0d8b1fe510c3c7085e0a71e241c82d8ae57eea8ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkYzAxNjU3ZDBlMTQxMDJmMDVmNzEwODMwZDEzNTQwNDlmMTc0NjAyNTAwMzgyNTQ0NzkwYjAxODE4ZWM0ZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
@@ -64,7 +72,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.2",
-    "at": "2026-09-17T20:19:11.636Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

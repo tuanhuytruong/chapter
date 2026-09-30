@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4397c5de21f109b34590bb5a5442f4c9cb43b610ad0d70a9b3c333b19a80193e",
+  "pageVersion": "sha256:15a2dad6052bd4018ead6b61432f85c1a5459c93a7f1336627f32b9d3b91dd6b",
   "claims": [
     {
       "id": "claim_f2dd2def582a4ef2b5d23bddce43ded0",
@@ -45,8 +45,8 @@
       "statement": "Schema bootstrap and verification routines ensure core tables exist before serving traffic; they parse schema.sql by stripping comments, splitting statements by semicolons, and performing sequential execution followed by existence verification via to_regclass.",
       "evidence": [
         {
-          "resource": "repo://src/db.ts#L154-L207",
-          "version": "repo-lines-v1:sha256:267022f1d11df652cce73efb9d3ef4eabb03d72454d9a1c76775378be0db8fb2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/db.ts#L154-L256",
+          "version": "repo-lines-v1:sha256:1512d258bfd981b1bbb0599dabc97b87d42a01eb47fe5412afb2c72933159917:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxNTQwNjQxMmMwZTE0NThlOGEzOWQ3Njg0MTQ5NTI1NjY0NjE1MGIzMjI2NmVhM2QyNDYxZjZkMzU2Y2FlMThkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlNzFhYTk4YTExMDAwYTBkMjUwZTVmOWQ3M2ZmNjQ1OWE4NzM0OGY5MTM1NGI5MTk0ZDM2MjExMTM1YWE3YmY0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -72,7 +72,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.2",
-    "at": "2026-09-17T20:19:11.636Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

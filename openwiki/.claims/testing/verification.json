@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:20c758fcd8ae7280e3aa98edf4967209143ec7022b90724b480f2ee3142f3d29",
+  "pageVersion": "sha256:98f4fa4b4300e651fa2aaeeb19d1a713e5ac97be7e71ff5b0e6bd58a0410002a",
   "claims": [
     {
       "id": "claim_d442e026af93411da97d93e6aad0dbee",
       "statement": "The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior, ranging from core feature verification to performance audits.",
       "evidence": [
         {
-          "resource": "repo://package.json#L6-L64",
-          "version": "repo-lines-v1:sha256:1ac309e19259da4e1362a2a715256ccd310d74eec04c19519696191082ce0c93:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMjE2M2FlODUwMjYzM2I2N2YwZWRiMDhkYmU5MzBkYjVlMDVjMDQ4MjMzYTM4ZDZmNGZkM2IwNzU3MmZiN2YifQ"
+          "resource": "repo://package.json#L6-L69",
+          "version": "repo-lines-v1:sha256:5f656d881784f8f79851028264bc32dcb94a85cd02a9851716e9ba72c5b5aa08:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNmEzNmZhNmFmM2MyZmZmMDUzNjRmYzFiNGQ2NTViYzkzN2VkYjg3ZjIxYmM0NWM2Yzk3ZjI0YTAzOWYzOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMjM1NDZkMjBmZDQ2OTc3NTcxYmE2ZTVhMmQ2Njg3YWEyZWRlZjAwMGUyNDkxOWU5MTJhY2M1OGJjY2QwOTcifQ"
         }
       ]
     },
@@ -47,7 +47,7 @@
       "statement": "scripts/verify-posthog-identity.ts asserts that posthog.identify() only receives safe identifiers and excludes sensitive user attributes.",
       "evidence": [
         {
-          "resource": "repo://scripts/verify-posthog-identity.ts#L1-L11",
+          "resource": "repo://scripts/verify-posthog-identity.ts#L1-L14",
           "version": "repo-lines-v1:sha256:eb67a475ac17443a27bb24e0d8b1fe510c3c7085e0a71e241c82d8ae57eea8ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzdjY2UwYTcwYjM0ZWZhM2FlMzgwZWExMjA2ZTRmZjAwMzNmZjJmNzZlN2M2ZGZlNGNlM2Y3ZGNkMDg2MjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkYzAxNjU3ZDBlMTQxMDJmMDVmNzEwODMwZDEzNTQwNDlmMTc0NjAyNTAwMzgyNTQ0NzkwYjAxODE4ZWM0ZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
@@ -64,7 +64,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.2",
-    "at": "2026-09-17T20:19:11.636Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

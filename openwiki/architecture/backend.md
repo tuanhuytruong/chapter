@@ -4,12 +4,14 @@ title: Backend Architecture
 description: Comprehensive documentation of the Node.js and Express backend, including session management, API routing, and database lifecycle integration.
 tags: [backend, express, node, routing, middleware, authentication, api]
 verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-24T20:28:57.073Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 sources:
   - id: openwiki-source-af559fee7f56cc7abf2bba79
     resource: repo://server.ts
-generated: { by: "openwiki/0.6.0", at: "2026-09-24T20:28:57.073Z" }
+  - id: openwiki-source-70d4664310eebb80ab5b564c
+    resource: repo://src/db.ts
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
 ---
 
 # Backend Architecture
@@ -20,16 +22,22 @@ The OpenWiki backend is a Node.js server built with [Express](https://expressjs.
 
 The main application server is initialized in `repo://server.ts`. It loads environment configuration via `dotenv`, configures Express middleware (including request compression, security headers, and JSON parsing), and attaches session and authentication mechanisms.
 
-<!-- openwiki: mermaid parse failed and this diagram was converted to a text fence so it does not break rendering. Fix the diagram source and restore the mermaid fence. Parser error: Lexical error on line 4. Unrecognized text. ...-> D[/api/books/...] C -> E[/api/a -->
-```text
+## Request Lifecycle
+
+The following diagram illustrates the lifecycle of a request entering the system, progressing through middleware and routing, and interacting with the database.
+
+```mermaid
 graph TD
-    A[Client Request] --> B[Security Headers/Middleware]
-    B --> C{Route Router}
-    C --> D[/api/books/...]
-    C --> E[/api/auth/...]
-    C --> F[/health]
-    D --> G[Database]
-    E --> H[Session/Auth Manager]
+    Client[Client Request] --> Middleware[Security Middleware & Auth]
+    Middleware --> Router[Express Router]
+    Router --> Controller[Controller/Route Handler]
+    Controller --> DBService[Database Service]
+    DBService --> Pool[Connection Pool]
+    Pool --> DB[(PostgreSQL)]
+    DB --> Pool
+    Pool --> DBService
+    DBService --> Controller
+    Controller --> Response[HTTP Response]
 ```
 
 ## Security & Middleware Pipeline

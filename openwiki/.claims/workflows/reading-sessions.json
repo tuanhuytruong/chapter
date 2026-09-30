@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6bada03802e9c813330981c809e554ae48fa03414abf9d6c497538ccce923b32",
+  "pageVersion": "sha256:ff27df58d880d0ad1849bea841f654e516bac8f7b922cd911f8689b1d0566802",
   "claims": [
     {
       "id": "claim_5aa26247a2fa4607b1c0cb3406835803",
@@ -22,15 +22,15 @@
     },
     {
       "id": "claim_b1f3b40832f74c0797eb1e1020711924",
-      "statement": "PDF and EPUB extraction is performed by extractor.ts and pdfExtractorWorker.mjs, calculating structured reading units and page boundaries.",
+      "statement": "PDF and EPUB extraction is performed by src/extractor.ts and its worker src/pdfExtractorWorker.mjs, calculating structured reading units and page boundaries via per-page text maps and graphics-state operator replay for illustration detection.",
       "evidence": [
         {
           "resource": "repo://src/extractor.ts",
-          "version": "repo-file-v1:sha256:4106c1808f404dbbc9223f03cf440c27bfcec07d417b760802c3f67f5814e67d"
+          "version": "repo-file-v1:sha256:dd4e249291e3ed8db3bdec872d2ae66000a4e2e6c7c66935601158894113079d"
         },
         {
           "resource": "repo://src/pdfExtractorWorker.mjs",
-          "version": "repo-file-v1:sha256:ff166a29c2bd91e5778765905c238670a0707758062d149efcd383d2e0ab7c7c"
+          "version": "repo-file-v1:sha256:f21ac2a7bf0fc1cd857db79c2e7dc6177b7d6e542f9ba7d1e3bc4de07e95ee36"
         }
       ]
     },
@@ -88,7 +88,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.2",
-    "at": "2026-09-17T20:19:11.636Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

@@ -4,8 +4,8 @@ title: LLM & TTS Integrations
 description: Integration details for Chapter with OpenAI-compatible LLM endpoints and TTS speech providers.
 tags: [llm, tts, integrations, 9router, openai]
 verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-08T19:54:21.058Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 sources:
   - id: openwiki-source-2b68006c6421e01c95988dcc
     resource: repo://src/config.ts

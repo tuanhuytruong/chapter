@@ -4,7 +4,7 @@ okf_version: "0.2"
 
 # Files
 
-- [Quickstart](quickstart.md) - Central entry point for navigating the Chapter repository, including architecture, workflows, and development environment setup.
+- [Quickstart Guide](quickstart.md) - Central entry point for navigating the repository, including architecture, workflows, and development environment setup.
 
 # Directories
 

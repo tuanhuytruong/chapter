@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b89be7bb8c05e494b592f12d3d0ae9fb97304567938866e01da5574960a87a9",
+  "pageVersion": "sha256:fad9c2a64ef821a776bd0bc0ff350d814089c5c928f9a420f09d481ef5b25192",
   "claims": [
     {
       "id": "claim_faa812b5674b4df6a0a89eac8303cb3d",
-      "statement": "The system architecture employs a tiered flow from persistent storage through application logic to the UI layer for content presentation.",
+      "statement": "The system employs a layered architecture where data flows from persistent database storage through application logic for business processing, and finally to the UI layer for content presentation and user interaction.",
       "evidence": [
         {
           "resource": "repo://src/db.ts",
-          "version": "repo-file-v1:sha256:76a449396e57d1eab878b96cd4bbec2d665d3000c2b946fdb59f930e8a1be35b"
+          "version": "repo-file-v1:sha256:c4469b1026dd8b72b7a2fafb77ed1cbdf28013e0005b58f759bfbddce2badc18"
         }
       ]
     },
@@ -34,11 +34,11 @@
     },
     {
       "id": "claim_9d669a70f14144f49da8cfed09e706ee",
-      "statement": "Content processing transforms raw source material through ingestion, normalization, and enrichment stages before availability to the user.",
+      "statement": "Content processing follows a pipeline of ingestion of raw material, normalization into a structured format, and enrichment with metadata or AI-generated segments via the extraction engine.",
       "evidence": [
         {
           "resource": "repo://src/extractor.ts",
-          "version": "repo-file-v1:sha256:4106c1808f404dbbc9223f03cf440c27bfcec07d417b760802c3f67f5814e67d"
+          "version": "repo-file-v1:sha256:dd4e249291e3ed8db3bdec872d2ae66000a4e2e6c7c66935601158894113079d"
         }
       ]
     },
@@ -54,7 +54,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc4d3d2a7f819172574f287dbaf66c07c25812a3f4b5d5107d31995f1823eafc",
+  "pageVersion": "sha256:8e3c9efd1865c59a9dca2faf6d4c169383e31a814463bb7146689553d2c11217",
   "claims": [
     {
       "id": "claim_9eabb26db3a845079f9fd34cec6dce6e",
@@ -14,11 +14,11 @@
     },
     {
       "id": "claim_f3d43d10ee174e46a5250c353e56cb38",
-      "statement": "Application schema is automatically initialized and ensured on server startup via ensureSchema reading src/db/schema.sql.",
+      "statement": "Application schema is automatically initialized and ensured on server startup via ensureSchema reading src/db/schema.sql, using an advisory lock to coordinate concurrent bootstrap attempts.",
       "evidence": [
         {
-          "resource": "repo://src/db.ts#L154-L185",
-          "version": "repo-lines-v1:sha256:61e508ea5279bfee5ac1573f9b59cb1c8897997f37ee8e569bc22530c0bf6ade:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MWFhOThhMTEwMDBhMGQyNTBlNWY5ZDczZmY2NDU5YTg3MzQ4ZjkxMzU0YjkxOTRkMzYyMTExMzVhYTdiZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwZmE5M2FiODU4Zjg5NDExMjYxNDY5MGE2NWM0YWFmOGRkNDk5ZGM3ZjA0YzJlMzkwNTBiMDgxYjc1MDkyYzgifQ"
+          "resource": "repo://src/db.ts#L160-L233",
+          "version": "repo-lines-v1:sha256:48a3226db904af014e26f4b91692140ddc86b23141a6a41242474f98a2cbe536:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NWE4MmEwYTEzZDhkOTNkYmQyYzA1YzFiMjZjMjJiMDI1NDQ3M2E4MDkzYzQ2YTFmMGVkNzA5YzNmMDliMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRiNDQxNWZmYTgwN2MyODNlYjE0MWJmNmZhYmY3Y2U5MzA2MTc0MWZlMTFlZTNiOThiZDQ3Y2NlNzgxNmIzOWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwZmE5M2FiODU4Zjg5NDExMjYxNDY5MGE2NWM0YWFmOGRkNDk5ZGM3ZjA0YzJlMzkwNTBiMDgxYjc1MDkyYzgifQ"
         }
       ]
     },
@@ -27,7 +27,7 @@
       "statement": "verifyCoreSchema ensures that all mandatory feature tables, including reading logs, subscriptions, and billing data, exist in the 'chapter' PostgreSQL schema before serving authenticated traffic, throwing an error if any are missing.",
       "evidence": [
         {
-          "resource": "repo://src/db.ts#L187-L207",
+          "resource": "repo://src/db.ts#L235-L256",
           "version": "repo-lines-v1:sha256:a81bccab9f4de8ee679385ccec8110a0485780cfb600f42ff535a2729076f279:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhYWQ5NTIxMTAzNTU5NTk0ZjU5ZWE3MTYxN2RjNWQ4OTAzYWI3NWEwODE4MzY0YjQ0OGZlMzdiYmY4OTk5NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4OTlkZGRlNTZkYjg1MWUzYjkyYzFkYzc5NmExN2EyZWVjNjUxYjNjMDY5MzU1MGJmNmMzNDVkNTRiNzliYmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
@@ -64,7 +64,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

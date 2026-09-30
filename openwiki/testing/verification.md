@@ -3,6 +3,9 @@ type: guide
 title: Testing & Verification Scripts
 description: Documentation covering verification scripts, test suites, type checking, and build procedures for OpenWiki.
 tags: [testing, verification, scripts, build, quality-assurance, linting]
+verified:
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -12,10 +15,7 @@ sources:
     resource: repo://scripts/verify-posthog-identity.ts
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-08T19:54:21.058Z" }
-verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
 ---
 
 # Testing & Verification Scripts
@@ -44,7 +44,7 @@ npx tsx scripts/verify-posthog-identity.ts
 npx tsx scripts/verify-reading-forecast.ts
 ```
 
-The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior [repo://package.json#L6-L61].
+The project defines numerous `verify:*` npm scripts in `package.json` to test isolated features, database schemas, and platform behavior [repo://package.json#L6-L69].
 
 ## Type Checking & Linting
 

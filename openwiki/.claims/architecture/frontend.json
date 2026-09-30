@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b83087cfb3b3eef477af3cd19b0107fba024152c8e1e9f930f88c1ad29b2c902",
+  "pageVersion": "sha256:7c45c9618913717798e7ce14acfb4e4522d50ea113333cb4381114b2aade51fc",
   "claims": [
     {
       "id": "claim_c6a2036918dd46d4929e7d93833fd572",
@@ -31,10 +31,34 @@
           "version": "repo-lines-v1:sha256:b2f6c9c8f02b70e3729d6577799b584454e49d1c591e8481869779e92051a9ae:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGRlOGJhMzhjYTFlNzFkMzM1MTViOWI0OThiNjJkYTQ0NmU2NDA5ZDVjODgyNjczMGJjYzQ3ZjU4NGViZjY2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWZjODU5MjY1NDQzYTVjNzcyYTA2M2JlMGEyYTVhYjU0MGM2NmU2MTliNGZmMjVkMDg5ZmQ0MTgxZTQzMjAzMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjI5NWM2Zjk3NjZjZWM0OTk2OTgwNWQ3YTE5NTdiNmU1MzMyN2MzYWQwMmQyZDM3NzQ2NDdmMDVmZjgxM2NlMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_94e89acfa44844af9ab5a5a3c8b06ada",
+      "statement": "DaySummary components interact with the backend by requesting supplementary content (e.g., source text, illustrations) and persisting user-generated data such as notes and markers through callback interfaces.",
+      "evidence": [
+        {
+          "resource": "repo://src/components/DaySummary.tsx#L32-L32",
+          "version": "repo-lines-v1:sha256:08a3c62d4cb9c48018c58a53cd785c11f57387e322b6f1b6f68f122d4af4daf7:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDhhM2M2MmQ0Y2I5YzQ4MDE4YzU4YTUzY2Q3ODVjMTFmNTczODdlMzIyYjZmMWI2ZjY4ZjEyMmQ0YWY0ZGFmNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDhhM2M2MmQ0Y2I5YzQ4MDE4YzU4YTUzY2Q3ODVjMTFmNTczODdlMzIyYjZmMWI2ZjY4ZjEyMmQ0YWY0ZGFmNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTViNzhiZmMwMzQ0Y2I4Zjk0MzUzZmZhZGY1OTA0Mzg0NjE1ZTU3NjU5Y2IzM2YwOWU1YjI4YWQ3NzhhMzc0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzc0ZjE1MDg1YWFmNTMwODFhNWVhMGI5YzU0MzYzMzZjZjc4ODI4ZjQ0MzhiOTdhMDFkMmFlOWI3ZWI0YTQ0ZSJ9"
+        },
+        {
+          "resource": "repo://src/components/DaySummary.tsx#L95-L100",
+          "version": "repo-lines-v1:sha256:53bb4738ac9dfd25307b867d8ad0bda46e6da32ee96a24ea34ea64e4c4bc8bfe:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmU2OTMzZjQ0MDkxNDY0NWRkZmY1OWMzNmFkZTZkODZlOGEyZDc2MmQxZTM5ZDI3ZDUyNWI1NTM1OTMwNGUwYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTgzMDEzNTVkYzY5NGY2ZDNiYjEwMzVhZGQ2NmQyYmE0ZWUxYjdjMWJmZDE5MDY0NTQwYmI3NjFhNDcyYTI0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDA2NTZhMGVhYWE5YmY4M2I4YzQ5ZjRkNGQ1MmNlZjcxMTg4MzRhYWI2NjYwZWQ2YmI1YWU3NDM3YzBkZTg3MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzdkMGVjZDQ0MDE2OGU5OGRmZWNmYjhkMTM2YWEyZjZkNzBhMGQzZjY4OGE4M2U4YjIzZGQ1OGIzZTZkZDRjOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_89e674b5a4564b39a5acc240833906dc",
+      "statement": "Frontend page components like PlaybookDetail orchestrate complex views, utilizing shared layout components like AppShell to ensure consistent navigation and accessibility throughout the application.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/PlaybookDetail.tsx",
+          "version": "repo-file-v1:sha256:c9f882d676ea1a6d5b6ce8df594c85f9e12e40853a79bc952ecb863cbedb2887"
+        }
+      ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

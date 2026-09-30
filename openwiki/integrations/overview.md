@@ -4,18 +4,12 @@ title: Integration Overview
 description: Centralized documentation for third-party integrations and extensibility points.
 tags: [integrations, architecture, extensibility]
 sources:
-  - id: openwiki-source-101c2f2abc2ca60e0aa57602
-    resource: repo://src/analytics.ts
-  - id: openwiki-source-9d47595c2a2ea0b2c9b2cc8d
-    resource: repo://src/api.ts
   - id: openwiki-source-d4005060e33903e9e292c464
     resource: repo://src/llm.ts
-  - id: openwiki-source-17e364daae10a75201d19438
-    resource: repo://src/telegram.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
 verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-24T20:28:57.073Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 ---
 
 # Integration Overview
@@ -26,10 +20,10 @@ This page provides an architectural overview of how external services and intern
 
 The system supports various integration patterns to connect with third-party services and provide extensible functionality:
 
-*   **LLM & TTS**: Integration with Large Language Models and Text-to-Speech engines for intelligent processing and output.
-*   **Analytics**: Data telemetry and forecasting services to monitor system performance and usage.
-*   **API Routes**: Standardized HTTP endpoints for interacting with external clients and internal components.
-*   **Messaging**: Communication integrations, such as Telegram, to support real-time interactions.
+*   **LLM & TTS**: Integration with Large Language Models (LLM) and Text-to-Speech (TTS) engines via a centralized router (`NineRouter`), controlled by a process-local scheduler that manages request pacing and concurrency.
+*   **Analytics**: Telemetry and forecasting via PostHog, designed to capture metadata-only metrics—such as route responsiveness and system performance—without accessing private user content.
+*   **API Routes**: Standardized HTTP endpoints for external clients and internal components, centralized to ensure consistent authentication, request validation, and response formatting.
+*   **Messaging**: Communication integrations, such as Telegram, to support real-time notifications and external command processing.
 
 ## Key Integration Points
 

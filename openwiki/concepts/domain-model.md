@@ -1,24 +1,20 @@
 ---
 type: concept
 title: Domain Model
-description: Core domain models and business logic concepts including reading companions, reading intentions, book uploads, and podcast status management.
-tags: [domain, models, business-logic, books, podcasts, companions]
-sources:
-  - id: openwiki-source-a7bfcf9c7093732581286157
-    resource: repo://migrations/20260826_add_book_reading_intention.sql
-  - id: openwiki-source-1c4642b1e8b0904d58359f74
-    resource: repo://migrations/20260826_add_podcast_unavailable_status.sql
-  - id: openwiki-source-ddf75957c1dba6e13c946ffe
-    resource: repo://src/components/ReadingProgressCard.tsx
-generated: { by: "openwiki/0.6.0", at: "2026-09-23T20:19:06.296Z" }
+description: Defines core domain entities such as books, reading rounds, reading companions, reading intentions, and content analysis models that facilitate the AI reading progression system.
+tags: [domain, models, business-logic, books, readers, companions]
 verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-24T20:28:57.073Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
+sources:
+  - id: openwiki-source-c457d3d1a63d5dc86f0da7ef
+    resource: repo://src/types.ts
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
 ---
 
 # Domain Model
 
-The OpenWiki core domain encompasses user-owned books, reading sessions, AI-driven reading progress companions, reading intentions, and podcast generation management. This model bridges raw book files and extracted text with interactive reading progression, continuous thread tracking, and podcast summaries.
+The OpenWiki core domain model defines the structured entities and relationships powering the AI-assisted reading progression system. It bridges raw content ingestion with iterative reading analysis, supporting continuous tracking of narrative threads and insights.
 
 ## Core Entities and Relationships
 
@@ -47,6 +43,12 @@ erDiagram
         json carry_forward
         boolean stale
     }
+    ReadingLensRow {
+        string id PK
+        string book_id FK
+        string log_id
+        json analysis
+    }
     PodcastRow {
         string id PK
         string book_id FK
@@ -54,33 +56,27 @@ erDiagram
     }
 ```
 
+## Book Management
+
+Books (`BookRow`) represent the primary unit of reading, containing metadata, current progress, and owner-private reading intentions.
+
+- **Reading Intention**: A persistent, private field (`reading_intention`) capturing the user's motivation or focus for reading a book, distinct from public notes or shared reviews.
+- **Content Pipeline**: Books are ingested as PDFs or EPUBs, undergoing text extraction and chunking into parseable page ranges to provide grounded context for AI synthesis.
+
 ## Reading Companions and Threads
 
-The **Reading Progress Companion** (`ReadingProgressCompanionRow`) synthesizes a book's ongoing reading logs into structured narrative threads for the current reading round. 
+The **Reading Progress Companion** (`ReadingProgressCompanionRow`) aggregates reading logs across a round into structured narrative threads:
 
-- **Main Thread**: The central continuous argument or narrative spine tracked across sessions.
-- **Converging**: Themes or arguments where multiple reading insights intersect.
-- **Open Threads**: Unresolved questions or narrative tension points to carry into subsequent pages.
-- **Carry Forward**: Durable insights and principles preserved across reading rounds.
+- **Main Thread**: A continuous, high-level narrative or argument spine.
+- **Converging Threads**: Synthesis of intersection points among various insights.
+- **Open Threads**: Active questions or unresolved tensions that persist across reading sessions.
+- **Carry Forward**: Durable insights preserved to bridge disparate reading rounds.
 
-Companions maintain a `stale` flag (`ReadingProgressCompanionRow#stale`) which is updated by `ReadingProgressCard` when new reading logs are recorded after the last generated companion state, indicating that the synthesis needs refresh.
+Companions track their state consistency via a `stale` flag, indicating whether new logged data necessitates a regeneration of the current synthesis.
 
-## Reading Intentions
+## Content Analysis
 
-Books support an owner-private **reading intention** (`BookRow#reading_intention`). This field records the reader's personal motivation, learning goals, or inquiry focus when starting a book. It remains private to the owner and is distinct from shared book notes or public reviews.
+AI-driven tools analyze book content through specific lenses:
 
-## Book Upload and Content Processing
-
-Books are ingested as PDF or EPUB files. Content processing pipelines extract raw text from uploaded files, breaking text down into parseable chunks, chapters, and page ranges so that AI components (such as Reading Lenses and Companions) can generate grounded citations.
-
-## Podcast Status Management
-
-Podcasts generated from books or daily reflections track asynchronous generation and archiving lifecycles through explicit status constraints. The status lifecycle includes:
-
-- `queued`: Awaiting worker pick-up.
-- `scripting`: Generating the dialogue or script.
-- `synthesizing`: Converting scripts to audio via TTS.
-- `archiving` / `archive_pending`: Storing audio artifacts.
-- `ready`: Available for playback and download.
-- `failed`: Encountered a terminal error during generation.
-- `unavailable`: Marked as explicitly unavailable when source material or generation prerequisites become invalid or deleted.
+- **Reading Lens**: Extracts key arguments, assumptions, and concepts at specific log checkpoints, providing a focused critique or summary (`ReadingLensRow`).
+- **Podcast Management**: Asynchronous audio generation tracking. Podcasts follow an explicit lifecycle (e.g., `queued`, `scripting`, `synthesizing`, `ready`, `failed`, `unavailable`) to manage TTS and archiving workflows.

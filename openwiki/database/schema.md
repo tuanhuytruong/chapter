@@ -12,8 +12,8 @@ sources:
     resource: repo://src/db/schema.sql
 generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 ---
 
 # Database Schema & Migrations

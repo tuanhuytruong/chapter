@@ -12,8 +12,8 @@ sources:
     resource: repo://update.sh
 generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
 verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-24T20:28:57.073Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 ---
 
 # Database Operations & Runbook

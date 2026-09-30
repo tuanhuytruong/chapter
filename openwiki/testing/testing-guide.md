@@ -3,19 +3,23 @@ type: guide
 title: Testing Guide
 description: Testing strategies, test runner setup, key verification test suites, and backend/frontend validation instructions for the project.
 tags: [testing, verification, scripts, type-checking, quality-assurance, architecture]
-verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-17T20:19:11.636Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
   - id: openwiki-source-ad027b3e91609f1451769138
     resource: repo://scripts/verify-chapter-markers.ts
+  - id: openwiki-source-4ac3c5c81e04cb41e66edead
+    resource: repo://scripts/verify-pdf-cache.ts
+  - id: openwiki-source-879d832a0e9318d32e2bbdbe
+    resource: repo://scripts/verify-pdf-illustration-contract.ts
   - id: openwiki-source-6d428306e6d9164f86db303a
     resource: repo://scripts/verify-posthog-identity.ts
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
-generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
+verified:
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 ---
 
 # Testing Guide
@@ -50,7 +54,7 @@ The repository defines dozens of specialized verification tasks in `package.json
 
 ### Subsystem & Algorithm Verification
 - **Authentication**: Scripts like `repo://scripts/verify-auth-signup.ts` and `repo://scripts/verify-auth-rate-limit.ts` validate user management flows.
-- **Core Logic**: Specialized scripts like `repo://scripts/verify-pdf-extractor.ts` ensure data processing components function correctly.
+- **Core Logic**: Specialized scripts like `repo://scripts/verify-pdf-extractor.ts`, `repo://scripts/verify-pdf-cache.ts`, and `repo://scripts/verify-pdf-illustration-contract.ts` ensure data processing components function correctly.
 - **Platform & Integrity**: `repo://scripts/verify-platform-db.ts` and `repo://scripts/verify-platform-headers.ts` validate foundational infrastructure.
 
 ---
@@ -62,6 +66,8 @@ You can execute verification scripts individually via `npx tsx` or through npm s
 ```bash
 # Run specific feature verifications
 npx tsx scripts/verify-pdf-extractor.ts
+npx tsx scripts/verify-pdf-cache.ts
+npx tsx scripts/verify-pdf-illustration-contract.ts
 npx tsx scripts/verify-auth-signup.ts
 
 # Run platform database verification

@@ -1,32 +1,28 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:517428543cbaee4282d0ac160822872543ae6987eb0131990d0efebe2e98f80c",
+  "pageVersion": "sha256:941b72c2301c31a70a912aa7ea2b030a1de610f17e7ef7c3dd1c207840851de3",
   "claims": [
     {
       "id": "claim_cbe258deca024bb19b944de231aa70e2",
-      "statement": "The system architecture centralizes third-party integrations into four primary categories: AI services (LLM/TTS) for processing, Analytics for metrics and performance monitoring, API routes for external interaction, and messaging integrations (e.g., Telegram) for user notifications.",
+      "statement": "The system centralizes third-party integrations into four categories: LLM/TTS for intelligent processing via a managed NineRouter client with pacing/concurrency controls; Analytics via PostHog for metadata-only monitoring of system/route performance; API routes for standardized, authenticated external interactions; and messaging (e.g., Telegram) for real-time notifications and command processing.",
       "evidence": [
         {
-          "resource": "repo://src/analytics.ts",
-          "version": "repo-file-v1:sha256:7268294be9bfec5b1e51328aa2aab75566270e338a24db269843742413c206b1"
+          "resource": "repo://src/llm.ts#L56-L67",
+          "version": "repo-lines-v1:sha256:4e062317405b6e941d2e4369e79004f3e9252364200ad544649cb5ebb15329ae:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzZDNiZDRlNjVhN2U2MzU2MmZhZGI4MmY0MTFlOGMyZTk2Njg4ZmVjYzEyOWRmNjdiMWEyMzZlZmNiM2NhM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5ZDVkMjAyYzFkOGIzMThjMTA4MTQ3MjgyZTU5NTY5ODQwOTRhNTM5MzcyNWFmMjlmZmU5NjM2ODNiOGRhNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzYWRkM2RkOTkxNzA0M2RlOTk1MzM2YTBiNTJmYmIyODliNDIzYjlhNDAyMTNhNjQyMDA3MTJiNTY5ODY1YTEifQ"
         },
         {
-          "resource": "repo://src/api.ts",
-          "version": "repo-file-v1:sha256:e11521a56e182c7268d87f5577665e49e9a8970df55a43aa694d394ce236aba9"
+          "resource": "repo://src/llm.ts#L75-L100",
+          "version": "repo-lines-v1:sha256:05f072f7b9e148ffee1696954c6be5a8632cc166ddfb87f2ca34fe1fff0cfa36:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNzI3NzEzOTljNjYzN2E3MjkxZTZhYjU1MjY3ZWYxZjZjMTU0ZjMyNDdjYmY1ZTU2MmMyOWUyNzk2NTA2YmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNGY1MzA4MzY3YzBkYmM0YTEyYjgyNjIzNjY2YjZmOTRiOWJlNzhmYzQ4NzgwODY5ODkyYWYyODBjZDI3NzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyZjY1NjJlZWI5M2RmYTUxY2E2OTk3NGI5MjFkZWUwYmRhOTBmY2ZjMDdiOGQ3MjllODVmNDE4NTg2N2UxMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4NjU3NWJiODdiZWZjNGFiZmYwNjY2NDU5MGNlNTIzM2Q4ZDc4YzUwMjljMjA4MTY4NGFkY2EyZGM4NmQ2YjAifQ"
         },
         {
-          "resource": "repo://src/llm.ts",
-          "version": "repo-file-v1:sha256:ba3ae8a477820d467a16d40356b634908edb6d63a06a4ff77fff1a942ba8cb16"
-        },
-        {
-          "resource": "repo://src/telegram.ts",
-          "version": "repo-file-v1:sha256:64d69835d6a3648d90f14161f92b2da4cb38620f6679e9eb031263832970e53b"
+          "resource": "repo://src/llm.ts#L9-L34",
+          "version": "repo-lines-v1:sha256:21db5f2eecbab2ba26ccd87404a18266dcdb10bd67500020e7e09ed5648a3e01:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlZjEwOTlhZWQyYjRjOTg2ZDg0NmI0ODNmYTYzMmY4OGE4MjUyYTM2MGY0MTc5YTlhMjA3NTI2NmNlZWNjMTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1NjI3MzQ5OTM2YWQ5NGNkZjExZDc4NmMwZGUzMTUzYjM5MThiMzQ1ODE2MTEzOGI2N2M0MmZhNmJkNGQ3MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE2MjFmOTZjYmQ4ZTFlYzBkZmZlMWM1OWY4YjA2OGIxMThkMjJiOTg3NzczMmM2M2JkMGYyYzFkY2M2MGU5MDAifQ"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

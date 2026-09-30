@@ -1,11 +1,11 @@
 ---
 type: concept
-title: Quickstart
-description: Central entry point for navigating the Chapter repository, including architecture, workflows, and development environment setup.
+title: Quickstart Guide
+description: Central entry point for navigating the repository, including architecture, workflows, and development environment setup.
 tags: [quickstart, overview, development]
 verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-24T20:28:57.073Z
+  - by: openwiki/0.6.1
+    at: 2026-09-30T21:25:31.388Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -17,42 +17,42 @@ sources:
     resource: repo://src/App.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.6.0", at: "2026-09-24T20:28:57.073Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
 ---
 
-# Quickstart
+# Quickstart Guide
 
-Welcome to the Chapter repository, a self-hosted reading companion. This documentation provides a central entry point for developers to understand the repository structure, core systems, and common development tasks.
+Welcome to the repository. This guide provides a central entry point for developers to understand the structure, core systems, and common development tasks.
 
 ## Getting Started
 
 ### Development Environment
 The project uses a standard Node.js development stack:
-1. **Install Dependencies**: `npm install`
-2. **Development Server**: `npm run dev` (uses `tsx` for the Express backend).
+1. **Install Dependencies**: Run `npm install`.
+2. **Development Server**: Run `npm run dev` to start the backend via `tsx`.
 
 ### System Verification
-The repository provides verification scripts to ensure platform health. These are found in the `package.json` scripts section and exercise key system integrations:
-* `npm run verify:platform-db`: Tests database connectivity and migrations.
-* `npm run verify:ai-reader`: Validates the integration with configured LLM/TTS providers.
+The repository includes a comprehensive suite of verification scripts in `package.json` to ensure platform health and functional correctness. These scripts reside in `scripts/` and can be executed via `npm run <script-name>`.
 
-## Key Entry Points
-* **Backend**: The Express server is initialized at `repo://server.ts`.
-* **Frontend**: The client application roots at `repo://src/main.tsx` and `repo://src/App.tsx`.
+Key verification areas include:
+* **Platform**: `npm run verify:platform-db` for database connectivity.
+* **AI/LLM**: `npm run verify:ai-reader` and related typography/illustration scripts.
+* **Content Pipeline**: `npm run verify:pdf-extractor` and `npm run verify:upload-content`.
+* **Auth & User**: `npm run verify:auth` and related sub-scripts.
 
 ## System Documentation Roadmap
 
 Use the following domains to navigate the architecture, workflows, and operational procedures:
 
 ### Architectural Foundations
-* **[Architecture Overview](/openwiki/architecture/overview.md)**: High-level system design and component relationships.
-* **[Backend Architecture](/openwiki/architecture/backend.md)**: Details on the backend server, API integration, and service structure.
-* **[Frontend Architecture](/openwiki/architecture/frontend.md)**: Describes the React-based frontend application structure.
-* **[Domain Model](/openwiki/concepts/domain-model.md)**: Vocabulary and core domain objects.
+* **[Backend Architecture](architecture/backend.md)**: Details on the backend server, API integration, and service structure.
+* **[Database Architecture](architecture/database.md)**: Database schema and interaction patterns.
+* **[Frontend Architecture](architecture/frontend.md)**: Describes the React-based frontend application structure.
+* **[Domain Model](concepts/domain-model.md)**: Vocabulary and core domain objects.
 
 ### Operational & Development Workflows
-* **[Workflows Overview](/openwiki/workflows/overview.md)**: Roadmaps for key functional workflows.
-* **[Content Processing](/openwiki/workflows/content-processing.md)**: Lifecycle of content within the system.
-* **[Testing Overview](/openwiki/testing/overview.md)**: Strategy and procedures for system verification and testing.
-* **[Integrations Overview](/openwiki/integrations/overview.md)**: How the system interfaces with external services.
-* **[Database Operations](/openwiki/operations/database.md)**: Runbooks for database management and maintenance.
+* **[Workflows Overview](workflows/overview.md)**: Roadmaps for key functional workflows.
+* **[Content Processing](workflows/content-processing.md)**: Lifecycle of content within the system.
+* **[Testing & Verification](testing/testing-guide.md)**: Strategy and procedures for system verification.
+* **[Integrations Overview](integrations/overview.md)**: How the system interfaces with external services.
+* **[Database Operations](operations/database.md)**: Runbooks for database management and maintenance.
