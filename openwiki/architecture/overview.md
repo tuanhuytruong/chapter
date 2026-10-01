@@ -18,8 +18,8 @@ sources:
     resource: repo://src/main.tsx
 generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
 verified:
-  - by: openwiki/0.6.0
-    at: 2026-09-24T20:28:57.073Z
+  - by: openwiki/0.6.1
+    at: 2026-10-01T21:48:18.718Z
 ---
 
 # System Architecture Overview

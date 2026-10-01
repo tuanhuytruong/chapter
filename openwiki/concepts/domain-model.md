@@ -3,13 +3,13 @@ type: concept
 title: Domain Model
 description: Defines core domain entities such as books, reading rounds, reading companions, reading intentions, and content analysis models that facilitate the AI reading progression system.
 tags: [domain, models, business-logic, books, readers, companions]
-verified:
-  - by: openwiki/0.6.1
-    at: 2026-09-30T21:25:31.388Z
 sources:
   - id: openwiki-source-c457d3d1a63d5dc86f0da7ef
     resource: repo://src/types.ts
 generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
+verified:
+  - by: openwiki/0.6.1
+    at: 2026-10-01T21:48:18.718Z
 ---
 
 # Domain Model

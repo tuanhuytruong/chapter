@@ -1,15 +1,11 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:988da04a6ff845a02301ef8312bd3fd0b68c2abaa5775edbea677649528d9046",
+  "pageVersion": "sha256:ab4d76b105674b1c9d6c0e568fca584255627c1ef8463254dc1632626a300fe3",
   "claims": [
     {
       "id": "claim_446aaeebf5ee41b582fd531f6bef180d",
-      "statement": "Book uploads (EPUB or PDF) are validated for format integrity and selectable text, while filenames are sanitized and normalized to ASCII.",
+      "statement": "Book uploads (EPUB or PDF) are validated for format integrity, selectable text, and visual illustration structure, while filenames are sanitized and normalized to ASCII.",
       "evidence": [
-        {
-          "resource": "repo://scripts/verify-upload-content.ts",
-          "version": "repo-file-v1:sha256:0e11dff6211a5a63c0676f1fed42814f8b3a732f23975f752040bc2037e3aa42"
-        },
         {
           "resource": "repo://src/routes/upload.ts",
           "version": "repo-file-v1:sha256:3176fe2b509f178c67ddc3f3236eabe457cf4d0ad9be147fc02f5285150c96d1"
@@ -76,7 +72,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-10-01T21:48:18.718Z"
   }
 }

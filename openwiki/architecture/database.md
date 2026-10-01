@@ -3,9 +3,6 @@ type: architecture
 title: Database & Storage
 description: Comprehensive documentation of the database schema, migrations, connection handling, and storage repositories in Chapter.
 tags: [database, postgresql, migrations, schema, storage, repositories]
-verified:
-  - by: openwiki/0.6.1
-    at: 2026-09-30T21:25:31.388Z
 sources:
   - id: openwiki-source-6b57b34d9d5d29d041e98f86
     resource: repo://migrations/20260825_add_reading_progress_companions.sql
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-125e76395473d098c7269d6d
     resource: repo://src/db/schema.sql
 generated: { by: "openwiki/0.5.2", at: "2026-09-16T20:06:06.880Z" }
+verified:
+  - by: openwiki/0.6.1
+    at: 2026-10-01T21:48:18.718Z
 ---
 
 # Database & Storage

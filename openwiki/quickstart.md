@@ -5,7 +5,7 @@ description: Central entry point for navigating the repository, including archit
 tags: [quickstart, overview, development]
 verified:
   - by: openwiki/0.6.1
-    at: 2026-09-30T21:25:31.388Z
+    at: 2026-10-01T21:48:18.718Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json

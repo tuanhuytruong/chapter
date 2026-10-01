@@ -1,31 +1,32 @@
 ---
 type: workflow
-title: Content Processing & Podcasts
-description: End-to-end workflows for uploading EPUB and PDF content, managing books and reading rounds, and generating or verifying AI podcast episodes.
-tags: [workflows, content, upload, podcasts, reading]
+title: Content Processing Workflow
+description: Upload validation and processing workflows for EPUB and PDF reading content, including PDF text extraction and illustration analysis.
+tags: [workflows, content, upload, pdf, epub]
+verified:
+  - by: openwiki/0.6.1
+    at: 2026-10-01T21:48:18.718Z
 sources:
   - id: openwiki-source-6251e90fd58f3c041d6f5c9b
     resource: repo://scripts/verify-podcast.ts
   - id: openwiki-source-f19bd693059c4c56bc4e791e
     resource: repo://scripts/verify-reading-progress-companion.ts
-  - id: openwiki-source-13927404d8ceb664565801bb
-    resource: repo://scripts/verify-upload-content.ts
   - id: openwiki-source-e6ae3303314e5a8bb9e4bde3
     resource: repo://src/podcast/generate.ts
   - id: openwiki-source-3a9f5ed6f801cb82536e8136
     resource: repo://src/podcast/tts.ts
   - id: openwiki-source-8536bfae8360377e8c22add2
     resource: repo://src/routes/upload.ts
-generated: { by: "openwiki/0.5.1", at: "2026-09-10T19:40:31.384Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-10-01T21:48:18.718Z" }
 ---
 
-# Content Processing & Podcasts
+# Content Processing Workflow
 
-The OpenWiki content processing and podcast generation pipeline handles importing reading material, validating formats, tracking reading progress, choosing podcast narrators, and synthesizing/archiving audio episodes.
+The content pipeline validates uploaded reading material, extracts usable text, and stores standardized assets. PDF handling must account for both selectable text and illustrations.
 
-## Content Upload & Validation
+## Upload validation
 
-When users upload books (EPUB or PDF), the system validates file integrity, extracts text, repairs mojibake filenames, and persists standardized assets.
+The upload route accepts EPUB and PDF files and invokes `validateBookUpload`. PDFs must have a valid PDF header and selectable text; scanned image-only PDFs are rejected. EPUBs must be valid ZIP containers with the required manifest structures. Upload filenames are repaired for Unicode or Latin-1 mojibake and stored deterministically as clean ASCII using `displayUploadFilename` and `storedUploadFilename`.
 
 ```mermaid
 sequenceDiagram
@@ -33,61 +34,30 @@ sequenceDiagram
     participant UploadRoute as Upload Route
     participant Validator as Book Upload Validator
     participant Storage as File Storage / DB
-
     User->>UploadRoute: POST /api/books (Multipart File)
     UploadRoute->>Validator: validateBookUpload(file)
     alt PDF
-        Validator->>Validator: Check PDF header & text extraction
+        Validator->>Validator: Check header and selectable text
     else EPUB
-        Validator->>Validator: Inspect ZIP container & required structures
+        Validator->>Validator: Inspect ZIP and manifest
     end
-    Validator-->>UploadRoute: Return validated format ('pdf' | 'epub')
-    UploadRoute->>Storage: Store file with normalized ASCII name
-    UploadRoute-->>User: 201 Created (Book metadata & ID)
+    Validator-->>UploadRoute: Validated format
+    UploadRoute->>Storage: Store normalized asset
+    UploadRoute-->>User: 201 Created
 ```
-*Content upload and validation flow.*
 
-- **Upload Verification**: Files are checked via `validateBookUpload` in `src/routes/upload.ts` (tested by `scripts/verify-upload-content.ts`). PDFs are verified for selectable text (rejecting scanned image-only PDFs), and EPUBs are validated as proper ZIP containers with required manifest entries.
-- **Filename Sanitization**: Unicode and Latin-1 mojibake filenames are repaired via `displayUploadFilename` and stored deterministically as clean ASCII via `storedUploadFilename`.
+## PDF extraction and illustration analysis
 
----
+After validation, PDF processing extracts selectable text while preserving page and reading order. Illustration handling is a separate enrichment concern: embedded images are identified and analyzed when the configured processing path supports visual analysis; resulting descriptions are associated with the relevant page or content segment rather than treated as ordinary extracted text. Extraction failures or PDFs without selectable text must remain validation failures instead of silently producing an empty book.
 
-## Podcast Generation, Narrator Selection & Workflow
+The PDF processor should therefore preserve the relationship between an illustration and nearby captions, headings, and text. Downstream consumers can use the extracted narrative and illustration descriptions together when indexing, presenting, or generating spoken content.
 
-Podcasts can be generated for indexed EPUB books. Each reading round maintains its own persistent narrator choice (female or male).
+## Podcast and playback hand-off
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant PodcastRoute as Podcasts Route
-    participant Generator as Podcast Generator
-    participant LLM as LLM Script Generator
-    participant TTS as Edge TTS / Audio Engine
-    participant Telegram as Telegram Archive
+Podcast generation operates on indexed book chapters. A reading round persists its narrator choice per `(book_id, reading_round)`. Chapter language is inferred by `resolvePodcastLanguage`; very short sources are marked unavailable by `isPodcastSourceTooBrief`. TTS failures are classified by `isRetryableTtsError` and recovered with bounded durable retries through `recoverRetryablePodcastTts`. If Telegram archiving fails, the episode becomes `archive_pending` while local cached playback remains available.
 
-    User->>PodcastRoute: POST /api/podcasts (book_id, chapter_key, voice_gender)
-    PodcastRoute->>Generator: createPodcast(...)
-    Generator->>Generator: Check/persist round narrator & chapter source
-    Generator->>LLM: Generate standalone podcast script
-    LLM-->>Generator: Raw spoken prose script
-    Generator->>TTS: Synthesize audio (synthesizePodcast)
-    TTS-->>Generator: Audio file & duration
-    Generator->>Telegram: Archive episode (archivePodcast)
-    Telegram-->>Generator: Telegram file IDs & message metadata
-    Generator-->>PodcastRoute: Ready episode with local cache & playback status
-    PodcastRoute-->>User: 202 Accepted / Episode metadata
-```
-*Podcast generation and archiving workflow.*
+Reading progress is updated through `/api/podcasts/books/:bookId/playlist/progress`, and audio proxy endpoints support HTTP Range requests for seeking.
 
-- **Narrator Persistence**: The narrator voice (`female` or `male`) is bound per `(book_id, reading_round)`. Re-reading a book initiates a fresh session where the voice picker can be re-invoked.
-- **Language Auto-Detection**: `resolvePodcastLanguage` inspects chapter text for diacritics and linguistic signals to automatically determine whether to generate Vietnamese or English audio.
-- **Brief Chapter Handling**: Chapters with very few words are marked as `unavailable` (`isPodcastSourceTooBrief`), triggering automated skipping to the next eligible chapter.
-- **TTS Retry & Recovery**: Upstream TTS errors are classified by `isRetryableTtsError` and retried using durable bounded budgets (`recoverRetryablePodcastTts`). If Telegram archiving fails, episodes enter an `archive_pending` state while preserving local cache playback.
+## Focused verification
 
----
-
-## Reading Progress & Playback
-
-- **Progress Tracking**: Users update resume cursors and completion marks via `/api/podcasts/books/:bookId/playlist/progress`.
-- **Companion Logic**: `scripts/verify-reading-progress-companion.ts` validates the companion logic, including language auto-detection and fact extraction from reading sessions.
-- **Audio Streaming**: Audio proxy endpoints support standard HTTP Range requests (`bytes=...`) for smooth scrubbing and seeking during playback.
+`validateBookUpload` is exercised by `scripts/verify-upload-content.ts`. Podcast generation and TTS behavior are covered by `scripts/verify-podcast.ts`; reading-progress companion behavior is checked by `scripts/verify-reading-progress-companion.ts`.

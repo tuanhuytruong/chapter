@@ -16,10 +16,10 @@ sources:
     resource: repo://scripts/verify-posthog-identity.ts
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
-generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-10-01T21:48:18.718Z" }
 verified:
   - by: openwiki/0.6.1
-    at: 2026-09-30T21:25:31.388Z
+    at: 2026-10-01T21:48:18.718Z
 ---
 
 # Testing Guide
@@ -41,8 +41,14 @@ flowchart TD
 
 Instead of heavy end-to-end test frameworks, the application validates feature correctness, database persistence, business logic, and security invariants through **focused verification scripts**. Each script runs against either an active PostgreSQL database connection or pure logic functions to assert exact behavior.
 
+### PDF Extraction and Illustration Verification
+System stability regarding PDF processing is maintained through dedicated verification scripts:
+- `verify-pdf-extractor.ts`: Ensures consistent PDF text extraction.
+- `verify-pdf-cache.ts`: Validates cache invalidation and storage logic for PDF assets.
+- `verify-pdf-illustration-contract.ts`: Verifies that extracted illustrations strictly adhere to the defined metadata and content contracts, preventing regressions in visual asset processing.
+
 ### Key Characteristics of Verification Scripts:
-- **Isolation**: Each script targets a specific subsystem (e.g., `verify-auth-signup.ts`, `verify-pdf-extractor.ts`).
+- **Isolation**: Each script targets a specific subsystem.
 - **Direct Assertions**: Scripts perform direct database insertions, API mocks/calls, and strict runtime assertions.
 - **Repeatability**: Can be executed on demand during local development or pre-commit/CI checks.
 

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1c5e031ee2dd267bfcf0c26da6bf0e6112c85fb63db08068e71d40c1c5613d33",
+  "pageVersion": "sha256:dcf6ef4d919532e0093a1368a6f9ec1ae3726bfa20d09c96889c52e32e118f64",
   "claims": [
     {
       "id": "claim_c6fd54fe9d954aa38c70b2fbedab0845",
       "statement": "The server entry point is repo://server.ts, which initializes an Express application, configures security headers, session storage via connect-pg-simple in PostgreSQL, and mounts modular feature routers under /api.",
       "evidence": [
         {
-          "resource": "repo://server.ts#L1-L24",
+          "resource": "repo://server.ts#L1-L25",
           "version": "repo-lines-v1:sha256:b18a7898f1be0d6752cedb67d479d6ba3b9012099978471eec01acbc7fdc5441:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4NjNlNjMxZDY2OTU5MGE1MDgzYzE4MzJhOTRmOTM2ZDVmYzdhOTE5NGU3MzI2MTJjYTc5Mjc4NGY0NjIwODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlZjc5ODNjZjA5MWM3OTc5YWE1MDY0NzBmZThkNzlhMmExY2IzMWQ0OTBmMGQ3NGEyOGUyNzg2OGZmYjUwNzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1ZTNmZGMwZTI0YTFiOTBhNzMwNmQ3NzIyYmE1ZDZhZTJmMDZmMDcxOGNiNDZkMTg0MWVhY2RmNzczYWQzMWEifQ"
         }
       ]
@@ -37,7 +37,7 @@
       "statement": "API routing is modularized into dedicated routers for books, reviews, upload, podcasts, entitlements, billing, monthly reviews, ask-reading, and cross-book connections.",
       "evidence": [
         {
-          "resource": "repo://server.ts#L11-L24",
+          "resource": "repo://server.ts#L11-L25",
           "version": "repo-lines-v1:sha256:89fb153423b7abb3d20c5373bd6bcff6174a7afcc37d95d69d63bb43fab1d243:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYmM4NGVmNGM4NjI2ZDRmY2FhODIwMjljOWVhYzIyNzNiNTYzNWU4NTM3ZDk3ZmQyZjUyZDEzODUyYWViNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlZjc5ODNjZjA5MWM3OTc5YWE1MDY0NzBmZThkNzlhMmExY2IzMWQ0OTBmMGQ3NGEyOGUyNzg2OGZmYjUwNzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyMGJlMDNiMzYyMzZkMzA3Yjc0NTBhNTQ5NTRjNzVhZmRiZjk2NjVmZGIzMDkwOTkzYWRjNWY3NDVmNjU2NjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1ZTNmZGMwZTI0YTFiOTBhNzMwNmQ3NzIyYmE1ZDZhZTJmMDZmMDcxOGNiNDZkMTg0MWVhY2RmNzczYWQzMWEifQ"
         }
       ]
@@ -47,7 +47,7 @@
       "statement": "Core backend services integrate authentication, LLM capabilities, user lifecycle tracking, weekly goals, listen rhythms, and Telegram linking.",
       "evidence": [
         {
-          "resource": "repo://server.ts#L25-L28",
+          "resource": "repo://server.ts#L26-L29",
           "version": "repo-lines-v1:sha256:b06fb17ea105211a24276697b509f446687b4fb62d0d88e9502be371a634eec3:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmY5M2Y3ZmZhNTBiMmQ5MmMxZDA1NTAyNWY4ODc5YTg1MWEyNDk1NTJhMWU2OGFmMjE3NzE1ODhmMDBjZDYyMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmY5OGQzOTRjNjA0NmI5OWI1NDNlOTYyOThhNGUwOTZlYTVkOTk2NjdmOTg2YzAzOThlYjM1NmExYWM4ZDcyYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTlhZjM4ZDYyZWQ3MWU4N2E0NGEwN2MzZThhZjBjMzNjMGVhYjc5OTBiOWE4YmRjNzI1YmFlNWUzYjBiNjYyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODE5ZjgyYzVkMTEzMDMzNzYzYjJmZmQzMjRkMWNjM2QwMWIxODMxZWRmYmJiODc0MjRmYzdiYjllYzlkNjAzMiJ9"
         }
       ]
@@ -77,7 +77,7 @@
       "statement": "The API client layer in repo://src/api.ts defines strongly typed request handlers, membership models, and data structures corresponding to backend REST endpoints.",
       "evidence": [
         {
-          "resource": "repo://src/api.ts#L1-L100",
+          "resource": "repo://src/api.ts#L1-L107",
           "version": "repo-lines-v1:sha256:a04d83ba0ad4a3a6611961c8ce324711c66718b6e7475088dcd695ea4030e1ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZGE0ZmI0NzE1N2I3MzVlNmMyY2FiZjBhZTBlNDEwZmQ1YzQ0Mzc2MzdlNjA1MjAzZmM0NjE0NmY0NTUyM2I0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjQ2YjA2MDg0MjVlNGVlMDEzYzQ3NDY0NjVkMjE5MmJjMWQyNjM1ZjcyMmRmMTFlYjBjNzhkMGIyM2QxZDNlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzOWQ1NzA1MDE2YTVjZjE5ZDI4ZjU3YjVmZGE4ZWIxZjNmN2UxZDMzNGMyZDcyNTdlN2M1Nzc4OGI1NDE0MjM5In0"
         }
       ]
@@ -94,7 +94,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.6.0",
-    "at": "2026-09-24T20:28:57.073Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-10-01T21:48:18.718Z"
   }
 }
