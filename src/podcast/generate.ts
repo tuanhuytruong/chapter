@@ -165,7 +165,7 @@ export async function recoverRetryablePodcastTts(batchSize = 2): Promise<void> {
     } catch (error: any) {
       const deferred = await deferRetryableTts(episode.id, error, episode.worker_lease_token);
       if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,worker_lease_token=NULL,worker_lease_until=NULL,error_message=$2,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [episode.id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000), episode.worker_lease_token]);
-      console.warn(`[podcast] tts-recovery-failed env=${config.appEnv} episode=${episode.id} status=${error?.status || 0}`);
+      console.warn(`[podcast] tts-recovery-failed env=${config.appEnv} episode=${episode.id} status=${error?.status || 0} category=${error?.category || "unknown"}`);
     } finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
   }
 }
@@ -225,7 +225,7 @@ export async function recoverQueuedPodcastJobs(batchSize = 10): Promise<void> {
 }
 
 export async function retryPendingPodcastArchives(): Promise<void> {
-  const { rows } = await query<any>("SELECT p.*,b.title AS book_title,COALESCE(u.display_name, u.username) AS user_name FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.status='archive_pending' AND p.local_cache_path IS NOT NULL AND p.local_cache_until > now()");
+  const { rows } = await query<any>("SELECT p.*,b.title AS book_title,COALESCE(u.display_name, u.username) AS user_name FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id WHERE p.status='archive_pending' AND p.local_cache_path IS NOT NULL AND p.local_cache_until > now() AND u.environment=$1 AND b.owner_id=p.user_id", [config.appEnv]);
   if (!rows.length) return;
   logPodcastArchiveConfig(config.podcastTelegramArchiveChatId);
   try { await verifyPodcastArchive(config.podcastTelegramArchiveChatId); } catch (error: any) { console.warn("[podcast] archive retry preflight failed:", error.message); return; }
@@ -239,7 +239,7 @@ export async function retryPendingPodcastArchives(): Promise<void> {
 }
 
 export async function prunePodcastCache(): Promise<void> {
-  const expired = await query<any>("SELECT id,local_cache_path,status FROM podcasts WHERE local_cache_until < now() AND local_cache_path IS NOT NULL");
+  const expired = await query<any>("SELECT p.id,p.local_cache_path,p.status FROM podcasts p JOIN users u ON u.id=p.user_id JOIN books b ON b.id=p.book_id WHERE p.local_cache_until < now() AND p.local_cache_path IS NOT NULL AND u.environment=$1 AND b.owner_id=p.user_id", [config.appEnv]);
   for (const row of expired.rows) {
     await fs.unlink(row.local_cache_path).catch(() => undefined);
     await query("UPDATE podcasts SET local_cache_path=NULL,local_cache_until=NULL,status=CASE WHEN status='archive_pending' THEN 'failed' ELSE status END,error_message=CASE WHEN status='archive_pending' THEN 'Archive was unavailable before the protected local copy expired. Try again.' ELSE error_message END,updated_at=now() WHERE id=$1", [row.id]);
