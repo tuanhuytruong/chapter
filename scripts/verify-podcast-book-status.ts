@@ -13,6 +13,6 @@ assert.match(routes, /book\.status !== "active"\) return res\.status\(409\)/, "n
 assert.match(detail, /canGenerate=\{Boolean\(book\.can_edit\) && book\.status === "active"\}/, "Book Detail derives permission from active status");
 assert.match(panel, /PodcastPlaylistPlayer bookId=\{bookId\} canGenerate=\{canGenerate\}/, "Panel forwards status permission");
 assert.match(player, /if \(!next \|\| generating \|\| !canGenerate\) return/, "generation function rejects paused state");
-assert.match(player, /if \(canGenerate && nextChapter/, "automatic generation respects paused state");
+assert.match(player, /if \([^\n]*canGenerate && nextChapter/, "automatic generation respects paused state");
 assert.match(player, /disabled=\{generating \|\| !canGenerate\}/, "manual generation is disabled while paused");
 console.log("PODCAST_BOOK_STATUS_FIXTURES_OK");

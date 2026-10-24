@@ -41,6 +41,7 @@ export const config = {
   podcastLlmModel: process.env.PODCAST_LLM_MODEL ?? "",
   podcastTtsUrl: process.env.PODCAST_TTS_URL ?? "https://9router-ubt.srv.io.vn/v1/audio/speech",
   podcastTtsMaxChars: Number(process.env.PODCAST_TTS_MAX_CHARS ?? 12_000),
+  podcastWorkerLeaseMinutes: boundedIntegerEnv("PODCAST_WORKER_LEASE_MINUTES", 20, 5, 90),
   billingVietQrEnabled: optionalEnv("BILLING_VIETQR_ENABLED") === "true",
   billingVietQrBankBin: optionalEnv("BILLING_VIETQR_BANK_BIN") || "970422",
   billingVietQrAccountNumber: optionalEnv("BILLING_VIETQR_ACCOUNT_NUMBER"),
