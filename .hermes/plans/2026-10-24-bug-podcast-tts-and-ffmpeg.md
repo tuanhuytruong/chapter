@@ -62,4 +62,8 @@ Investigation and plan only. No application code, configuration, database rows, 
 - [x] sudo unavailable; user-owned ffmpeg-static installed and DEV-only FFMPEG_PATH configured. No OS package or PRD configuration changed.
 - [x] Exact DEV episode recovered ready; SHA256 8c3047f02f46a423abfd10f90c12251c9058cd1cfff65cacf4daa12a34690647 unchanged; 1140624 bytes, full ffmpeg decode passes.
 - [x] Existing archive retry/cache maintenance reads now fenced to environment and owner before DEV restart.
-- [ ] Commit/push/restart and browser playback verification.
+- [x] Commit 356ad35 pushed origin/dev; chapter-dev restarted (PRD untouched). Public /health returns 200 {ok:true}.
+- [x] Vault-authorized DEV browser: recovered audio Range 206 bytes 0-1023/1140624; UI Play selects exact episode; paused=false, currentTime=21.553109, duration=285.156, readyState=4, no media error. Paused QA at 38.48 seconds before next-generation threshold.
+- [x] Real six-part synthesis using exact saved script and same voice via loopback NineRouter: chunks 974/833/902/868/979/621; 1143872-byte concatenated MP3 fully decodes. This probe changes no configuration or DB data and deletes its output.
+- [x] All focused checks/lint/build/assets passed; existing book-status verifier updated to permit the added stop-after-current guard while retaining canGenerate requirement. Existing pg-mem podcast fixture emits known missing lifecycle/subscription table warnings but exits successfully.
+- [x] OS ffmpeg install blocked by sudo authentication; user-owned fallback works. Public NineRouter still intermittently 502/ETIMEDOUT; no upstream service changed.
