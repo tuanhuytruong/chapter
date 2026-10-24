@@ -28,7 +28,7 @@ export const config = {
   appEnv: appEnvironment(),
   databaseUrl: process.env.DATABASE_URL ?? "",
   nineRouterUrl:
-    process.env.NINE_ROUTER_URL ?? "https://9router-ubt.mrl.asia/v1/chat/completions",
+    process.env.NINE_ROUTER_URL ?? "https://9router-ubt.srv.io.vn/v1/chat/completions",
   nineRouterModel: process.env.NINE_ROUTER_MODEL ?? "n8n",
   nineRouterApiKey: process.env.NINE_ROUTER_API_KEY ?? "",
   telegramBotToken: optionalEnv("TELEGRAM_BOT_TOKEN"),
@@ -40,7 +40,7 @@ export const config = {
   podcastCacheDir: process.env.PODCAST_CACHE_DIR ?? "/opt/chapter/workspace/podcast-cache",
   podcastCacheTtlHours: Number(process.env.PODCAST_CACHE_TTL_HOURS ?? 48),
   podcastLlmModel: process.env.PODCAST_LLM_MODEL ?? "",
-  podcastTtsUrl: process.env.PODCAST_TTS_URL ?? "https://9router-ubt.mrl.asia/v1/audio/speech",
+  podcastTtsUrl: process.env.PODCAST_TTS_URL ?? "https://9router-ubt.srv.io.vn/v1/audio/speech",
   podcastTtsMaxChars: Number(process.env.PODCAST_TTS_MAX_CHARS ?? 12_000),
   billingVietQrEnabled: optionalEnv("BILLING_VIETQR_ENABLED") === "true",
   billingVietQrBankBin: optionalEnv("BILLING_VIETQR_BANK_BIN") || "970422",

@@ -8,7 +8,7 @@
  */
 import { parseSummary } from "../src/llm.ts";
 
-const URL = process.env.NINE_ROUTER_URL || "https://9router-ubt.mrl.asia/v1/chat/completions";
+const URL = process.env.NINE_ROUTER_URL || "https://9router-ubt.srv.io.vn/v1/chat/completions";
 const MODEL = process.env.NINE_ROUTER_MODEL || "n8n";
 const KEY = process.env.NINE_ROUTER_API_KEY;
 
