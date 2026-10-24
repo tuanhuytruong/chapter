@@ -225,42 +225,24 @@ export function validateSummaryOutputLanguage(
   requestedLang: "auto" | "vi" | "en" | undefined,
 ): SummaryLanguageValidation {
   if (requestedLang !== "vi" && requestedLang !== "en") return { valid: true };
-  const withoutQuote = raw.replace(
-    /^##\s*(?:Quote|Trích dẫn)\s*$[\s\S]*?(?=^##\s|$)/gim,
-    " ",
-  );
-  const prose = withoutQuote
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/!?(?:\[[^\]]*\])?\([^)]*\)/g, " ")
-    .replace(/[#*_>`~|\d]/g, " ")
-    .replace(/https?:\/\/\S+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const words = prose.match(/[A-Za-zÀ-ỹ]+/g) || [];
-  if (words.length < 12)
-    return { valid: false, mismatch: "insufficient-prose" };
-  const lower = ` ${prose.toLocaleLowerCase("vi-VN")} `;
-  const vietnameseTokens =
-    /\b(và|của|là|trong|với|cho|được|không|những|một|này|từ|theo|khi|để|về|có|người|như|sự|đến|cần)\b/gu;
-  const vietnameseEvidence =
-    (lower.match(vietnameseTokens) || []).length +
-    (
-      prose.match(
-        /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu,
-      ) || []
-    ).length;
-  if (requestedLang === "vi")
-    return vietnameseEvidence >= 3
-      ? { valid: true }
-      : { valid: false, mismatch: "wrong-language" };
-  const englishEvidence = (
-    lower.match(
-      /\b(the|and|of|to|in|is|that|for|with|this|as|on|from|by|an|be|are|it|or)\b/g,
-    ) || []
-  ).length;
-  return englishEvidence >= 3 && vietnameseEvidence < 3
-    ? { valid: true }
-    : { valid: false, mismatch: "wrong-language" };
+  // Validate each narrative section separately. Quotes may be verbatim source text.
+  const sections = raw.split(/^##\s+/m).map((part) => part.trim()).filter(Boolean)
+    .filter((part) => !/^(?:quote|trích dẫn)\b/i.test(part));
+  // The section heading itself is a localized label, not evidence for its prose.
+  const narrative = sections.length ? sections.map((part) => part.replace(/^[^\r\n]*(?:\r?\n|$)/, "").trim()) : [raw];
+  for (const section of narrative) {
+    const prose = section.replace(/```[\s\S]*?```/g, " ").replace(/!?(?:\[[^\]]*\])?\([^)]*\)/g, " ")
+      .replace(/[#*_>`~|\d]/g, " ").replace(/https?:\/\/\S+/g, " ").replace(/\s+/g, " ").trim();
+    const words = prose.match(/[A-Za-zÀ-ỹ]+/g) || [];
+    if (words.length < 10) continue;
+    const lower = ` ${prose.toLocaleLowerCase("vi-VN")} `;
+    const vietnameseEvidence = (lower.match(/\b(và|của|là|trong|với|cho|được|không|những|một|này|từ|theo|khi|để|về|có|người|như|sự|đến|cần)\b/gu) || []).length +
+      (prose.match(/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/giu) || []).length;
+    const englishEvidence = (lower.match(/\b(the|and|of|to|in|is|that|for|with|this|as|on|from|by|an|be|are|it|or|a|at|more|than|through|about|across|over|into|while|under|between|their|they|we|can|will|should|needs)\b/g) || []).length;
+    if ((requestedLang === "vi" && vietnameseEvidence < 2) ||
+        (requestedLang === "en" && !(englishEvidence >= 1 && vietnameseEvidence < 2))) return { valid: false, mismatch: "wrong-language" };
+  }
+  return { valid: true };
 }
 
 function retryableNineRouterError(error: unknown): boolean {

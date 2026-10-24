@@ -1,14 +1,13 @@
-import { Pool } from "pg";
+import { Pool, types } from "pg";
 import { config } from "./config.js";
 
 // Keep Postgres DATE columns as plain 'YYYY-MM-DD' strings instead of JS Date
 // objects. The default JS Date parsing shifts to UTC and, once JSON-serialized
 // by Express, produces an ISO string with a time suffix that breaks client-side
 // `new Date(...)` parsing ("Invalid Date"). Returning the raw string avoids that.
-const pgTypes = (Pool as any).types;
-if (pgTypes && typeof pgTypes.setTypeParser === "function") {
-  pgTypes.setTypeParser(1082, (val: string) => val); // 1082 = DATE oid
-}
+// `Pool.types` is undefined in pg v8+, so use the named module registry.
+// Register before any pool is created: DATE must remain YYYY-MM-DD strings.
+types.setTypeParser(1082, (val: string) => val); // 1082 = DATE oid
 
 let pool: Pool;
 

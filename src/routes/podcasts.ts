@@ -339,7 +339,7 @@ podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
 
 let timer: ReturnType<typeof setInterval> | undefined;
 let maintenanceRunning = false;
-const PODCAST_MAINTENANCE_LOCK = 0x504f4443;
+const PODCAST_MAINTENANCE_LOCK = `chapter_podcast_maintenance_${config.appEnv}`;
 
 export async function runPodcastMaintenance(): Promise<void> {
   if (maintenanceRunning) return;
@@ -347,17 +347,17 @@ export async function runPodcastMaintenance(): Promise<void> {
   try {
     await withClient(async (client) => {
       const locked = (await client.query(
-        "SELECT pg_try_advisory_lock($1) AS locked",
+        "SELECT pg_try_advisory_lock(hashtextextended($1::text, 0)) AS locked",
         [PODCAST_MAINTENANCE_LOCK],
       )).rows[0]?.locked === true;
       if (!locked) return;
       try {
-        await recoverQueuedPodcastJobs();
-        await recoverRetryablePodcastTts();
+        await recoverQueuedPodcastJobs(config.podcastMaintenanceBatchSize);
+        await recoverRetryablePodcastTts(config.podcastMaintenanceBatchSize);
         await prunePodcastCache();
         await retryPendingPodcastArchives();
       } finally {
-        await client.query("SELECT pg_advisory_unlock($1)", [PODCAST_MAINTENANCE_LOCK]);
+        await client.query("SELECT pg_advisory_unlock(hashtextextended($1::text, 0))", [PODCAST_MAINTENANCE_LOCK]);
       }
     });
   } finally {
@@ -368,6 +368,6 @@ export async function runPodcastMaintenance(): Promise<void> {
 export function startPodcastMaintenance() {
   if (timer) return;
   void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message));
-  timer = setInterval(() => void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), 60 * 60 * 1000);
+  timer = setInterval(() => void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), config.podcastMaintenanceIntervalMs);
   timer.unref();
 }

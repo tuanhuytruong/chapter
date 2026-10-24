@@ -126,43 +126,46 @@ async function retainPendingArchive(id: string, audioPath: string, durationS: nu
 const MAX_TTS_RECOVERY_ATTEMPTS = 6;
 const TTS_RETRY_DELAY_MINUTES = 2;
 
-async function deferRetryableTts(id: string, error: unknown): Promise<boolean> {
+async function deferRetryableTts(id: string, error: unknown, leaseToken?: string): Promise<boolean> {
   if (!isRetryableTtsError(error)) return false;
   const row = (await query<any>(`UPDATE podcasts SET
     tts_retry_count=tts_retry_count+1,
     tts_next_retry_at=CASE WHEN tts_retry_count+1 < $2 THEN now() + ($3::text || ' minutes')::interval ELSE NULL END,
     status=CASE WHEN tts_retry_count+1 < $2 THEN 'synthesizing' ELSE 'failed' END,
     error_message=CASE WHEN tts_retry_count+1 < $2 THEN 'TTS_RETRYABLE:' || $4 ELSE 'TTS upstream remained unavailable. Try again later.' END,
-    updated_at=now() WHERE id=$1 RETURNING tts_retry_count`, [id, MAX_TTS_RECOVERY_ATTEMPTS, TTS_RETRY_DELAY_MINUTES, error.status || 0])).rows[0];
+    worker_lease_token=NULL,worker_lease_until=NULL,updated_at=now() WHERE id=$1 AND ($5::uuid IS NULL OR worker_lease_token=$5::uuid) RETURNING tts_retry_count`, [id, MAX_TTS_RECOVERY_ATTEMPTS, TTS_RETRY_DELAY_MINUTES, error.status || 0, leaseToken ?? null])).rows[0];
   return Boolean(row && row.tts_retry_count < MAX_TTS_RECOVERY_ATTEMPTS);
 }
 
 async function finishSynthesizedPodcast(current: any, audioPath: string, durationS: number): Promise<void> {
-  await query("UPDATE podcasts SET status='archiving',duration_s=$2,tts_next_retry_at=NULL,error_message=NULL,updated_at=now() WHERE id=$1", [current.id, durationS]);
+  await query("UPDATE podcasts SET status='archiving',duration_s=$2,tts_next_retry_at=NULL,error_message=NULL,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [current.id, durationS, current.worker_lease_token]);
   try {
     const archived = await archivePodcast(audioPath, config.podcastTelegramArchiveChatId, current.user_name, current.book_title, current.chapter_title, durationS);
     await fs.mkdir(config.podcastCacheDir, { recursive: true });
     const cachePath = path.join(config.podcastCacheDir, `${current.id}.mp3`); await fs.rename(audioPath, cachePath);
-    await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,error_message=NULL,tts_next_retry_at=NULL,updated_at=now() WHERE id=$1`, [current.id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, cacheExpiresAt()]);
+    await query(`UPDATE podcasts SET status='ready',tg_file_id=$2,tg_file_unique_id=$3,tg_chat_id=$4,tg_message_id=$5,local_cache_path=$6,local_cache_until=$7,error_message=NULL,tts_next_retry_at=NULL,worker_lease_token=NULL,worker_lease_until=NULL,updated_at=now() WHERE id=$1 AND worker_lease_token=$8::uuid`, [current.id, archived.fileId, archived.fileUniqueId, config.podcastTelegramArchiveChatId, archived.messageId, cachePath, cacheExpiresAt(), current.worker_lease_token]);
   } catch (error) { await retainPendingArchive(current.id, audioPath, durationS, error); }
 }
 
 export async function recoverRetryablePodcastTts(batchSize = 2): Promise<void> {
-  const due = await query<any>(`WITH candidate AS (SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id
-      WHERE p.status='synthesizing' AND p.script_text IS NOT NULL AND p.tts_next_retry_at <= now() AND p.tts_retry_count < $1 AND b.status='active'
+  const due = await query<any>(`WITH candidate AS (SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id
+      WHERE p.status='synthesizing' AND p.script_text IS NOT NULL AND p.tts_next_retry_at <= now() AND p.tts_retry_count < $1 AND b.status='active' AND u.environment=$3
+        AND (p.worker_lease_until IS NULL OR p.worker_lease_until < now())
       ORDER BY p.tts_next_retry_at LIMIT $2 FOR UPDATE SKIP LOCKED)
-    UPDATE podcasts p SET tts_next_retry_at=now() + interval '15 minutes',updated_at=now()
-    FROM candidate c WHERE p.id=c.id RETURNING p.*`, [MAX_TTS_RECOVERY_ATTEMPTS, Math.max(1, Math.min(5, batchSize))]);
+    UPDATE podcasts p SET worker_lease_token=gen_random_uuid(),worker_lease_until=now() + ($4::text || ' minutes')::interval,updated_at=now()
+    FROM candidate c WHERE p.id=c.id RETURNING p.*`, [MAX_TTS_RECOVERY_ATTEMPTS, Math.max(1, Math.min(5, batchSize)), config.appEnv, config.podcastWorkerLeaseMinutes]);
   for (const episode of due.rows) {
     let audioPath: string | undefined;
     try {
-      const book = (await query<any>("SELECT b.title AS book_title,b.author,COALESCE(u.display_name,u.username) AS user_name FROM books b JOIN users u ON u.id=b.owner_id WHERE b.id=$1", [episode.book_id])).rows[0];
+      const book = (await query<any>("SELECT b.title AS book_title,b.author,COALESCE(u.display_name,u.username) AS user_name FROM books b JOIN users u ON u.id=b.owner_id WHERE b.id=$1 AND u.environment=$2", [episode.book_id, config.appEnv])).rows[0];
+      if (!book) continue;
+      console.info(`[podcast] tts-recovery-start env=${config.appEnv} episode=${episode.id} attempt=${episode.tts_retry_count + 1}`);
       const audio = await synthesizePodcast(episode.script_text, episode.voice_model); audioPath = audio.filePath;
       await finishSynthesizedPodcast({ ...episode, ...book }, audio.filePath, audio.durationS); audioPath = undefined;
     } catch (error: any) {
-      const deferred = await deferRetryableTts(episode.id, error);
-      if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1", [episode.id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000)]);
-      console.warn(`[podcast] TTS-only recovery failed for ${episode.id}:`, error.message);
+      const deferred = await deferRetryableTts(episode.id, error, episode.worker_lease_token);
+      if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,worker_lease_token=NULL,worker_lease_until=NULL,error_message=$2,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [episode.id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000), episode.worker_lease_token]);
+      console.warn(`[podcast] tts-recovery-failed env=${config.appEnv} episode=${episode.id} status=${error?.status || 0}`);
     } finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
   }
 }
@@ -170,10 +173,10 @@ export async function recoverRetryablePodcastTts(batchSize = 2): Promise<void> {
 export async function generatePodcast(id: string): Promise<void> {
   // Claim and transition in one statement. A paused book, a duplicate worker, or
   // any episode no longer queued produces no row and therefore no side effects.
-  const current = (await query<any>(`UPDATE podcasts p SET status='scripting',error_message=NULL,updated_at=now()
+  const current = (await query<any>(`UPDATE podcasts p SET status='scripting',error_message=NULL,worker_lease_token=gen_random_uuid(),worker_lease_until=now() + ($3::text || ' minutes')::interval,updated_at=now()
     FROM books b, users u
-    WHERE p.id=$1 AND p.status='queued' AND b.id=p.book_id AND b.status='active' AND u.id=p.user_id
-    RETURNING p.*,b.title AS book_title,b.author,b.summary_lang,COALESCE(u.display_name, u.username) AS user_name`, [id])).rows[0] as PodcastRow & any;
+    WHERE p.id=$1 AND p.status='queued' AND b.id=p.book_id AND b.status='active' AND u.id=p.user_id AND u.environment=$2
+    RETURNING p.*,b.title AS book_title,b.author,b.summary_lang,COALESCE(u.display_name, u.username) AS user_name`, [id, config.appEnv, config.podcastWorkerLeaseMinutes])).rows[0] as PodcastRow & any;
   if (!current) return;
   let audioPath: string | undefined;
   try {
@@ -194,8 +197,8 @@ export async function generatePodcast(id: string): Promise<void> {
     const audio = await synthesizePodcast(script, current.voice_model); audioPath = audio.filePath;
     await finishSynthesizedPodcast(current, audio.filePath, audio.durationS); audioPath = undefined;
   } catch (error: any) {
-    const deferred = await deferRetryableTts(id, error).catch(() => false);
-    if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1", [id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000)]).catch(() => undefined);
+    const deferred = await deferRetryableTts(id, error, current.worker_lease_token).catch(() => false);
+    if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000), current.worker_lease_token]).catch(() => undefined);
     throw error;
   }
   finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }
@@ -207,14 +210,14 @@ export async function recoverQueuedPodcastJobs(batchSize = 10): Promise<void> {
   // untouched; they can be recovered after the book is resumed.
   await query(`WITH stale AS (
       SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id
-      WHERE b.status='active' AND p.status IN ('scripting','synthesizing','archiving')
-        AND p.updated_at < now() - interval '30 minutes'
+      WHERE b.status='active' AND p.status='scripting' AND p.worker_lease_until < now()
+        AND EXISTS (SELECT 1 FROM users u WHERE u.id=p.user_id AND u.environment=$2)
       ORDER BY p.updated_at LIMIT $1
     )
     UPDATE podcasts p SET status='queued',error_message=NULL,updated_at=now()
-    FROM stale WHERE p.id=stale.id`, [limit]);
-  const queued = await query<{ id: string }>(`SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id
-    WHERE p.status='queued' AND b.status='active' ORDER BY p.updated_at LIMIT $1`, [limit]);
+    FROM stale WHERE p.id=stale.id`, [limit, config.appEnv]);
+  const queued = await query<{ id: string }>(`SELECT p.id FROM podcasts p JOIN books b ON b.id=p.book_id JOIN users u ON u.id=p.user_id
+    WHERE p.status='queued' AND b.status='active' AND u.environment=$2 ORDER BY p.updated_at LIMIT $1`, [limit, config.appEnv]);
   for (const episode of queued.rows) {
     try { await generatePodcast(episode.id); }
     catch (error: any) { console.warn(`[podcast] queued recovery failed for ${episode.id}:`, error.message); }

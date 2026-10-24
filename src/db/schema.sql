@@ -381,6 +381,8 @@ CREATE TABLE IF NOT EXISTS chapter.podcasts (
   local_cache_path TEXT,
   local_cache_until TIMESTAMPTZ,
   error_message TEXT,
+  worker_lease_token UUID,
+  worker_lease_until TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (book_id, chapter_key, reading_round)
@@ -390,6 +392,7 @@ ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
   CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed', 'unavailable'));
 CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_podcasts_recovery_lease ON chapter.podcasts (status, worker_lease_until) WHERE worker_lease_until IS NOT NULL;
 
 -- One listener-owned resume marker per book and reading round. Episodes remain
 -- generated/owned as before; this stores only playback state, never audio data.
