@@ -3,9 +3,6 @@ type: technical-documentation
 title: Analytics & Reading Forecast
 description: Documentation of Posthog analytics integration, privacy identity safeguards, and reading forecast estimation mechanisms.
 tags: [analytics, posthog, forecasting, reading-goals, verification]
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-6d428306e6d9164f86db303a
     resource: repo://scripts/verify-posthog-identity.ts
@@ -15,7 +12,10 @@ sources:
     resource: repo://src/analytics.ts
   - id: openwiki-source-cbb920902434f20dd8ad0cbd
     resource: repo://src/readingForecast.ts
-generated: { by: "openwiki/0.4.3", at: "2026-08-29T00:58:11.655Z" }
+generated: { by: "openwiki/0.5.2", at: "2026-09-17T20:19:11.636Z" }
+verified:
+  - by: openwiki/0.5.2
+    at: 2026-09-17T20:19:11.636Z
 ---
 
 # Analytics & Reading Forecast
@@ -54,6 +54,10 @@ Supported analytics events (`AnalyticsEvent`):
 - User lifecycle: `login_completed`, `sign_up_completed`, `weekly_goal_set`
 - Reading sessions: `reading_session_completed`, `reading_session_failed`, `reading_session_started`, `review_completed`
 - Podcast & Media: `podcast_episode_completed`, `podcast_episode_played`, `podcast_generation_requested`
+- Reference cards: `reference_card_created`, `reference_card_deleted`, `reference_card_draft_requested`, `reference_card_updated`, `reference_card_used`
+- Feedback & returns: `feedback_submitted`, `return_responded`, `return_shown`, `return_source_opened`
+- Performance: `route_perf_sample`
+- Milestones: `quiet_streak_milestone_seen`
 
 ---
 

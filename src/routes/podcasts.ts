@@ -10,6 +10,7 @@ import { downloadArchivedPodcast } from "../podcast/telegram.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { config } from "../config.js";
 import { resolvePodcastChapters } from "../podcast/chapters.js";
+import { getActiveGeneration } from "../generationProgress.js";
 
 export const podcastsRouter = Router();
 podcastsRouter.use((req, res, next) => {
@@ -94,7 +95,7 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
       resolvePodcastChapters(book.id),
     ]);
-    const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
+    const byChapter = new Map(await Promise.all(episodes.rows.map(async (episode) => [episode.chapter_key, { ...podcastPublic(episode), generation_progress: await getActiveGeneration(episode.user_id, episode.book_id, episode.reading_round, undefined) }] as const)));
     res.json({ ...book, chapter_mode: resolved.mode, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: resolved.chapters.map((chapter) => ({ ...chapter, episode: byChapter.get(chapter.chapter_key) || null })) });
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });
@@ -339,7 +340,7 @@ podcastsRouter.get("/:id/audio", async (req: Request, res: Response) => {
 
 let timer: ReturnType<typeof setInterval> | undefined;
 let maintenanceRunning = false;
-const PODCAST_MAINTENANCE_LOCK = 0x504f4443;
+const PODCAST_MAINTENANCE_LOCK = `chapter_podcast_maintenance_${config.appEnv}`;
 
 export async function runPodcastMaintenance(): Promise<void> {
   if (maintenanceRunning) return;
@@ -347,17 +348,17 @@ export async function runPodcastMaintenance(): Promise<void> {
   try {
     await withClient(async (client) => {
       const locked = (await client.query(
-        "SELECT pg_try_advisory_lock($1) AS locked",
+        "SELECT pg_try_advisory_lock(hashtextextended($1::text, 0)) AS locked",
         [PODCAST_MAINTENANCE_LOCK],
       )).rows[0]?.locked === true;
       if (!locked) return;
       try {
-        await recoverQueuedPodcastJobs();
-        await recoverRetryablePodcastTts();
+        await recoverQueuedPodcastJobs(config.podcastMaintenanceBatchSize);
+        await recoverRetryablePodcastTts(config.podcastMaintenanceBatchSize);
         await prunePodcastCache();
         await retryPendingPodcastArchives();
       } finally {
-        await client.query("SELECT pg_advisory_unlock($1)", [PODCAST_MAINTENANCE_LOCK]);
+        await client.query("SELECT pg_advisory_unlock(hashtextextended($1::text, 0))", [PODCAST_MAINTENANCE_LOCK]);
       }
     });
   } finally {
@@ -368,6 +369,6 @@ export async function runPodcastMaintenance(): Promise<void> {
 export function startPodcastMaintenance() {
   if (timer) return;
   void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message));
-  timer = setInterval(() => void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), 60 * 60 * 1000);
+  timer = setInterval(() => void runPodcastMaintenance().catch((error) => console.warn("[podcast] maintenance failed:", error.message)), config.podcastMaintenanceIntervalMs);
   timer.unref();
 }

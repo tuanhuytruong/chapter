@@ -1,4 +1,4 @@
-export type LibrarySearchKind = "book" | "wiki" | "quote" | "note" | "reflection" | "story_session" | "story_memory";
+export type LibrarySearchKind = "book" | "wiki" | "quote" | "note" | "reflection" | "story_session" | "story_memory" | "reference_card";
 export type SearchDocumentInput = { ownerId: string; bookId: string; readingRound?: number | null; logId?: string | null; kind: LibrarySearchKind; sourceKey: string; title: string; body: string; pageStart?: number | null; pageEnd?: number | null };
 export type LibrarySearchResult = { kind: LibrarySearchKind; bookId: string; bookTitle: string; bookAuthor: string; readingRound: number | null; logId: string | null; pageStart: number | null; pageEnd: number | null; title: string; excerpt: string; rank: number };
 const compact = (value: unknown, max: number) => typeof value === "string" ? value.replace(/\0/g, "").replace(/\s+/g, " ").trim().slice(0, max) : "";

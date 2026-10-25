@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ac6423d078507c2db979e699eab340c7d0f8fdfbcf13f9fafb7434ebbf7070f6",
+  "pageVersion": "sha256:fad9c2a64ef821a776bd0bc0ff350d814089c5c928f9a420f09d481ef5b25192",
   "claims": [
     {
       "id": "claim_faa812b5674b4df6a0a89eac8303cb3d",
-      "statement": "The system architecture employs a tiered flow from persistent storage through application logic to the UI layer for content presentation.",
+      "statement": "The system employs a layered architecture where data flows from persistent database storage through application logic for business processing, and finally to the UI layer for content presentation and user interaction.",
       "evidence": [
         {
           "resource": "repo://src/db.ts",
-          "version": "repo-file-v1:sha256:9985c9452e9a9f7c1f5209f03c07d1a7f259e19ed27402be2db9036c5d1e88c6"
+          "version": "repo-file-v1:sha256:c4469b1026dd8b72b7a2fafb77ed1cbdf28013e0005b58f759bfbddce2badc18"
         }
       ]
     },
@@ -34,27 +34,27 @@
     },
     {
       "id": "claim_9d669a70f14144f49da8cfed09e706ee",
-      "statement": "Content processing transforms raw source material through ingestion, normalization, and enrichment stages before availability to the user.",
+      "statement": "Content processing follows a pipeline of ingestion of raw material, normalization into a structured format, and enrichment with metadata or AI-generated segments via the extraction engine.",
       "evidence": [
         {
           "resource": "repo://src/extractor.ts",
-          "version": "repo-file-v1:sha256:4106c1808f404dbbc9223f03cf440c27bfcec07d417b760802c3f67f5814e67d"
+          "version": "repo-file-v1:sha256:dd4e249291e3ed8db3bdec872d2ae66000a4e2e6c7c66935601158894113079d"
         }
       ]
     },
     {
       "id": "claim_2d856357453b472c92363a2965225d87",
-      "statement": "The system manages user sessions using express-session and enforces access control through requireAuth and requireOwner functions.",
+      "statement": "The system manages user sessions using express-session and enforces access control through requireAuth and requireOwner functions, as defined in src/auth.ts.",
       "evidence": [
         {
           "resource": "repo://src/auth.ts",
-          "version": "repo-file-v1:sha256:26c8e88402ff3a95c5053896564cd00b88883e36ddb1b8e860b5abfb3fe9daf6"
+          "version": "repo-file-v1:sha256:4c99541c49c6b42488a8a5309094c3cd91fe4812ae5a22c02748a12d470af7ef"
         }
       ]
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.2",
-    "at": "2026-09-15T20:14:22.648Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

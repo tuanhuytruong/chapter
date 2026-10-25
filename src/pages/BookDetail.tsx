@@ -22,6 +22,7 @@ import {
   computeStreak,
   progressPct,
   fetchCover,
+  type GenerationProgressSnapshot,
 } from "../api";
 import { formatForecastDate, getReadingForecast } from "../readingForecast";
 import type { UpgradePrompt, RhythmResponse } from "../api";
@@ -46,6 +47,7 @@ import MomentumScore from "../components/MomentumScore";
 import Toast from "../components/Toast";
 import type { MindMapData } from "../components/MindMap";
 import { useJobPolling } from "../hooks/useJobPolling";
+import { GenerationProgress } from "../components/GenerationProgress";
 
 import { GuideCard } from "../onboarding";
 import ChapterDropdown from "../components/ChapterDropdown";
@@ -59,6 +61,7 @@ const StoryThreadView = React.lazy(() => import("../components/story/StoryThread
 const BookWiki = React.lazy(() => import("../components/BookWiki"));
 const PodcastPanel = React.lazy(() => import("../components/PodcastPanel"));
 const ContextualUpgradeCard = React.lazy(() => import("../components/ContextualUpgradeCard").then((module) => ({ default: module.ContextualUpgradeCard })));
+const ReferenceCardDraftModal = React.lazy(() => import("../components/playbooks/ReferenceCardDraftModal"));
 
 function BookDetailPanelFallback({ label = "Loading reading view" }: { label?: string }) {
   return <div className="min-h-28 rounded-2xl border border-natural-border bg-natural-cream p-4 text-xs text-natural-stone" role="status" aria-live="polite">{label}…</div>;
@@ -234,9 +237,12 @@ export default function BookDetail() {
     useState<ReadingProgressCompanionRow | null>(null);
   const [readingProgressLoading, setReadingProgressLoading] = useState(false);
   const [enrichmentPending, setEnrichmentPending] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgressSnapshot | null>(null);
+  const [progressReconnecting, setProgressReconnecting] = useState(false);
   const [pendingEnrichmentLogId, setPendingEnrichmentLogId] = useState<
     string | null
   >(null);
+  const [referenceCardLogId, setReferenceCardLogId] = useState<string | null>(null);
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePrompt | null>(
     null,
   );
@@ -427,6 +433,16 @@ export default function BookDetail() {
   // A reading session is saved immediately; its companion analysis finishes in
   // the background. The shared poller pauses hidden tabs, prevents overlap and
   // backs off failures while retaining the existing three-minute upper bound.
+  useJobPolling<GenerationProgressSnapshot | null>({
+    enabled: Boolean(id && generationProgress && ["queued", "running", "retrying"].includes(generationProgress.status)),
+    intervalMs: 7000,
+    immediate: true,
+    pollKey: `${id}:${generationProgress?.jobId}:generation-progress`,
+    poll: () => api.getGenerationProgress(id!, { round: selectedRound ?? undefined, jobId: generationProgress?.jobId }),
+    onSuccess: (value) => { setProgressReconnecting(false); if (value) setGenerationProgress(value); },
+    onError: () => setProgressReconnecting(true),
+  });
+
   useJobPolling<{
     updatedBook: BookRow;
     updatedLogs: LogRow[];
@@ -513,7 +529,10 @@ export default function BookDetail() {
       file_type: book?.file_type,
     });
     try {
-      const result = await api.advance(id);
+      const requestId = crypto.randomUUID();
+      const advance = api.advance(id, requestId);
+      void api.getGenerationProgress(id, { round: selectedRound ?? undefined }).then((progress) => { if (progress) setGenerationProgress(progress); }).catch(() => undefined);
+      const result = await advance;
       captureAnalyticsEvent("reading_session_completed", {
         book_id: id,
         reading_round: book?.current_reading_round,
@@ -554,6 +573,7 @@ export default function BookDetail() {
           ? `Session ${result.session} saved — companion notes are preparing`
           : "Read today saved — companion notes are preparing",
       });
+      setGenerationProgress(result.generationProgress || null);
       setPendingEnrichmentLogId(result.log.id);
       setEnrichmentPending(true);
     } catch (e: any) {
@@ -953,6 +973,7 @@ export default function BookDetail() {
                     )}{" "}
                     {advancing ? "Reading…" : enrichmentPending ? "Preparing…" : "Read now"}
                   </button>
+                  <GenerationProgress progress={generationProgress} reconnecting={progressReconnecting} />
                 </div>
                 {book.can_edit && pct >= 95 && book.status === "active" && (
                   <button
@@ -1496,6 +1517,7 @@ export default function BookDetail() {
                                   onNavigationHandled={() => setNavigationTargetLogId(null)}
                                   onMarkerCreated={refreshMarkers}
                                   onRequestSource={requestSourceText}
+                                  {...(book.reading_experience === "reference" && book.can_edit && book.status === "active" ? { onCreateReferenceCard: () => setReferenceCardLogId(log.id) } : {})}
                                   onReturnToAiReader={aiReaderReturnLogId === log.id && aiReaderReturnTargetId ? returnToAiReader : undefined}
                                 />
                                 <ReadingLensCard
@@ -1572,6 +1594,7 @@ export default function BookDetail() {
           document.body,
         )}
 
+      {referenceCardLogId && <React.Suspense fallback={null}><ReferenceCardDraftModal bookId={book.id} logId={referenceCardLogId} onClose={() => setReferenceCardLogId(null)} onSaved={(cardId) => { setReferenceCardLogId(null); setToast({ type: "ok", msg: "Saved to Playbooks" }); navigate(`/playbooks/${cardId}`); }} /></React.Suspense>}
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       {/* Finish queue modal */}

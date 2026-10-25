@@ -231,7 +231,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
           <fieldset className="md:col-span-2">
             <legend className="text-[11px] font-bold uppercase tracking-wider text-natural-stone">Reading experience</legend>
             <div className="mt-1 grid gap-2 sm:grid-cols-2">
-              {([['analytical', 'Reading companion', 'Choose Casual or Deep Reading. You can switch between them later.'], ['story', 'Story Thread', 'For fiction and narrative books. Keeps characters, events, and unresolved threads connected. This cannot be changed later.']] as const).map(([value, label, copy]) => (
+              {([['analytical', 'Reading companion', 'Choose Casual or Deep Reading. You can switch between them later.'], ['story', 'Story Thread', 'For fiction and narrative books. Keeps characters, events, and unresolved threads connected. This cannot be changed later.'], ['reference', 'Reference', 'For cookbooks, manuals, and technical guides. Save reusable cards from finished sessions.']] as const).map(([value, label, copy]) => (
                 <label key={value} className={`min-h-11 cursor-pointer rounded-xl border p-3 text-xs ${readingExperience === value ? 'border-natural-sage bg-natural-sage/10 text-natural-dark' : 'border-natural-border text-natural-stone'}`}>
                   <input className="sr-only" type="radio" name="reading-experience" value={value} checked={readingExperience === value} onChange={() => setReadingExperience(value)} />
                   <span className="block font-bold">{label}</span>

@@ -11,6 +11,10 @@ import type {
   LibrarySearchKind,
   LibrarySearchResult,
   SummaryMode,
+  ReadingExperience,
+  ReferenceCard,
+  ReferenceCardDraft,
+  ReferenceCardUse,
 } from "./types";
 import type { ReturnOutcome, ReviewCardRow } from "./review";
 import type { CalendarLogRow } from "./calendar";
@@ -285,7 +289,10 @@ export interface LogRow {
   telegram_sent: boolean;
   notes: string | null;
   chapter_title: string | null;
+  illustration_pages?: number[];
+  illustrations?: Array<{ pageNumber: number; status: "ready" | "failed"; analysis: string | null }>;
   created_at: string;
+  generation_progress?: GenerationProgressSnapshot | null;
 }
 
 export interface ReadingRoundRow {
@@ -327,6 +334,8 @@ export interface ReturnSubmission {
   response: ReturnResponse;
 }
 
+export interface GenerationProgressSnapshot { jobId: string; attemptId: string; kind: "read_now" | "podcast"; bookId: string; readingRound: number; resourceId: string | null; status: "queued" | "running" | "retrying" | "ready" | "failed" | "interrupted"; stage: string; percent: number; errorMessage: string | null; updatedAt: string; }
+
 export interface AdvanceResult {
   bookId: string;
   title: string;
@@ -338,7 +347,8 @@ export interface AdvanceResult {
   totalUnits: number;
   finished: boolean;
   log: LogRow;
-  readingExperience: "analytical" | "story";
+  readingExperience: ReadingExperience;
+  generationProgress?: GenerationProgressSnapshot;
 }
 
 export interface PodcastEpisode {
@@ -362,6 +372,7 @@ export interface PodcastEpisode {
   duration_s: number | null;
   script_text: string | null;
   created_at: string;
+  generation_progress?: GenerationProgressSnapshot | null;
 }
 
 export interface PodcastChapter {
@@ -441,6 +452,18 @@ export interface QuietStreakSummary {
   active_today: boolean;
 }
 
+export type FeedbackKind = "bug" | "idea" | "other";
+export type FeedbackPlatform = "web_desktop" | "web_android" | "web_ios" | "unknown";
+export type FeedbackBrowser = "chrome" | "safari" | "firefox" | "edge" | "other" | "unknown";
+export type FeedbackInput = {
+  kind: FeedbackKind;
+  message: string;
+  routePath: string;
+  clientPlatform: FeedbackPlatform;
+  browserFamily: FeedbackBrowser;
+};
+export type FeedbackSubmission = { id: string; createdAt: string };
+
 export interface RhythmResponse {
   reading_days: string[];
   listening_days: string[];
@@ -468,6 +491,16 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  draftPlaybookCard: (body: { bookId: string; logId: string; preferredType?: ReferenceCardDraft["cardType"] | null }) => req<{ draft: ReferenceCardDraft; source: { positionLabel: string } }>("/api/playbooks/draft", { method: "POST", body: JSON.stringify(body) }),
+  createPlaybookCard: (body: ReferenceCardDraft & { bookId: string; logId: string; requestKey: string }) => req<{ card: ReferenceCard }>("/api/playbooks", { method: "POST", body: JSON.stringify(body) }),
+  listPlaybookCards: (params = "") => req<{ cards: ReferenceCard[] }>(`/api/playbooks${params ? `?${params}` : ""}`),
+  getPlaybookCard: (cardId: string) => req<{ card: ReferenceCard; uses: ReferenceCardUse[] }>(`/api/playbooks/${cardId}`),
+  updatePlaybookCard: (cardId: string, body: ReferenceCardDraft) => req<{ card: ReferenceCard }>(`/api/playbooks/${cardId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deletePlaybookCard: (cardId: string) => req<void>(`/api/playbooks/${cardId}`, { method: "DELETE" }),
+  recordPlaybookUse: (cardId: string, body: { requestKey: string; note?: string }) => req<{ use: ReferenceCardUse }>(`/api/playbooks/${cardId}/uses`, { method: "POST", body: JSON.stringify(body) }),
+
+  submitFeedback: (body: FeedbackInput) =>
+    req<FeedbackSubmission>("/api/feedback", { method: "POST", body: JSON.stringify(body) }),
   listBooks: (scope: "mine" | "all" = "mine") =>
     req<BookRow[]>(`${BASE}?scope=${scope}`),
   searchLibrary: (q: string, filters: { kind?: LibrarySearchKind; bookId?: string } = {}) => {
@@ -496,6 +529,10 @@ export const api = {
     req<LogRow[]>(`${BASE}/${id}/log?view=overview${round ? `&round=${round}` : ""}`),
   getLogEntry: (id: string, logId: string) =>
     req<LogRow>(`${BASE}/${id}/logs/${logId}`),
+  illustrationPageUrl: (id: string, logId: string, page: number) =>
+    `${BASE}/${id}/logs/${logId}/illustration-page/${page}`,
+  analyseIllustration: (id: string, logId: string, page: number) =>
+    req<{ pageNumber: number; status: "ready"; analysis: string }>(`${BASE}/${id}/logs/${logId}/illustrations/${page}/analyze`, { method: "POST" }),
   getMarkers: (id: string, round: number) =>
     req<ReadingMarkerRow[]>(`${BASE}/${id}/markers?round=${encodeURIComponent(round)}`),
   createMarker: (id: string, body: { log_id: string; page_position: number; kind: ReadingMarkerKind; note?: string }) =>
@@ -516,8 +553,9 @@ export const api = {
       `${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}&round=${encodeURIComponent(round)}`,
     ),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
-  advance: (id: string) =>
-    req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST" }),
+  advance: (id: string, requestId?: string) =>
+    req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST", body: JSON.stringify(requestId ? { requestId } : {}) }),
+  getGenerationProgress: (id: string, options: { round?: number; jobId?: string } = {}) => { const params = new URLSearchParams(); if (options.round) params.set("round", String(options.round)); if (options.jobId) params.set("jobId", options.jobId); return req<GenerationProgressSnapshot | null>(`${BASE}/${id}/generation-progress${params.size ? `?${params}` : ""}`); },
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   getReadingLens: (bookId: string, round?: number) =>

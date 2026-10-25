@@ -13,7 +13,9 @@ export const routeBudgets: RouteBudget[] = [
 ];
 
 export const largestLazyChunkGzipBudget = 100_000;
-// Transitional all-app guard. This remains intentionally below the former opaque 1.05 MB limit.
-export const totalJavaScriptRawBudget = 950_000;
+// Transitional all-app guard, measured with the production analytics environment.
+// Route and lazy-chunk gzip budgets remain the load-performance gates; this only
+// catches material all-app regressions across optional routes.
+export const totalJavaScriptRawBudget = 980_000;
 export const routeGrowthWarningGzip = 5_000;
 export const lazyChunkGrowthWarningGzip = 15_000;

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a618fc81c906efb9264b791b9a31a69acbcd4eef1d63f3e36fae9354b1203bd3",
+  "pageVersion": "sha256:635352ba0d4ae675d31f5ac2e89472a8e47409984b6fdb33d78b70b833f4fe31",
   "claims": [
     {
       "id": "claim_230eb79b31a44c04a1abd75b620f8204",
@@ -11,22 +11,22 @@
           "version": "repo-lines-v1:sha256:af8639537390117cde29d9ecb975bfe7d8025f5290bd40fe5a00d1aacbca11d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2Y4ODIwZjg1ZjUxNjkyMWQyYzJmOGRiZDlkMGI3MWQ4NGE1ZWZjZTQxZDdiYjlkOTJiODAzNTRhYzZjZjZkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDE2NDNlZGRkN2MzMDY3MTJmNjYyYjNhYTE0ZmNiNmUzMTk1NGFiYTMzYmQ2NWZkZTMyNDUyOTQzYjExOTViNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE0N2UyNmEyOTJkMDg0ZmNjZTFjZDBhMzYzNjdlMTUyNzM3MjNlMDgyOTY1ZjIwNjNiNmExZjdmYTMxNDBiMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmE0ODMwMWFkMGU4YWUwOGZiZWIyMWQ1MDdmZWU4ZWNmYzNhYTMzMDI3MzJhMjZiNDdiMGZkZGEyNWU5YzRmYSJ9"
         },
         {
-          "resource": "repo://src/config.ts#L42-L43",
+          "resource": "repo://src/config.ts#L43-L44",
           "version": "repo-lines-v1:sha256:4b1487c7de6c720da6a4f1383f52f718c9f0cff058404d2c178639a889eeee8c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTUyNWRiY2FlYjQyN2Y2YjM0NWYxZGQ2OTIzYjQwMGY3MWJmMDM3MWE3NTkwMDJlOTdmZjQ5YWY0NzYwYjIyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGMwZTA1OGM4NDcwN2M4ZmM5YjBhMjU0NGU3ZjBmYmJlMzY2YzQ5MDBmZGViZGVjN2VmMWQyZDQzZGEzZDcxNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjE1YThmMjYwZTg0ZGYzMzlhYjIxYTYyNzA5YWQyYzA5MzA3ZTdmNDRkODA0M2QwYzc2NzMyYjhhNTljNmY5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjQ4MzMwNzAzNDY4NmNlZGI4ZDlmMjY3MTA0YzIzMmY1OTI2MDc5ZTkzZGFjMGQxNDYxMDdjMmVmYzUwYWJjYiJ9"
         },
         {
-          "resource": "repo://src/llm.ts#L292-L300",
-          "version": "repo-lines-v1:sha256:0d6aee9d9dec2dffab7f2456f4ccdcd5762eb89646a8a8ce519675c5635f2889:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTU3YzZlNzJjNDhlNDljOWNmMmNmNmRkZTgwMzg2MWVhNjVlOWZiM2EzMmY0MjQwYTM5ZjhkNWM2MDZmYWIwNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDU5NWU0YjA3NGFkNDk3ZDAxNDIyMmEwN2RhMzU3Y2I3ZjJkNDljODY5YzNmNzc5ODY4NjUwYjY2YzFmNzBjYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzVjMTYxMWY3YWUyYWIwZWZhZjJjYjIxZjc3MzljYjc3MjI4NDQxNzA4M2Q3ZjQ5MGU0MjVjMDBmYzJiNDUxNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjVmOGE5YmU4ODc5YTg0YmVhMmE1ODc1MzNkM2ZkMGYwNTBlOWExOTZiMDljZmMwZTcyNWE0OTkwYWRiNjk5NCJ9"
+          "resource": "repo://src/llm.ts#L292-L303",
+          "version": "repo-lines-v1:sha256:28d8fedf162f4e651a99c3a23ab8132c871973dff2c1663ee9d80558f7d777ed:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiZDU0ZjY1M2U5MDcyNGZjZTFiY2IxYjMxNjkyMWQ3MGE2ZDQ0YzM0ZjM3MDQ0MDI2MTBiYmViMDIxY2MyYTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1OTVlNGIwNzRhZDQ5N2QwMTQyMjJhMDdkYTM1N2NiN2YyZDQ5Yzg2OWMzZjc3OTg2ODY1MGI2NmMxZjcwY2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1YzE2MTFmN2FlMmFiMGVmYWYyY2IyMWY3NzM5Y2I3NzIyODQ0MTcwODNkN2Y0OTBlNDI1YzAwZmMyYjQ1MTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZjhhOWJlODg3OWE4NGJlYTJhNTg3NTMzZDNmZDBmMDUwZTlhMTk2YjA5Y2ZjMGU3MjVhNDk5MGFkYjY5OTQifQ"
         }
       ]
     },
     {
       "id": "claim_bda33ad6f84144c1b94bbd955e7487d8",
-      "statement": "The callLLMCompletion function in src/llm.ts accepts system and user prompts, temperature, strict mode, JSON mode, timeout configuration, and LlmCallOptions including priority, traceLabel, and model overrides.",
+      "statement": "The callLLM function in src/llm.ts accepts system and user prompts, temperature, strict mode, JSON mode, timeout configuration, and LlmCallOptions including priority, traceLabel, and model overrides.",
       "evidence": [
         {
-          "resource": "repo://src/llm.ts#L292-L300",
-          "version": "repo-lines-v1:sha256:0d6aee9d9dec2dffab7f2456f4ccdcd5762eb89646a8a8ce519675c5635f2889:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTU3YzZlNzJjNDhlNDljOWNmMmNmNmRkZTgwMzg2MWVhNjVlOWZiM2EzMmY0MjQwYTM5ZjhkNWM2MDZmYWIwNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDU5NWU0YjA3NGFkNDk3ZDAxNDIyMmEwN2RhMzU3Y2I3ZjJkNDljODY5YzNmNzc5ODY4NjUwYjY2YzFmNzBjYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzVjMTYxMWY3YWUyYWIwZWZhZjJjYjIxZjc3MzljYjc3MjI4NDQxNzA4M2Q3ZjQ5MGU0MjVjMDBmYzJiNDUxNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjVmOGE5YmU4ODc5YTg0YmVhMmE1ODc1MzNkM2ZkMGYwNTBlOWExOTZiMDljZmMwZTcyNWE0OTkwYWRiNjk5NCJ9"
+          "resource": "repo://src/llm.ts#L292-L303",
+          "version": "repo-lines-v1:sha256:28d8fedf162f4e651a99c3a23ab8132c871973dff2c1663ee9d80558f7d777ed:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiZDU0ZjY1M2U5MDcyNGZjZTFiY2IxYjMxNjkyMWQ3MGE2ZDQ0YzM0ZjM3MDQ0MDI2MTBiYmViMDIxY2MyYTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1OTVlNGIwNzRhZDQ5N2QwMTQyMjJhMDdkYTM1N2NiN2YyZDQ5Yzg2OWMzZjc3OTg2ODY1MGI2NmMxZjcwY2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1YzE2MTFmN2FlMmFiMGVmYWYyY2IyMWY3NzM5Y2I3NzIyODQ0MTcwODNkN2Y0OTBlNDI1YzAwZmMyYjQ1MTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZjhhOWJlODg3OWE4NGJlYTJhNTg3NTMzZDNmZDBmMDUwZTlhMTk2YjA5Y2ZjMGU3MjVhNDk5MGFkYjY5OTQifQ"
         }
       ]
     },
@@ -35,11 +35,11 @@
       "statement": "A shared process-local scheduler in src/llm.ts paces requests according to NINE_ROUTER_MAX_RPS and limits concurrency with NINE_ROUTER_MAX_CONCURRENCY, prioritizing interactive workloads over background analysis.",
       "evidence": [
         {
-          "resource": "repo://src/llm.ts#L56-L102",
+          "resource": "repo://src/llm.ts#L75-L121",
           "version": "repo-lines-v1:sha256:fbeaa87b39d3be9d73ba6ade248a38e41fc24192c016c8654d3a9f25015b7176:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNzI3NzEzOTljNjYzN2E3MjkxZTZhYjU1MjY3ZWYxZjZjMTU0ZjMyNDdjYmY1ZTU2MmMyOWUyNzk2NTA2YmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyZjY1NjJlZWI5M2RmYTUxY2E2OTk3NGI5MjFkZWUwYmRhOTBmY2ZjMDdiOGQ3MjllODVmNDE4NTg2N2UxMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1OTQ5MWMyNmQ2YmFhMDI3YzIzZGNiYzRlMmU1ZjI3NzBlNzI3NzM4ODc2ZTcyODljNjljMWFhZTdiNjQxZDQifQ"
         },
         {
-          "resource": "repo://src/llm.ts#L9-L36",
+          "resource": "repo://src/llm.ts#L9-L55",
           "version": "repo-lines-v1:sha256:aa51555319f49413b73ffde167783c18a7bea7fdecc0a5ca812b09e7f6632bf8:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlZjEwOTlhZWQyYjRjOTg2ZDg0NmI0ODNmYTYzMmY4OGE4MjUyYTM2MGY0MTc5YTlhMjA3NTI2NmNlZWNjMTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1NjI3MzQ5OTM2YWQ5NGNkZjExZDc4NmMwZGUzMTUzYjM5MThiMzQ1ODE2MTEzOGI2N2M0MmZhNmJkNGQ3MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiMjZlYmExZTljZmE0YjhhYTA3MmIxZTU3YmQyYTIzNjZlZmJjYjQyYjljZDFhZjM4ZmRhOGY3YTNiOWQ0OTIifQ"
         }
       ]
@@ -63,7 +63,7 @@
       "statement": "Summary output language validation ensures generated responses satisfy requested language contracts (Vietnamese or English) by inspecting prose tokens, specific language diacritics, and word frequency counts.",
       "evidence": [
         {
-          "resource": "repo://src/llm.ts#L132-L185",
+          "resource": "repo://src/llm.ts#L206-L264",
           "version": "repo-lines-v1:sha256:09b24fe9b5e1ac0d04c54a2f95678bbd4c2312761ad2b2341be71b8b807fa38c:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiNDA1NWNiOTkyYzFiOWQzZDUyNjEzNjZlMmFmYzEyMWQzOTkxM2JlY2NkMjU0ZTlhODdiYmNiYThmOTM4OTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkNjU3NDNkMzVhNWQwZWMxMWNjNDRhMTIwNDdkYmUyMDM3Y2JjMDI2YzM0N2QzMWU4NzdmZDAxYWZmMmRmN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkNjQ0NmFlN2MxODlkYzk3YzNiZDUwMDFiMjNjYWI0N2E0NTczZGQwN2RjOGFjNjEzNGQ1MzM4MTNhNDc0ZmIifQ"
         }
       ]
@@ -112,7 +112,7 @@
     }
   ],
   "verification": {
-    "by": "openwiki/0.5.0",
-    "at": "2026-09-08T19:54:21.058Z"
+    "by": "openwiki/0.6.1",
+    "at": "2026-09-30T21:25:31.388Z"
   }
 }

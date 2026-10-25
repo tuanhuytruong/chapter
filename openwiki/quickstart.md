@@ -1,11 +1,11 @@
 ---
-type: Quickstart
-title: Quickstart
-description: Entry point and navigation guide for the OpenWiki documentation.
-tags: [quickstart, documentation, overview]
+type: concept
+title: Quickstart Guide
+description: Central entry point for navigating the repository, including architecture, workflows, and development environment setup.
+tags: [quickstart, overview, development]
 verified:
-  - by: openwiki/0.5.2
-    at: 2026-09-15T20:14:22.648Z
+  - by: openwiki/0.6.1
+    at: 2026-10-01T21:48:18.718Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
@@ -17,28 +17,42 @@ sources:
     resource: repo://src/App.tsx
   - id: openwiki-source-95bfccfd0c712f6e72040e0d
     resource: repo://src/main.tsx
-generated: { by: "openwiki/0.5.2", at: "2026-09-15T20:14:22.648Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-09-30T21:25:31.388Z" }
 ---
 
-# Quickstart
+# Quickstart Guide
 
-Welcome to the OpenWiki documentation. This page serves as the entry point for understanding the repository, its architecture, and development workflows.
+Welcome to the repository. This guide provides a central entry point for developers to understand the structure, core systems, and common development tasks.
 
-## Overview
-OpenWiki provides a structured approach to documenting complex repositories. This documentation covers the system's architecture, development practices, and testing strategies.
+## Getting Started
 
-## Navigation & Architecture Map
-Use the following documentation domains to understand and navigate the system:
+### Development Environment
+The project uses a standard Node.js development stack:
+1. **Install Dependencies**: Run `npm install`.
+2. **Development Server**: Run `npm run dev` to start the backend via `tsx`.
 
-* **[Architecture Overview](/openwiki/architecture/overview.md)**: High-level architectural design and component relationships.
-* **[Backend Architecture](/openwiki/architecture/backend.md)**: Details on the backend server structure, API routes, and service integration.
-* **[Database Architecture](/openwiki/architecture/database.md)**: Overview of the data layer, including schema design and management.
-* **[Workflow Overview](/openwiki/workflows/overview.md)**: Centralized guidance on development, deployment, and task-based workflows.
-* **[Testing Overview](/openwiki/testing/overview.md)**: Strategy and procedures for testing and system verification.
+### System Verification
+The repository includes a comprehensive suite of verification scripts in `package.json` to ensure platform health and functional correctness. These scripts reside in `scripts/` and can be executed via `npm run <script-name>`.
 
-## Adding Documentation
-To add or update documentation:
-1. Identify the relevant domain under the `/openwiki/` directory.
-2. If adding a new page, ensure it includes appropriate YAML frontmatter (type, title, description, tags).
-3. Use repository-relative links (e.g., `repo://path/to/file`) when citing source evidence.
-4. Follow the established structure to maintain consistency across the wiki.
+Key verification areas include:
+* **Platform**: `npm run verify:platform-db` for database connectivity.
+* **AI/LLM**: `npm run verify:ai-reader` and related typography/illustration scripts.
+* **Content Pipeline**: `npm run verify:pdf-extractor` and `npm run verify:upload-content`.
+* **Auth & User**: `npm run verify:auth` and related sub-scripts.
+
+## System Documentation Roadmap
+
+Use the following domains to navigate the architecture, workflows, and operational procedures:
+
+### Architectural Foundations
+* **[Backend Architecture](architecture/backend.md)**: Details on the backend server, API integration, and service structure.
+* **[Database Architecture](architecture/database.md)**: Database schema and interaction patterns.
+* **[Frontend Architecture](architecture/frontend.md)**: Describes the React-based frontend application structure.
+* **[Domain Model](concepts/domain-model.md)**: Vocabulary and core domain objects.
+
+### Operational & Development Workflows
+* **[Workflows Overview](workflows/overview.md)**: Roadmaps for key functional workflows.
+* **[Content Processing](workflows/content-processing.md)**: Lifecycle of content within the system.
+* **[Testing & Verification](testing/testing-guide.md)**: Strategy and procedures for system verification.
+* **[Integrations Overview](integrations/overview.md)**: How the system interfaces with external services.
+* **[Database Operations](operations/database.md)**: Runbooks for database management and maintenance.

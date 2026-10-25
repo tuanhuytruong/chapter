@@ -5,7 +5,7 @@ const apiSource = readFileSync(new URL("../src/api.ts", import.meta.url), "utf8"
 const detailSource = readFileSync(new URL("../src/pages/BookDetail.tsx", import.meta.url), "utf8");
 
 assert.match(apiSource, /export interface AdvanceResult[\s\S]*log: LogRow;[\s\S]*readingExperience:/);
-assert.match(apiSource, /advance: \(id: string\) =>\s*req<AdvanceResult>/);
+assert.match(apiSource, /advance: \(id: string, requestId\?: string\) =>\s*req<AdvanceResult>/);
 
 const readTodayStart = detailSource.indexOf("const readToday = async");
 const readTodayEnd = detailSource.indexOf("  const startFromModal", readTodayStart);

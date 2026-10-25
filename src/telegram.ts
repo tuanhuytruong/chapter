@@ -1,6 +1,7 @@
 // Telegram push helper for the daily reading-summary delivery (Phase 3).
 // Uses the Bot API directly via fetch — no extra dependency.
 import { config } from "./config.js";
+import { feedbackKindLabel, type FeedbackKind } from "./feedback.js";
 
 const TG_API = "https://api.telegram.org";
 
@@ -68,4 +69,31 @@ export function formatDailyMessage(
   }
   if (log.quote) msg += `✦ _${escapeMd(log.quote)}_\n`;
   return msg.trim();
+}
+
+/** Internal-only feedback notification. Delivery is intentionally best-effort. */
+export async function notifyFeedback(input: {
+  id: string;
+  kind: FeedbackKind;
+  message: string;
+  routePath: string;
+  createdAt: Date;
+}): Promise<boolean> {
+  const cfg = getTelegramConfig();
+  const chatId = config.feedbackTelegramChatId;
+  if (!cfg || !chatId) return false;
+  const when = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(input.createdAt);
+  const message = [
+    `Chapter feedback · ${feedbackKindLabel(input.kind)}`,
+    `ID: ${input.id}`,
+    `Route: ${input.routePath}`,
+    `When: ${when} ICT`,
+    "",
+    input.message,
+  ].join("\n").slice(0, 3900);
+  return (await sendTelegramMessage(cfg, chatId, escapeMd(message))).ok;
 }

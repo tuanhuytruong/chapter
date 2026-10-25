@@ -26,7 +26,7 @@ const makeClient = (failInsert = false) => {
     else if (sql.startsWith("DELETE")) rows = [];
     else if (sql.startsWith("INSERT")) {
       if (failInsert) throw new Error("forced insert failure");
-      for (let i = 0; i < params.length; i += 8) rows.push({ unit_index: params[i + 1], raw_text: params[i + 5] });
+      for (let i = 0; i < params.length; i += 9) rows.push({ unit_index: params[i + 1], raw_text: params[i + 5] });
     } else if (sql.startsWith("UPDATE books")) totalPages = params[0];
     else if (sql === "ROLLBACK") rows = snapshot;
     return { rows: [] };

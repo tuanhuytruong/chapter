@@ -208,3 +208,20 @@ chapter/
 ## License
 
 This project is private unless its repository owner publishes a license.
+
+### Podcast media dependency
+
+Multi-part podcast synthesis requires `ffmpeg` on the runtime PATH, or an absolute
+`FFMPEG_PATH` supplied to the DEV process. Prefer the OS package (`apt-get install ffmpeg`
+on Debian/Ubuntu, with an authorized administrator). If sudo is unavailable, an
+operator may install `ffmpeg-static` in a user-owned directory and point
+`FFMPEG_PATH` at its executable; do not commit the binary or local configuration.
+Preflight happens before known multi-part synthesis; adaptive splitting also checks
+the dependency before requesting smaller parts. Single-part audio does not need ffmpeg.
+
+`PODCAST_TTS_MAX_CHARS` remains the configured maximum (default 12000). Exhausted
+retryable requests above 1000 characters are split adaptively, preserving sentence
+boundaries; this is a fallback, not a claim of a provider length limit. HTTP, transport,
+timeout, validation, dependency, and assembly failures are distinct; logs omit scripts,
+credentials and upstream bodies. Run `npx tsx scripts/verify-podcast-tts.ts` with
+`FFMPEG_PATH` set when it is not on PATH.

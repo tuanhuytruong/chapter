@@ -59,6 +59,21 @@ assert.match(prompt, /## Luận điểm cốt lõi/);
 assert.match(prompt, /## Ý chính/);
 assert.doesNotMatch(prompt, /## Core argument/);
 assert.equal(validateSummaryOutputLanguage(vietnamese, "vi").valid, true);
+const mixedSummary = `## Summary
+Management is about building capable teams through clear choices and shared responsibility.
+
+## Insights
+- Mục tiêu rõ ràng giúp cả nhóm phối hợp tốt hơn.
+- Người quản lý cần tạo điều kiện cho đội ngũ phát triển.`;
+const mixedInsight = `## Tóm tắt
+Quản lý hiệu quả đặt trọng tâm vào năng lực chung của đội ngũ và mục tiêu rõ ràng.
+
+## Ý chính
+- Teams need clear goals and steady feedback to improve over time.
+- Leaders coordinate work across changing conditions.`;
+assert.equal(validateSummaryOutputLanguage(mixedSummary, "vi").valid, false, "English summary cannot be masked by Vietnamese insights");
+assert.equal(validateSummaryOutputLanguage(mixedInsight, "vi").valid, false, "English insight cannot be masked by Vietnamese summary");
+
 assert.equal(validateSummaryOutputLanguage(english, "vi").valid, false);
 assert.equal(validateSummaryOutputLanguage(english, "en").valid, true);
 assert.equal(resolveSummaryOutputLanguage("auto", vietnamese), "vi");

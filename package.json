@@ -40,7 +40,9 @@
     "verify:auth": "tsx scripts/verify-auth-upgrade.ts",
     "verify:auth-signup": "tsx scripts/verify-auth-signup.ts",
     "verify:auth-rate-limit": "tsx scripts/verify-auth-rate-limit.ts",
+    "verify:feedback": "tsx scripts/verify-feedback.ts",
     "verify:platform-db": "tsx scripts/verify-platform-db.ts",
+    "verify:reference-playbooks-schema": "tsx scripts/verify-reference-playbooks-schema.ts",
     "verify:platform": "tsx scripts/verify-platform-headers.ts",
     "verify:today-review": "tsx scripts/verify-today-review.ts",
     "verify:review-api": "tsx scripts/verify-review-api.ts",
@@ -52,6 +54,9 @@
     "verify:book-detail-scroll": "tsx scripts/verify-book-detail-scroll.ts",
     "verify:deep-reading-language": "tsx scripts/verify-deep-reading-language.ts",
     "verify:pdf-extractor": "tsx scripts/verify-pdf-extractor.ts",
+    "verify:pdf-illustration-detection": "tsx scripts/verify-pdf-illustration-detection.ts",
+    "verify:pdf-illustration-contract": "tsx scripts/verify-pdf-illustration-contract.ts",
+    "verify:pdf-illustration-renderer": "tsx scripts/verify-pdf-illustration-renderer.ts",
     "verify:pdf-cache": "tsx scripts/verify-pdf-cache.ts",
     "verify:upload-content": "tsx scripts/verify-upload-content.ts",
     "perf:report:routes": "tsx scripts/perf/route-assets-report.ts",
@@ -59,7 +64,9 @@
     "verify:performance-baseline": "tsx scripts/verify-performance-baseline.ts",
     "verify:job-polling": "tsx scripts/verify-job-polling.ts",
     "verify:route-image-performance": "tsx scripts/verify-route-image-performance.ts",
-    "verify:layout-performance": "tsx scripts/verify-layout-performance.ts"
+    "verify:layout-performance": "tsx scripts/verify-layout-performance.ts",
+    "verify:reference-card-extraction": "tsx scripts/verify-reference-card-extraction.ts",
+    "verify:playbooks-api": "tsx scripts/verify-playbooks-api.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

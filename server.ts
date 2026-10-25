@@ -21,6 +21,7 @@ import { monthlyReviewsRouter } from "./src/routes/monthly-review.js";
 import { askReadingRouter } from "./src/routes/ask-reading.js";
 import { crossBookConnectionsRouter } from "./src/routes/cross-book-connections.js";
 import { podcastRecapRouter } from "./src/routes/podcast-recap.js";
+import { playbooksRouter } from "./src/routes/playbooks.js";
 import { ensureSchema, query, verifyCoreSchema, withTransaction } from "./src/db.js";
 import { callLLM } from "./src/llm.js";
 import { avatarFor, requireAuth, userFrom } from "./src/auth.js";
@@ -56,6 +57,9 @@ import {
 } from "./src/auth-identity.js";
 import { sendPasswordResetEmail } from "./src/email.js";
 import { authRateLimit, authRateLimitPolicies } from "./src/auth-rate-limit.js";
+import { consumeFeedbackRateLimit } from "./src/feedback-rate-limit.js";
+import { validateFeedbackInput } from "./src/feedback.js";
+import { notifyFeedback } from "./src/telegram.js";
 
 // Each release folder owns its listener through .env.local (3000 PRD / 3001 DEV).
 const PORT = config.port;
@@ -70,19 +74,6 @@ if (!sessionSecret)
 // Production deployments terminate TLS at the reverse proxy. Trust that single
 // proxy so express-session can issue its secure cookie from X-Forwarded-Proto.
 app.set("trust proxy", 1);
-
-// Keep legacy Chapter links usable while moving the canonical public origins.
-// The two applications use different subdomains, so sessions intentionally do
-// not cross this redirect; browsers establish a secure cookie on the new host.
-const legacyChapterHosts = new Set(["chapter.mrl.asia", "chapter-dev.mrl.asia"]);
-app.use((req, res, next) => {
-  const hostname = req.hostname.toLowerCase();
-  if (!legacyChapterHosts.has(hostname)) return next();
-  const canonical = hostname === "chapter-dev.mrl.asia"
-    ? "https://chapter-dev.srv.io.vn"
-    : "https://chapter.srv.io.vn";
-  return res.redirect(308, `${canonical}${req.originalUrl}`);
-});
 
 app.use(compression());
 app.use((_req, res, next) => {
@@ -665,6 +656,26 @@ app.get("/api/auth/profile", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Could not load profile" });
   }
 });
+app.post("/api/feedback", async (req: Request, res: Response) => {
+  const parsed = validateFeedbackInput(req.body);
+  if (parsed.ok === false) return res.status(400).json({ error: parsed.error });
+  if (!(await consumeFeedbackRateLimit(req, res))) return;
+  try {
+    const { rows } = await query<{ id: string; created_at: Date }>(
+      `INSERT INTO feedback (owner_id, kind, message, route_path, client_platform, browser_family)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at`,
+      [userFrom(req).id, parsed.value.kind, parsed.value.message, parsed.value.routePath, parsed.value.clientPlatform, parsed.value.browserFamily],
+    );
+    const feedback = rows[0];
+    void notifyFeedback({ id: feedback.id, kind: parsed.value.kind, message: parsed.value.message, routePath: parsed.value.routePath, createdAt: feedback.created_at })
+      .catch((error: any) => console.error(`[feedback] notification failed: ${error?.message || "unknown error"}`));
+    return res.status(201).json({ id: feedback.id, createdAt: feedback.created_at.toISOString() });
+  } catch (error: any) {
+    console.error(`[feedback] submission failed: ${error?.code || "unknown"}`);
+    return res.status(500).json({ error: "We could not save your feedback. Please try again." });
+  }
+});
+
 app.patch("/api/auth/profile", async (req: Request, res: Response) => {
   const displayName =
     typeof req.body?.displayName === "string"
@@ -826,6 +837,7 @@ app.use("/api/monthly-review", monthlyReviewsRouter);
 app.use("/api/ask-reading", askReadingRouter);
 app.use("/api/cross-book-connections", crossBookConnectionsRouter);
 app.use("/api/podcast-recap", podcastRecapRouter);
+app.use("/api/playbooks", playbooksRouter);
 
 // ── Personal achievements (derived; no duplicate achievement state) ─
 app.get("/api/achievements", async (req: Request, res: Response) => {

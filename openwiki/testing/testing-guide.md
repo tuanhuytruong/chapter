@@ -3,24 +3,28 @@ type: guide
 title: Testing Guide
 description: Testing strategies, test runner setup, key verification test suites, and backend/frontend validation instructions for the project.
 tags: [testing, verification, scripts, type-checking, quality-assurance, architecture]
-verified:
-  - by: openwiki/0.5.0
-    at: 2026-09-09T19:45:31.755Z
 sources:
   - id: openwiki-source-5b54a58d1b51cd490b0e7162
     resource: repo://package.json
   - id: openwiki-source-ad027b3e91609f1451769138
     resource: repo://scripts/verify-chapter-markers.ts
+  - id: openwiki-source-4ac3c5c81e04cb41e66edead
+    resource: repo://scripts/verify-pdf-cache.ts
+  - id: openwiki-source-879d832a0e9318d32e2bbdbe
+    resource: repo://scripts/verify-pdf-illustration-contract.ts
   - id: openwiki-source-6d428306e6d9164f86db303a
     resource: repo://scripts/verify-posthog-identity.ts
   - id: openwiki-source-1ebac31355226f017070baba
     resource: repo://scripts/verify-reading-forecast.ts
-generated: { by: "openwiki/0.5.0", at: "2026-09-09T19:45:31.755Z" }
+generated: { by: "openwiki/0.6.1", at: "2026-10-01T21:48:18.718Z" }
+verified:
+  - by: openwiki/0.6.1
+    at: 2026-10-01T21:48:18.718Z
 ---
 
 # Testing Guide
 
-The project utilizes a robust verification-script pattern rather than traditional end-to-end test runners (such as Jest or Playwright). The testing strategy relies on isolated, executable TypeScript verification scripts located in the `scripts/` directory, supported by TypeScript type checking (`tsc --noEmit`), database schema checks, and production build pipelines.
+The project employs focused TypeScript verification scripts, primarily executed via `npx tsx`, to validate individual features, algorithms, and system invariants rather than relying on heavy end-to-end testing frameworks. This approach leverages the `scripts/` directory, where each file serves as an isolated test suite, often interacting directly with the PostgreSQL database or core logic modules. Scripts are integrated into the repository's `package.json` for streamlined invocation during development and CI, ensuring type-safe, repeatable, and granular system verification.
 
 ```mermaid
 flowchart TD
@@ -37,8 +41,14 @@ flowchart TD
 
 Instead of heavy end-to-end test frameworks, the application validates feature correctness, database persistence, business logic, and security invariants through **focused verification scripts**. Each script runs against either an active PostgreSQL database connection or pure logic functions to assert exact behavior.
 
+### PDF Extraction and Illustration Verification
+System stability regarding PDF processing is maintained through dedicated verification scripts:
+- `verify-pdf-extractor.ts`: Ensures consistent PDF text extraction.
+- `verify-pdf-cache.ts`: Validates cache invalidation and storage logic for PDF assets.
+- `verify-pdf-illustration-contract.ts`: Verifies that extracted illustrations strictly adhere to the defined metadata and content contracts, preventing regressions in visual asset processing.
+
 ### Key Characteristics of Verification Scripts:
-- **Isolation**: Each script targets a specific subsystem (e.g., `verify-auth-signup.ts`, `verify-pdf-extractor.ts`).
+- **Isolation**: Each script targets a specific subsystem.
 - **Direct Assertions**: Scripts perform direct database insertions, API mocks/calls, and strict runtime assertions.
 - **Repeatability**: Can be executed on demand during local development or pre-commit/CI checks.
 
@@ -50,7 +60,7 @@ The repository defines dozens of specialized verification tasks in `package.json
 
 ### Subsystem & Algorithm Verification
 - **Authentication**: Scripts like `repo://scripts/verify-auth-signup.ts` and `repo://scripts/verify-auth-rate-limit.ts` validate user management flows.
-- **Core Logic**: Specialized scripts like `repo://scripts/verify-pdf-extractor.ts` ensure data processing components function correctly.
+- **Core Logic**: Specialized scripts like `repo://scripts/verify-pdf-extractor.ts`, `repo://scripts/verify-pdf-cache.ts`, and `repo://scripts/verify-pdf-illustration-contract.ts` ensure data processing components function correctly.
 - **Platform & Integrity**: `repo://scripts/verify-platform-db.ts` and `repo://scripts/verify-platform-headers.ts` validate foundational infrastructure.
 
 ---
@@ -62,6 +72,8 @@ You can execute verification scripts individually via `npx tsx` or through npm s
 ```bash
 # Run specific feature verifications
 npx tsx scripts/verify-pdf-extractor.ts
+npx tsx scripts/verify-pdf-cache.ts
+npx tsx scripts/verify-pdf-illustration-contract.ts
 npx tsx scripts/verify-auth-signup.ts
 
 # Run platform database verification

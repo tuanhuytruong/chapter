@@ -2,12 +2,16 @@ import { Router, Request, Response } from "express";
 import crypto from "node:crypto";
 import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { query, withClient, withTransaction } from "../db.js";
+import { getActiveGeneration, startGeneration, updateGeneration } from "../generationProgress.js";
 import { searchLibrary, bestEffortUpsertSearchDocument, bestEffortDeleteSearchDocument } from "../librarySearchRepository.js";
 import {
   buildEpubReadingUnits,
   extractRange,
   getChapterTitle,
+  PDF_ILLUSTRATION_DETECTOR_VERSION,
 } from "../extractor.js";
+import { renderPdfPageToTempImage } from "../pdfIllustrationRenderer.js";
+import { analysePdfIllustration } from "../illustrationAnalysis.js";
 import { callLLM, callLLMCompletion, callJsonLLM, callNineRouter, parseSummary } from "../llm.js";
 import {
   boundStoryThreadSource,
@@ -319,29 +323,18 @@ export async function ensurePdfReadingUnits(
           offset < pages.length;
           offset += READING_UNIT_INSERT_BATCH_SIZE
         ) {
-          const batch = pages.slice(
-            offset,
-            offset + READING_UNIT_INSERT_BATCH_SIZE,
-          );
+          const batch = pages.slice(offset, offset + READING_UNIT_INSERT_BATCH_SIZE);
           const params: any[] = [];
           const values = batch.map((rawText: string, index: number) => {
             const n = params.length + 1;
             const unitIndex = offset + index + 1;
             const safeText = stripNul(rawText);
-            params.push(
-              book.id,
-              unitIndex,
-              null,
-              unitIndex,
-              `pdf-page-${unitIndex}`,
-              safeText,
-              safeText.length,
-              unitIndex,
-            );
-            return `($${n},$${n + 1},$${n + 2},$${n + 3},$${n + 4},$${n + 5},$${n + 6},$${n + 7})`;
+            const hasIllustration = Boolean(extracted.pageVisuals?.[unitIndex - 1]?.meaningful);
+            params.push(book.id, unitIndex, null, unitIndex, `pdf-page-${unitIndex}`, safeText, safeText.length, unitIndex, hasIllustration);
+            return `($${n},$${n + 1},$${n + 2},$${n + 3},$${n + 4},$${n + 5},$${n + 6},$${n + 7},$${n + 8})`;
           });
           await client.query(
-            `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label) VALUES ${values.join(",")}`,
+            `INSERT INTO book_reading_units (book_id,unit_index,title,spine_index,chapter_key,raw_text,char_count,page_label,has_illustration) VALUES ${values.join(",")}`,
             params,
           );
         }
@@ -479,9 +472,9 @@ booksRouter.post("/", async (req: Request, res: Response) => {
   const summaryMode = ["casual", "deep_reading"].includes(summary_mode)
     ? summary_mode
     : "casual";
-  const readingExperience = ["analytical", "story"].includes(reading_experience)
-    ? reading_experience
-    : "analytical";
+  if (reading_experience !== undefined && !["analytical", "story", "reference"].includes(reading_experience))
+    return res.status(400).json({ error: "reading_experience must be analytical, story, or reference" });
+  const readingExperience = reading_experience === undefined ? "analytical" : reading_experience;
   const resolvedPath = normalizeUploadPath(file_path);
   let readingIntention: string | null;
   try {
@@ -651,11 +644,11 @@ booksRouter.patch("/:id", async (req: Request, res: Response) => {
   ).rows[0];
   if (!existing) return res.status(404).json({ error: "book not found" });
   if (
-    existing.reading_experience === "story" &&
+    existing.reading_experience !== "analytical" &&
     req.body.summary_mode !== undefined
   ) {
     return res.status(400).json({
-      error: "Story Thread books do not use analytical summary styles",
+      error: "Only analytical books use analytical summary styles",
     });
   }
   const sets: string[] = [];
@@ -1284,7 +1277,9 @@ booksRouter.get("/:id/log", async (req: Request, res: Response) => {
               l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
               CASE WHEN $4::boolean THEN NULL ELSE CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END END AS raw_text,
               CASE WHEN b.owner_id = $3 THEN l.raw_text IS NOT NULL AND btrim(l.raw_text) <> '' ELSE false END AS raw_text_available,
-              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes
+              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes,
+              CASE WHEN b.owner_id = $3 THEN l.illustration_pages ELSE '{}'::int[] END AS illustration_pages,
+              CASE WHEN b.owner_id = $3 THEN (SELECT COALESCE(json_agg(json_build_object('pageNumber', i.page_number, 'status', i.status, 'analysis', i.analysis) ORDER BY i.page_number), '[]'::json) FROM reading_log_illustrations i WHERE i.reading_log_id=l.id AND i.source_hash=l.illustration_source_hash AND i.status='ready') ELSE '[]'::json END AS illustrations
        FROM reading_log l JOIN books b ON b.id = l.book_id
        WHERE l.book_id = $1 AND l.reading_round=$2 ORDER BY l.date DESC, l.session DESC`,
       [id, readingRound, userFrom(req).id, overview],
@@ -1305,7 +1300,9 @@ booksRouter.get("/:id/logs/:logId", async (req: Request, res: Response) => {
               l.summary, l.key_insights, l.quote, l.telegram_sent, l.chapter_title, l.created_at,
               CASE WHEN b.owner_id = $3 THEN l.raw_text ELSE NULL END AS raw_text,
               CASE WHEN b.owner_id = $3 THEN l.raw_text IS NOT NULL AND btrim(l.raw_text) <> '' ELSE false END AS raw_text_available,
-              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes
+              CASE WHEN b.owner_id = $3 THEN l.notes ELSE NULL END AS notes,
+              CASE WHEN b.owner_id = $3 THEN l.illustration_pages ELSE '{}'::int[] END AS illustration_pages,
+              CASE WHEN b.owner_id = $3 THEN (SELECT COALESCE(json_agg(json_build_object('pageNumber', i.page_number, 'status', i.status, 'analysis', i.analysis) ORDER BY i.page_number), '[]'::json) FROM reading_log_illustrations i WHERE i.reading_log_id=l.id AND i.source_hash=l.illustration_source_hash AND i.status='ready') ELSE '[]'::json END AS illustrations
        FROM reading_log l JOIN books b ON b.id=l.book_id
        WHERE l.book_id=$1 AND l.id=$2`,
       [id, logId, userFrom(req).id],
@@ -1315,6 +1312,51 @@ booksRouter.get("/:id/logs/:logId", async (req: Request, res: Response) => {
   } catch (e: any) {
     res.status(503).json({ error: "DB unavailable", detail: e.message });
   }
+});
+
+// Illustration pages are owner-private source material. Render only a detected page,
+// stream it with no-store, and remove the temporary image before the request finishes.
+booksRouter.get("/:id/logs/:logId/illustration-page/:page", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  const page = Number(req.params.page);
+  if (!(await ownerCanMutate(req, res, id))) return;
+  if (!Number.isInteger(page) || page < 1) return res.status(400).json({ error: "invalid illustration page" });
+  try {
+    const found = await query(`SELECT b.file_path,b.file_type,l.illustration_pages FROM reading_log l JOIN books b ON b.id=l.book_id WHERE l.id=$1 AND l.book_id=$2 AND b.status='active' AND $3=ANY(l.illustration_pages)`, [logId, id, page]);
+    if (!found.rows.length) return res.status(404).json({ error: "illustration unavailable" });
+    if (found.rows[0].file_type !== "pdf") return res.status(404).json({ error: "illustration unavailable" });
+    const image = await renderPdfPageToTempImage(found.rows[0].file_path, page);
+    try {
+      res.set({ "Content-Type": image.mimeType, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+      res.sendFile(image.path, {}, async () => { await image.cleanup(); });
+    } catch (error) { await image.cleanup(); throw error; }
+  } catch { if (!res.headersSent) res.status(503).json({ error: "illustration unavailable" }); }
+});
+
+const activeIllustrationAnalyses = new Map<string, Promise<{ pageNumber: number; status: "ready"; analysis: string }>>();
+booksRouter.post("/:id/logs/:logId/illustrations/:page/analyze", async (req: Request, res: Response) => {
+  const { id, logId } = req.params;
+  const page = Number(req.params.page);
+  if (!(await ownerCanMutate(req, res, id))) return;
+  if (!Number.isInteger(page) || page < 1) return res.status(400).json({ error: "invalid illustration page" });
+  try {
+    const found = await query(`SELECT b.file_path,b.file_type,b.status,l.illustration_pages,l.illustration_source_hash,u.raw_text FROM reading_log l JOIN books b ON b.id=l.book_id LEFT JOIN book_reading_units u ON u.book_id=l.book_id AND u.unit_index=$3 WHERE l.id=$1 AND l.book_id=$2 AND $3=ANY(l.illustration_pages)`, [logId, id, page]);
+    const row = found.rows[0];
+    if (!row || row.file_type !== "pdf" || row.status !== "active" || !row.illustration_source_hash) return res.status(404).json({ error: "illustration unavailable" });
+    const cached = await query(`SELECT analysis FROM reading_log_illustrations WHERE reading_log_id=$1 AND page_number=$2 AND source_hash=$3 AND status='ready'`, [logId, page, row.illustration_source_hash]);
+    if (cached.rows[0]?.analysis) return res.json({ pageNumber: page, status: "ready", analysis: cached.rows[0].analysis });
+    const key = `${logId}:${page}:${row.illustration_source_hash}`;
+    let job = activeIllustrationAnalyses.get(key);
+    if (!job) {
+      job = (async () => {
+        const analysis = await analysePdfIllustration({ filePath: row.file_path, page, pageText: String(row.raw_text || "") });
+        await query(`INSERT INTO reading_log_illustrations (reading_log_id,page_number,source_hash,status,analysis) VALUES ($1,$2,$3,'ready',$4) ON CONFLICT (reading_log_id,page_number,source_hash) DO UPDATE SET status='ready',analysis=EXCLUDED.analysis,updated_at=now()`, [logId, page, row.illustration_source_hash, analysis]);
+        return { pageNumber: page, status: "ready" as const, analysis };
+      })().finally(() => activeIllustrationAnalyses.delete(key));
+      activeIllustrationAnalyses.set(key, job);
+    }
+    res.json(await job);
+  } catch { res.status(503).json({ error: "illustration analysis unavailable" }); }
 });
 
 // GET /api/books/:id/reading-lens — no source text is exposed.
@@ -1700,14 +1742,27 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   if (!(await ownerCanMutate(req, res, id))) return;
   const force = req.query.force === "1" || req.body?.force === true;
   try {
-    const result = await advanceBook(id, force);
+    const source = (await query<any>("SELECT owner_id,current_reading_round FROM books WHERE id=$1", [id])).rows[0];
+    if (!source) return res.status(404).json({ error: "book not found or not active" });
+    const progress = await startGeneration({ ownerId: source.owner_id, bookId: id, readingRound: source.current_reading_round || 1, kind: "read_now", stage: "Preparing source…", percent: 10 });
+    const result = await advanceBook(id, force, progress.jobId);
     if (!result)
       return res.status(404).json({ error: "book not found or not active" });
-    res.json(result);
+    res.json({ ...result, generationProgress: await getActiveGeneration(source.owner_id, id, source.current_reading_round || 1, progress.jobId) });
   } catch (e: any) {
     console.error("[advance] error:", e);
     res.status(500).json({ error: "advance failed", detail: e.message });
   }
+ });
+
+booksRouter.get("/:id/generation-progress", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!(await ownerCanMutate(req, res, id))) return;
+  const round = req.query.round === undefined ? undefined : Number(req.query.round);
+  const jobId = typeof req.query.jobId === "string" ? req.query.jobId : undefined;
+  if ((round !== undefined && (!Number.isInteger(round) || round < 1)) || (jobId && !isUuid(jobId))) return res.status(400).json({ error: "invalid progress query" });
+  try { res.json(await getActiveGeneration(userFrom(req).id, id, round, jobId)); }
+  catch { res.status(503).json({ error: "Generation progress unavailable" }); }
 });
 
 /** Reserve the next session in a short transaction; never hold a DB lock across extraction or LLM work. */
@@ -1762,17 +1817,20 @@ async function reserveAdvance(
       [bookId, dateStr],
     );
     const session = Number(daySessions[0]?.last_session || 0) + 1;
+    let illustrationPages: number[] = [];
+    let illustrationSourceHash: string | null = null;
+    if (book.file_type === "pdf") {
+      const facts = await client.query(
+        `SELECT unit_index FROM book_reading_units WHERE book_id=$1 AND unit_index BETWEEN $2 AND $3 AND has_illustration=true ORDER BY unit_index`,
+        [bookId, start, end],
+      );
+      illustrationPages = facts.rows.map((row: any) => Number(row.unit_index)).filter(Number.isInteger);
+      // The PDF bytes and the immutable session range invalidate stale notes after replacement.
+      illustrationSourceHash = crypto.createHash("sha256").update(fs.readFileSync(book.file_path)).update(`:${PDF_ILLUSTRATION_DETECTOR_VERSION}:${start}-${end}`).digest("hex");
+    }
     const { rows } = await client.query(
-      `INSERT INTO reading_log (book_id,reading_round,date,session,page_start,page_end,summary) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [
-        bookId,
-        book.current_reading_round,
-        dateStr,
-        session,
-        start,
-        end,
-        "Reading session is being prepared.",
-      ],
+      `INSERT INTO reading_log (book_id,reading_round,date,session,page_start,page_end,summary,illustration_pages,illustration_source_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [bookId, book.current_reading_round, dateStr, session, start, end, "Reading session is being prepared.", illustrationPages, illustrationSourceHash],
     );
     await client.query("UPDATE books SET current_page=$1 WHERE id=$2", [
       end,
@@ -1791,10 +1849,11 @@ const activeAdvances = new Map<string, Promise<any | null>>();
 async function advanceBook(
   bookId: string,
   force: boolean,
+  progressJobId?: string,
 ): Promise<any | null> {
   const active = activeAdvances.get(bookId);
   if (active) return active;
-  const running = advanceBookNow(bookId, force);
+  const running = advanceBookNow(bookId, force, progressJobId);
   activeAdvances.set(bookId, running);
   try {
     return await running;
@@ -1806,6 +1865,7 @@ async function advanceBook(
 async function advanceBookNow(
   bookId: string,
   force: boolean,
+  progressJobId?: string,
 ): Promise<any | null> {
   // EPUB has a persisted unit cursor. Initialize it before reserving the range
   // so a new or stale total_pages value cannot reserve beyond the real last unit.
@@ -1823,6 +1883,7 @@ async function advanceBookNow(
   const reservation = await reserveAdvance(bookId, force);
   if (!reservation || reservation.skipped) return reservation;
   const { book, dateStr, log, start, end } = reservation;
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Reading source…", percent: 10 });
   let text: string;
   let chapterTitle: string | null;
   let totalPages = book.total_pages;
@@ -1865,6 +1926,7 @@ async function advanceBookNow(
       text,
     );
   }
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Writing summary…", percent: 25 });
   const parsed =
     book.reading_experience === "story"
       ? {
@@ -1886,6 +1948,7 @@ async function advanceBookNow(
           }),
           book.summary_mode || "casual",
         );
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Saving reading session…", percent: 65 });
   const result: any = await withTransaction(async (client) => {
     const finished = end >= totalPages;
     const { rows } = await client.query(
@@ -1910,7 +1973,7 @@ async function advanceBookNow(
         `UPDATE book_reading_rounds SET status='finished', final_page=$1, finished_at=COALESCE(finished_at, now()), updated_at=now() WHERE book_id=$2 AND reading_round=$3`,
         [end, bookId, book.current_reading_round],
       );
-    if (book.reading_experience !== "story") {
+    if (book.reading_experience === "analytical") {
       const firstDue = reviewOutcome(1, false, dateStr).dueDate;
       for (const [insightIndex, insight] of parsed.key_insights.entries()) {
         const trimmed = insight.trim();
@@ -1936,6 +1999,7 @@ async function advanceBookNow(
       readingExperience: book.reading_experience || "analytical",
     };
   });
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Preparing companion…", percent: 75 });
   if (result?.log?.quote) await bestEffortUpsertSearchDocument({ ownerId: book.owner_id, bookId: result.bookId, readingRound: result.log.reading_round, logId: result.log.id, kind: "quote", sourceKey: result.log.id, title: `Quote · ${result.title}`, body: result.log.quote, pageStart: result.log.page_start, pageEnd: result.log.page_end });
   if (result?.log?.raw_text) {
     await markReadingProgressCompanionStaleIfCovered(
@@ -1951,27 +2015,29 @@ async function advanceBookNow(
         total: result.totalUnits,
         lang: result.summaryLang || "auto",
         session: result.session,
-      }).catch(async (error) => {
+      }).then(async () => { if (progressJobId) await updateGeneration(progressJobId, { status: "ready", stage: "Reading ready", percent: 100, terminal: true }); }).catch(async (error) => {
+        if (progressJobId) await updateGeneration(progressJobId, { status: "failed", stage: "Story Thread needs retry", percent: 75, errorMessage: "Story Thread could not be prepared", terminal: true });
         await markStoryThreadFailed(result.log.id, error).catch(() => undefined);
         console.warn("[story-thread] background analysis unavailable:", error.message);
       });
-    } else {
+    } else if (result.readingExperience === "analytical") {
       // Keep the reading transaction responsive. The session is already saved;
       // enrich it in order so the wiki only synthesizes persisted analyses.
       void (async () => {
         try {
           // The two enrichments use the same persisted source text but do not
           // depend on each other, so let NineRouter process them concurrently.
-          await Promise.all([
-            generateReadingLensForLog(result.log, {
+          const lens = generateReadingLensForLog(result.log, {
               title: result.title,
               author: result.author,
               total: result.totalUnits,
               lang: result.summaryLang || "auto",
-            }),
-            processBookForWiki(result.bookId),
-          ]);
+            });
+          void processBookForWiki(result.bookId).catch((error) => console.warn("[wiki] background analysis unavailable:", error.message));
+          await lens;
+          if (progressJobId) await updateGeneration(progressJobId, { status: "ready", stage: "Reading ready", percent: 100, terminal: true });
         } catch (error: any) {
+          if (progressJobId) await updateGeneration(progressJobId, { status: "failed", stage: "Reading Lens needs retry", percent: 75, errorMessage: "Reading Lens could not be prepared", terminal: true });
           console.warn(
             "[reading-enrichment] background analysis unavailable:",
             error.message,

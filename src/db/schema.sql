@@ -143,6 +143,33 @@ CREATE TABLE IF NOT EXISTS chapter.books (
 
 CREATE INDEX IF NOT EXISTS idx_books_status ON chapter.books (status);
 
+-- Authenticated reader feedback. Store only a bounded page path and broad client category.
+CREATE TABLE IF NOT EXISTS chapter.feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('bug','idea','other')),
+  message TEXT NOT NULL CHECK (char_length(message) BETWEEN 10 AND 2000),
+  route_path TEXT NOT NULL CHECK (char_length(route_path) BETWEEN 1 AND 300),
+  client_platform TEXT CHECK (client_platform IN ('web_desktop','web_android','web_ios','unknown')),
+  browser_family TEXT CHECK (browser_family IN ('chrome','safari','firefox','edge','other','unknown')),
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','reviewed','planned','resolved','closed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS feedback_status_created_idx ON chapter.feedback (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS feedback_owner_created_idx ON chapter.feedback (owner_id, created_at DESC);
+
+-- Rate limiter key is a one-way owner-derived hash; it never stores reader identity or content.
+CREATE TABLE IF NOT EXISTS chapter.feedback_rate_limits (
+  rate_key TEXT NOT NULL,
+  window_started_at TIMESTAMPTZ NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (rate_key, window_started_at)
+);
+CREATE INDEX IF NOT EXISTS feedback_rate_limits_window_cleanup_idx
+  ON chapter.feedback_rate_limits (window_started_at);
+
 -- Reading rounds preserve every completed pass through a book. `books` stores
 -- only the active cursor; this table is the lifecycle/history source of truth.
 ALTER TABLE chapter.books ADD COLUMN IF NOT EXISTS current_reading_round INT NOT NULL DEFAULT 1;
@@ -241,6 +268,7 @@ CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_unit
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS spine_index INT;
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS chapter_key TEXT;
 ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS page_label INT;
+ALTER TABLE chapter.book_reading_units ADD COLUMN IF NOT EXISTS has_illustration BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_book_reading_units_book_chapter
   ON chapter.book_reading_units (book_id, chapter_key, unit_index);
 
@@ -259,6 +287,8 @@ CREATE TABLE IF NOT EXISTS chapter.reading_log (
   key_insights  TEXT[] NOT NULL DEFAULT '{}',
   quote         TEXT,
   telegram_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  illustration_pages INT[] NOT NULL DEFAULT '{}',
+  illustration_source_hash TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (book_id, date)   -- idempotency guard for daily cron
 );
@@ -294,6 +324,21 @@ ALTER TABLE chapter.reading_log
 DROP INDEX IF EXISTS idx_reading_log_book_date;
 CREATE INDEX IF NOT EXISTS idx_reading_log_book_date
   ON chapter.reading_log (book_id, date DESC, session DESC);
+
+ALTER TABLE chapter.reading_log ADD COLUMN IF NOT EXISTS illustration_pages INT[] NOT NULL DEFAULT '{}';
+ALTER TABLE chapter.reading_log ADD COLUMN IF NOT EXISTS illustration_source_hash TEXT;
+CREATE TABLE IF NOT EXISTS chapter.reading_log_illustrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reading_log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  page_number INT NOT NULL CHECK (page_number > 0),
+  source_hash TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('ready', 'failed')),
+  analysis TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (reading_log_id, page_number, source_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_reading_log_illustrations_log ON chapter.reading_log_illustrations (reading_log_id, page_number);
 
 -- Private reader-owned anchors into a saved session. Marker text is never
 -- included in shared book detail queries.
@@ -336,6 +381,8 @@ CREATE TABLE IF NOT EXISTS chapter.podcasts (
   local_cache_path TEXT,
   local_cache_until TIMESTAMPTZ,
   error_message TEXT,
+  worker_lease_token UUID,
+  worker_lease_until TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (book_id, chapter_key, reading_round)
@@ -345,6 +392,7 @@ ALTER TABLE chapter.podcasts ADD CONSTRAINT podcasts_status_check
   CHECK (status IN ('queued', 'scripting', 'synthesizing', 'archiving', 'archive_pending', 'ready', 'failed', 'unavailable'));
 CREATE INDEX IF NOT EXISTS idx_podcasts_user_book_created ON chapter.podcasts (user_id, book_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_podcasts_cache_expiry ON chapter.podcasts (local_cache_until) WHERE local_cache_until IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_podcasts_recovery_lease ON chapter.podcasts (status, worker_lease_until) WHERE worker_lease_until IS NOT NULL;
 
 -- One listener-owned resume marker per book and reading round. Episodes remain
 -- generated/owned as before; this stores only playback state, never audio data.
@@ -800,3 +848,72 @@ CREATE TABLE IF NOT EXISTS chapter.account_merge_events (
 );
 CREATE INDEX IF NOT EXISTS idx_account_merge_events_destination_merged
   ON chapter.account_merge_events(destination_user_id, merged_at DESC);
+
+-- Reference books retain the ordinary reading-log pipeline but produce no
+-- analytical or Story Thread enrichment. Their reusable cards are private to
+-- the owner and preserve an immutable source pointer into a saved log.
+ALTER TABLE chapter.books DROP CONSTRAINT IF EXISTS books_reading_experience_check;
+ALTER TABLE chapter.books ADD CONSTRAINT books_reading_experience_check
+  CHECK (reading_experience IN ('analytical', 'story', 'reference'));
+
+CREATE TABLE IF NOT EXISTS chapter.reference_cards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE,
+  reading_round INT NOT NULL CHECK (reading_round >= 1),
+  log_id UUID NOT NULL REFERENCES chapter.reading_log(id) ON DELETE CASCADE,
+  request_key TEXT NOT NULL,
+  card_type TEXT NOT NULL CHECK (card_type IN ('recipe', 'formula', 'procedure')),
+  schema_version SMALLINT NOT NULL DEFAULT 1 CHECK (schema_version = 1),
+  title TEXT NOT NULL CHECK (char_length(title) BETWEEN 1 AND 160),
+  content TEXT NOT NULL CHECK (char_length(content) BETWEEN 1 AND 4000),
+  fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  personal_adaptation TEXT NOT NULL DEFAULT '' CHECK (char_length(personal_adaptation) <= 2000),
+  source_excerpt TEXT NOT NULL CHECK (char_length(source_excerpt) BETWEEN 1 AND 12000),
+  source_page_start INT NOT NULL CHECK (source_page_start >= 0),
+  source_page_end INT NOT NULL CHECK (source_page_end >= source_page_start),
+  needs_review BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (owner_id, request_key)
+);
+CREATE INDEX IF NOT EXISTS idx_reference_cards_owner_updated
+  ON chapter.reference_cards (owner_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reference_cards_owner_type_updated
+  ON chapter.reference_cards (owner_id, card_type, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reference_cards_book_round
+  ON chapter.reference_cards (book_id, reading_round, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reference_cards_tags
+  ON chapter.reference_cards USING GIN (tags);
+
+CREATE TABLE IF NOT EXISTS chapter.reference_card_uses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  card_id UUID NOT NULL REFERENCES chapter.reference_cards(id) ON DELETE CASCADE,
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE,
+  request_key TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '' CHECK (char_length(note) <= 500),
+  used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (owner_id, request_key)
+);
+CREATE INDEX IF NOT EXISTS idx_reference_card_uses_card_time
+  ON chapter.reference_card_uses (card_id, used_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reference_card_uses_owner_time
+  ON chapter.reference_card_uses (owner_id, used_at DESC);
+
+ALTER TABLE chapter.search_documents DROP CONSTRAINT IF EXISTS search_documents_kind_check;
+ALTER TABLE chapter.search_documents ADD CONSTRAINT search_documents_kind_check
+  CHECK (kind IN ('book','wiki','quote','note','reflection','story_session','story_memory','reference_card'));
+
+
+-- Persisted safe milestones for Read now and Podcast generation.
+CREATE TABLE IF NOT EXISTS chapter.generation_progress (
+  job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(), attempt_id UUID NOT NULL DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES chapter.users(id) ON DELETE CASCADE, book_id UUID NOT NULL REFERENCES chapter.books(id) ON DELETE CASCADE, reading_round INTEGER NOT NULL CHECK (reading_round >= 1), resource_id UUID,
+  kind TEXT NOT NULL CHECK (kind IN ('read_now','podcast')), status TEXT NOT NULL CHECK (status IN ('queued','running','retrying','ready','failed','interrupted')), stage TEXT NOT NULL, percent INTEGER NOT NULL CHECK (percent BETWEEN 0 AND 100), error_message TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), completed_at TIMESTAMPTZ, CHECK ((status='ready' AND percent=100) OR status<>'ready')
+);
+CREATE INDEX IF NOT EXISTS generation_progress_owner_book_active_idx ON chapter.generation_progress(owner_id,book_id,reading_round,updated_at DESC) WHERE status IN ('queued','running','retrying');
+CREATE UNIQUE INDEX IF NOT EXISTS generation_progress_active_scope_idx ON chapter.generation_progress(owner_id,book_id,reading_round,kind,COALESCE(resource_id,'00000000-0000-0000-0000-000000000000'::uuid)) WHERE status IN ('queued','running','retrying');
+ALTER TABLE chapter.podcasts ADD COLUMN IF NOT EXISTS tts_retry_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE chapter.podcasts ADD COLUMN IF NOT EXISTS tts_next_retry_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS podcasts_tts_retry_due_idx ON chapter.podcasts(tts_next_retry_at) WHERE status='synthesizing' AND tts_next_retry_at IS NOT NULL;

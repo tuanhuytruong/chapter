@@ -16,12 +16,22 @@ const PDF_MAX_TOTAL_CHARS = 50_000_000;
 const PDF_TIMEOUT_MS = 120_000;
 const PDF_WORKER_OLD_GENERATION_MB = 128;
 
+export type PdfPageVisual = { page: number; meaningful: boolean; imageCount: number };
+export const PDF_ILLUSTRATION_DETECTOR_VERSION = "pdfjs-ops-area-v2";
+
+export function meaningfulPdfPagesForRange(visuals: PdfPageVisual[] | undefined, start: number, end: number): number[] {
+  if (!visuals) return [];
+  return [...new Set(visuals.filter((v) => v.meaningful && v.page >= start && v.page <= end).map((v) => v.page))].sort((a, b) => a - b);
+}
+
 export interface ExtractResult {
   text: string;
   /** Total units available (pages for PDF, reading chunks for EPUB). */
   totalUnits: number;
   /** Validated text for every PDF page; absent for EPUB. */
   pages?: string[];
+  /** Minimal PDF visual facts only; no object identifiers, coordinates, or bytes. */
+  pageVisuals?: PdfPageVisual[];
 }
 
 export type PdfTextLayerProbe = {
