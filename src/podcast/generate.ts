@@ -202,7 +202,13 @@ export async function generatePodcast(id: string): Promise<void> {
     await updateGeneration(progress.jobId, { status: "ready", stage: "Ready to listen", percent: 100, terminal: true }); audioPath = undefined;
   } catch (error: any) {
     const deferred = await deferRetryableTts(id, error, current.worker_lease_token).catch(() => false);
-    if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000), current.worker_lease_token]).catch(() => undefined);
+    if (deferred) {
+      await updateGeneration(progress.jobId, { status: "retrying", stage: "Audio service is busy — retrying automatically", percent: 40, errorMessage: null });
+    } else {
+      const message = isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000);
+      await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [id, message, current.worker_lease_token]).catch(() => undefined);
+      await updateGeneration(progress.jobId, { status: "failed", stage: "Podcast needs retry", percent: 40, errorMessage: message, terminal: true });
+    }
     throw error;
   }
   finally { if (audioPath) await fs.unlink(audioPath).catch(() => undefined); }

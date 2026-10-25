@@ -404,6 +404,7 @@ export interface PodcastNextChapter {
   end_page: number | null;
   has_narrator: boolean;
   episode_status: PodcastEpisode["status"] | null;
+  generation_progress?: GenerationProgressSnapshot | null;
 }
 
 export interface PodcastPlaylist {

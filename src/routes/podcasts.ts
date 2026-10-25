@@ -71,7 +71,7 @@ podcastsRouter.get("/catalog", async (req: Request, res: Response) => {
       query<any>("SELECT * FROM podcasts WHERE user_id=$1 AND book_id = ANY($2)", [ownerId, bookIds]),
       query<any>("SELECT book_id,reading_round,voice_gender FROM podcast_narrators WHERE book_id = ANY($1)", [bookIds]),
     ]) : [{ rows: [] }, { rows: [] }];
-    const episodesByBookChapter = new Map(episodes.rows.map((episode) => [`${episode.book_id}\0${episode.reading_round}\0${episode.chapter_key}`, podcastPublic(episode)]));
+    const episodesByBookChapter = new Map(await Promise.all(episodes.rows.map(async (episode) => [`${episode.book_id}\0${episode.reading_round}\0${episode.chapter_key}`, { ...podcastPublic(episode), generation_progress: await getActiveGeneration(ownerId, episode.book_id, episode.reading_round, undefined, episode.id) }] as const)));
     const narratorByBookRound = new Map(narrators.rows.map((narrator) => [`${narrator.book_id}\0${narrator.reading_round}`, narrator.voice_gender]));
     for (const book of books) {
       const round = book.reading_round || 1;
@@ -95,7 +95,7 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
       resolvePodcastChapters(book.id),
     ]);
-    const byChapter = new Map(await Promise.all(episodes.rows.map(async (episode) => [episode.chapter_key, { ...podcastPublic(episode), generation_progress: await getActiveGeneration(episode.user_id, episode.book_id, episode.reading_round, undefined) }] as const)));
+    const byChapter = new Map(await Promise.all(episodes.rows.map(async (episode) => [episode.chapter_key, { ...podcastPublic(episode), generation_progress: await getActiveGeneration(episode.user_id, episode.book_id, episode.reading_round, undefined, episode.id) }] as const)));
     res.json({ ...book, chapter_mode: resolved.mode, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: resolved.chapters.map((chapter) => ({ ...chapter, episode: byChapter.get(chapter.chapter_key) || null })) });
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });
@@ -127,8 +127,9 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
     const allowedKeys = new Set(chapters.chapters.map((chapter) => chapter.chapter_key));
     episodes.rows = episodes.rows.filter((episode) => allowedKeys.has(episode.chapter_key));
     const readyByChapter = new Set(episodes.rows.map((episode) => episode.chapter_key));
-    const allStatus = await query<any>("SELECT chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
+    const allStatus = await query<any>("SELECT id, chapter_key, status FROM podcasts WHERE user_id=$1 AND book_id=$2 AND reading_round=$3", [userId, book.id, round]);
     const statusByChapter = new Map(allStatus.rows.map((episode) => [episode.chapter_key, episode.status]));
+    const progressByChapter = new Map(await Promise.all(allStatus.rows.map(async (episode) => [episode.chapter_key, await getActiveGeneration(userId, book.id, round, undefined, episode.id)] as const)));
     const chapterRows = chapters.chapters;
     const chapterByKey = new Map(chapterRows.map((chapter) => [chapter.chapter_key, chapter]));
     const next = chapterRows.find((chapter) => !readyByChapter.has(chapter.chapter_key) && statusByChapter.get(chapter.chapter_key) !== "unavailable") || null;
@@ -141,7 +142,7 @@ podcastsRouter.get("/books/:bookId/playlist", async (req: Request, res: Response
         return { ...podcastPublic(episode), chapter_key: episode.chapter_key, chapter_number: chapter?.chapter_number ?? null, chapter_title: chapter?.chapter_title || episode.chapter_title || null };
       }),
       progress: progress.rows[0] || null,
-      next_chapter: next ? { ...next, has_narrator: !!narrator.rows[0], episode_status: statusByChapter.get(next.chapter_key) || null } : null,
+      next_chapter: next ? { ...next, has_narrator: !!narrator.rows[0], episode_status: statusByChapter.get(next.chapter_key) || null, generation_progress: progressByChapter.get(next.chapter_key) || null } : null,
     });
   } catch (error: any) { console.warn("[podcast] playlist read failed:", error.message); res.status(500).json({ error: "Podcast playlist unavailable" }); }
 });
