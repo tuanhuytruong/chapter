@@ -292,6 +292,7 @@ export interface LogRow {
   illustration_pages?: number[];
   illustrations?: Array<{ pageNumber: number; status: "ready" | "failed"; analysis: string | null }>;
   created_at: string;
+  generation_progress?: GenerationProgressSnapshot | null;
 }
 
 export interface ReadingRoundRow {
@@ -333,6 +334,8 @@ export interface ReturnSubmission {
   response: ReturnResponse;
 }
 
+export interface GenerationProgressSnapshot { jobId: string; attemptId: string; kind: "read_now" | "podcast"; bookId: string; readingRound: number; resourceId: string | null; status: "queued" | "running" | "retrying" | "ready" | "failed" | "interrupted"; stage: string; percent: number; errorMessage: string | null; updatedAt: string; }
+
 export interface AdvanceResult {
   bookId: string;
   title: string;
@@ -345,6 +348,7 @@ export interface AdvanceResult {
   finished: boolean;
   log: LogRow;
   readingExperience: ReadingExperience;
+  generationProgress?: GenerationProgressSnapshot;
 }
 
 export interface PodcastEpisode {
@@ -368,6 +372,7 @@ export interface PodcastEpisode {
   duration_s: number | null;
   script_text: string | null;
   created_at: string;
+  generation_progress?: GenerationProgressSnapshot | null;
 }
 
 export interface PodcastChapter {
@@ -548,8 +553,9 @@ export const api = {
       `${BASE}/calendar?month=${encodeURIComponent(month)}&bookId=${encodeURIComponent(bookId)}&round=${encodeURIComponent(round)}`,
     ),
   getLogToday: (id: string) => req<LogRow[]>(`${BASE}/${id}/log/today`),
-  advance: (id: string) =>
-    req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST" }),
+  advance: (id: string, requestId?: string) =>
+    req<AdvanceResult>(`${BASE}/${id}/advance`, { method: "POST", body: JSON.stringify(requestId ? { requestId } : {}) }),
+  getGenerationProgress: (id: string, options: { round?: number; jobId?: string } = {}) => { const params = new URLSearchParams(); if (options.round) params.set("round", String(options.round)); if (options.jobId) params.set("jobId", options.jobId); return req<GenerationProgressSnapshot | null>(`${BASE}/${id}/generation-progress${params.size ? `?${params}` : ""}`); },
   retryLog: (bookId: string, logId: string) =>
     req<LogRow>(`${BASE}/${bookId}/logs/${logId}/retry`, { method: "POST" }),
   getReadingLens: (bookId: string, round?: number) =>

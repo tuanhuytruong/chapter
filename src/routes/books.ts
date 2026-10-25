@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import crypto from "node:crypto";
 import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { query, withClient, withTransaction } from "../db.js";
+import { getActiveGeneration, startGeneration, updateGeneration } from "../generationProgress.js";
 import { searchLibrary, bestEffortUpsertSearchDocument, bestEffortDeleteSearchDocument } from "../librarySearchRepository.js";
 import {
   buildEpubReadingUnits,
@@ -1741,14 +1742,27 @@ booksRouter.post("/:id/advance", async (req: Request, res: Response) => {
   if (!(await ownerCanMutate(req, res, id))) return;
   const force = req.query.force === "1" || req.body?.force === true;
   try {
-    const result = await advanceBook(id, force);
+    const source = (await query<any>("SELECT owner_id,current_reading_round FROM books WHERE id=$1", [id])).rows[0];
+    if (!source) return res.status(404).json({ error: "book not found or not active" });
+    const progress = await startGeneration({ ownerId: source.owner_id, bookId: id, readingRound: source.current_reading_round || 1, kind: "read_now", stage: "Preparing source…", percent: 10 });
+    const result = await advanceBook(id, force, progress.jobId);
     if (!result)
       return res.status(404).json({ error: "book not found or not active" });
-    res.json(result);
+    res.json({ ...result, generationProgress: await getActiveGeneration(source.owner_id, id, source.current_reading_round || 1, progress.jobId) });
   } catch (e: any) {
     console.error("[advance] error:", e);
     res.status(500).json({ error: "advance failed", detail: e.message });
   }
+ });
+
+booksRouter.get("/:id/generation-progress", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!(await ownerCanMutate(req, res, id))) return;
+  const round = req.query.round === undefined ? undefined : Number(req.query.round);
+  const jobId = typeof req.query.jobId === "string" ? req.query.jobId : undefined;
+  if ((round !== undefined && (!Number.isInteger(round) || round < 1)) || (jobId && !isUuid(jobId))) return res.status(400).json({ error: "invalid progress query" });
+  try { res.json(await getActiveGeneration(userFrom(req).id, id, round, jobId)); }
+  catch { res.status(503).json({ error: "Generation progress unavailable" }); }
 });
 
 /** Reserve the next session in a short transaction; never hold a DB lock across extraction or LLM work. */
@@ -1835,10 +1849,11 @@ const activeAdvances = new Map<string, Promise<any | null>>();
 async function advanceBook(
   bookId: string,
   force: boolean,
+  progressJobId?: string,
 ): Promise<any | null> {
   const active = activeAdvances.get(bookId);
   if (active) return active;
-  const running = advanceBookNow(bookId, force);
+  const running = advanceBookNow(bookId, force, progressJobId);
   activeAdvances.set(bookId, running);
   try {
     return await running;
@@ -1850,6 +1865,7 @@ async function advanceBook(
 async function advanceBookNow(
   bookId: string,
   force: boolean,
+  progressJobId?: string,
 ): Promise<any | null> {
   // EPUB has a persisted unit cursor. Initialize it before reserving the range
   // so a new or stale total_pages value cannot reserve beyond the real last unit.
@@ -1867,6 +1883,7 @@ async function advanceBookNow(
   const reservation = await reserveAdvance(bookId, force);
   if (!reservation || reservation.skipped) return reservation;
   const { book, dateStr, log, start, end } = reservation;
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Reading source…", percent: 10 });
   let text: string;
   let chapterTitle: string | null;
   let totalPages = book.total_pages;
@@ -1909,6 +1926,7 @@ async function advanceBookNow(
       text,
     );
   }
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Writing summary…", percent: 25 });
   const parsed =
     book.reading_experience === "story"
       ? {
@@ -1930,6 +1948,7 @@ async function advanceBookNow(
           }),
           book.summary_mode || "casual",
         );
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Saving reading session…", percent: 65 });
   const result: any = await withTransaction(async (client) => {
     const finished = end >= totalPages;
     const { rows } = await client.query(
@@ -1980,6 +1999,7 @@ async function advanceBookNow(
       readingExperience: book.reading_experience || "analytical",
     };
   });
+  if (progressJobId) await updateGeneration(progressJobId, { stage: "Preparing companion…", percent: 75 });
   if (result?.log?.quote) await bestEffortUpsertSearchDocument({ ownerId: book.owner_id, bookId: result.bookId, readingRound: result.log.reading_round, logId: result.log.id, kind: "quote", sourceKey: result.log.id, title: `Quote · ${result.title}`, body: result.log.quote, pageStart: result.log.page_start, pageEnd: result.log.page_end });
   if (result?.log?.raw_text) {
     await markReadingProgressCompanionStaleIfCovered(
@@ -1995,7 +2015,8 @@ async function advanceBookNow(
         total: result.totalUnits,
         lang: result.summaryLang || "auto",
         session: result.session,
-      }).catch(async (error) => {
+      }).then(async () => { if (progressJobId) await updateGeneration(progressJobId, { status: "ready", stage: "Reading ready", percent: 100, terminal: true }); }).catch(async (error) => {
+        if (progressJobId) await updateGeneration(progressJobId, { status: "failed", stage: "Story Thread needs retry", percent: 75, errorMessage: "Story Thread could not be prepared", terminal: true });
         await markStoryThreadFailed(result.log.id, error).catch(() => undefined);
         console.warn("[story-thread] background analysis unavailable:", error.message);
       });
@@ -2006,16 +2027,17 @@ async function advanceBookNow(
         try {
           // The two enrichments use the same persisted source text but do not
           // depend on each other, so let NineRouter process them concurrently.
-          await Promise.all([
-            generateReadingLensForLog(result.log, {
+          const lens = generateReadingLensForLog(result.log, {
               title: result.title,
               author: result.author,
               total: result.totalUnits,
               lang: result.summaryLang || "auto",
-            }),
-            processBookForWiki(result.bookId),
-          ]);
+            });
+          void processBookForWiki(result.bookId).catch((error) => console.warn("[wiki] background analysis unavailable:", error.message));
+          await lens;
+          if (progressJobId) await updateGeneration(progressJobId, { status: "ready", stage: "Reading ready", percent: 100, terminal: true });
         } catch (error: any) {
+          if (progressJobId) await updateGeneration(progressJobId, { status: "failed", stage: "Reading Lens needs retry", percent: 75, errorMessage: "Reading Lens could not be prepared", terminal: true });
           console.warn(
             "[reading-enrichment] background analysis unavailable:",
             error.message,

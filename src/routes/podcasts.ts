@@ -10,6 +10,7 @@ import { downloadArchivedPodcast } from "../podcast/telegram.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { config } from "../config.js";
 import { resolvePodcastChapters } from "../podcast/chapters.js";
+import { getActiveGeneration } from "../generationProgress.js";
 
 export const podcastsRouter = Router();
 podcastsRouter.use((req, res, next) => {
@@ -94,7 +95,7 @@ podcastsRouter.get("/books/:bookId", async (req: Request, res: Response) => {
       query<any>("SELECT voice_gender FROM podcast_narrators WHERE book_id=$1 AND reading_round=$2", [book.id, book.reading_round || 1]),
       resolvePodcastChapters(book.id),
     ]);
-    const byChapter = new Map(episodes.rows.map((episode) => [episode.chapter_key, podcastPublic(episode)]));
+    const byChapter = new Map(await Promise.all(episodes.rows.map(async (episode) => [episode.chapter_key, { ...podcastPublic(episode), generation_progress: await getActiveGeneration(episode.user_id, episode.book_id, episode.reading_round, undefined) }] as const)));
     res.json({ ...book, chapter_mode: resolved.mode, narrator_gender: narrator.rows[0]?.voice_gender || null, chapters: resolved.chapters.map((chapter) => ({ ...chapter, episode: byChapter.get(chapter.chapter_key) || null })) });
   } catch (error: any) { console.warn("[podcast] book read failed:", error.message); res.status(500).json({ error: "Podcast episodes unavailable" }); }
 });

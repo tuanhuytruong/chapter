@@ -94,13 +94,16 @@ async function preflightFfmpeg(): Promise<void> {
   });
 }
 
-export async function synthesizePodcast(script: string, voice: string): Promise<{ filePath: string; durationS: number }> {
+export type PodcastTtsProgress = { completedChars: number; totalChars: number; stage: "synthesizing" | "joining" };
+
+export async function synthesizePodcast(script: string, voice: string, onProgress?: (progress: PodcastTtsProgress) => Promise<void> | void): Promise<{ filePath: string; durationS: number }> {
   if (!config.nineRouterApiKey) throw new Error("NineRouter API key is not configured for TTS");
   if (!script.trim()) throw new PodcastTtsError("Empty podcast script", false, undefined, "validation");
   await fs.mkdir(config.podcastCacheDir, { recursive: true });
   const root = path.join(config.podcastCacheDir, `podcast-${randomUUID()}`);
   const filePath = `${root}.mp3`;
   const parts: string[] = [];
+  const totalChars = script.length; let completedChars = 0;
   let complete = false; let preflighted = false;
   const preflight = async () => { if (!preflighted) { await preflightFfmpeg(); preflighted = true; } };
   async function synthesize(input: string): Promise<void> {
@@ -117,7 +120,7 @@ export async function synthesizePodcast(script: string, voice: string): Promise<
       for (const part of smaller) await synthesize(part);
       return;
     }
-    const part = `${root}-${parts.length}.mp3`; parts.push(part); await fs.writeFile(part, bytes);
+    const part = `${root}-${parts.length}.mp3`; parts.push(part); await fs.writeFile(part, bytes); completedChars += input.length; await onProgress?.({ completedChars: Math.min(totalChars, completedChars), totalChars, stage: "synthesizing" });
   }
   try {
     const inputs = chunks(script, Math.max(1000, config.podcastTtsMaxChars));
@@ -126,6 +129,7 @@ export async function synthesizePodcast(script: string, voice: string): Promise<
       console.info(`[podcast-tts] chunk=${index + 1}/${inputs.length} chars=${input.length}`);
       await synthesize(input);
     }
+    await onProgress?.({ completedChars: totalChars, totalChars, stage: "joining" });
     await runFfmpeg(parts, filePath);
     const size = (await fs.stat(filePath)).size;
     complete = true;

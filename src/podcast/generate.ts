@@ -6,6 +6,7 @@ import { config } from "../config.js";
 import { isPodcastSourceTooBrief, podcastMinimumWords, podcastPrompt, podcastWordCount, validatePodcastScript } from "./prompt.js";
 import { resolvePodcastChapter, resolvePodcastChapters } from "./chapters.js";
 import { isRetryableTtsError, synthesizePodcast } from "./tts.js";
+import { startGeneration, updateGeneration } from "../generationProgress.js";
 import { archivePodcast, deleteArchivedPodcast, logPodcastArchiveConfig, verifyPodcastArchive } from "./telegram.js";
 
 export type PodcastRow = { id: string; book_id: string; log_id: string | null; chapter_key: string; chapter_title: string | null; status: string; language: "vi" | "en"; voice_model: string; script_text: string | null; local_cache_path: string | null; local_cache_until: string | null };
@@ -178,6 +179,7 @@ export async function generatePodcast(id: string): Promise<void> {
     WHERE p.id=$1 AND p.status='queued' AND b.id=p.book_id AND b.status='active' AND u.id=p.user_id AND u.environment=$2
     RETURNING p.*,b.title AS book_title,b.author,b.summary_lang,COALESCE(u.display_name, u.username) AS user_name`, [id, config.appEnv, config.podcastWorkerLeaseMinutes])).rows[0] as PodcastRow & any;
   if (!current) return;
+  const progress = await startGeneration({ ownerId: current.user_id, bookId: current.book_id, readingRound: current.reading_round, resourceId: current.id, kind: "podcast", stage: "Writing script…", percent: 15 });
   let audioPath: string | undefined;
   try {
     logPodcastArchiveConfig(config.podcastTelegramArchiveChatId);
@@ -194,8 +196,10 @@ export async function generatePodcast(id: string): Promise<void> {
     if (validatePodcastScript(script, minimumWords)) script = await callLLM(prompt.system, `${prompt.user}\n\nReturn plain spoken prose only. No Markdown, headings, or lists.`, 0.65, true, false, 300000, { priority: "background", traceLabel: "podcast-script-retry", model: config.podcastLlmModel || undefined });
     const invalid = validatePodcastScript(script, minimumWords); if (invalid) throw new Error(`Podcast script invalid: ${invalid}`);
     await query("UPDATE podcasts SET status='synthesizing',script_text=$2,word_count=$3,tts_retry_count=0,tts_next_retry_at=NULL,updated_at=now() WHERE id=$1", [id, script, script.split(/\s+/).length]);
-    const audio = await synthesizePodcast(script, current.voice_model); audioPath = audio.filePath;
-    await finishSynthesizedPodcast(current, audio.filePath, audio.durationS); audioPath = undefined;
+    await updateGeneration(progress.jobId, { stage: "Creating audio…", percent: 40 });
+    const audio = await synthesizePodcast(script, current.voice_model, async ({ completedChars, totalChars, stage }) => { await updateGeneration(progress.jobId, { stage: stage === "joining" ? "Joining audio…" : "Creating audio…", percent: stage === "joining" ? 90 : 40 + Math.round((completedChars / Math.max(1, totalChars)) * 50) }); }); audioPath = audio.filePath;
+    await finishSynthesizedPodcast(current, audio.filePath, audio.durationS);
+    await updateGeneration(progress.jobId, { status: "ready", stage: "Ready to listen", percent: 100, terminal: true }); audioPath = undefined;
   } catch (error: any) {
     const deferred = await deferRetryableTts(id, error, current.worker_lease_token).catch(() => false);
     if (!deferred) await query("UPDATE podcasts SET status='failed',tts_next_retry_at=NULL,error_message=$2,updated_at=now() WHERE id=$1 AND worker_lease_token=$3::uuid", [id, isRetryableTtsError(error) ? "TTS upstream remained unavailable. Try again later." : String(error.message || error).slice(0, 1000), current.worker_lease_token]).catch(() => undefined);
