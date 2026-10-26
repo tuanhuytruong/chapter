@@ -416,6 +416,13 @@ export interface PodcastPlaylist {
   next_chapter: PodcastNextChapter | null;
 }
 
+export interface PodcastListeningSession {
+  id: string;
+  playlistUrl: string;
+  expiresAt: string;
+  episodeCount: number;
+}
+
 export interface PodcastCatalogBook {
   id: string;
   chapter_mode?: "headed" | "fallback";
@@ -691,6 +698,11 @@ export const api = {
     req<PodcastPlaylistProgress>(`/api/podcasts/books/${bookId}/playlist/progress`, {
       method: "PUT",
       body: JSON.stringify({ podcast_id: podcastId, current_time_seconds: currentTimeSeconds, completed }),
+    }),
+  createPodcastListeningSession: (bookId: string, podcastId: string) =>
+    req<PodcastListeningSession>(`/api/podcasts/books/${bookId}/listening-sessions`, {
+      method: "POST",
+      body: JSON.stringify({ episode_id: podcastId }),
     }),
   createPodcast: (
     bookId: string,

@@ -45,6 +45,8 @@ export const config = {
   podcastWorkerLeaseMinutes: boundedIntegerEnv("PODCAST_WORKER_LEASE_MINUTES", 20, 5, 90),
   podcastMaintenanceIntervalMs: boundedIntegerEnv("PODCAST_MAINTENANCE_INTERVAL_MS", 120_000, 30_000, 900_000),
   podcastMaintenanceBatchSize: boundedIntegerEnv("PODCAST_MAINTENANCE_BATCH_SIZE", 5, 1, 20),
+  // DEV-only transport experiment. MP3 remains the default and fallback.
+  podcastHlsEnabled: optionalEnv("PODCAST_HLS_ENABLED") === "true",
   billingVietQrEnabled: optionalEnv("BILLING_VIETQR_ENABLED") === "true",
   billingVietQrBankBin: optionalEnv("BILLING_VIETQR_BANK_BIN") || "970422",
   billingVietQrAccountNumber: optionalEnv("BILLING_VIETQR_ACCOUNT_NUMBER"),

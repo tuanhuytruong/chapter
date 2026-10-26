@@ -1,12 +1,14 @@
 import { Router, type Request, type Response } from "express";
 import { bestEffortTouchLastActive } from "../userLifecycleTracking.js";
 import { createReadStream } from "fs";
-import { mkdir, rename, stat, unlink, writeFile } from "fs/promises";
+import { mkdir, readFile, rename, stat, unlink, writeFile } from "fs/promises";
+import path from "path";
 import { query, withClient, withTransaction } from "../db.js";
 import { userFrom } from "../auth.js";
 import { buildEpubReadingUnits } from "../extractor.js";
 import { createPodcast, podcastPublic, prunePodcastCache, recoverQueuedPodcastJobs, recoverRetryablePodcastTts, regeneratePodcast, retryPendingPodcastArchives } from "../podcast/generate.js";
 import { downloadArchivedPodcast } from "../podcast/telegram.js";
+import { createPodcastHlsSession, readPodcastHlsSession } from "../podcastHls.js";
 import { observeEntitledGeneration } from "../requireEntitlement.js";
 import { config } from "../config.js";
 import { resolvePodcastChapters } from "../podcast/chapters.js";
@@ -253,6 +255,23 @@ podcastsRouter.post("/books/:bookId/narrator", async (req: Request, res: Respons
     });
     res.json({ ok: true, episodes_deleted: count, reading_round: round, voice_gender });
   } catch (error: any) { console.warn("[podcast] narrator change failed:", error.message); res.status(500).json({ error: "Narrator could not be updated" }); }
+});
+
+podcastsRouter.post("/books/:bookId/listening-sessions", async (req: Request, res: Response) => {
+  if (!config.podcastHlsEnabled) return res.status(404).end();
+  const episodeId = req.body?.episode_id;
+  if (typeof episodeId !== "string") return res.status(400).json({ error: "episode_id is required" });
+  try { res.status(201).json(await createPodcastHlsSession(userFrom(req).id, req.params.bookId, episodeId)); }
+  catch (error: any) { res.status(400).json({ error: error.message || "Could not create listening session" }); }
+});
+podcastsRouter.get("/listening-sessions/:sessionId/index.m3u8", (req: Request, res: Response) => {
+  const session = readPodcastHlsSession(userFrom(req).id, req.params.sessionId); if (!session) return res.status(404).end();
+  res.setHeader("Content-Type", "application/vnd.apple.mpegurl"); res.setHeader("Cache-Control", "private, no-store"); res.send(session.playlist);
+});
+podcastsRouter.get("/listening-sessions/:sessionId/segments/:segment(*)", async (req: Request, res: Response) => {
+  const session = readPodcastHlsSession(userFrom(req).id, req.params.sessionId); const segment = req.params.segment;
+  if (!session || !session.segments.has(segment) || segment.includes("..")) return res.status(404).end();
+  try { res.setHeader("Content-Type", "video/mp2t"); res.setHeader("Cache-Control", "private, no-store"); res.send(await readFile(path.join(session.root, segment))); } catch { res.status(404).end(); }
 });
 
 podcastsRouter.post("/:id/regenerate", async (req: Request, res: Response) => {
