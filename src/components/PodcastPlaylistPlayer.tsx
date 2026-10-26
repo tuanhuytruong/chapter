@@ -43,7 +43,6 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
   const [stopAfterCurrentEpisode, setStopAfterCurrentEpisode] = useState(false);
   const [sessionPromptOpen, setSessionPromptOpen] = useState(false);
   const [timerChoicesOpen, setTimerChoicesOpen] = useState(false);
-  const [hlsUrl, setHlsUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!playRequest || playRequest.bookId !== bookId || pendingRequest.current) return;
@@ -83,17 +82,6 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
   const episodes = playlist?.episodes || [];
   const active = activeIndex === null ? null : episodes[activeIndex] || null;
   const resumeAt = active && playlist?.progress?.podcast_id === active.id && !playlist.progress.completed_at ? playlist.progress.current_time_seconds : 0;
-  useEffect(() => {
-    let cancelled = false;
-    setHlsUrl(null);
-    // Native HLS is an opt-in DEV PoC. Chromium keeps the existing MP3 route;
-    // it is not presented as a background-playback solution.
-    if (!active || !window.matchMedia("(max-width: 767px)").matches || !document.createElement("audio").canPlayType("application/vnd.apple.mpegurl")) return;
-    void api.createPodcastListeningSession(bookId, active.id).then((session) => {
-      if (!cancelled) setHlsUrl(session.playlistUrl);
-    }).catch(() => undefined);
-    return () => { cancelled = true; };
-  }, [active?.id, bookId]);
   const persist = useCallback((episode: PodcastEpisode, seconds: number, completed: boolean) =>
     api.savePodcastPlaylistProgress(bookId, episode.id, Math.max(0, seconds), completed).catch(() => undefined), [bookId]);
   const save = useCallback((completed: boolean, seconds?: number) => {
@@ -232,7 +220,7 @@ export default function PodcastPlaylistPlayer({ bookId, canGenerate = true, comp
       <div><p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-natural-sage"><ListMusic className="h-3.5 w-3.5" /> Listen through this book</p><p className="mt-1 text-[11px] text-natural-stone">{episodes.length ? `${episodes.length} ready episode${episodes.length === 1 ? "" : "s"} · Round ${playlist?.reading_round}` : `Round ${playlist?.reading_round} · no episodes yet`}</p></div>
       {episodes.length > 0 && <div className="flex gap-1"><button type="button" onClick={() => playBook(false)} className="min-h-10 rounded-full bg-natural-sage px-3 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45"><Play className="mr-1 inline h-3.5 w-3.5" />{playlist?.progress && !playlist.progress.completed_at ? "Continue" : "Play book"}</button><button type="button" onClick={() => playBook(true)} className="min-h-10 rounded-full px-3 text-xs font-bold text-natural-stone hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45" aria-label="Play book from beginning"><RotateCcw className="h-3.5 w-3.5" /></button></div>}
     </div>
-    {active && <div className="mt-3 rounded-xl bg-white/75 p-3"><p className="text-xs font-bold text-natural-dark">Now playing · {episodeName(active)}</p><audio key={hlsUrl ? `hls-${bookId}` : active.id} ref={audioRef} className="mt-2 w-full" controls preload="metadata" src={hlsUrl || `/api/podcasts/${active.id}/audio`} onLoadedMetadata={(event) => handleAudioReady(event.currentTarget)} onCanPlay={(event) => handleAudioReady(event.currentTarget)} onPlay={() => {
+    {active && <div className="mt-3 rounded-xl bg-white/75 p-3"><p className="text-xs font-bold text-natural-dark">Now playing · {episodeName(active)}</p><audio key={active.id} ref={audioRef} className="mt-2 w-full" controls preload="metadata" src={`/api/podcasts/${active.id}/audio`} onLoadedMetadata={(event) => handleAudioReady(event.currentTarget)} onCanPlay={(event) => handleAudioReady(event.currentTarget)} onPlay={() => {
         setPlaying(true);
         lastListeningTime.current = audioRef.current?.currentTime ?? null;
         if (active && playedEpisodeRef.current !== active.id) {
