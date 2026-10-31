@@ -43,9 +43,11 @@ export async function updateGeneration(jobId: string, input: { status?: Generati
     WHERE job_id=$1 AND status NOT IN ('ready','failed','interrupted')`, [jobId, input.status || null, input.stage, percent, input.errorMessage || null, input.terminal === true]);
 }
 
-export async function getActiveGeneration(ownerId: string, bookId: string, readingRound?: number, jobId?: string): Promise<GenerationProgress | null> {
+export async function getActiveGeneration(ownerId: string, bookId: string, readingRound?: number, jobId?: string, resourceId?: string | null): Promise<GenerationProgress | null> {
+  const hasResourceFilter = resourceId !== undefined;
   const found = await query<any>(`SELECT * FROM generation_progress WHERE owner_id=$1 AND book_id=$2
     AND ($3::int IS NULL OR reading_round=$3) AND ($4::uuid IS NULL OR job_id=$4)
-    ORDER BY CASE WHEN status IN ('queued','running','retrying') THEN 0 ELSE 1 END, updated_at DESC LIMIT 1`, [ownerId, bookId, readingRound ?? null, jobId ?? null]);
+    AND (NOT $5::boolean OR resource_id=$6::uuid OR ($6::uuid IS NULL AND resource_id IS NULL))
+    ORDER BY CASE WHEN status IN ('queued','running','retrying') THEN 0 ELSE 1 END, updated_at DESC LIMIT 1`, [ownerId, bookId, readingRound ?? null, jobId ?? null, hasResourceFilter, resourceId ?? null]);
   return found.rows[0] ? publicRow(found.rows[0]) : null;
 }

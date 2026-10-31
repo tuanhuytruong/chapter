@@ -158,9 +158,13 @@ try {
   assert(ttsSource.includes("PodcastTtsError") && ttsSource.includes("[408, 429, 500, 502, 503, 504]"), "TTS classifies retryable provider/edge failures safely");
   assert(generatorSource.includes("finishSynthesizedPodcast(current, audio.filePath") && generatorSource.includes("retainPendingArchive"), "archive outages preserve local playback after synthesis");
   const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
+  assert(playerSource.includes("preload=\"auto\"") && !playerSource.includes("preload=\"metadata\""), "opening a playlist proactively buffers the selected Now Playing MP3 without autoplaying it");
+  assert(!/createPodcastListeningSession|hlsUrl|application\/vnd\.apple\.mpegurl/.test(playerSource), "player has no HLS source-switch path");
+  assert(playerSource.includes('key={active.id}') && playerSource.includes('src={`/api/podcasts/${active.id}/audio`}'), "each active episode retains one MP3 audio identity");
   assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
   assert(playerSource.includes("DEFAULT_LISTENING_MINUTES: ListeningMinutes = 30") && playerSource.includes("[15, 30, 45, 60, 90]") && !playerSource.includes("No timer"), "podcast listening sessions have only finite approved timer choices");
-  assert(playerSource.includes("stopAfterCurrentRef.current = true") && playerSource.includes("if (stopAfterCurrentRef.current) { playbackIntent.current = null; setSessionPromptOpen(true); return; }") && playerSource.includes("!stopAfterCurrentEpisode && canGenerate"), "expired sessions finish the current episode then stop autoplay and auto-generation even at the boundary");
+  const playbackPolicySource = readFileSync(new URL("../src/podcastPlaybackPolicy.ts", import.meta.url), "utf8");
+  assert(playerSource.includes("stopAfterCurrentRef.current = true") && playerSource.includes("if (stopAfterCurrentRef.current) { playbackIntent.current = null; setSessionPromptOpen(true); return; }") && playerSource.includes("shouldPrepareNextChapter") && playbackPolicySource.includes("!stopAfterCurrent"), "expired sessions finish the current episode then stop autoplay and auto-generation even at the boundary");
   assert(playerSource.includes('String(episode.chapter_number ?? "?").padStart') && !playerSource.includes('`Chapter ${index + 1}`'), "player never renumbers filtered ready episodes");
   console.log("PODCAST_ROUTE_FIXTURES_OK");
 } finally { server.close(); await rm(cache, { recursive: true, force: true }); await pool.end(); }
