@@ -158,6 +158,7 @@ try {
   assert(ttsSource.includes("PodcastTtsError") && ttsSource.includes("[408, 429, 500, 502, 503, 504]"), "TTS classifies retryable provider/edge failures safely");
   assert(generatorSource.includes("finishSynthesizedPodcast(current, audio.filePath") && generatorSource.includes("retainPendingArchive"), "archive outages preserve local playback after synthesis");
   const playerSource = readFileSync(new URL("../src/components/PodcastPlaylistPlayer.tsx", import.meta.url), "utf8");
+  assert(playerSource.includes("preload=\"auto\"") && !playerSource.includes("preload=\"metadata\""), "opening a playlist proactively buffers the selected Now Playing MP3 without autoplaying it");
   assert(!/createPodcastListeningSession|hlsUrl|application\/vnd\.apple\.mpegurl/.test(playerSource), "player has no HLS source-switch path");
   assert(playerSource.includes('key={active.id}') && playerSource.includes('src={`/api/podcasts/${active.id}/audio`}'), "each active episode retains one MP3 audio identity");
   assert(playerSource.includes('created.status === "unavailable"') && playerSource.includes("next eligible chapter"), "player refreshes quietly when a brief chapter is skipped");
