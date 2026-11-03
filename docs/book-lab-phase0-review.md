@@ -1,28 +1,35 @@
-# Book Lab Phase 0 — gate NOT passed
+# Book Lab Phase 0 — structured gate repaired; semantic gate NOT passed
 
-Approved scope: DEV phases 0–3. Production deployment and shared database migration remain separate human gates.
+DEV only. No routes mounted, schema changed, migration applied, UI enabled, process reloaded or PRD deployed.
 
-## Actual provider evidence (2026-11-04)
+## Actual additional experiments (2026-11-04)
 
-- Existing NineRouter model from DEV configuration (`n8n`), strict `callLLM`; missing provider is an error, not fallback success.
-- Original prompt: 12/12 cases failed structured/eligibility checks, 18 actual dispatches. Revised task placement: 9/12 structured checks passed, 47 actual dispatches. These are public, authored fixtures, not private reading data or human participants.
-- Revised evaluation artifacts: `artifacts/book-lab/provider-evaluation.json`; original: `provider-evaluation-v1.json`; public raw responses: `public-fixture-raw.jsonl`.
-- Repeated clear-source cases explore different provider outputs but are NOT twelve independent source books. Six normal, two unexpected actions, two instruction attacks, weak source, fiction. Three decisions plus debrief and one replay reaction were attempted for accepted scenarios.
-- Calls are attempted dispatches, not logical commits. No persistence/usage charging exists yet. Token usage is not exposed by existing callLLM and was NOT measured. No once-only provider billing claim.
+Existing NineRouter `n8n`, strict callLLM JSON-object response mode. No new provider/auth. Run with `DOTENV_CONFIG_PATH=.env.local npx tsx scripts/verify-book-lab-provider.ts` from DEV. A first misconfigured invocation without that env file dispatched nothing and was discarded, not counted as evidence.
 
-## Confirmed quality failures
+- v3: 6/12 structured/eligibility checks; nested debrief evidence objects repeatedly failed bounded validation. Archived `provider-evaluation-v3.json`.
+- v4: 12/12 structured checks, 62 actual dispatches. Simplified observations to strings; server attaches exact user answers. Semantic review found swapped participant roles (case 2) and counterpart actions attributed to user (case 6); NOT approved. Archived `provider-evaluation-v4.json` (version label remained v3).
+- v5: 12/12 structured checks, 62 actual dispatches. Debrief receives user decisions only, not counterpart responses; reaction prompt explicitly preserves roles. Review found debrief denying constraints that the user explicitly restated (cases 1/5), and repetitive reactions. Archived `provider-evaluation-v5.json`.
+- v6/current: 12/12 structured checks. Added explicit distinction between restating facts and concrete proposals. Manual review still FAILS: case 2 opening lacks workload facts, goal leaks 'without silently overcommitting', reactions speak as Alex instead of Jordan. Case 8 debrief invents overtime risk. Case 9 alternative invents high-resolution PDF and bleed settings. Case 10 replay invents coffee-bean policy unrelated to frozen opening and reverses roles. Schema-valid is NOT quality-approved.
 
-1. Revised cases 1 and 2 returned malformed JSON (extra comma); case 5 returned array constraints instead of required string. Bounded schema repair remains unimplemented.
-2. Manual review of revised case 10: all three user answers were instruction attacks, yet debrief praises the counterpart's collaborative behavior and suggests the exchange models the source principle. It fails to identify the user's actual observable decisions. A schema-valid debrief is not a quality pass.
-3. Replay reaction introduces a regulatory update for another client that was not in the immutable original scenario. This is unsupported world-state drift, not meaningful counterfactual replay evidence.
-4. Normal case 3 alternative says unilateral insistence 'avoids collaborative friction', an unsupported tradeoff. Scenario constraints sometimes prescribe the intended lesson instead of establishing neutral world constraints.
+These are authored public fixtures, not private reading data or human participants. Revised suite uses three actionable source excerpts (communication, capacity boundaries, delegation), plus weak and fiction sources; six normal paths, two unexpected choices, two attacks. Normal answers now reference generated scenario facts rather than a fixed unrelated Friday deadline. Counted actual fetch dispatches separately from logical API calls; no billing/usage-once claim. Token usage unavailable in existing callLLM, not measured.
 
-## Decision
+## Implemented safeguards
 
-Do NOT enable Book Lab, perform migration, expose routes, build full UI, or invite a pilot on this evidence. The plan's explicit Phase 0 quality gate is not satisfied. The module is unmounted and cannot receive user traffic. No shared schema changes were made. Existing app auth/access/paused policies are untouched.
+- Exact object keys, scalar field types and lengths, verified source quotation; bounded one repair (two dispatches maximum), strict failures/no fallback.
+- Reaction receives visible scenario facts only, no hidden principle/quote; frozen-world instructions.
+- Debrief simplified structured observations; server attaches exact user input per decision. Counterpart output removed entirely from debrief input to prevent attribution contamination. This improves input provenance, NOT proof that interpretation is correct.
+- Isolated output-boundary tests prove malformed JSON repair, two-call cap, wrong types/extra keys/length/citation rejection, exact user evidence, and omission of counterpart response from debrief payload. Mock fetch is explicitly NOT quality evidence.
 
-Next experiment must freeze world-state facts, separate hidden lesson from visible constraints, require debrief evidence tied to exact user actions, add one bounded repair, evaluate diverse sources and automated factual consistency assertions, then manually review again. The current `passed` field means structured checks only, NOT product quality approval.
+## Verification
 
-## Remaining phases
+`npx tsx scripts/verify-book-lab.ts`: 9 assertions passed.
+`npx tsx scripts/verify-book-lab-output.ts`: passed.
+`npx tsc --noEmit`: passed.
+`npm run build`: passed.
+Code graph impact before edits warned bookLab was not indexed; zero was not interpreted as no impact. Incremental update indexes new functions and reports test-gap heuristics; runtime tests above supply actual evidence.
 
-Backend persistence, manual migration SQL, feature flag/quota, UI, isolated API/race/privacy tests and browser feature QA: NOT IMPLEMENTED. They must not be represented as complete. Pilot kit is preparatory only; actual participants 0, completed attempts 0. PRD unchanged.
+## Next bounded iteration
+
+No hard provider capability blocker established; do not call this a final stop. Four further real-provider evaluations were completed, not just a prompt plan. Next experiment should separate participant identity explicitly (user/counterpart named fields) and use a smaller structured reaction contract referencing immutable fact IDs; derive visible facts and neutral constraints server-side. Keep diverse-source evaluation and manual review, including role identity, unsupported alternatives and replay-world drift. Do not force a semantic pass from 12/12 schema checks.
+
+Phase 1 persistence/manual SQL, Phase 2 UI/browser QA remain NOT implemented because the quality prerequisite still fails. Human pilot remains 0 users / 0 completed attempts; pilot kit preparatory only. Shared DB DDL remains human-only. Existing unrelated untracked files preserved.

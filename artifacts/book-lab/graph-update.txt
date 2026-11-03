@@ -1,11 +1,13 @@
-Incremental: 0 files updated, 0 nodes, 0 edges (postprocess=full)
-Analyzed 57 changed file(s):
-  - 0 changed function(s)/class(es)
+Incremental: 1 files updated, 15 nodes, 63 edges (postprocess=full)
+Analyzed 5 changed file(s):
+  - 9 changed function(s)/class(es)
   - 0 affected flow(s)
-  - 0 test gap(s)
-  - Overall risk score: 0.00
+  - 9 test gap(s)
+  - Overall risk score: 0.60
+  - Untested: globalThis.fetch, keys, validateLabScenario, k, labJSON
 ┌─────────────────────── Token Savings ────────────────────────┐
-│ Full context would be:    123,835 tokens                     │
-│ Graph context used:            99 tokens                     │
-│ Saved:                    123,736 tokens (~100%)             │
+│ Full context would be:     15,353 tokens                     │
+│ Graph context used:         1,703 tokens                     │
+│ Saved:                     13,650 tokens (~89%)              │
+│ Breakdown: Functions 598 · Tests 393 · Risk 598 · Other 114  │
 └──────────────────────────────────────────────────────────────┘

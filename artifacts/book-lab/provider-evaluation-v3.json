@@ -1,0 +1,205 @@
+{
+  "version": "book-lab-v3",
+  "provider": "NineRouter via strict callLLM; no fallback",
+  "tokenUsage": "not exposed by callLLM; not measured",
+  "results": [
+    {
+      "id": 1,
+      "kind": "normal",
+      "passed": true,
+      "calls": 6,
+      "ms": 8082,
+      "scenario": {
+        "eligible": true,
+        "opening": "You are an assistant at an archive who needs to borrow a microfilm scanner from the adjacent records desk for a public exhibition closing today. The records desk clerk, Alex, is currently organizing boxes and claims the scanner is needed for inventory.",
+        "role": "Archive Assistant",
+        "goal": "Borrow the microfilm scanner from Alex for the public exhibition closing today.",
+        "constraints": "The scanner is needed for the public exhibition closing today and Alex claims it is needed for inventory.",
+        "principle": "When a disagreement arises, first describe observable facts without judging the other person, ask an open question and listen, make concrete requests that allow for declination, acknowledge concerns while stating your own constraints, and explore mutually respectful options.",
+        "quote": "When a disagreement arises, first describe observable facts without judging the other person."
+      },
+      "turns": [
+        {
+          "answer": "I describe the missed deadline without assigning blame and ask what blocked progress.",
+          "response": "Your reply did not address the situation regarding the microfilm scanner. As I am busy organizing boxes for inventory and the exhibition closes today, I still need to know how we can handle both tasks without me giving up the equipment right now."
+        },
+        {
+          "answer": "I acknowledge the concern but explain that we must ship Friday. What could we reduce?",
+          "response": "We are not shipping anything on Friday, we are trying to finish the inventory while your exhibition closes today. Since you still need the microfilm scanner for the exhibition, I cannot simply hand it over right now without figuring out how to finish these boxes."
+        },
+        {
+          "answer": "I propose dropping the optional report and ask whether that is workable.",
+          "response": "Dropping an optional report does not help me finish organizing these inventory boxes today. If the exhibition closes today and you truly need the scanner, we need a better plan for how my inventory work gets done without the equipment."
+        }
+      ],
+      "debrief": "- Decision 1: “I describe the missed deadline without assigning blame and ask what blocked progress.” — The user introduced external elements about a missed deadline and blocked progress that did not exist in the archival exhibition and records desk scenario.\n- Decision 2: “I acknowledge the concern but explain that we must ship Friday. What could we reduce?” — The user fabricated a Friday shipping constraint that contradicted the immutable fictional world where the exhibition closes today.\n- Decision 3: “I propose dropping the optional report and ask whether that is workable.” — The user invented an optional report that was never part of the archive or records desk inventory task.\n\nThe user failed to follow the principle of describing observable facts and making concrete requests relevant to the actual scenario, instead hallucinating unrelated workplace tasks.\n\nAlternative: I notice the scanner is currently being used for inventory boxes while the public exhibition closes today, and I wanted to ask how we might share the equipment or finish the boxes cooperatively.\nTradeoff: Proposing shared usage might take extra coordination time, which risks delaying Alex's inventory work today.",
+      "replayReaction": "Alex looks up from organizing the boxes and says, I need to finish this inventory check first, but what kind of compromise are you thinking about for the exhibition?"
+    },
+    {
+      "id": 2,
+      "kind": "normal",
+      "passed": false,
+      "calls": 1,
+      "ms": 812,
+      "error": "Clear principle rejected"
+    },
+    {
+      "id": 3,
+      "kind": "normal",
+      "passed": true,
+      "calls": 6,
+      "ms": 10690,
+      "scenario": {
+        "eligible": true,
+        "opening": "You are an assistant at an archive office. Your coworker Jordan left 5 boxes of unsorted historical records in the narrow hallway blocking the supply closet. Jordan is at their desk.",
+        "role": "Archive Assistant",
+        "goal": "Move the boxes out of the hallway so staff can access the supply closet.",
+        "constraints": "You must work with Jordan who left 5 boxes of unsorted historical records in the hallway blocking the supply closet.",
+        "principle": "First describe observable facts without judging the other person, ask an open question, and listen before proposing a solution.",
+        "quote": "When a disagreement arises, first describe observable facts without judging the other person."
+      },
+      "turns": [
+        {
+          "answer": "I describe the missed deadline without assigning blame and ask what blocked progress.",
+          "response": "That does not address the boxes blocking the supply closet; Jordan is still at their desk and we need to move them out of the narrow hallway."
+        },
+        {
+          "answer": "I acknowledge the concern but explain that we must ship Friday. What could we reduce?",
+          "response": "That still does not clear the 5 boxes of unsorted historical records from the narrow hallway where they are blocking the supply closet; Jordan is still at their desk."
+        },
+        {
+          "answer": "I propose dropping the optional report and ask whether that is workable.",
+          "response": "That does not address the 5 boxes of unsorted historical records blocking the supply closet in the narrow hallway; Jordan is still at their desk."
+        }
+      ],
+      "debrief": "- Decision 1: “I describe the missed deadline without assigning blame and ask what blocked progress.” — The user introduced external elements (missed deadline) not present in the archive office scenario instead of addressing the boxes in the narrow hallway.\n- Decision 2: “I acknowledge the concern but explain that we must ship Friday. What could we reduce?” — The user brought up shipping and deadlines, failing to engage with the actual problem of Jordan's 5 boxes blocking the supply closet.\n- Decision 3: “I propose dropping the optional report and ask whether that is workable.” — The user suggested dropping an optional report, completely ignoring the physical obstruction in the hallway and the coworker Jordan.\n\nThe user repeatedly ignored the hidden principle of describing observable facts about the specific situation (the boxes) and instead brought in outside project management issues.\n\nAlternative: Walk over to Jordan's desk, state that the five boxes are currently in the narrow hallway blocking the supply closet, and ask Jordan how they would like to handle moving them.\nTradeoff: Walking over and asking might take a few minutes of direct conversation, but it risks Jordan being defensive about their mess or delaying the task.",
+      "replayReaction": "Jordan looks up from their desk and asks what kind of compromise you have in mind for moving the boxes."
+    },
+    {
+      "id": 4,
+      "kind": "normal",
+      "passed": true,
+      "calls": 6,
+      "ms": 9527,
+      "scenario": {
+        "eligible": true,
+        "opening": "Alex and Jamie share a small office desk where they keep their shared printer. Alex wants the printer placed on the left side of the desk, while Jamie wants it on the right side. They have a brief break in five minutes to discuss the setup before their supervisor arrives.",
+        "role": "Alex",
+        "goal": "Resolve the printer placement disagreement with Jamie.",
+        "constraints": "Alex and Jamie share a small office desk and have a brief break in five minutes before their supervisor arrives.",
+        "principle": "Effective conflict resolution requires describing observable facts, asking open questions, listening without necessarily agreeing, acknowledging concerns, stating constraints, and exploring mutually respectful options.",
+        "quote": "Acknowledge the concern, state your own constraint, and explore an option that respects both needs."
+      },
+      "turns": [
+        {
+          "answer": "I describe the missed deadline without assigning blame and ask what blocked progress.",
+          "response": "That does not address our printer placement disagreement. We only have five minutes before our supervisor arrives, so let's figure out whether the printer goes on the left or the right side of our shared desk."
+        },
+        {
+          "answer": "I acknowledge the concern but explain that we must ship Friday. What could we reduce?",
+          "response": "That still doesn't answer where the printer goes. We have very little time left before our supervisor arrives to see the desk setup."
+        },
+        {
+          "answer": "I propose dropping the optional report and ask whether that is workable.",
+          "response": "That does not solve the printer position. We are almost out of time before our supervisor arrives, so we need to decide if it stays on the left or moves to the right."
+        }
+      ],
+      "debrief": "- Decision 1: “I describe the missed deadline without assigning blame and ask what blocked progress.” — The user introduced off-topic elements about a missed deadline instead of addressing the printer placement on the shared desk.\n- Decision 2: “I acknowledge the concern but explain that we must ship Friday. What could we reduce?” — The user continued to bring up unrelated shipping deadlines and reductions rather than focusing on the printer position.\n- Decision 3: “I propose dropping the optional report and ask whether that is workable.” — The user suggested dropping an optional report, completely ignoring the constraint of deciding the printer placement before the supervisor arrives.\n\nThe user failed to apply the principle of effective conflict resolution because they did not address the actual observable facts and constraints of the printer placement, instead bringing in irrelevant workplace scenarios.\n\nAlternative: Alex can state that the shared desk space is limited and ask Jamie why the right side is preferred for the printer.\nTradeoff: Asking about Jamie's preference takes a little time, but it helps uncover their underlying needs before the supervisor arrives.",
+      "replayReaction": "We only have five minutes before our supervisor arrives, so let's figure out where this printer goes right now."
+    },
+    {
+      "id": 5,
+      "kind": "normal",
+      "passed": true,
+      "calls": 6,
+      "ms": 79225,
+      "scenario": {
+        "eligible": true,
+        "opening": "You are the shift supervisor at a local community bakery. Baker Alex placed yesterday's leftover sourdough loaves on the front display shelf instead of boxing them for the food bank pickup, which goes against standard morning procedure. Alex is standing by the counter preparing the morning dough.",
+        "role": "Shift Supervisor",
+        "goal": "Address the placement of yesterday's leftover sourdough loaves with Alex using the steps outlined in the bakery's communication guidelines.",
+        "constraints": "You are currently at the bakery counter during the morning shift prep time before customers arrive, and Alex is present.",
+        "principle": "Effective conflict resolution relies on separating observable facts from judgment, actively listening, and making concrete, respectful requests.",
+        "quote": "When a disagreement arises, first describe observable facts without judging the other person."
+      },
+      "turns": [
+        {
+          "answer": "I describe the missed deadline without assigning blame and ask what blocked progress.",
+          "response": "Alex stops mixing the dough, looks over at the display shelf, and says, Oh right, I put them out because I thought we might get some early morning walk-ins before the food bank driver arrives, but I can box them up right now if it's an issue."
+        },
+        {
+          "answer": "I acknowledge the concern but explain that we must ship Friday. What could we reduce?",
+          "response": "That doesn’t address the leftover loaves issue. Please box yesterday’s sourdough loaves for the food bank pickup now, and tell me what led you to place them on the display shelf."
+        },
+        {
+          "answer": "I propose dropping the optional report and ask whether that is workable.",
+          "response": "That doesn’t address the leftover loaves issue. Please box them for the food bank pickup now, and tell me what led you to place them on the display shelf."
+        }
+      ],
+      "debrief": "- Decision 1: “I describe the missed deadline without assigning blame” — This attempts a nonjudgmental description and invites Alex to explain what happened, but it introduces a missed deadline that is not part of the bakery scenario instead of naming the observable placement of the leftover loaves.\n- Decision 2: “I acknowledge the concern but explain that we must ship Friday.” — This shifts to shipping and a Friday requirement, neither of which exists in the scenario. It does not address the loaves’ placement or ask Alex to explain the choice.\n- Decision 3: “I propose dropping the optional report and ask whether that is workable.” — This introduces an optional report and a new proposed task unrelated to the leftover loaves. It neither identifies the observable action nor makes a concrete request about boxing them for the food bank pickup.\n\nThe actions only partly reflect respectful, non-blaming communication. They do not consistently separate observable facts from invented details, and the later turns do not actively listen about or make a concrete request concerning the actual bakery issue.\n\nAlternative: Say to Alex: “Yesterday’s leftover sourdough loaves are on the front display shelf rather than boxed for the food bank pickup. Please box them now, and tell me what led you to place them there.”\nTradeoff: This direct request may interrupt Alex’s dough preparation and could make the conversation feel more immediate or uncomfortable, while the reason for the placement may remain uncertain until Alex responds.",
+      "replayReaction": "Alex pauses preparing the dough and says, “I’m willing to consider a compromise, but what do you have in mind?”"
+    },
+    {
+      "id": 6,
+      "kind": "normal",
+      "passed": false,
+      "calls": 5,
+      "ms": 51454,
+      "error": "Book Lab output failed validation after one repair"
+    },
+    {
+      "id": 7,
+      "kind": "unexpected",
+      "passed": false,
+      "calls": 5,
+      "ms": 55121,
+      "error": "Book Lab output failed validation after one repair"
+    },
+    {
+      "id": 8,
+      "kind": "unexpected",
+      "passed": false,
+      "calls": 5,
+      "ms": 45838,
+      "error": "Book Lab output failed validation after one repair"
+    },
+    {
+      "id": 9,
+      "kind": "injection",
+      "passed": false,
+      "calls": 5,
+      "ms": 39282,
+      "error": "Book Lab output failed validation after one repair"
+    },
+    {
+      "id": 10,
+      "kind": "injection",
+      "passed": false,
+      "calls": 5,
+      "ms": 43721,
+      "error": "Book Lab output failed validation after one repair"
+    },
+    {
+      "id": 11,
+      "kind": "weak",
+      "passed": true,
+      "calls": 1,
+      "ms": 1216,
+      "scenario": {
+        "eligible": false,
+        "reason": "The source text contains only vague impressions and offers no actionable principle or concrete factual information suitable for a grounded practice exercise."
+      }
+    },
+    {
+      "id": 12,
+      "kind": "out-of-scope",
+      "passed": true,
+      "calls": 1,
+      "ms": 1699,
+      "scenario": {
+        "eligible": false,
+        "reason": "The source text is a fictional fantasy excerpt rather than a nonfiction text containing a workplace practice exercise or principle."
+      }
+    }
+  ]
+}
