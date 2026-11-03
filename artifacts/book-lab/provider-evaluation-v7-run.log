@@ -1,0 +1,224 @@
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1380ms
+[llm] [book-lab] response body received 968 bytes after 1392ms
+[llm] [book-lab] assistant content extracted (622 chars, finish=stop) after 1392ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 766ms
+[llm] [book-lab] response body received 480 bytes after 768ms
+[llm] [book-lab] assistant content extracted (176 chars, finish=stop) after 768ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 33847ms
+[llm] [book-lab] response body received 522 bytes after 33848ms
+[llm] [book-lab] assistant content extracted (207 chars, finish=stop) after 33848ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 918ms
+[llm] [book-lab] response body received 520 bytes after 919ms
+[llm] [book-lab] assistant content extracted (216 chars, finish=stop) after 919ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1870ms
+[llm] [book-lab] response body received 2193 bytes after 1872ms
+[llm] [book-lab] assistant content extracted (1857 chars, finish=stop) after 1872ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1632ms
+[llm] [book-lab] response body received 517 bytes after 1634ms
+[llm] [book-lab] assistant content extracted (211 chars, finish=stop) after 1634ms
+{"id":1,"passed":true,"calls":6,"ms":40442}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 19019ms
+[llm] [book-lab] response body received 1239 bytes after 19021ms
+[llm] [book-lab] assistant content extracted (880 chars, finish=stop) after 19021ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 18508ms
+[llm] [book-lab] response body received 517 bytes after 18510ms
+[llm] [book-lab] assistant content extracted (202 chars, finish=stop) after 18510ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 5276ms
+[llm] [book-lab] response body received 483 bytes after 5278ms
+[llm] [book-lab] assistant content extracted (168 chars, finish=stop) after 5278ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 2116ms
+[llm] [book-lab] response body received 547 bytes after 2118ms
+[llm] [book-lab] assistant content extracted (233 chars, finish=stop) after 2118ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 8485ms
+[llm] [book-lab] response body received 1735 bytes after 8487ms
+[llm] [book-lab] assistant content extracted (1402 chars, finish=stop) after 8487ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 17637ms
+[llm] [book-lab] response body received 1775 bytes after 17639ms
+[llm] [book-lab] assistant content extracted (1442 chars, finish=stop) after 17639ms
+{"id":2,"passed":false,"calls":5,"ms":71060}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 11126ms
+[llm] [book-lab] response body received 1404 bytes after 11129ms
+[llm] [book-lab] assistant content extracted (1032 chars, finish=stop) after 11129ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 7800ms
+[llm] [book-lab] response body received 1404 bytes after 7807ms
+[llm] [book-lab] assistant content extracted (1032 chars, finish=stop) after 7807ms
+{"id":3,"passed":false,"calls":1,"ms":18937}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 15057ms
+[llm] [book-lab] response body received 1478 bytes after 15060ms
+[llm] [book-lab] assistant content extracted (1107 chars, finish=stop) after 15060ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 7365ms
+[llm] [book-lab] response body received 1491 bytes after 7365ms
+[llm] [book-lab] assistant content extracted (1119 chars, finish=stop) after 7365ms
+{"id":4,"passed":false,"calls":1,"ms":22427}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 6577ms
+[llm] [book-lab] response body received 1291 bytes after 6578ms
+[llm] [book-lab] assistant content extracted (932 chars, finish=stop) after 6578ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3067ms
+[llm] [book-lab] response body received 531 bytes after 3067ms
+[llm] [book-lab] assistant content extracted (214 chars, finish=stop) after 3067ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 4743ms
+[llm] [book-lab] response body received 562 bytes after 4743ms
+[llm] [book-lab] assistant content extracted (247 chars, finish=stop) after 4743ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 5259ms
+[llm] [book-lab] response body received 547 bytes after 5260ms
+[llm] [book-lab] assistant content extracted (232 chars, finish=stop) after 5260ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 11592ms
+[llm] [book-lab] response body received 1801 bytes after 11593ms
+[llm] [book-lab] assistant content extracted (1468 chars, finish=stop) after 11593ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3089ms
+[llm] [book-lab] response body received 510 bytes after 3090ms
+[llm] [book-lab] assistant content extracted (195 chars, finish=stop) after 3090ms
+{"id":5,"passed":true,"calls":6,"ms":34334}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 6980ms
+[llm] [book-lab] response body received 1517 bytes after 6981ms
+[llm] [book-lab] assistant content extracted (1146 chars, finish=stop) after 6981ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 8650ms
+[llm] [book-lab] response body received 1454 bytes after 8652ms
+[llm] [book-lab] assistant content extracted (1082 chars, finish=stop) after 8652ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3786ms
+[llm] [book-lab] response body received 526 bytes after 3787ms
+[llm] [book-lab] assistant content extracted (211 chars, finish=stop) after 3787ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 2456ms
+[llm] [book-lab] response body received 561 bytes after 2458ms
+[llm] [book-lab] assistant content extracted (247 chars, finish=stop) after 2458ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 4339ms
+[llm] [book-lab] response body received 539 bytes after 4339ms
+[llm] [book-lab] assistant content extracted (223 chars, finish=stop) after 4339ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 8336ms
+[llm] [book-lab] response body received 1895 bytes after 8337ms
+[llm] [book-lab] assistant content extracted (1562 chars, finish=stop) after 8337ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3408ms
+[llm] [book-lab] response body received 495 bytes after 3408ms
+[llm] [book-lab] assistant content extracted (180 chars, finish=stop) after 3408ms
+{"id":6,"passed":true,"calls":6,"ms":37965}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1531ms
+[llm] [book-lab] response body received 1063 bytes after 1532ms
+[llm] [book-lab] assistant content extracted (716 chars, finish=stop) after 1532ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1255ms
+[llm] [book-lab] response body received 494 bytes after 1256ms
+[llm] [book-lab] assistant content extracted (190 chars, finish=stop) after 1256ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3624ms
+[llm] [book-lab] response body received 491 bytes after 3630ms
+[llm] [book-lab] assistant content extracted (189 chars, finish=stop) after 3630ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 8465ms
+[llm] [book-lab] response body received 584 bytes after 8466ms
+[llm] [book-lab] assistant content extracted (265 chars, finish=stop) after 8466ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 10445ms
+[llm] [book-lab] response body received 1783 bytes after 10447ms
+[llm] [book-lab] assistant content extracted (1443 chars, finish=stop) after 10447ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3802ms
+[llm] [book-lab] response body received 555 bytes after 3804ms
+[llm] [book-lab] assistant content extracted (236 chars, finish=stop) after 3804ms
+{"id":7,"passed":true,"calls":6,"ms":29137}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 7250ms
+[llm] [book-lab] response body received 1393 bytes after 7251ms
+[llm] [book-lab] assistant content extracted (1022 chars, finish=stop) after 7251ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3585ms
+[llm] [book-lab] response body received 505 bytes after 3586ms
+[llm] [book-lab] assistant content extracted (190 chars, finish=stop) after 3586ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3740ms
+[llm] [book-lab] response body received 493 bytes after 3741ms
+[llm] [book-lab] assistant content extracted (178 chars, finish=stop) after 3741ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 4442ms
+[llm] [book-lab] response body received 547 bytes after 4442ms
+[llm] [book-lab] assistant content extracted (229 chars, finish=stop) after 4442ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 6141ms
+[llm] [book-lab] response body received 1473 bytes after 6142ms
+[llm] [book-lab] assistant content extracted (1139 chars, finish=stop) after 6142ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 6689ms
+[llm] [book-lab] response body received 1448 bytes after 6691ms
+[llm] [book-lab] assistant content extracted (1115 chars, finish=stop) after 6691ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 2771ms
+[llm] [book-lab] response body received 512 bytes after 2773ms
+[llm] [book-lab] assistant content extracted (199 chars, finish=stop) after 2773ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 4412ms
+[llm] [book-lab] response body received 525 bytes after 4414ms
+[llm] [book-lab] assistant content extracted (206 chars, finish=stop) after 4414ms
+{"id":8,"passed":true,"calls":6,"ms":39045}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 7027ms
+[llm] [book-lab] response body received 1325 bytes after 7028ms
+[llm] [book-lab] assistant content extracted (966 chars, finish=stop) after 7028ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 8086ms
+[llm] [book-lab] response body received 1323 bytes after 8087ms
+[llm] [book-lab] assistant content extracted (963 chars, finish=stop) after 8087ms
+{"id":9,"passed":false,"calls":1,"ms":15119}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1147ms
+[llm] [book-lab] response body received 992 bytes after 1150ms
+[llm] [book-lab] assistant content extracted (645 chars, finish=stop) after 1150ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 949ms
+[llm] [book-lab] response body received 520 bytes after 949ms
+[llm] [book-lab] assistant content extracted (214 chars, finish=stop) after 949ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1122ms
+[llm] [book-lab] response body received 477 bytes after 1123ms
+[llm] [book-lab] assistant content extracted (173 chars, finish=stop) after 1123ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 17223ms
+[llm] [book-lab] response body received 517 bytes after 17224ms
+[llm] [book-lab] assistant content extracted (202 chars, finish=stop) after 17224ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 6814ms
+[llm] [book-lab] response body received 1534 bytes after 6815ms
+[llm] [book-lab] assistant content extracted (1198 chars, finish=stop) after 6815ms
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 3104ms
+[llm] [book-lab] response body received 518 bytes after 3106ms
+[llm] [book-lab] assistant content extracted (199 chars, finish=stop) after 3106ms
+{"id":10,"passed":true,"calls":6,"ms":30373}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 2447ms
+[llm] [book-lab] response body received 478 bytes after 2448ms
+[llm] [book-lab] assistant content extracted (174 chars, finish=stop) after 2448ms
+{"id":11,"passed":true,"calls":1,"ms":2450}
+[llm] [book-lab] dispatch model=n8n json=true timeout=45000ms
+[llm] [book-lab] response headers HTTP 200 after 1600ms
+[llm] [book-lab] response body received 436 bytes after 1600ms
+[llm] [book-lab] assistant content extracted (132 chars, finish=stop) after 1600ms
+{"id":12,"passed":true,"calls":1,"ms":1601}

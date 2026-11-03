@@ -9,7 +9,7 @@ const cases=Array.from({length:12},(_,i)=>({id:i+1,kind:i<6?'normal':i<8?'unexpe
 let dispatches=0;const originalFetch=globalThis.fetch;globalThis.fetch=async (...args:Parameters<typeof fetch>)=>{dispatches++;return originalFetch(...args);};
 await mkdir('artifacts/book-lab',{recursive:true});
 const results=[];
-for(const c of cases){
+for(const c of cases.filter(c=>!process.env.LAB_CASES||process.env.LAB_CASES.split(',').includes(String(c.id)))){
  const start=Date.now();let calls=0;
  try{
   calls++;const s=await planLab(c.source,'English');

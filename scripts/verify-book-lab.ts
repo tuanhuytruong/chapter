@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import {validateLabScenario,normalizeLabQuote,reactLab,debriefLab} from '../src/bookLab.js';
 const source='Describe observable facts without judging the other person. Ask an open question and listen.';
-const s={eligible:true as const,opening:'A teammate misses a deadline.',role:'Project lead',goal:'Agree on delivery',constraints:'One day left',principle:'Listen first',quote:'Describe observable facts without judging the other person.'};
-assert.deepEqual(validateLabScenario(s,source),s);
-assert.throws(()=>validateLabScenario({...s,quote:'This invented quotation does not exist.'},source));
-assert.throws(()=>validateLabScenario({...s,quote:''},source));
-assert.throws(()=>validateLabScenario({...s,opening:'x'.repeat(3001)},source));
+ const input={eligible:true as const,userActor:'Alex, project lead',counterpartActor:'Sam, colleague',facts:[{id:'F1',owner:'USER',statement:'Alex has a layout ready.'},{id:'F2',owner:'COUNTERPART',statement:'Sam is waiting for instructions.'},{id:'F3',owner:'SHARED',statement:'The layout needs typography finalized.'}],goal:'Complete layout',principle:'Listen first',quote:'Describe observable facts without judging the other person.'};
+ const s=validateLabScenario(input,source);if(!s.eligible)throw Error('fixture');
+assert.deepEqual(validateLabScenario(input,source),s);
+assert.throws(()=>validateLabScenario({...input,quote:'This invented quotation does not exist.'},source));
+assert.throws(()=>validateLabScenario({...input,quote:''},source));
+assert.throws(()=>validateLabScenario({...input,goal:'x'.repeat(3001)},source));
 assert.deepEqual(validateLabScenario({eligible:false,reason:'Fiction'},source),{eligible:false,reason:'Fiction'});
 assert.equal(normalizeLabQuote('a\n  b'),'a b');
 await assert.rejects(()=>reactLab(s,Array.from({length:3},()=>({answer:'A',response:'B'})),'answer','en'));
