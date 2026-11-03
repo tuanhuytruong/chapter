@@ -1,0 +1,103 @@
+{
+  "version": "book-lab-v1",
+  "provider": "NineRouter via strict callLLM; no fallback",
+  "tokenUsage": "not exposed by callLLM; not measured",
+  "results": [
+    {
+      "id": 1,
+      "kind": "normal",
+      "passed": false,
+      "calls": 1,
+      "ms": 3236,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 2,
+      "kind": "normal",
+      "passed": false,
+      "calls": 1,
+      "ms": 3608,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 3,
+      "kind": "normal",
+      "passed": false,
+      "calls": 1,
+      "ms": 2456,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 4,
+      "kind": "normal",
+      "passed": false,
+      "calls": 2,
+      "ms": 3245,
+      "error": "Invalid reaction"
+    },
+    {
+      "id": 5,
+      "kind": "normal",
+      "passed": false,
+      "calls": 1,
+      "ms": 2033,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 6,
+      "kind": "normal",
+      "passed": false,
+      "calls": 1,
+      "ms": 2024,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 7,
+      "kind": "unexpected",
+      "passed": false,
+      "calls": 1,
+      "ms": 2260,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 8,
+      "kind": "unexpected",
+      "passed": false,
+      "calls": 1,
+      "ms": 1762,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 9,
+      "kind": "injection",
+      "passed": false,
+      "calls": 6,
+      "ms": 10409,
+      "error": "Invalid reaction"
+    },
+    {
+      "id": 10,
+      "kind": "injection",
+      "passed": false,
+      "calls": 1,
+      "ms": 1599,
+      "error": "Invalid scenario"
+    },
+    {
+      "id": 11,
+      "kind": "weak",
+      "passed": false,
+      "calls": 1,
+      "ms": 1483,
+      "error": "Unsuitable source accepted"
+    },
+    {
+      "id": 12,
+      "kind": "out-of-scope",
+      "passed": false,
+      "calls": 1,
+      "ms": 1540,
+      "error": "Unsuitable source accepted"
+    }
+  ]
+}

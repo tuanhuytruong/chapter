@@ -1,0 +1,11 @@
+Incremental: 0 files updated, 0 nodes, 0 edges (postprocess=full)
+Analyzed 57 changed file(s):
+  - 0 changed function(s)/class(es)
+  - 0 affected flow(s)
+  - 0 test gap(s)
+  - Overall risk score: 0.00
+┌─────────────────────── Token Savings ────────────────────────┐
+│ Full context would be:    123,835 tokens                     │
+│ Graph context used:            99 tokens                     │
+│ Saved:                    123,736 tokens (~100%)             │
+└──────────────────────────────────────────────────────────────┘

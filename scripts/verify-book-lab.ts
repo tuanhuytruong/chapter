@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {validateLabScenario,normalizeLabQuote,reactLab,debriefLab} from '../src/bookLab.js';
+const source='Describe observable facts without judging the other person. Ask an open question and listen.';
+const s={eligible:true as const,opening:'A teammate misses a deadline.',role:'Project lead',goal:'Agree on delivery',constraints:'One day left',principle:'Listen first',quote:'Describe observable facts without judging the other person.'};
+assert.deepEqual(validateLabScenario(s,source),s);
+assert.throws(()=>validateLabScenario({...s,quote:'This invented quotation does not exist.'},source));
+assert.throws(()=>validateLabScenario({...s,quote:''},source));
+assert.throws(()=>validateLabScenario({...s,opening:'x'.repeat(3001)},source));
+assert.deepEqual(validateLabScenario({eligible:false,reason:'Fiction'},source),{eligible:false,reason:'Fiction'});
+assert.equal(normalizeLabQuote('a\n  b'),'a b');
+await assert.rejects(()=>reactLab(s,Array.from({length:3},()=>({answer:'A',response:'B'})),'answer','en'));
+await assert.rejects(()=>reactLab(s,[],'x'.repeat(2001),'en'));
+await assert.rejects(()=>debriefLab(s,[],'en'));
+console.log('Book Lab validation: 9 assertions passed; no provider mocks counted.');
