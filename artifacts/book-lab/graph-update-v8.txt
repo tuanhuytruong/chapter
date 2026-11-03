@@ -1,0 +1,15 @@
+INFO: Resolved 1 evidence-backed bare CALLS targets
+INFO: FTS index delta: 24 entries removed, 29 indexed
+Incremental: 2 files updated, 32 nodes, 181 edges (postprocess=full)
+Analyzed 13 changed file(s):
+  - 18 changed function(s)/class(es)
+  - 0 affected flow(s)
+  - 18 test gap(s)
+  - Overall risk score: 0.60
+  - Untested: c, LabScenario, validateLabScenario, k, labGenerationCount
+┌─────────────────────── Token Savings ────────────────────────┐
+│ Full context would be:     50,125 tokens                     │
+│ Graph context used:         2,780 tokens                     │
+│ Saved:                     47,345 tokens (~94%)              │
+│ Breakdown: Functions 1.2k · Tests 787 · Risk 679 · Other 116 │
+└──────────────────────────────────────────────────────────────┘

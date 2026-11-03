@@ -1,0 +1,91 @@
+
+> react-example@0.0.0 build
+> vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.mjs && cp src/pdfExtractorWorker.mjs dist/pdfExtractorWorker.mjs
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1776 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      0.78 kB │ gzip:  0.47 kB
+dist/.vite/manifest.json                            23.11 kB │ gzip:  2.91 kB
+dist/assets/index-QofHPsWQ.css                      91.38 kB │ gzip: 15.22 kB
+dist/assets/index-BTwqze04.js                        0.07 kB │ gzip:  0.08 kB
+dist/assets/minus-CZa7O5sM.js                        0.29 kB │ gzip:  0.24 kB
+dist/assets/check-CBGR-4Tl.js                        0.29 kB │ gzip:  0.24 kB
+dist/assets/chevron-down-BWgGarqL.js                 0.30 kB │ gzip:  0.25 kB
+dist/assets/chevron-right-t0bh-JkJ.js                0.30 kB │ gzip:  0.25 kB
+dist/assets/loader-circle-DUDP16Mj.js                0.31 kB │ gzip:  0.26 kB
+dist/assets/arrow-right-Coyd5C13.js                  0.34 kB │ gzip:  0.26 kB
+dist/assets/arrow-left-DPDYR_0C.js                   0.34 kB │ gzip:  0.27 kB
+dist/assets/search-BdecePuq.js                       0.34 kB │ gzip:  0.27 kB
+dist/assets/circle-check-DRzGgV37.js                 0.35 kB │ gzip:  0.27 kB
+dist/assets/trending-up-3X7tut2q.js                  0.35 kB │ gzip:  0.27 kB
+dist/assets/user-round-0SYcXNuZ.js                   0.35 kB │ gzip:  0.28 kB
+dist/assets/play-eoow99u5.js                         0.36 kB │ gzip:  0.28 kB
+dist/assets/flame-BIFDZsGM.js                        0.37 kB │ gzip:  0.29 kB
+dist/assets/rotate-ccw-D8hjHPKB.js                   0.37 kB │ gzip:  0.29 kB
+dist/assets/copy-C6-vMXjK.js                         0.40 kB │ gzip:  0.31 kB
+dist/assets/circle-gauge-D8jF-m2p.js                 0.41 kB │ gzip:  0.30 kB
+dist/assets/circle-question-mark-Bc5wMlDz.js         0.42 kB │ gzip:  0.31 kB
+dist/assets/settings-2-BmJ98SOX.js                   0.42 kB │ gzip:  0.30 kB
+dist/assets/book-marked-D11tW6F2.js                  0.42 kB │ gzip:  0.31 kB
+dist/assets/chart-column-Co-PGf50.js                 0.42 kB │ gzip:  0.30 kB
+dist/assets/award-Cas25XEA.js                        0.44 kB │ gzip:  0.33 kB
+dist/assets/book-open-BP5YQS0n.js                    0.45 kB │ gzip:  0.31 kB
+dist/assets/send-Bl-VQw4Q.js                         0.46 kB │ gzip:  0.33 kB
+dist/assets/refresh-cw-mCnqU5ns.js                   0.49 kB │ gzip:  0.33 kB
+dist/assets/save-CmEiJznW.js                         0.50 kB │ gzip:  0.33 kB
+dist/assets/trash-2-DhFrCG6-.js                      0.50 kB │ gzip:  0.32 kB
+dist/assets/PageHeader-BwMUrD6i.js                   0.52 kB │ gzip:  0.31 kB
+dist/assets/quote-CrUVp17F.js                        0.56 kB │ gzip:  0.31 kB
+dist/assets/calendar-days-4TFC5uXH.js                0.67 kB │ gzip:  0.37 kB
+dist/assets/sparkles-Cka77UGn.js                     0.67 kB │ gzip:  0.39 kB
+dist/assets/brain-CgAjmULC.js                        0.75 kB │ gzip:  0.42 kB
+dist/assets/zap-hBGJEhmP.js                          0.80 kB │ gzip:  0.39 kB
+dist/assets/Toast-D3CTsxhf.js                        1.10 kB │ gzip:  0.65 kB
+dist/assets/QuietStreakStrip-B5uw797e.js             1.26 kB │ gzip:  0.71 kB
+dist/assets/readingUnits-C-zsjxA9.js                 1.67 kB │ gzip:  0.63 kB
+dist/assets/ContextualUpgradeCard-BUNZr80b.js        1.89 kB │ gzip:  0.86 kB
+dist/assets/ForgotPassword-Cxu-OfLK.js               2.02 kB │ gzip:  0.93 kB
+dist/assets/ResetPassword-BNXJMNTi.js                2.35 kB │ gzip:  0.96 kB
+dist/assets/quietStreakPresentation-K7xCcgOb.js      2.85 kB │ gzip:  0.64 kB
+dist/assets/Review-CDONPNMV.js                       3.21 kB │ gzip:  1.40 kB
+dist/assets/Login-DsB8rZk5.js                        3.51 kB │ gzip:  1.26 kB
+dist/assets/ReferenceCardFieldsEditor-D6EVn8r1.js    3.53 kB │ gzip:  1.07 kB
+dist/assets/Signup-KbhLuseA.js                       3.64 kB │ gzip:  1.35 kB
+dist/assets/MindMap-BiSnD2RJ.js                      3.65 kB │ gzip:  1.52 kB
+dist/assets/ChapterDropdown-BKApxQ_P.js              3.92 kB │ gzip:  1.67 kB
+dist/assets/AnimalAvatar-Bw8nZ3_4.js                 3.96 kB │ gzip:  1.28 kB
+dist/assets/QuoteWall-Bzp2QHGg.js                    4.87 kB │ gzip:  2.06 kB
+dist/assets/reviewEvents-Bpo90A6g.js                 4.94 kB │ gzip:  1.77 kB
+dist/assets/Playbooks-Cd45kUwu.js                    4.97 kB │ gzip:  1.95 kB
+dist/assets/ReferenceCardDraftModal-Do3McAua.js      5.22 kB │ gzip:  1.87 kB
+dist/assets/Feedback-CHfBgD3z.js                     5.82 kB │ gzip:  2.32 kB
+dist/assets/Quotes-C82NXP5P.js                       5.94 kB │ gzip:  2.26 kB
+dist/assets/Momentum-CFxa2WFM.js                     6.21 kB │ gzip:  2.33 kB
+dist/assets/Achievements-YZbgFE5C.js                 7.07 kB │ gzip:  2.50 kB
+dist/assets/Streaks-uBMW0zEH.js                      7.35 kB │ gzip:  2.39 kB
+dist/assets/Profile-Di9Cq6WI.js                      8.12 kB │ gzip:  2.83 kB
+dist/assets/Calendar-BT3ROSds.js                     8.78 kB │ gzip:  3.09 kB
+dist/assets/JourneyView-DmX5CfH9.js                  9.46 kB │ gzip:  3.18 kB
+dist/assets/PlaybookDetail-BpJrI14X.js               9.75 kB │ gzip:  3.09 kB
+dist/assets/Account-18e-8lDy.js                     11.23 kB │ gzip:  3.81 kB
+dist/assets/Help-B5ss_e6l.js                        11.40 kB │ gzip:  4.17 kB
+dist/assets/Today-Bvc-0KRD.js                       14.08 kB │ gzip:  4.27 kB
+dist/assets/BookWiki-CWyPhi3v.js                    20.14 kB │ gzip:  6.24 kB
+dist/assets/Pricing-XrBWK9YP.js                     20.44 kB │ gzip:  5.80 kB
+dist/assets/StoryThreadView-IsGp_Py4.js             21.17 kB │ gzip:  5.65 kB
+dist/assets/AppShell-CyG59QpM.js                    22.55 kB │ gzip:  6.14 kB
+dist/assets/Insights-0mPuh8jF.js                    24.76 kB │ gzip:  6.19 kB
+dist/assets/PodcastPanel-2Ts2ecnx.js                28.83 kB │ gzip:  7.83 kB
+dist/assets/Library-BiMo8vw6.js                     33.00 kB │ gzip:  9.97 kB
+dist/assets/BookDetail-CqqgcXrS.js                  93.43 kB │ gzip: 27.53 kB
+dist/assets/index-1_M9dSkw.js                      262.59 kB │ gzip: 83.81 kB
+dist/assets/module-Bzf5wqDW.js                     269.45 kB │ gzip: 88.52 kB
+✓ built in 5.25s
+
+  dist/server.mjs      442.9kb
+  dist/server.mjs.map  826.1kb
+
+⚡ Done in 45ms
