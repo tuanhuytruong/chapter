@@ -1,3 +1,5 @@
+import useOverlayFocus from "../hooks/useOverlayFocus";
+import { usePreviewActive } from "./PreviewNavigation";
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, ImageIcon } from 'lucide-react';
@@ -12,6 +14,8 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   onAdded: () => void;
   onToast: (t: { type: 'ok' | 'err'; msg: string }) => void;
 }) {
+  const preview = usePreviewActive();
+  useOverlayFocus(preview, '[data-preview-portal="add-book"]', onClose);
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [readingIntention, setReadingIntention] = useState('');
@@ -114,7 +118,7 @@ export default function AddBookModal({ onClose, onAdded, onToast }: {
   };
 
   return createPortal(
-    <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
+    <div data-preview-portal="add-book" data-ui-preview={preview ? "nousa" : undefined} data-swipe-nav-ignore className="fixed inset-0 z-[100] flex justify-center overflow-y-auto bg-black/40 p-4 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="add-book-title" className="my-auto w-full max-w-4xl rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-xl sm:p-6" onClick={e => e.stopPropagation()}>
         <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto pr-1">
         <div className="flex items-center justify-between">

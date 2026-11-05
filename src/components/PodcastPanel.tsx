@@ -1,3 +1,7 @@
+import PreviewDetails from "./PreviewDetails";
+import PreviewSurfacePresence from "./PreviewSurfacePresence";
+import { usePreviewActive } from "./PreviewNavigation";
+import useOverlayFocus from "../hooks/useOverlayFocus";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Headphones, Loader2, Play, RefreshCw, RotateCcw, X } from "lucide-react";
@@ -32,6 +36,7 @@ const duration = (seconds: number | null) =>
   seconds ? `${Math.max(1, Math.round(seconds / 60))} min` : null;
 
 export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onClose }: PodcastPanelProps) {
+  const preview = usePreviewActive();
   const [book, setBook] = useState<PodcastCatalogBook | null>(null);
   const [loading, setLoading] = useState(true);
   const [workingKey, setWorkingKey] = useState<string | null>(null);
@@ -133,6 +138,8 @@ export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onC
     }
   };
 
+  const actionOpen = Boolean(voiceTarget || regenerateTarget || narratorModal);
+  useOverlayFocus(preview && actionOpen, '[data-preview-portal="podcast-action"]', () => { if (workingKey || changingNarrator) return; setVoiceTarget(null); setRegenerateTarget(null); closeNarratorModal(); });
   if (!isEpub) return null;
 
   const bookRhythm = rhythm?.books.find((item) => item.book_id === bookId) ?? null;
@@ -182,8 +189,8 @@ export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onC
       {loading && !book ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-natural-sage" /></div> : book?.chapters.map((chapter, index) => <div key={chapter.chapter_key}><ChapterRow chapter={chapter} number={index + 1} canEdit={canGenerate} working={workingKey === chapter.chapter_key || workingKey === chapter.episode?.id} onPlay={() => chapter.episode && isReady(chapter.episode) && setPlayRequest({ bookId, episodeId: chapter.episode.id })} onCreate={() => chapter.episode ? setRegenerateTarget(chapter.episode) : (book?.narrator_gender ? void create(chapter) : setVoiceTarget(chapter))} onRegenerate={() => chapter.episode && setRegenerateTarget(chapter.episode)} /></div>) || <p className="py-6 text-center text-sm text-natural-stone">Episodes are not available for this book yet.</p>}
     </div>
     </section>
-    {(voiceTarget || regenerateTarget || narratorModal) && createPortal(
-      <div data-swipe-nav-ignore className="fixed inset-0 z-[100] flex items-end justify-center bg-natural-dark/35 p-4 backdrop-blur-[1px] sm:items-center" role="presentation" onClick={() => { setVoiceTarget(null); setRegenerateTarget(null); closeNarratorModal(); }}>
+    <PreviewSurfacePresence active={preview} open={actionOpen} family="modal" portalSelector='[data-preview-portal="podcast-action"]'>{(voiceTarget || regenerateTarget || narratorModal) && createPortal(
+      <div data-preview-portal="podcast-action" data-ui-preview={preview ? "nousa" : undefined} data-swipe-nav-ignore className="fixed inset-0 z-[100] flex items-end justify-center bg-natural-dark/35 p-4 backdrop-blur-[1px] sm:items-center" role="presentation" onClick={() => { setVoiceTarget(null); setRegenerateTarget(null); closeNarratorModal(); }}>
         <div role="dialog" aria-modal="true" aria-labelledby="podcast-action-title" className="w-full max-w-md rounded-[24px] border border-natural-border bg-natural-cream p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
           {narratorModal ? <>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-natural-sage">Podcast narrator · Round {book?.reading_round ?? 1}</p>
@@ -217,7 +224,7 @@ export default function PodcastPanel({ bookId, canEdit, canGenerate, isEpub, onC
           </>}
         </div>
       </div>, document.body
-    )}
+    )}</PreviewSurfacePresence>
   </>;
 }
 
@@ -227,5 +234,5 @@ function ChapterRow({ chapter, number, canEdit, working, onPlay, onCreate, onReg
   const ready = isReady(episode);
   const label = chapter.chapter_title || `Chapter ${number}`;
 
-  return <article className="py-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><h3 className="text-sm font-bold text-natural-dark">{label}</h3><p className="mt-0.5 text-[11px] text-natural-stone">{chapter.start_page != null ? `Pages ${chapter.start_page}${chapter.end_page != null && chapter.end_page !== chapter.start_page ? `–${chapter.end_page}` : ""}` : `Sections ${chapter.start_unit}–${chapter.end_unit}`}{ready && duration(episode?.duration_s || null) ? ` · ${duration(episode?.duration_s || null)}` : ""}</p></div><div className="flex shrink-0 items-center gap-1">{ready && <button type="button" onClick={onPlay} aria-label={`Play ${label}`} title="Play this episode" className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-natural-sage text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45"><Play className="h-4 w-4" /></button>}{canEdit && !ready && <button type="button" onClick={onCreate} disabled={working || running} className="min-h-11 shrink-0 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{working || running ? "Preparing…" : episode?.status === "failed" ? "Try again" : "Create"}</button>}{canEdit && ready && <button type="button" onClick={onRegenerate} aria-label={`Regenerate ${label}`} title="Regenerate episode" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-natural-stone transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40"><RotateCcw className="h-3.5 w-3.5" /></button>}</div></div>{running && <GenerationProgress progress={episode?.generation_progress} />}{ready && <div className="mt-3"><details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-natural-stone">Read transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-natural-dark">{episode?.script_text}</p></details></div>}{!canEdit && !ready && <p className="mt-2 text-xs text-natural-stone">This episode is not available yet.</p>}</article>;
+  return <article className="py-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><h3 className="text-sm font-bold text-natural-dark">{label}</h3><p className="mt-0.5 text-[11px] text-natural-stone">{chapter.start_page != null ? `Pages ${chapter.start_page}${chapter.end_page != null && chapter.end_page !== chapter.start_page ? `–${chapter.end_page}` : ""}` : `Sections ${chapter.start_unit}–${chapter.end_unit}`}{ready && duration(episode?.duration_s || null) ? ` · ${duration(episode?.duration_s || null)}` : ""}</p></div><div className="flex shrink-0 items-center gap-1">{ready && <button type="button" onClick={onPlay} aria-label={`Play ${label}`} title="Play this episode" className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-natural-sage text-white transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45"><Play className="h-4 w-4" /></button>}{canEdit && !ready && <button type="button" onClick={onCreate} disabled={working || running} className="min-h-11 shrink-0 rounded-full border border-natural-border bg-white px-4 text-xs font-bold text-natural-dark transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/45 disabled:opacity-60">{working || running ? "Preparing…" : episode?.status === "failed" ? "Try again" : "Create"}</button>}{canEdit && ready && <button type="button" onClick={onRegenerate} aria-label={`Regenerate ${label}`} title="Regenerate episode" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-natural-stone transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-sage/40"><RotateCcw className="h-3.5 w-3.5" /></button>}</div></div>{running && <GenerationProgress progress={episode?.generation_progress} />}{ready && <div className="mt-3"><PreviewDetails className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-natural-stone">Read transcript</summary><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-natural-dark">{episode?.script_text}</p></PreviewDetails></div>}{!canEdit && !ready && <p className="mt-2 text-xs text-natural-stone">This episode is not available yet.</p>}</article>;
 }

@@ -22,6 +22,20 @@ function getPostHog(): Promise<typeof posthogType | null> {
         api_host: import.meta.env.VITE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com",
         defaults: "2026-05-30", autocapture: false, capture_pageview: false, capture_pageleave: false,
         person_profiles: "identified_only", disable_session_recording: true,
+        before_send: (event) => {
+          if (!event) return event;
+          // SDK-enriched current/referring URLs must not leak rollout flags.
+          const clean = (value: unknown): unknown => {
+            if (typeof value === 'string' && /uiPreview(?:=|%3D)/i.test(value)) {
+              try { const url = new URL(value); url.searchParams.delete('uiPreview'); return url.toString(); } catch { return undefined; }
+            }
+            if (Array.isArray(value)) return value.map(clean);
+            if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'uiPreview').map(([key, item]) => [key, clean(item)]));
+            return value;
+          };
+          event.properties = clean(event.properties) as typeof event.properties;
+          return event;
+        },
       });
       posthog.register(analyticsContext);
       return posthog;

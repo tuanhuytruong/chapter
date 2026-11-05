@@ -127,9 +127,9 @@ export default function ReadingCalendar() {
           )}
         </div>
       </header>
-      <section className="rounded-[28px] border border-natural-border bg-natural-cream p-3 shadow-sm sm:p-5">
+      <section data-preview-card className="rounded-[28px] border border-natural-border bg-natural-cream p-3 shadow-sm sm:p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <button
+          <button data-preview-action
             aria-label="Previous month"
             onClick={() => setMonth((value) => shiftMonth(value, -1))}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-natural-border hover:bg-white"
@@ -139,7 +139,7 @@ export default function ReadingCalendar() {
           <h2 className="text-base font-bold text-natural-dark sm:text-lg">
             {monthLabel(month)}
           </h2>
-          <button
+          <button data-preview-action
             aria-label="Next month"
             onClick={() => setMonth((value) => shiftMonth(value, 1))}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-natural-border hover:bg-white"
@@ -178,7 +178,7 @@ export default function ReadingCalendar() {
                 const entries = byDay.get(date) || [];
                 const active = entries.length > 0;
                 return (
-                  <button
+                  <button data-preview-action
                     key={date}
                     aria-label={calendarDayAriaLabel(date, entries)}
                     onClick={() => active && setSelected(date)}
@@ -222,7 +222,7 @@ export default function ReadingCalendar() {
         )}
       </section>
       {selected && (
-        <section className="rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-sm">
+        <section data-preview-card className="rounded-[28px] border border-natural-border bg-natural-cream p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-natural-sage">
@@ -232,7 +232,7 @@ export default function ReadingCalendar() {
                 {dayLabel(selected)}
               </h2>
             </div>
-            <button
+            <button data-preview-action
               onClick={() => setSelected(null)}
               aria-label="Close day details"
               className="flex h-11 w-11 items-center justify-center rounded-full border border-natural-border"
@@ -242,7 +242,7 @@ export default function ReadingCalendar() {
           </div>
           <div className="mt-5 space-y-3">
             {selectedLogs.map((log) => (
-              <article
+              <article data-preview-card
                 key={log.id}
                 className="rounded-2xl border border-natural-border bg-white/60 p-4"
               >

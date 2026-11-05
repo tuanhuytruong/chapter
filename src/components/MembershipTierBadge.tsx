@@ -1,5 +1,5 @@
 import { ArrowUpRight, Crown, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from './PreviewNavigation';
 import type { MembershipTier } from "../api";
 
 type Props = { tier: MembershipTier; mobile?: boolean; onNavigate?: () => void };

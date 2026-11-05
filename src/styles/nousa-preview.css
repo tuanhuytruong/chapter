@@ -1,47 +1,28 @@
-/* Independently scoped DEV Library experiment; no root token overrides. */
-[data-ui-preview="nousa"] {
-  --preview-bg: #f1efe9;
-  --preview-surface: #fcfbf8;
-  --preview-inset: #eae7df;
-  --preview-border: #dcd7cb;
-  --preview-shadow: 0 2px 4px #51493605, 0 12px 28px #51493608;
-  --preview-ease: cubic-bezier(.22,1,.36,1);
-  background: var(--preview-bg);
-}
-.dark [data-ui-preview="nousa"] {
-  --preview-bg: #201f1c;
-  --preview-surface: #2b2925;
-  --preview-inset: #34312c;
-  --preview-border: #48433b;
-  --preview-shadow: 0 2px 4px #0001, 0 12px 28px #0002;
-}
-[data-ui-preview="nousa"] [data-preview-header] { background: var(--preview-surface); border-color: var(--preview-border); box-shadow: 0 3px 18px #51493604; }
-[data-ui-preview="nousa"] .route-content { animation: none; }
-[data-ui-preview="nousa"] .nousa-comparison { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:24px; font-size:11px; letter-spacing:.06em; color:var(--color-natural-stone); }
+/* Chapter adaptation of pinned Nousa kit recipes; colors and typography frozen.
+ * xl: exit180ms/entry700ms; oo: entry800ms; yo: fine hover450/500ms.
+ * Button press160ms is Chapter feedback, not an asserted Nousa handler.
+ */
+[data-ui-preview="nousa"] { --preview-ease:cubic-bezier(.22,1,.36,1); }
+[data-ui-preview="nousa"] .route-content { animation:none; }
+.preview-route-boundary { position:relative; }
+.preview-route-exit { position:absolute; inset:0; pointer-events:none; }
+[data-ui-preview="nousa"] .nousa-comparison { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:24px; font-size:11px; letter-spacing:.06em; }
 [data-ui-preview="nousa"] .nousa-comparison a { text-decoration:underline; text-underline-offset:4px; padding:10px 0; }
-[data-ui-preview="nousa"] [data-preview-title] h1 { font-family: 'Playfair Display', serif; font-size:clamp(1.8rem, 3vw, 2.35rem); font-weight:600; letter-spacing:-.025em; line-height:1.25; }
-[data-ui-preview="nousa"] [data-preview-title] p { margin-top:6px; }
-[data-ui-preview="nousa"] [data-preview-shelves] { border-color:var(--preview-border); }
-[data-ui-preview="nousa"] [data-preview-shelves] button[aria-pressed="true"] { background:var(--preview-inset); border-radius:12px 12px 0 0; }
-[data-ui-preview="nousa"] [data-preview-toolbar] { flex-wrap:wrap; align-items:center; }
-[data-ui-preview="nousa"] [data-preview-toolbar] > div:first-child { background:var(--preview-surface); border-color:var(--preview-border); border-radius:12px; min-width:0; }
-[data-ui-preview="nousa"] [data-preview-library] :is(section[class*="border"], div[class*="border"][class*="rounded-"]) { border-color:var(--preview-border); background-color:var(--preview-surface); }
-[data-ui-preview="nousa"] [data-preview-book] { min-width:0; border-radius:18px; background:var(--preview-surface); border-color:var(--preview-border); box-shadow:var(--preview-shadow); padding:20px; transition: transform 200ms var(--preview-ease), box-shadow 200ms var(--preview-ease), border-color 160ms ease; }
+[data-ui-preview="nousa"] [data-preview-book] { min-width:0; border-radius:16px; transition:translate 500ms var(--preview-ease); }
 [data-ui-preview="nousa"] [data-preview-book] span { overflow-wrap:anywhere; }
-[data-ui-preview="nousa"] [data-preview-status] { border:1px solid currentColor; }
-.dark [data-ui-preview="nousa"] [data-preview-status="active"] { background:#293f33; color:#b1d7ba; }
-.dark [data-ui-preview="nousa"] [data-preview-status="paused"] { background:#463a26; color:#e6cd98; }
-.dark [data-ui-preview="nousa"] [data-preview-status="finished"] { background:#2a3947; color:#b6d1e6; }
-[data-ui-preview="nousa"] [data-preview-progress] { background:var(--preview-inset) !important; border-color:var(--preview-border); }
-[data-ui-preview="nousa"] :is(button, a) { transition-property:background-color,color,border-color,box-shadow,transform; transition-duration:160ms; transition-timing-function:var(--preview-ease); }
-[data-ui-preview="nousa"] [data-preview-title] button, [data-ui-preview="nousa"] [data-preview-toolbar] button { border-radius:12px; min-height:44px; }
-[data-ui-preview="nousa"] :is(button,a,input):focus-visible { outline:2px solid var(--color-natural-sage); outline-offset:3px; }
-[data-ui-preview="nousa"] button:active { transform:scale(.99); }
-@media (hover:hover) and (pointer: fine) {
-  [data-ui-preview="nousa"] [data-preview-book]:hover { transform:translateY(-2px); border-color:var(--color-natural-sage); box-shadow:0 4px 8px #51493608, 0 16px 30px #51493612; }
+[data-ui-preview="nousa"] [data-preview-action] { border-radius:11px; transition:scale 160ms var(--preview-ease); }
+[data-ui-preview="nousa"] [data-preview-action]:not(:disabled):not([aria-busy="true"]):active { scale:.99; }
+@media (hover:hover) and (pointer:fine) {
+  [data-ui-preview="nousa"] [data-preview-book]:hover { translate:0 -4px; transition-duration:450ms; }
 }
-@keyframes nousa-entry { from { opacity:.35; transform:translateY(5px); } to { opacity:1; transform:none; } }
-[data-ui-preview="nousa"] [data-preview-entry="true"] { animation:nousa-entry 260ms var(--preview-ease) both; }
-@media (prefers-reduced-motion: reduce) {
-  [data-ui-preview="nousa"] :is(button,a), [data-ui-preview="nousa"] [data-preview-entry="true"] { animation:none !important; animation-delay:0s !important; transition:none !important; transform:none !important; }
+@keyframes nousa-entry { from { opacity:0; transform:translateY(26px) scale(.985); } to { opacity:1; transform:none; } }
+[data-ui-preview="nousa"] [data-preview-entry="true"] { animation:nousa-entry 800ms var(--preview-ease) both; }
+@media (prefers-reduced-motion:reduce) {
+  [data-ui-preview="nousa"] [data-preview-entry="true"], [data-ui-preview="nousa"] [data-preview-book], [data-ui-preview="nousa"] [data-preview-action] { animation:none !important; transition:none !important; translate:none !important; scale:none !important; }
 }
+
+[data-ui-preview="nousa"].journey-drawer .journey-panel, [data-ui-preview="nousa"].journey-drawer .journey-entry { animation:none; transition:none; }
+[data-ui-preview="nousa"][data-preview-family="menu"] { transform-origin:top right; }
+
+[data-ui-preview="nousa"] .motion-tab-panel { animation:none; }
+[data-ui-preview="nousa"] [data-preview-card] { border-radius:16px; }

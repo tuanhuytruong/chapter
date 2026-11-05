@@ -1,6 +1,9 @@
+import PreviewSurfacePresence from "../components/PreviewSurfacePresence";
+import { usePreviewActive } from "../components/PreviewNavigation";
 import { isNousaPreview } from '../uiPreview';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
 import { Plus, BookOpen, Search, ChevronDown, ChevronUp, ListOrdered, Play, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api, computeStreak, progressPct } from '../api';
 import type { BookRow, LibrarySearchKind, LibrarySearchResult } from '../types';
@@ -31,6 +34,7 @@ const SORTS: { id: Sort; label: string }[] = [
 ];
 
 export default function Library() {
+  const surfacePreview = usePreviewActive();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const preview = isNousaPreview({hostname: window.location.hostname, pathname: window.location.pathname, search: `?${searchParams}`, localDevelopment: import.meta.env.DEV});
@@ -111,7 +115,7 @@ export default function Library() {
   }, [preview, loading, visible]);
   useEffect(() => {
     if (!entryIds.length) return;
-    const timer = window.setTimeout(() => setEntryIds([]), 450);
+    const timer = window.setTimeout(() => setEntryIds([]), 1300);
     return () => window.clearTimeout(timer);
   }, [entryIds]);
 
@@ -211,7 +215,7 @@ export default function Library() {
               : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{visible.map((book, index) => <BookCard key={book.id} book={book} previewEntry={entryIds.includes(book.id) ? entryIds.indexOf(book.id) : undefined} streak={streaks[book.id]} lazyCover={index >= 6} />)}</div>}
 
       {scope === 'mine' && <div className="border-t border-natural-border pt-8"><QuoteWall /></div>}
-      {showAdd && <AddBookModal onClose={() => setShowAdd(false)} onAdded={load} onToast={setToast} />}
+      <PreviewSurfacePresence active={surfacePreview} open={Boolean(showAdd)} family="modal" portalSelector='[data-preview-portal="add-book"]'>{showAdd && <AddBookModal onClose={() => setShowAdd(false)} onAdded={load} onToast={setToast} />}</PreviewSurfacePresence>
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
     </div>
   );

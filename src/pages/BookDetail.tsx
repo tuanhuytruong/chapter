@@ -1,6 +1,12 @@
+import useOverlayFocus from "../hooks/useOverlayFocus";
+import { originalUrl } from "../uiPreview";
+import PreviewPanelTransition from "../components/PreviewPanelTransition";
+import PreviewSurfacePresence from "../components/PreviewSurfacePresence";
+import { usePreviewActive } from "../components/PreviewNavigation";
 import React, { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useLocation } from 'react-router-dom';
+import { usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
 import {
   Flame,
   BookOpen,
@@ -155,10 +161,12 @@ function ReadingLensSynthesis({ text }: { text: string }) {
 }
 
 export default function BookDetail() {
+  const surfacePreview = usePreviewActive();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = typeof location.state?.returnTo === "string" && location.state.returnTo.startsWith("/?") ? location.state.returnTo : "/?scope=mine&filter=active&sort=recent";
+  const storedReturnTo = typeof location.state?.returnTo === "string" && location.state.returnTo.startsWith("/?") ? location.state.returnTo : "/?scope=mine&filter=active&sort=recent";
+  const returnTo = surfacePreview ? storedReturnTo : originalUrl("/", storedReturnTo.slice(1));
   // Returns carries only an internal saved-session anchor. Resolve the source
   // reading round before loading so Revisit lands at the exact evidence, not
   // merely the enclosing book.
@@ -203,6 +211,7 @@ export default function BookDetail() {
     msg: string;
   } | null>(null);
   const [finishModal, setFinishModal] = useState<BookRow | null>(null);
+  useOverlayFocus(surfacePreview && Boolean(finishModal), '[aria-labelledby="finish-modal-title"]', () => setFinishModal(null));
   const [search, setSearch] = useState("");
   const [logView, setLogView] = useState<
     "list" | "journey" | "ai-reader" | "story-thread" | "character-storylines" | "podcast"
@@ -1263,7 +1272,7 @@ export default function BookDetail() {
         </section>
       )}
 
-      {logView === "podcast" ? (
+      <PreviewPanelTransition active={surfacePreview} identity={logView}>{logView === "podcast" ? (
         <div key={logView} id="podcast-panel" role="tabpanel" aria-label="Podcast" className="motion-tab-panel mt-1">
         <React.Suspense fallback={<BookDetailPanelFallback label="Loading podcast" />}>
           <PodcastPanel
@@ -1571,7 +1580,7 @@ export default function BookDetail() {
             </div>
           )}
         </>
-      )}
+      )}</PreviewPanelTransition>
 
       {book.can_edit &&
         book.status === "active" &&
@@ -1594,11 +1603,11 @@ export default function BookDetail() {
           document.body,
         )}
 
-      {referenceCardLogId && <React.Suspense fallback={null}><ReferenceCardDraftModal bookId={book.id} logId={referenceCardLogId} onClose={() => setReferenceCardLogId(null)} onSaved={(cardId) => { setReferenceCardLogId(null); setToast({ type: "ok", msg: "Saved to Playbooks" }); navigate(`/playbooks/${cardId}`); }} /></React.Suspense>}
+      <PreviewSurfacePresence active={surfacePreview} open={Boolean(referenceCardLogId)} family="modal" portalSelector='[data-preview-portal="draft"]'>{referenceCardLogId && <React.Suspense fallback={null}><ReferenceCardDraftModal bookId={book.id} logId={referenceCardLogId} onClose={() => setReferenceCardLogId(null)} onSaved={(cardId) => { setReferenceCardLogId(null); setToast({ type: "ok", msg: "Saved to Playbooks" }); navigate(`/playbooks/${cardId}`); }} /></React.Suspense>}</PreviewSurfacePresence>
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       {/* Finish queue modal */}
-      {finishModal && (
+      <PreviewSurfacePresence active={surfacePreview} open={Boolean(finishModal)} family="modal">{finishModal && (
         <div
           role="dialog"
           aria-modal="true"
@@ -1640,7 +1649,7 @@ export default function BookDetail() {
             </div>
           </div>
         </div>
-      )}
+      )}</PreviewSurfacePresence>
     </div>
   );
 }

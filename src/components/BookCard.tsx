@@ -1,5 +1,6 @@
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { usePreviewNavigate as useNavigate } from './PreviewNavigation';
 import { Flame, BookOpen } from 'lucide-react';
 import type { BookRow } from '../types';
 import { progressPct, daysToFinish } from '../api';

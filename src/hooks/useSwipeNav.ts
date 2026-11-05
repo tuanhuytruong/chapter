@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import type { RefObject } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
 
 const ROUTES = ['/today', '/', '/review'];
 const MIN_SWIPE = 50;

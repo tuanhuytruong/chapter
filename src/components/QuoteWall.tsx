@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, usePreviewNavigate as useNavigate } from './PreviewNavigation';
 import { ArrowRight, BookOpen, Clipboard, Loader2, Quote, RefreshCw } from 'lucide-react';
 import { api, type QuoteCard } from '../api';
 import Toast from './Toast';

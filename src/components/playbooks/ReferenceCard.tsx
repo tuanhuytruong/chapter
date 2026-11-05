@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from '../PreviewNavigation';
 import { ChefHat, Sigma, ListChecks } from "lucide-react";
 import type { ReferenceCard } from "../../types";
 const icon={recipe:ChefHat,formula:Sigma,procedure:ListChecks}; const label={recipe:"Recipe",formula:"Formula",procedure:"Procedure"};

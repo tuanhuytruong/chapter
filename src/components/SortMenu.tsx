@@ -10,7 +10,11 @@ const options: { id: Sort; label: string }[] = [
   { id: "streak", label: "Streak ↓" },
 ];
 
+import PreviewSurfacePresence from "./PreviewSurfacePresence";
+import { usePreviewActive } from "./PreviewNavigation";
+
 export default function SortMenu({ value, onChange }: { value: Sort; onChange(value: Sort): void }) {
+  const preview = usePreviewActive();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const selected = options.find((option) => option.id === value) ?? options[0];
@@ -32,7 +36,7 @@ export default function SortMenu({ value, onChange }: { value: Sort; onChange(va
       <span className="min-w-0 flex-1 truncate">{selected.label}</span>
       <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`} />
     </button>
-    {open && <div role="menu" aria-label="Sort books" className="absolute right-0 z-30 mt-2 w-full min-w-44 overflow-hidden rounded-2xl border border-natural-border bg-natural-bg p-1.5 shadow-[0_12px_30px_rgba(61,48,40,0.14)] sm:w-48">
+    <PreviewSurfacePresence active={preview} open={open} family="menu">{open && <div role="menu" aria-label="Sort books" className="absolute right-0 z-30 mt-2 w-full min-w-44 overflow-hidden rounded-2xl border border-natural-border bg-natural-bg p-1.5 shadow-[0_12px_30px_rgba(61,48,40,0.14)] sm:w-48">
       {options.map((option) => {
         const active = option.id === value;
         return <button key={option.id} type="button" role="menuitemradio" aria-checked={active} onClick={() => { onChange(option.id); setOpen(false); }}
@@ -40,6 +44,6 @@ export default function SortMenu({ value, onChange }: { value: Sort; onChange(va
           {option.label}{active && <Check className="h-4 w-4 text-natural-sage" />}
         </button>;
       })}
-    </div>}
+    </div>}</PreviewSurfacePresence>
   </div>;
 }

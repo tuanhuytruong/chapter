@@ -8,6 +8,9 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     build: {
       manifest: true,
+      // Compress shared preview primitives and SDK code without changing feature flags.
+      minify: 'terser' as const,
+      terserOptions: { compress: { passes: 2 }, format: { comments: false } },
     },
     resolve: {
       alias: {

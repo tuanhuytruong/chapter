@@ -1,3 +1,4 @@
+import PreviewDisclosure from './PreviewDisclosure';
 import React, { useState } from 'react';
 import { BookOpen, Quote, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BookRow, LogRow } from '../types';
@@ -71,12 +72,12 @@ function DeepReadingJourney({ text, expanded }: { text: string; expanded: boolea
   const rest = sections.slice(1);
   return <div className="font-sans">
     <p className="text-sm text-natural-dark leading-relaxed"><InlineMarkdown text={core.body} /></p>
-    {expanded && <div className="mt-3 space-y-3 border-t border-natural-border/40 pt-3">
+    <PreviewDisclosure open={Boolean(expanded)}>{expanded && <div className="mt-3 space-y-3 border-t border-natural-border/40 pt-3">
       {rest.map((section) => <section key={section.title}>
         <h4 className="mb-1 text-[10px] font-bold uppercase tracking-wider text-natural-sage">{section.title}</h4>
         <div className="whitespace-pre-wrap text-xs leading-relaxed text-natural-dark"><InlineMarkdown text={section.body} /></div>
       </section>)}
-    </div>}
+    </div>}</PreviewDisclosure>
   </div>;
 }
 
@@ -212,7 +213,7 @@ export default function JourneyView({
                         </button>
 
                         {/* Expanded detail — full insights + quote */}
-                        {isOpen && !isDeepReading && (
+                        <PreviewDisclosure open={Boolean(isOpen && !isDeepReading)}>{isOpen && !isDeepReading && (
                           <div className="px-4 pb-4 space-y-3 border-t border-natural-border/40 pt-3 bg-natural-cream/40">
                             {log.key_insights && log.key_insights.length > 0 && (
                               <div className="space-y-2">
@@ -235,7 +236,7 @@ export default function JourneyView({
                               </div>
                             )}
                           </div>
-                        )}
+                        )}</PreviewDisclosure>
                       </div>
                     );
                   })}
@@ -271,7 +272,7 @@ export default function JourneyView({
                       </button>
 
                       {/* Insights list — fully readable, no truncation */}
-                      {insightsExpanded && (
+                      <PreviewDisclosure open={Boolean(insightsExpanded)}>{insightsExpanded && (
                         <div className="px-4 pb-4 space-y-2.5">
                           {allInsights.map((ins, i) => (
                             <div key={i} className="flex gap-2.5">
@@ -284,7 +285,7 @@ export default function JourneyView({
                             </div>
                           ))}
                         </div>
-                      )}
+                      )}</PreviewDisclosure>
                     </div>
                   )}
                 </div>

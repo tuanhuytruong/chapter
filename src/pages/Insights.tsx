@@ -7,7 +7,7 @@ import AskMyReadingCard from '../components/AskMyReadingCard';
 import CrossBookConnectionsCard from '../components/CrossBookConnectionsCard';
 import PodcastRecapCard from '../components/PodcastRecapCard';
 import type { AskReadingResponse } from '../api';
-import { useNavigate } from 'react-router-dom';
+import { usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
 import type { BookRow } from '../types';
 
 const APP_TZ = 'Asia/Bangkok';
@@ -195,7 +195,7 @@ export default function Insights() {
           <p className="text-xs text-natural-stone max-w-xs">
             Add your first book and start reading — your stats, streaks, and key themes will appear here.
           </p>
-          <button onClick={() => navigate('/')}
+          <button data-preview-action onClick={() => navigate('/')}
             className="flex items-center gap-1.5 px-4 py-2 bg-natural-sage text-white rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer">
             <BookOpen className="w-3.5 h-3.5" /> Go to Library
           </button>

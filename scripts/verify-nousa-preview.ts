@@ -7,7 +7,7 @@ for (const hostname of ['chapter.srv.io.vn','chapter-dev.srv.io.vn.evil','localh
 assert.equal(isNousaPreview({...base,hostname:'localhost',localDevelopment:true}),true);
 assert.equal(isNousaPreview({...base,hostname:'chapter.srv.io.vn',localDevelopment:true}),false);
 for (const search of ['', '?uiPreview=other']) assert.equal(isNousaPreview({...base,search}),false);
-assert.equal(isNousaPreview({...base,pathname:'/books/1'}),false);
+assert.equal(isNousaPreview({...base,pathname:'/books/1'}),true);
 const search='?uiPreview=nousa&scope=all&filter=finished&sort=title&q=vi%E1%BB%87t';
 const original=new URL(originalLibraryUrl(search),'https://example.test');
 assert.equal(original.searchParams.has('uiPreview'),false);
@@ -16,7 +16,7 @@ const library=readFileSync('src/pages/Library.tsx','utf8');
 assert.match(library,/new URLSearchParams\(searchParams\)/);
 assert.match(library,/entryStarted.current/);
 const css=readFileSync('src/styles/nousa-preview.css','utf8');
-assert.match(css,/prefers-reduced-motion: reduce/);
-assert.match(css,/pointer: fine/);
+assert.match(css,/prefers-reduced-motion:\s*reduce/);
+assert.match(css,/pointer:\s*fine/);
 assert.doesNotMatch(css,/transition:\s*all/);
 console.log('Nousa selection, SSR-safe inputs, URL preservation and motion contracts passed');
