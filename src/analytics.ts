@@ -22,6 +22,9 @@ function getPostHog(): Promise<typeof posthogType | null> {
         api_host: import.meta.env.VITE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com",
         defaults: "2026-05-30", autocapture: false, capture_pageview: false, capture_pageleave: false,
         person_profiles: "identified_only", disable_session_recording: true,
+        // Chapter analytics is metadata-only. Initial attribution bypasses before_send
+        // via feature-flag person_properties and would persist private query flags.
+        save_referrer: false, save_campaign_params: false,
         before_send: (event) => {
           if (!event) return event;
           // SDK-enriched current/referring URLs must not leak rollout flags.

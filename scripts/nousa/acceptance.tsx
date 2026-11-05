@@ -7,6 +7,8 @@ import PreviewPanelTransition from '../../src/components/PreviewPanelTransition'
 import usePreviewScroll from '../../src/hooks/usePreviewScroll';
 import {captureAnalyticsEvent} from '../../src/analytics';
 import '../../src/index.css';import '../../src/styles/nousa-preview.css';
+import posthog from 'posthog-js';
+(window as any).fixturePosthog=posthog;
 const paths=['/','/today','/review','/books/fixture','/playbooks','/playbooks/fixture','/insights','/calendar','/momentum','/streaks','/achievements','/quotes','/profile','/account','/pricing','/help','/feedback'];
 const Lazy=lazy(()=>new Promise<{default:React.ComponentType}>(resolve=>setTimeout(()=>resolve({default:()=> <p data-lazy>Ready</p>}),600)));
 function Page(){const loc=useLocation(),navigate=usePreviewNavigate();useEffect(()=>{fetch('/api/fixture');},[loc.pathname]);return <section style={{height:2200}}><h1 data-path>{loc.pathname}</h1><Link to=".." relative="path" data-relative>Parent</Link><button onClick={()=>navigate('..',{relative:'path',state:{fixture:true}})}>Route parent navigate</button><div id="anchor" style={{marginTop:700}}>Anchor</div></section>}
