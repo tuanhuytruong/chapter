@@ -16,13 +16,16 @@ const STATUS_COLOR: Record<string, string> = {
   finished: 'bg-blue-100 text-blue-700',
 };
 
-const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean; lazyCover?: boolean }> = ({ book, streak, readOnly = false, lazyCover = false }) => {
+const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean; lazyCover?: boolean; previewEntry?: number }> = ({ book, streak, readOnly = false, lazyCover = false, previewEntry }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const pct = progressPct(book);
 
   return (
     <button
+      data-preview-book
+      data-preview-entry={previewEntry !== undefined ? "true" : undefined}
+      style={previewEntry !== undefined ? { animationDelay: `${previewEntry * 20}ms` } : undefined}
       onClick={() => navigate(`/books/${book.id}`, { state: { returnTo: `${location.pathname}${location.search}` } })}
       className="group bg-natural-cream border border-natural-border rounded-[24px] p-4 shadow-sm hover:shadow-md transition text-left flex flex-col gap-3 cursor-pointer"
     >
@@ -37,7 +40,7 @@ const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean; l
         <div className="min-w-0 flex-1">
           <h3 className="font-bold text-natural-dark font-sans text-sm leading-tight line-clamp-2">{book.title}</h3>
           <p className="text-[11px] text-natural-stone font-sans italic truncate">by {book.author}</p>
-          <span className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full font-sans ${STATUS_COLOR[book.status]}`}>
+          <span data-preview-status={book.status} className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full font-sans ${STATUS_COLOR[book.status]}`}>
             {STATUS_LABEL[book.status]}
           </span>
           <span className="ml-1 inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full font-sans bg-natural-sage/10 text-natural-sage">{readOnly ? `Read-only · ${book.owner_name || "Reader"}` : book.can_edit ? "Your book" : `Read-only · ${book.owner_name || "Reader"}`}</span>
@@ -45,7 +48,7 @@ const BookCard: React.FC<{ book: BookRow; streak?: number; readOnly?: boolean; l
       </div>
 
       <div>
-        <div className="h-1.5 bg-natural-cream rounded-full overflow-hidden mb-1 border border-natural-border">
+        <div data-preview-progress className="h-1.5 bg-natural-cream rounded-full overflow-hidden mb-1 border border-natural-border">
           <div className="h-full bg-natural-sage rounded-full" style={{ width: `${pct}%` }} />
         </div>
         <div className="flex justify-between text-[10px] text-natural-stone font-sans mb-1">
