@@ -1,6 +1,6 @@
 import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { usePreviewNavigate as useNavigate } from './PreviewNavigation';
 import type { UpgradePrompt } from "../api";
 
 interface ContextualUpgradeCardProps {

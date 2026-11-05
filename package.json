@@ -67,7 +67,9 @@
     "verify:route-image-performance": "tsx scripts/verify-route-image-performance.ts",
     "verify:layout-performance": "tsx scripts/verify-layout-performance.ts",
     "verify:reference-card-extraction": "tsx scripts/verify-reference-card-extraction.ts",
-    "verify:playbooks-api": "tsx scripts/verify-playbooks-api.ts"
+    "verify:playbooks-api": "tsx scripts/verify-playbooks-api.ts",
+    "verify:nousa-navigation": "tsx scripts/verify-nousa-navigation.ts",
+    "verify:nousa-interactions": "node scripts/verify-nousa-interactions.cjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -106,6 +108,7 @@
     "esbuild": "^0.25.0",
     "pg-mem": "^3.0.14",
     "tailwindcss": "^4.1.14",
+    "terser": "^5.51.2",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2"
   }

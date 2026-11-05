@@ -1,5 +1,5 @@
 import { Check, Minus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from './PreviewNavigation';
 
 const rows = [
   ["Your library, progress, notes & saved lines", true, true, true],

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from '../PreviewNavigation';
 
 export default function ReviewEmptyState({ responded }: { responded: boolean }) {
   return <section className="rounded-[24px] border border-natural-border bg-natural-cream px-6 py-10 text-center shadow-sm sm:px-10 sm:py-12">

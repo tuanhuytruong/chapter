@@ -1,3 +1,4 @@
+import PreviewDisclosure from './PreviewDisclosure';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Quote, FileText, RotateCcw, StickyNote, Bookmark } from 'lucide-react';
 import type { LogRow, ReadingMarkerKind, SummaryMode } from '../types';
@@ -305,7 +306,7 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
         >
           <StickyNote className="w-3 h-3" /> Notes{log.notes ? ' *' : ''}{saving ? ' …' : ''}
         </button>
-        {showNotes && (
+        <PreviewDisclosure open={Boolean(showNotes)}>{showNotes && (
           <textarea
             id={notesId}
             value={notesText}
@@ -315,15 +316,15 @@ const DaySummary: React.FC<DaySummaryProps> = ({ log, bookTitle, bookAuthor, boo
             className="w-full mt-1 px-3 py-2 text-xs font-sans leading-relaxed bg-natural-cream/50 border border-natural-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-natural-sage placeholder:text-natural-stone/50"
             placeholder="Write your own notes about today's reading…"
           />
-        )}
+        )}</PreviewDisclosure>
       </div>}
 
-      {open && log.raw_text && (
+      <PreviewDisclosure open={Boolean(open && log.raw_text)}>{open && log.raw_text && (
         <div id={sourceTextId} className="pt-2 border-t border-natural-border">
           <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-natural-stone font-sans mb-1"><FileText className="w-3 h-3" /> Raw extracted text</p>
           <pre className="text-[11px] leading-relaxed text-natural-muted font-sans whitespace-pre-wrap break-words max-h-56 overflow-y-auto bg-natural-cream rounded-xl p-3">{formatRawText(log.raw_text)}</pre>
         </div>
-      )}
+      )}</PreviewDisclosure>
 
     </div>
   );

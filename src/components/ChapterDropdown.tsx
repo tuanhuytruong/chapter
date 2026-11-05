@@ -25,6 +25,9 @@ function normalizeSearch(value: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+import PreviewSurfacePresence from "./PreviewSurfacePresence";
+import { usePreviewActive } from "./PreviewNavigation";
+
 export default function ChapterDropdown<T extends string>({
   value,
   onChange,
@@ -36,6 +39,7 @@ export default function ChapterDropdown<T extends string>({
 }: ChapterDropdownProps<T>) {
   const generatedId = useId();
   const listboxId = id || `chapter-dropdown-${generatedId.replace(/:/g, "")}`;
+  const preview = usePreviewActive();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState(() =>
@@ -158,7 +162,7 @@ export default function ChapterDropdown<T extends string>({
           className={`ml-2 h-4 w-4 shrink-0 text-natural-stone transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {open && (
+      <PreviewSurfacePresence active={preview} open={open} family="menu">{open && (
         <div
           id={`${listboxId}-listbox`}
           role="listbox"
@@ -238,7 +242,7 @@ export default function ChapterDropdown<T extends string>({
             )}
           </ul>
         </div>
-      )}
+      )}</PreviewSurfacePresence>
     </div>
   );
 }

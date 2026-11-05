@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link } from './PreviewNavigation';
 import { BookOpen, FileText, Quote, StickyNote, Sparkles, UserRound } from "lucide-react";
 import type { LibrarySearchResult } from "../types";
 const meta: Record<LibrarySearchResult["kind"], { label: string; Icon: typeof BookOpen }> = { book:{label:"Book",Icon:BookOpen}, wiki:{label:"Idea",Icon:Sparkles}, quote:{label:"Quote",Icon:Quote}, note:{label:"Note",Icon:StickyNote}, reflection:{label:"Reflection",Icon:FileText}, story_session:{label:"Story",Icon:UserRound}, story_memory:{label:"Story",Icon:UserRound}, reference_card:{label:"Playbook",Icon:FileText} };

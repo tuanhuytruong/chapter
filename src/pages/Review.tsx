@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
 import { api, type ReturnCard as ReturnCardData } from "../api";
 import type { ReturnOutcome } from "../review";
 import ReviewHeader from "../components/review/ReviewHeader";

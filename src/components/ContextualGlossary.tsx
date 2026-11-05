@@ -1,3 +1,4 @@
+import PreviewDisclosure from './PreviewDisclosure';
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 
@@ -92,11 +93,11 @@ export function GlossaryTerm({ term, language = "en", children }: { term: Glossa
       {children || copy.en}
       <Info aria-hidden="true" className="h-3 w-3 shrink-0" />
     </button>
-    {open && <span id={popupId} role="tooltip" className="absolute bottom-full left-0 z-50 mb-1.5 w-56 rounded-lg border border-natural-border bg-natural-cream px-2.5 py-2 text-left text-[10px] font-normal normal-case leading-snug tracking-normal text-natural-dark shadow-lg">
+    <PreviewDisclosure open={Boolean(open)}>{open && <span id={popupId} role="tooltip" className="absolute bottom-full left-0 z-50 mb-1.5 w-56 rounded-lg border border-natural-border bg-natural-cream px-2.5 py-2 text-left text-[10px] font-normal normal-case leading-snug tracking-normal text-natural-dark shadow-lg">
       <strong className="block text-xs">{copy[language]}</strong>
       {detail}
       {pinnedOpen && <span className="mt-2 block text-[10px] text-natural-stone">{language === "vi" ? "Nhấn Escape để đóng" : "Press Escape to close"}</span>}
-    </span>}
+    </span>}</PreviewDisclosure>
   </span>;
 }
 

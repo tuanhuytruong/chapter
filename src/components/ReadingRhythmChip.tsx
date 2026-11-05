@@ -1,5 +1,5 @@
 import { CircleGauge } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from './PreviewNavigation';
 import type { QuietStreakSummary } from "../api";
 import { getQuietStreakTierPresentation } from "../quietStreakPresentation";
 
