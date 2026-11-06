@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from 'react-router-dom';
 import { Link, usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
+import { usePreviewRouteSettled } from '../components/PreviewRouteReadiness';
 import { api, progressPct, type ReturnCard as ReturnCardData, type TodayDashboard, type TodayInsights, type RhythmResponse } from "../api";
 import ReturnCard from "../components/review/ReturnCard";
 import QuietStreakStrip from "../components/QuietStreakStrip";
@@ -71,6 +72,7 @@ export default function Today() {
     }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  usePreviewRouteSettled(loading);
 
   const respondToTodayReturn = async (outcome: ReturnOutcome, reflection?: string) => {
     if (!returnCard || returnSaving) return;

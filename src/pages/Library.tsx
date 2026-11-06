@@ -1,5 +1,6 @@
 import PreviewSurfacePresence from "../components/PreviewSurfacePresence";
 import { usePreviewActive } from "../components/PreviewNavigation";
+import { usePreviewRouteSettled } from '../components/PreviewRouteReadiness';
 import { isNousaPreview } from '../uiPreview';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -38,8 +39,7 @@ export default function Library() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const preview = isNousaPreview({hostname: window.location.hostname, pathname: window.location.pathname, search: `?${searchParams}`, localDevelopment: import.meta.env.DEV});
-  const entryStarted = useRef(false);
-  const [entryIds, setEntryIds] = useState<string[]>([]);
+
   const [books, setBooks] = useState<BookRow[]>([]);
   const scope = searchParams.get('scope') === 'all' ? 'all' : 'mine';
   const [streaks, setStreaks] = useState<Record<string, number>>({});
@@ -107,17 +107,7 @@ export default function Library() {
     return sorted;
   }, [books, filter, search, sort, streaks]);
 
-  // Capture only the first completed render. Never re-arm on browse/theme changes.
-  useEffect(() => {
-    if (!preview || loading || entryStarted.current) return;
-    entryStarted.current = true;
-    setEntryIds(visible.slice(0, 8).map(book => book.id));
-  }, [preview, loading, visible]);
-  useEffect(() => {
-    if (!entryIds.length) return;
-    const timer = window.setTimeout(() => setEntryIds([]), 1300);
-    return () => window.clearTimeout(timer);
-  }, [entryIds]);
+  usePreviewRouteSettled(loading);
 
   const queued = useMemo(() => books.filter((book) => book.status === 'queued')
     .sort((a, b) => (a.queue_order ?? 999) - (b.queue_order ?? 999)), [books]);
@@ -211,8 +201,8 @@ export default function Library() {
           <div className="space-y-2">{queued.map((book, index) => <article key={book.id} className="flex flex-wrap items-center gap-2 rounded-2xl border border-natural-border bg-white/65 p-3 sm:flex-nowrap"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-natural-sage/15 text-sm font-bold text-natural-sage">{index + 1}</span><div className="min-w-0 flex-1"><p className="truncate font-sans text-sm font-bold text-natural-dark">{book.title}</p><p className="truncate font-sans text-xs text-natural-stone">{book.author}</p></div><div className="flex shrink-0 gap-1"><button aria-label={`Move ${book.title} earlier`} onClick={() => moveQueuedBook(index, -1)} disabled={index === 0} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronUp className="h-4 w-4" /></button><button aria-label={`Move ${book.title} later`} onClick={() => moveQueuedBook(index, 1)} disabled={index === queued.length - 1} className="flex h-11 w-11 items-center justify-center rounded-xl border border-natural-border disabled:opacity-35"><ChevronDown className="h-4 w-4" /></button><button onClick={() => startQueuedBook(book)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-natural-sage px-3 font-sans text-xs font-bold text-white hover:bg-natural-sage-dark"><Play className="h-3.5 w-3.5" /> Start</button></div></article>)}</div>
         </section>
           : visible.length === 0 ? <div className="flex flex-col items-center justify-center space-y-3 rounded-[32px] border border-natural-border bg-natural-cream p-16 text-center"><BookOpen className="h-10 w-10 text-natural-stone" /><p className="font-sans text-sm font-bold text-natural-dark">{showQueue ? 'Your queue is clear' : 'No books here yet'}</p><p className="font-sans text-xs text-natural-stone">{emptyCopy}</p>{scope === 'mine' && <button onClick={() => { captureAnalyticsEvent("book_add_started", { source: "library" }); setShowAdd(true); }} className="flex items-center gap-1.5 rounded-full bg-natural-sage px-4 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-white"><Plus className="h-3.5 w-3.5" /> Add Book</button>}</div>
-            : scope === 'all' ? <div className="space-y-6">{readerGroups.map((group) => <section key={group.name} className="space-y-3"><h2 className="font-sans text-sm font-bold text-natural-dark">{group.name}'s shelf <span className="font-normal text-natural-stone">({group.books.length})</span></h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.books.map((book, index) => <BookCard key={book.id} book={book} previewEntry={entryIds.includes(book.id) ? entryIds.indexOf(book.id) : undefined} streak={streaks[book.id]} readOnly lazyCover={index >= 6} />)}</div></section>)}</div>
-              : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{visible.map((book, index) => <BookCard key={book.id} book={book} previewEntry={entryIds.includes(book.id) ? entryIds.indexOf(book.id) : undefined} streak={streaks[book.id]} lazyCover={index >= 6} />)}</div>}
+            : scope === 'all' ? <div className="space-y-6">{readerGroups.map((group) => <section key={group.name} className="space-y-3"><h2 className="font-sans text-sm font-bold text-natural-dark">{group.name}'s shelf <span className="font-normal text-natural-stone">({group.books.length})</span></h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{group.books.map((book, index) => <BookCard key={book.id} book={book} streak={streaks[book.id]} readOnly lazyCover={index >= 6} />)}</div></section>)}</div>
+              : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{visible.map((book, index) => <BookCard key={book.id} book={book} streak={streaks[book.id]} lazyCover={index >= 6} />)}</div>}
 
       {scope === 'mine' && <div className="border-t border-natural-border pt-8"><QuoteWall /></div>}
       <PreviewSurfacePresence active={surfacePreview} open={Boolean(showAdd)} family="modal" portalSelector='[data-preview-portal="add-book"]'>{showAdd && <AddBookModal onClose={() => setShowAdd(false)} onAdded={load} onToast={setToast} />}</PreviewSurfacePresence>

@@ -4,6 +4,7 @@ import PreviewPanelTransition from "../components/PreviewPanelTransition";
 import PreviewSurfacePresence from "../components/PreviewSurfacePresence";
 import { usePreviewActive } from "../components/PreviewNavigation";
 import React, { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
+import { usePreviewRouteSettled } from "../components/PreviewRouteReadiness";
 import { createPortal } from "react-dom";
 import { useParams, useLocation } from 'react-router-dom';
 import { usePreviewNavigate as useNavigate } from '../components/PreviewNavigation';
@@ -659,6 +660,8 @@ export default function BookDetail() {
       setDeleting(false);
     }
   };
+
+  usePreviewRouteSettled(loading);
 
   if (loading) {
     return <BookDetailSkeleton />;
