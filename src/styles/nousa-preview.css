@@ -1,5 +1,5 @@
 /* Chapter adaptation of pinned Nousa kit recipes; colors and typography frozen.
- * xl: exit180ms/entry700ms; oo: entry800ms; yo: fine hover450/500ms.
+ * Route readiness owns the sole entrance; cards keep hover/press feedback only.
  * Button press160ms is Chapter feedback, not an asserted Nousa handler.
  */
 [data-ui-preview="nousa"] { --preview-ease:cubic-bezier(.22,1,.36,1); }
@@ -15,10 +15,8 @@
 @media (hover:hover) and (pointer:fine) {
   [data-ui-preview="nousa"] [data-preview-book]:hover { translate:0 -4px; transition-duration:450ms; }
 }
-@keyframes nousa-entry { from { opacity:0; transform:translateY(26px) scale(.985); } to { opacity:1; transform:none; } }
-[data-ui-preview="nousa"] [data-preview-entry="true"] { animation:nousa-entry 800ms var(--preview-ease) both; }
 @media (prefers-reduced-motion:reduce) {
-  [data-ui-preview="nousa"] [data-preview-entry="true"], [data-ui-preview="nousa"] [data-preview-book], [data-ui-preview="nousa"] [data-preview-action] { animation:none !important; transition:none !important; translate:none !important; scale:none !important; }
+  [data-ui-preview="nousa"] [data-preview-book], [data-ui-preview="nousa"] [data-preview-action] { animation:none !important; transition:none !important; translate:none !important; scale:none !important; }
 }
 
 [data-ui-preview="nousa"].journey-drawer .journey-panel, [data-ui-preview="nousa"].journey-drawer .journey-entry { animation:none; transition:none; }
