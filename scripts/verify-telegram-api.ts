@@ -17,6 +17,14 @@ try{
  await new Promise(r=>setTimeout(r,1050));assert.equal((await call('/channels/confirm','POST',{candidate:candidate.data.candidate,consent:true})).status,400,'confirmed candidate cannot replay');
  const badBook=await call(`/destinations/${d.id}/subscription`,'PUT',{books:['99999999-9999-4999-8999-999999999999'],consent:true,local_time:'20:00',timezone:'Asia/Bangkok',enabled:true});assert.equal(badBook.status,400);
  const token=await call('/link','POST',{});assert.equal(token.status,200);assert.equal((await call('/link','POST',{})).status,429);
+ await f.outbox.enqueue(OWNER,d.id);
+ await f.pool.query("UPDATE chapter.telegram_destinations SET state='active',activated_at=now()-interval '1 day' WHERE id=$1",[confirmed.data.id]);
+ await f.pool.query("INSERT INTO chapter.telegram_book_grants(environment,destination_id,book_id,granted_by) VALUES('dev',$1,$2,$3)",[confirmed.data.id,BOOK,OWNER]);
+ await f.pool.query("INSERT INTO chapter.telegram_subscriptions(environment,destination_id,local_time,timezone,enabled,next_run_at) VALUES('dev',$1,'00:00','Asia/Bangkok',true,now())",[confirmed.data.id]);
+ await f.outbox.enqueue(OWNER,confirmed.data.id);
+ assert.equal((await call(`/destinations/${d.id}`,'DELETE')).status,200);
+ assert.equal((await f.pool.query('SELECT state FROM chapter.telegram_deliveries WHERE destination_id=$1',[confirmed.data.id])).rows[0].state,'pending','delete must preserve other destination queue');
+ assert.equal((await f.pool.query('SELECT count(*)::int n FROM chapter.telegram_delivery_parts p JOIN chapter.telegram_deliveries d ON d.id=p.delivery_id AND d.environment=p.environment WHERE d.destination_id=$1 AND html IS NOT NULL',[d.id])).rows[0].n,0);
  await f.pool.query('DROP TABLE chapter.telegram_delivery_parts');assert.equal((await call('/status')).status,503);
  console.log('PASS real HTTP IDOR methods, cross-origin rejection, channel pending/confirm owner scope, arbitrary-book rejection, link rate limiting, missing-schema response');
 }finally{server.close();await f.close();}

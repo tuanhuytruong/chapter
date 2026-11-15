@@ -24,7 +24,7 @@ await scenario('Bot accepted, entire DB unavailable in catch, restart => unknown
 await scenario('lease reclaimed while A waits in rate reservation: stale A cannot dispatch',async f=>{
  const a=new Worker(f.outbox),b=new Worker(f.outbox);let release!:()=>void,entered!:()=>void;
  const waiting=new Promise<void>(r=>entered=r),gate=new Promise<void>(r=>release=r);const reserve=f.bot.reserve.bind(f.bot);
- f.bot.reserve=async()=>{entered();await gate;};const pending=a.runOnce();await waiting;
+ f.bot.reserve=async(_chat,_group,guard)=>{entered();await gate;if(guard&&!await guard())throw new (await import('../src/telegram/client.js')).BotError('STALE_OR_REVOKED','rejected');};const pending=a.runOnce();await waiting;
  await f.pool.query("UPDATE chapter.telegram_deliveries SET lease_until=now()-interval '1 second'");const winner=await b.claim();assert(winner);
  release();await pending;assert.equal(f.sends.length,0);
  assert.equal((await f.pool.query('SELECT lease_token,state FROM chapter.telegram_deliveries')).rows[0].lease_token,winner.lease_token);

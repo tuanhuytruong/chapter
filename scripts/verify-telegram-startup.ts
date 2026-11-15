@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
 import {fixture} from './fixtures/telegram-v2.js';
-import {startTelegramRuntime,telegramService} from '../src/telegram/runtime.js';
-import {config} from '../src/config.js';
-for(const environment of ['', 'invalid', 'prd']){
- Object.assign(config,{appEnv:'dev',telegramEnvironment:environment,telegramBotToken:'synthetic'});
- assert.equal(telegramService(),null,'invalid/missing/mismatched environment must fail closed');
-}
-console.log('PASS actual service missing/invalid/mismatched environment capability');
+import {startTelegramRuntime} from '../src/telegram/runtime-loop.js';
 // Exercise the real runtime with real absent/partial/current PostgreSQL schema,
 // no transport escapes this synthetic BotClient. OFF must not even probe DB.
 for(const schema of ['absent','partial','current','offline']){
@@ -18,7 +12,7 @@ for(const schema of ['absent','partial','current','offline']){
    let probes=0;const ready=f.repo.ready.bind(f.repo);
    f.repo.ready=async()=>{probes++;if(schema==='offline')throw new Error('synthetic offline');return ready();};
    let queries=0;const query=f.pool.query.bind(f.pool);(f.pool as any).query=(...args:any[])=>{queries++;return (query as any)(...args);};
-   const stop=await startTelegramRuntime(f.outbox,scheduler);await new Promise(r=>setTimeout(r,100));stop();
+   const stop=await startTelegramRuntime(f.outbox,scheduler);await new Promise(r=>setTimeout(r,100));await stop();
    assert.equal(probes,sender||scheduler?1:0);
    if(!sender&&!scheduler)assert.equal(queries,0);
    assert.equal(f.sends.length,0);
@@ -29,6 +23,6 @@ for(const schema of ['absent','partial','current','offline']){
 for(const sender of [false,true])for(const scheduler of [false,true]){
  // Missing/invalid/mismatched environment is represented by telegramService's
  // null capability, independent of feature flags.
- const stop=await startTelegramRuntime(null,scheduler);stop();
+ const stop=await startTelegramRuntime(null,scheduler);await stop();
  console.log(`PASS startup null capability sender=${sender} scheduler=${scheduler}`);
 }

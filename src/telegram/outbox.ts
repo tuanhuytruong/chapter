@@ -28,10 +28,12 @@ export class Outbox {
   return this.repo.transaction(async c=>{
    const r=await c.query("SELECT * FROM chapter.telegram_deliveries WHERE environment=$1 AND id=$2 AND owner_id=$3 AND state IN ('unknown','failed') FOR UPDATE",[this.repo.environment,id,owner]);
    if(!r.rowCount)throw new Error('DELIVERY_NOT_RESOLVABLE');
+   if(action==='delivered' && (r.rows[0].state!=='unknown'||(await c.query("SELECT 1 FROM chapter.telegram_delivery_parts WHERE environment=$1 AND delivery_id=$2 AND state='failed'",[this.repo.environment,id])).rowCount))throw new Error('DELIVERY_NOT_RESOLVABLE');
+   if(action==='retry' && (await c.query("SELECT 1 FROM chapter.telegram_delivery_parts WHERE environment=$1 AND delivery_id=$2 AND state IN ('unknown','failed','pending') AND html IS NULL",[this.repo.environment,id])).rowCount)throw new Error('SNAPSHOT_EXPIRED');
    await authorized(this.repo,this.bot,owner,r.rows[0].destination_id,r.rows[0].book_id);
    if(action==='delivered')await c.query("UPDATE chapter.telegram_delivery_parts SET state='sent',acknowledged_at=now() WHERE environment=$1 AND delivery_id=$2 AND state='unknown'",[this.repo.environment,id]);
    else await c.query("UPDATE chapter.telegram_delivery_parts SET state='pending' WHERE environment=$1 AND delivery_id=$2 AND state IN ('unknown','failed')",[this.repo.environment,id]);
-   await c.query("UPDATE chapter.telegram_deliveries SET state='pending',lease_token=NULL,lease_until=NULL,next_attempt_at=now() WHERE environment=$1 AND id=$2 AND owner_id=$3",[this.repo.environment,id,owner]);
+   await c.query("UPDATE chapter.telegram_deliveries SET state=CASE WHEN EXISTS(SELECT 1 FROM chapter.telegram_delivery_parts p WHERE p.environment=telegram_deliveries.environment AND p.delivery_id=telegram_deliveries.id AND p.state='canceled') THEN 'canceled' ELSE 'pending' END,lease_token=NULL,lease_until=NULL,next_attempt_at=now() WHERE environment=$1 AND id=$2 AND owner_id=$3",[this.repo.environment,id,owner]);
   });
  }
 }

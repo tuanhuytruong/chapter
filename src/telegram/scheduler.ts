@@ -19,8 +19,16 @@ export async function schedulerTick(repo: TelegramRepository,enqueue: (owner:str
  const r=await repo.pool.query(`SELECT s.*,d.manager_user_id FROM chapter.telegram_subscriptions s JOIN chapter.telegram_destinations d ON d.environment=s.environment AND d.id=s.destination_id WHERE s.environment=$1 AND s.enabled AND d.state='active'`,[repo.environment]);
  for(const s of r.rows){
   const day=localClock(now,s.timezone).day;
-  if(+now>=+runAt(day,s.local_time,s.timezone))await enqueue(s.manager_user_id,s.destination_id,day);
-  await repo.pool.query('UPDATE chapter.telegram_subscriptions SET next_run_at=$3,updated_at=now() WHERE environment=$1 AND destination_id=$2 AND enabled',[repo.environment,s.destination_id,nextRun(now,s.local_time,s.timezone)]);
+  // Keep today's persisted due cursor for late-ready reconciliation. Advance
+  // stale cursors to today's wall time, never replay missed local dates.
+  let due=new Date(s.next_run_at);
+  if(localClock(due,s.timezone).day<day){
+   due=runAt(day,s.local_time,s.timezone);
+   const moved=await repo.pool.query('UPDATE chapter.telegram_subscriptions SET next_run_at=$3,updated_at=now() WHERE environment=$1 AND destination_id=$2 AND enabled AND next_run_at=$4 RETURNING destination_id',[repo.environment,s.destination_id,due,s.next_run_at]);
+   if(!moved.rowCount)continue;
+  }
+  if(+due>+now)continue;
+  await enqueue(s.manager_user_id,s.destination_id,day);
  }
  // No prior-day backlog. Reconcile every tick after due time, including late-ready summaries.
  await repo.pool.query(`UPDATE chapter.telegram_deliveries d SET state='expired',updated_at=now() FROM chapter.telegram_subscriptions s WHERE d.environment=$1 AND s.environment=d.environment AND s.destination_id=d.destination_id AND d.local_date < ($2::timestamptz AT TIME ZONE s.timezone)::date AND d.state IN ('pending','retry_wait','leased')`,[repo.environment,now]);
