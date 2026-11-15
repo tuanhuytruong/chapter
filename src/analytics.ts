@@ -17,7 +17,9 @@ let posthogLoader: Promise<typeof posthogType | null> | null = null;
 function getPostHog(): Promise<typeof posthogType | null> {
   if (!projectApiKey) return Promise.resolve(null);
   if (!posthogLoader) {
-    posthogLoader = import("posthog-js").then(({ default: posthog }) => {
+    // Slim SDK retains explicit identify/capture/reset; omit unused autocapture,
+    // replay, surveys and heatmap extensions rather than raising browser targets.
+    posthogLoader = import("posthog-js/dist/module.slim.js").then(({ default: posthog }) => {
       posthog.init(projectApiKey, {
         api_host: import.meta.env.VITE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com",
         defaults: "2026-05-30", autocapture: false, capture_pageview: false, capture_pageleave: false,
@@ -36,8 +38,8 @@ function getPostHog(): Promise<typeof posthogType | null> {
             if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([key]) => key !== 'uiPreview').map(([key, item]) => [key, clean(item)]));
             return value;
           };
-          event.properties = clean(event.properties) as typeof event.properties;
-          return event;
+          // identify also carries SDK-enriched $set_once outside properties.
+          return clean(event) as typeof event;
         },
       });
       posthog.register(analyticsContext);

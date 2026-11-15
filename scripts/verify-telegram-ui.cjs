@@ -23,5 +23,26 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict');
   await page.getByText('Delivery history · per part').click();await page.getByText('May already have been sent.',{exact:false}).waitFor();assert(await page.getByRole('button',{name:'Send test (no book content)'}).isDisabled());
   const size=await page.evaluate(()=>({client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));assert(size.scroll<=size.client,JSON.stringify(size));assert(max<=1);assert.deepEqual(errors,[]);await page.screenshot({path:`telegram-evidence/ui-${width}-${theme}.png`,fullPage:true});evidence.push({width,theme,size,maxConcurrentPoll:max,pageerrors:errors});await page.close();
  }
+ // Owner switch must discard both existing authority state and late async results.
+ const page=await browser.newPage();let pending=[],errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/*',async route=>{const u=new URL(route.request().url());
+  if(u.pathname.startsWith('/api/')){
+   if(u.pathname.endsWith('/destination-link')||u.pathname.endsWith('/channels/verify')){pending.push(route);return;}
+   const data=u.pathname.endsWith('/status')?{connected:true,senderEnabled:false,destinations:[]}:[];
+   return route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
+  }
+  if(u.hostname==='fonts.googleapis.com')return route.fulfill({contentType:'text/css',body:''});
+  const file=path.join(process.cwd(),'.telegram-fixture-dist',u.pathname==='/'?'scripts/telegram-v2/fixture.html':u.pathname);
+  if(!fs.existsSync(file))return route.abort();return route.fulfill({contentType:file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(file)});
+ });
+ await page.goto('https://chapter-fixture.example/');await page.getByRole('button',{name:'Create group / topic bind code'}).click();
+ await page.getByRole('textbox',{name:'Channel @username or ID'}).fill('@synthetic');await page.getByRole('button',{name:'Verify channel permissions'}).click();
+ await page.waitForTimeout(100);assert.equal(pending.length,2);
+ await page.getByRole('button',{name:'Switch fixture owner'}).click();await page.getByRole('button',{name:'Create group / topic bind code'}).waitFor();
+ for(const route of pending)await route.fulfill({contentType:'application/json',body:JSON.stringify({command:'synthetic-secret-command',candidate:'synthetic-candidate',label:'synthetic-old-candidate'})});
+ await page.waitForTimeout(200);assert.equal(await page.getByText('synthetic-old-candidate',{exact:false}).count(),0);assert.equal(await page.getByText('synthetic-secret-command',{exact:false}).count(),0);
+ assert.equal(await page.getByRole('textbox',{name:'Channel @username or ID'}).inputValue(),'');assert.equal(await page.getByRole('button',{name:'Confirm verified channel'}).count(),0);assert.deepEqual(errors,[]);
+ await page.close();console.log('PASS owner-switch late bind/channel response isolation');
  await browser.close();fs.writeFileSync('telegram-evidence/ui.json',JSON.stringify(evidence,null,2));console.log('PASS real browser 6 fixture cases: connect polling, default OFF, consent editor, unknown history, disabled sends, keyboard, overflow, no pageerrors');
 })().catch(e=>{console.error(e);process.exitCode=1;});

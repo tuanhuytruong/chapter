@@ -13,11 +13,16 @@ export function telegramService() {
  return instance;
 }
 export async function startTelegram() {
- const service=telegramService();
- if(!service||!config.telegramSenderEnabled&&!config.telegramSchedulerEnabled)return ()=>{};
- if(!config.telegramChapterOrigin.startsWith('https://')||!await service.repo.ready()){console.info('[telegram] V2 unavailable: migration/configuration required');return ()=>{};}
+ return startTelegramRuntime(telegramService(),config.telegramSchedulerEnabled);
+}
+/** Explicit service boundary also permits isolated startup fault fixtures. */
+export async function startTelegramRuntime(service: Outbox|null,schedulerEnabled: boolean) {
+ if(!service||!service.enabled&&!schedulerEnabled)return ()=>{};
+ let ready=false;
+ try{ready=service.origin.startsWith('https://')&&await service.repo.ready();}catch{/* Unavailable DB/schema must not take down application health. */}
+ if(!ready){console.info('[telegram] V2 unavailable: migration/configuration required');return ()=>{};}
  const worker=new Worker(service);let running=false,stopped=false;
- const tick=async()=>{if(running||stopped)return;running=true;try{await cleanup(service.repo);if(config.telegramSchedulerEnabled&&service.enabled)await schedulerTick(service.repo,(owner,id,day)=>service.enqueue(owner,id,day));if(service.enabled)await worker.runOnce();}catch{console.warn('[telegram] background tick failed');}finally{running=false;}};
+ const tick=async()=>{if(running||stopped)return;running=true;try{await cleanup(service.repo);if(schedulerEnabled&&service.enabled)await schedulerTick(service.repo,(owner,id,day)=>service.enqueue(owner,id,day));if(service.enabled)await worker.runOnce();}catch{console.warn('[telegram] background tick failed');}finally{running=false;}};
  const timer=setInterval(tick,30000);void tick();
  return ()=>{stopped=true;worker.stopped=true;clearInterval(timer);};
 }

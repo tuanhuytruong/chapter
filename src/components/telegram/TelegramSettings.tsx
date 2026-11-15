@@ -3,6 +3,10 @@ import './telegram.css';
 import IdentityCard,{telegramRequest} from './IdentityCard';
 import DestinationCard from './DestinationCard';
 export default function TelegramSettings({owner}:{owner:string}){
+ return <OwnerTelegramSettings key={owner} owner={owner}/>;
+}
+// Remount all authority-bearing state and async closures on account change.
+function OwnerTelegramSettings({owner}:{owner:string}){
  const [status,setStatus]=useState<any>(null),[books,setBooks]=useState<any[]>([]),[error,setError]=useState(''),[revision,setRevision]=useState(0),[command,setCommand]=useState(''),[channel,setChannel]=useState(''),[candidate,setCandidate]=useState<any>(null),[consent,setConsent]=useState(false);
  const refresh=()=>setRevision(x=>x+1);
  useEffect(()=>{let alive=true;setStatus(null);setError('');telegramRequest('/status').then(s=>{if(alive)setStatus(s);}).catch(e=>{if(alive)setError(e.message);});fetch('/api/books').then(r=>r.json()).then(b=>{if(alive)setBooks(Array.isArray(b)?b:b.books||[]);}).catch(()=>{});return()=>{alive=false;};},[owner,revision]);

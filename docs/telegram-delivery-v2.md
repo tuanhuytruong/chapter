@@ -26,7 +26,11 @@ Manual/commands/scheduled/legacy notify all enqueue the durable outbox. Stable e
 
 Claims use SKIP LOCKED and fenced leases. Each part is durably sending before dispatch. Confirmed message IDs are never replayed. Timeout, 5xx, interrupted sending or unconfirmed DB outcome becomes `unknown`, not automatic retry. An unknown part blocks subsequent parts. Inspect Telegram then acknowledge delivered without inventing a message ID, or explicitly accept duplicate risk before retry. Definite 429 respects shared cooldown; definite parse rejection may fallback to plain text for that unsent part only. Best-effort dedup is not exactly-once.
 
-Rate coordination is bot-wide across environments, >=1050ms/private chat and >=3100ms/group chat (topics share chat quota), <=20/s/bot. Feedback/podcast use the coordinator once migration/configuration is available; before migration their legacy internal-only compatibility transport remains. No legacy book direct-send path remains.
+Rate coordination is bot-wide across environments, >=1050ms/private chat and >=3100ms/group chat (topics share chat quota), <=20/s/bot. No legacy book direct-send path remains.
+
+**Compatibility contract (not an unconditional shared-limiter guarantee):** feedback and podcast archive use the durable coordinator when an explicit valid matching `TELEGRAM_ENV`, bot token and all V2 tables are available. Sender/scheduler OFF does not disable these existing internal notifications. Missing/invalid/mismatched environment returns no V2 service; missing/partial schema returns not-ready. In either case these two internal paths retain their existing direct transport, with no durable shared reservation/cooldown. A readiness query failure or coordinated-send failure is caught as a safe notification error, not retried through direct transport. Therefore migration plus valid configuration is a prerequisite for the cross-path bot-wide quota guarantee. Do not enable V2 on a shared bot while another deployment still uses this compatibility bypass. Existing destination/thread/media semantics remain unchanged; this exception never authorizes book summary sends.
+
+Startup OFF skips DB readiness and all Telegram timers. Enabled startup with unavailable DB/schema or invalid HTTPS origin disables background capability without preventing application health. Scheduler-only currently performs cleanup but does not enqueue while sender is OFF. Shutdown stops new claims/parts; an already dispatched request cannot be recalled.
 
 ## Rollback
 

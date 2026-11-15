@@ -9,7 +9,12 @@ try{
  assert.equal((await call('/link','POST',{},OWNER,'https://attacker.example')).status,403);
  const candidate=await call('/channels/verify','POST',{channel:'-100123456789'});assert.equal(candidate.status,200);assert(candidate.data.candidate);assert.equal((await f.repo.destinations(OWNER)).length,1);
  const stolen=await call('/channels/confirm','POST',{candidate:candidate.data.candidate,consent:true},OTHER);assert.equal(stolen.status,400);
+ f.setFault('permission');
+ assert.equal((await call('/channels/confirm','POST',{candidate:candidate.data.candidate,consent:true})).status,400);
+ assert.equal((await f.repo.destinations(OWNER)).length,1,'permission removal must not activate candidate');
+ f.setFault(null);await new Promise(r=>setTimeout(r,1050));
  const confirmed=await call('/channels/confirm','POST',{candidate:candidate.data.candidate,consent:true});assert.equal(confirmed.status,200);assert.equal(confirmed.data.state,'paused');
+ await new Promise(r=>setTimeout(r,1050));assert.equal((await call('/channels/confirm','POST',{candidate:candidate.data.candidate,consent:true})).status,400,'confirmed candidate cannot replay');
  const badBook=await call(`/destinations/${d.id}/subscription`,'PUT',{books:['99999999-9999-4999-8999-999999999999'],consent:true,local_time:'20:00',timezone:'Asia/Bangkok',enabled:true});assert.equal(badBook.status,400);
  const token=await call('/link','POST',{});assert.equal(token.status,200);assert.equal((await call('/link','POST',{})).status,429);
  await f.pool.query('DROP TABLE chapter.telegram_delivery_parts');assert.equal((await call('/status')).status,503);
