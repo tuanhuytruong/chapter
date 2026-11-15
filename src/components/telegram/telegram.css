@@ -1,0 +1,9 @@
+[data-telegram-settings] button { min-height:44px; padding:8px 14px; border:1px solid var(--color-natural-border,#d8d1c4); border-radius:12px; background:var(--color-natural-cream,#faf8f1); cursor:pointer; margin:4px 4px 4px 0; font-weight:600; }
+[data-telegram-settings] button:disabled { opacity:.45; cursor:not-allowed; }
+[data-telegram-settings] button:focus-visible,[data-telegram-settings] input:focus-visible,[data-telegram-settings] summary:focus-visible { outline:2px solid #66836b; outline-offset:3px; }
+[data-telegram-settings] input:not([type=checkbox]) { display:block; width:100%; min-height:44px; padding:8px; border:1px solid var(--color-natural-border,#d8d1c4); border-radius:8px; margin-top:4px; }
+[data-telegram-settings] label { align-items:flex-start; }
+[data-telegram-settings] input[type=checkbox] { flex-shrink:0; margin-top:4px; width:18px; height:18px; }
+[data-telegram-settings] summary { min-height:44px; padding:10px 0; cursor:pointer; font-weight:600; }
+[data-telegram-settings] fieldset { padding:8px 0 16px; }
+[data-telegram-settings] [role=alert] { border-left:3px solid #b24b40; padding:8px; overflow-wrap:anywhere; }

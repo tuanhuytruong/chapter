@@ -225,3 +225,7 @@ boundaries; this is a fallback, not a claim of a provider length limit. HTTP, tr
 timeout, validation, dependency, and assembly failures are distinct; logs omit scripts,
 credentials and upstream bodies. Run `npx tsx scripts/verify-podcast-tts.ts` with
 `FFMPEG_PATH` set when it is not on PATH.
+
+## Telegram delivery V2
+
+See [operator and reader guide](docs/telegram-delivery-v2.md). Manual migration and approved QA are required; sender/scheduler default OFF. Legacy book notify only enqueues and never falls back to direct sending.

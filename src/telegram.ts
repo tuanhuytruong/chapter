@@ -1,6 +1,7 @@
 // Telegram push helper for the daily reading-summary delivery (Phase 3).
 // Uses the Bot API directly via fetch — no extra dependency.
 import { config } from "./config.js";
+import { telegramService } from "./telegram/runtime.js";
 import { feedbackKindLabel, type FeedbackKind } from "./feedback.js";
 
 const TG_API = "https://api.telegram.org";
@@ -26,29 +27,19 @@ export async function sendTelegramMessage(
   chatId: string,
   text: string
 ): Promise<{ ok: boolean; error?: string }> {
+  const service=telegramService();
   try {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 10_000);
-    const res = await fetch(`${TG_API}/bot${cfg.botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "MarkdownV2",
-        disable_web_page_preview: true,
-      }),
-      signal: ac.signal,
-    });
-    clearTimeout(timer);
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) {
-      return { ok: false, error: data.description || `HTTP ${res.status}` };
+    if(service && await service.repo.ready()) {
+      await service.bot.call('sendMessage',{chat_id:chatId,text,parse_mode:'MarkdownV2',disable_web_page_preview:true},{outbound:true,group:chatId.startsWith('-')});
+      return {ok:true};
     }
-    return { ok: true };
-  } catch (e: any) {
-    return { ok: false, error: e.message };
-  }
+    // No V2 schema: retain internal feedback compatibility only. Never used for book delivery.
+    const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),10000);
+    try {
+      const res=await fetch(`${TG_API}/bot${cfg.botToken}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:chatId,text,parse_mode:'MarkdownV2',disable_web_page_preview:true}),signal:ac.signal});
+      const data:any=await res.json();return data.ok&&res.ok?{ok:true}:{ok:false,error:'TELEGRAM_REJECTED'};
+    } finally {clearTimeout(timer);}
+  } catch { return {ok:false,error:'TELEGRAM_UNCONFIRMED'}; }
 }
 
 /** Format one book's daily log into a Telegram MarkdownV2 message. */
@@ -60,7 +51,7 @@ export function formatDailyMessage(
   const t = escapeMd(bookTitle);
   const a = escapeMd(author);
   let msg = `📖 *${t}* \\- _${a}_\n`;
-  msg += `🗓 ${log.date} \\| Trang ${log.page_start}\\–${log.page_end}\n\n`;
+  msg += `🗓 ${escapeMd(log.date)} \\| Trang ${log.page_start}\\–${log.page_end}\n\n`;
   if (log.summary) msg += `${escapeMd(log.summary)}\n\n`;
   if (log.key_insights && log.key_insights.length) {
     msg += `💡 *Key insights:*\n`;

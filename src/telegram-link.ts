@@ -26,9 +26,11 @@ export function deepLink(botUsername: string, token: string): string {
 }
 
 export function telegramUpdate(input: unknown): { chatId: string; token: string } | null {
-  const update = input as { message?: { chat?: { id?: string | number }; text?: unknown } };
+  const update = input as { message?: { chat?: { id?: string | number; type?: string }; from?: {id?: number; is_bot?: boolean}; sender_chat?: unknown; text?: unknown } };
   const chatId = update?.message?.chat?.id;
   const token = parseStartToken(update?.message?.text);
+  const message=update?.message;
+  if(message?.chat?.type!=='private'||message.sender_chat||message.from?.is_bot||!Number.isSafeInteger(message.from?.id)||Number(message.from?.id)<=0||String(chatId)!==String(message.from?.id))return null;
   if ((typeof chatId !== "string" && typeof chatId !== "number") || !token) return null;
   return { chatId: String(chatId), token };
 }

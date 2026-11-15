@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import { telegramService } from "../telegram/runtime.js";
 import { getTelegramConfig } from "../telegram.js";
 
 const api = "https://api.telegram.org";
@@ -10,24 +11,19 @@ function archiveSuffix(chatId: string) {
 }
 
 async function telegramJson(url: string, init: RequestInit, retrySafe = false) {
-  // DNS/TLS occasionally flakes on the host. Only retry read-only Telegram calls:
-  // repeating sendAudio could create duplicate archive messages.
-  const attempts = retrySafe ? 3 : 1;
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      const response = await fetch(url, { ...init, signal: AbortSignal.timeout(20_000) });
-      const body: any = await response.json().catch(() => ({}));
-      if (!response.ok || !body.ok) throw new Error(body.description || `Telegram request failed (${response.status})`);
-      return body;
-    } catch (error) {
-      lastError = error;
-      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
-    }
+  const service=telegramService();
+  if(service && await service.repo.ready()) {
+    const method=url.slice(url.lastIndexOf('/')+1);
+    const payload=typeof init.body==='string'?JSON.parse(init.body):init.body;
+    const outbound=['sendAudio','sendMessage','sendDocument'].includes(method);
+    const result=await service.bot.call(method,payload||{},{outbound,group:true});return {ok:true,result};
   }
-  throw lastError;
+  const attempts=retrySafe?3:1;
+  for(let attempt=1;attempt<=attempts;attempt++) {
+    try { const response=await fetch(url,{...init,signal:AbortSignal.timeout(20000)});const body:any=await response.json();if(!response.ok||!body.ok)throw new Error('TELEGRAM_REJECTED');return body; }
+    catch { if(attempt===attempts)throw new Error('TELEGRAM_UNCONFIRMED'); await new Promise(r=>setTimeout(r,400*attempt)); }
+  }
 }
-
 /** Server-only archive diagnostic. Never return this result to the browser. */
 export async function verifyPodcastArchive(chatId: string): Promise<void> {
   const cfg = getTelegramConfig();

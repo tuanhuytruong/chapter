@@ -73,6 +73,7 @@ import {
   formatDailyMessage,
 } from "../telegram.js";
 import { config } from "../config.js";
+import { telegramService } from "../telegram/runtime.js";
 import { requireAuth, requireOwner, userFrom } from "../auth.js";
 import { reviewOutcome } from "../review.js";
 import fs from "fs";
@@ -2346,57 +2347,13 @@ booksRouter.patch("/:id/logs/:logId", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/books/all/notify — push today's logs to Telegram + mark sent.
-// Called by n8n AFTER /all/advance. Returns per-book delivery status.
-booksRouter.post("/all/notify", async (req: Request, res: Response) => {
-  const cfg = getTelegramConfig();
-  if (!cfg)
-    return res.status(500).json({ error: "Telegram bot is not configured" });
-  try {
-    const { rows: books } = await query(
-      `SELECT b.*, u.telegram_chat_id
-       FROM books b JOIN users u ON u.id=b.owner_id
-       WHERE b.status='active' AND b.owner_id=$1`,
-      [userFrom(req).id],
-    );
-    const results: any[] = [];
-    for (const b of books) {
-      const { rows } = await query(
-        "SELECT * FROM reading_log WHERE book_id=$1 AND date=$2",
-        [b.id, today()],
-      );
-      const log = rows[0];
-      if (!log || !log.summary) {
-        results.push({
-          book: b.title,
-          delivered: false,
-          reason: "no summary today",
-        });
-        continue;
-      }
-      if (!b.telegram_chat_id) {
-        results.push({
-          book: b.title,
-          delivered: false,
-          reason: "Telegram chat ID not configured",
-        });
-        continue;
-      }
-      const text = formatDailyMessage(b.title, b.author, log);
-      const sent = await sendTelegramMessage(cfg, b.telegram_chat_id, text);
-      if (sent.ok) {
-        await query("UPDATE reading_log SET telegram_sent=true WHERE id=$1", [
-          log.id,
-        ]);
-        results.push({ book: b.title, delivered: true });
-      } else {
-        results.push({ book: b.title, delivered: false, error: sent.error });
-      }
-    }
-    res.json({ delivered: results.filter((r) => r.delivered).length, results });
-  } catch (e: any) {
-    res.status(500).json({ error: "notify failed", detail: e.message });
-  }
+// Legacy notify is an enqueue-only adapter; disabled/missing V2 never falls back to direct sends.
+booksRouter.post('/all/notify',async(req: Request,res: Response)=>{
+ const service=telegramService();if(!service||!service.enabled)return res.status(503).json({error:'SENDER_DISABLED'});
+ try {if(!await service.repo.ready())return res.status(503).json({error:'MIGRATION_REQUIRED'});
+ const owner=userFrom(req).id,results=[];
+ for(const d of await service.repo.destinations(owner)){if(d.state==='active')results.push(await service.enqueue(owner,d.id));}
+ res.json({results}); }catch{res.status(400).json({error:'ENQUEUE_REJECTED'});}
 });
 
 // GET /api/books/all/log/today — convenience for n8n: today's sessions for all active books.

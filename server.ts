@@ -1,5 +1,8 @@
 import express, { Request, Response } from "express";
 import compression from "compression";
+import { telegramService,startTelegram } from './src/telegram/runtime.js';
+import { handleUpdate } from './src/telegram/webhook.js';
+import { telegramRouter } from './src/routes/telegram.js';
 import session from "express-session";
 import pgSession from "connect-pg-simple";
 import bcrypt from "bcrypt";
@@ -118,25 +121,11 @@ app.use(
 // Telegram webhook stays public because Telegram cannot hold a Chapter session. The
 // provider secret and one-time token bind the incoming chat to exactly one user.
 app.post("/api/telegram/webhook", async (req: Request, res: Response) => {
-  if (
-    !config.telegramWebhookSecret ||
-    req.header("x-telegram-bot-api-secret-token") !==
-      config.telegramWebhookSecret
-  ) {
-    return res.status(401).json({ ok: false });
-  }
-  const incoming = telegramUpdate(req.body);
-  if (!incoming) return res.status(200).json({ ok: true });
-  try {
-    const { rowCount } = await query(
-      `UPDATE users SET telegram_chat_id=$1, telegram_link_token=NULL, telegram_link_expires_at=NULL
-       WHERE telegram_link_token=$2 AND telegram_link_expires_at > now()`,
-      [incoming.chatId, incoming.token],
-    );
-    res.status(200).json({ ok: true, linked: rowCount === 1 });
-  } catch (e: any) {
-    res.status(500).json({ ok: false, error: "Telegram linking unavailable" });
-  }
+  if (!config.telegramWebhookSecret || req.header('x-telegram-bot-api-secret-token') !== config.telegramWebhookSecret) return res.status(401).json({ok:false});
+  const service=telegramService();
+  if(!service) return res.status(503).json({ok:false,error:'TELEGRAM_UNAVAILABLE'});
+  try { if(!await service.repo.ready())return res.status(503).json({ok:false,error:'MIGRATION_REQUIRED'}); await handleUpdate(service,req.body,config.telegramBotUsername);res.json({ok:true}); }
+  catch { res.status(503).json({ok:false,error:'UPDATE_NOT_COMMITTED'}); }
 });
 
 async function establishSession(
@@ -743,47 +732,18 @@ app.post("/api/auth/change-password", async (req: Request, res: Response) => {
       .json({ error: "Failed to change password", detail: e.message });
   }
 });
-app.get("/api/auth/telegram", async (req: Request, res: Response) => {
-  try {
-    const { rows } = await query(
-      "SELECT telegram_chat_id FROM users WHERE id=$1",
-      [userFrom(req).id],
-    );
-    res.json({ connected: Boolean(rows[0]?.telegram_chat_id) });
-  } catch {
-    res.status(500).json({ error: "Telegram status unavailable" });
-  }
-});
-app.post("/api/auth/telegram/link", async (req: Request, res: Response) => {
-  if (!config.telegramBotUsername)
-    return res
-      .status(503)
-      .json({ error: "Telegram linking is not configured" });
-  const token = createLinkToken();
-  try {
-    await query(
-      "UPDATE users SET telegram_link_token=$1, telegram_link_expires_at=$2 WHERE id=$3",
-      [token, linkExpiresAt(), userFrom(req).id],
-    );
-    res.json({
-      url: deepLink(config.telegramBotUsername, token),
-      expires_in_seconds: 900,
-    });
-  } catch {
-    res.status(500).json({ error: "Could not start Telegram link" });
-  }
-});
-app.delete("/api/auth/telegram", async (req: Request, res: Response) => {
-  try {
-    await query(
-      "UPDATE users SET telegram_chat_id=NULL, telegram_link_token=NULL, telegram_link_expires_at=NULL WHERE id=$1",
-      [userFrom(req).id],
-    );
-    res.json({ connected: false });
-  } catch {
-    res.status(500).json({ error: "Could not disconnect Telegram" });
-  }
-});
+const telegram=telegramService();
+if(telegram) {
+  app.use('/api/telegram',telegramRouter(telegram,config.telegramBotUsername));
+  // Rollout aliases have one source of truth, never the legacy chat-only state.
+  app.use('/api/auth/telegram', (req, res, next) => {
+    if(req.method==='GET' && req.url==='/') req.url='/status';
+    if(req.method==='DELETE' && req.url==='/')req.url='/identity';
+    next();
+  },telegramRouter(telegram,config.telegramBotUsername));
+} else {
+  app.use(['/api/telegram','/api/auth/telegram'],(_req,res)=>res.status(503).json({available:false,error:'TELEGRAM_ENVIRONMENT_REQUIRED'}));
+}
 
 const ONBOARDING_STEPS = new Set([
   "welcome",
@@ -1312,6 +1272,9 @@ async function startServer() {
     );
   }
 
+  const stopTelegram=await startTelegram().catch(()=>()=>{});
+  process.once('SIGTERM',stopTelegram);
+  process.once('SIGINT',stopTelegram);
   // ── Knowledge Mindmap ─────────────────────────────────────────
   app.post("/api/books/:id/mindmap", async (req: Request, res: Response) => {
     try {

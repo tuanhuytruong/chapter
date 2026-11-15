@@ -1,5 +1,6 @@
 {
-  "name": "Chapter — Daily Reading Summary",
+  "name": "OBSOLETE — Chapter legacy example; use Telegram V2 service scheduler",
+  "active": false,
   "nodes": [
     {
       "parameters": { "rule": { "interval": [{ "field": "hours", "triggerAtHour": 7, "triggerTimezone": "Asia/Bangkok" }] } },

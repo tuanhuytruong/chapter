@@ -26,6 +26,10 @@ function appEnvironment(): "prd" | "dev" {
 
 export const config = {
   appEnv: appEnvironment(),
+  telegramEnvironment: optionalEnv('TELEGRAM_ENV') === 'dev' || optionalEnv('TELEGRAM_ENV') === 'prd' ? optionalEnv('TELEGRAM_ENV') as 'dev'|'prd' : null,
+  telegramSenderEnabled: optionalEnv('TELEGRAM_SENDER_ENABLED') === 'true',
+  telegramSchedulerEnabled: optionalEnv('TELEGRAM_SCHEDULER_ENABLED') === 'true',
+  telegramChapterOrigin: optionalEnv('TELEGRAM_CHAPTER_ORIGIN'),
   databaseUrl: process.env.DATABASE_URL ?? "",
   nineRouterUrl:
     process.env.NINE_ROUTER_URL ?? "https://9router-ubt.srv.io.vn/v1/chat/completions",

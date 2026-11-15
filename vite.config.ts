@@ -8,6 +8,7 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     build: {
       manifest: true,
+      target: 'es2022', // Supported evergreen browsers: retain native optional chaining.
       // Compress shared preview primitives and SDK code without changing feature flags.
       minify: 'terser' as const,
       terserOptions: { compress: { passes: 2 }, format: { comments: false } },
